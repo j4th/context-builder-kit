@@ -148,7 +148,7 @@ Each project's backend selection lives in `.cascade/backends.toml` at the repo r
 [planning]
 backend = "github"
 project_number = 4              # the Projects v2 board number
-repo = "j4th/tuitor"
+repo = "<your-org>/<your-repo>"
 auto_status_via_board_rules = true   # cascade does not set Status field directly
 
 [knowledge]
@@ -157,7 +157,7 @@ docs_path = "docs/cbk/"
 
 [code]
 backend = "github"
-repo = "j4th/tuitor"
+repo = "<your-org>/<your-repo>"
 default_branch = "main"
 ```
 
@@ -165,8 +165,8 @@ default_branch = "main"
 # Profile: opinionated (validated — Linear operations not fully validated)
 [planning]
 backend = "linear"
-team_id = "TINCT"
-workspace_url = "https://linear.app/tinct"
+team_id = "<TEAM_ID>"
+workspace_url = "https://linear.app/<your-workspace>"
 
 [knowledge]
 backend = "notion"
@@ -174,7 +174,7 @@ hub_page_id = "abc123..."
 
 [code]
 backend = "github"
-repo = "justin/tinct"
+repo = "<your-org>/<your-repo>"
 default_branch = "main"
 ```
 
@@ -189,7 +189,7 @@ docs_path = "docs/cbk/"
 
 [code]
 backend = "github"
-repo = "j4th/tuitor"
+repo = "<your-org>/<your-repo>"
 default_branch = "main"
 ```
 

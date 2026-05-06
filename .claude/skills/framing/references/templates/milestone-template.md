@@ -70,7 +70,7 @@ Project-level tooling, workbench, or deployment setup that scaffold couldn't ant
 
 **Fails when**: used as a dumping ground for "setup tasks" that should have happened in scaffold; used to hide workspace-level gaps that all future projects will also hit; confused with walking skeleton (walking skeleton ends with a demonstrable end-to-end path through all layers; infrastructure ends with a working dev loop for the next milestone).
 
-**Example**: M1 of a project adding a GUI to the tuitor backend — "After this, the frontend has a dev server, a bundler, Vitest for component testing, and a CI workflow that runs frontend tests. A smoke-test React component renders in the dev server and passes its Vitest test. No user-visible features yet — this milestone delivers the workbench that M2 onwards will build features in."
+**Example**: M1 of a project adding a GUI to an existing backend — "After this, the frontend has a dev server, a bundler, Vitest for component testing, and a CI workflow that runs frontend tests. A smoke-test React component renders in the dev server and passes its Vitest test. No user-visible features yet — this milestone delivers the workbench that M2 onwards will build features in."
 
 ## Methodology-aware variants
 
@@ -128,7 +128,7 @@ Every milestone in `frame-NN.md` follows this structure:
 
 **Issue notes**: [Anything rough-in needs to know about these issues — Claude-Code-implementable vs. user-managed flags, dependencies between issues, "done" signals at the milestone level, special tools or MCPs the issues require.]
 
-**Acceptance signal**: [One sentence describing the observable signal that means this milestone is done. **Prefer a command or test the user can run** ("`cargo run -- regex/lesson_01.toml` succeeds and outputs `expected.txt`", "`mix test apps/kara/test/integration/foundation_close_test.exs` passes") **over an operational outcome** ("CI green on the merge PR", "the dashboard renders correctly"). Executable signals translate cleanly into rough-in's Test plan section and `/finish`'s done-signal verification step; operational signals force rough-in to invent an executable form during decomposition. When an executable signal isn't available — rare, usually true only for hardware-on-real-Pi rehearsals or visual-design-evaluation milestones — write the operational signal but flag it explicitly: *"operational signal only — rough-in's capstone will need to translate this to an executable form."*]
+**Acceptance signal**: [One sentence describing the observable signal that means this milestone is done. **Prefer a command or test the user can run** (e.g., `<cli-binary> <fixture-path>` succeeds and outputs `expected.txt`, or `<test-runner> <integration-test-path>` passes) **over an operational outcome** ("CI green on the merge PR", "the dashboard renders correctly"). Executable signals translate cleanly into rough-in's Test plan section and `/finish`'s done-signal verification step; operational signals force rough-in to invent an executable form during decomposition. When an executable signal isn't available — rare, usually true only for hardware-on-real-device rehearsals or visual-design-evaluation milestones — write the operational signal but flag it explicitly: *"operational signal only — rough-in's capstone will need to translate this to an executable form."*]
 ```
 
 ## Section-by-section authoring guidance
@@ -154,7 +154,7 @@ Every milestone in `frame-NN.md` follows this structure:
 
 **Examples of bad prescription phrasing to avoid**:
 
-- ❌ *"Create `crates/tuitor-engine/src/verifier.rs` with `pub trait Verifier { type Input; type Context; type Error; fn verify(&self, input: &Self::Input, ctx: &Self::Context) -> Result<(), Self::Error>; }`"* — inlines a full signature at the framing layer, pre-decides shape details that should live in an IC (if architectural) or in rough-in/plan mode (if not)
+- ❌ *"Create `crates/core-engine/src/verifier.rs` with `pub trait Verifier { type Input; type Context; type Error; fn verify(&self, input: &Self::Input, ctx: &Self::Context) -> Result<(), Self::Error>; }`"* — inlines a full signature at the framing layer, pre-decides shape details that should live in an IC (if architectural) or in rough-in/plan mode (if not)
 - ❌ *"Implement `load_lesson(path: &Path) -> Result<Lesson, LoaderError>` that opens the file, parses TOML, validates required fields, returns the struct"* — prescribes both the signature and the implementation sequence; each of those decisions should land downstream when real code context is available
 - ❌ *"Create `tests/regex_integration_test.rs` with `test_regex_lesson_01_passes` that runs the verifier against the fixture and asserts success"* — prescribes exact test file and function names; test naming should match the project's existing conventions, which plan mode will discover from real code
 

@@ -4,7 +4,7 @@ The five planning skills (consultation, scaffold, blueprint, framing, rough-in) 
 
 The cascade ships with three backend profiles in v1:
 - **github-only** — GitHub Projects v2 board + GitHub Issues with sub-issues + markdown in `docs/cbk/`. **Validated primary path.**
-- **opinionated** — Linear (planning) + GitHub (code). **kara-validated** — structurally supported but operational detail deferred until the first real opinionated-profile run.
+- **opinionated** — Linear (planning) + GitHub (code). **Partially validated** — structurally supported and exercised in at least one project, but operational detail for some edge cases is deferred until further opinionated-profile runs.
 - **markdown-only** — markdown in `docs/cbk/` and nothing else. No planning backend. The cascade event log IS the entire artifact set. **Use this when**: the user explicitly doesn't want a kanban/board surface, the cascade is being run as design documentation rather than active work tracking, the audience for the cascade output (e.g., a manager, a PM, a stakeholder) won't be living in GitHub Issues day-to-day, or the project is small enough that markdown alone is sufficient.
 
 Future profiles (Jira, Confluence, GitLab, Plane, Obsidian) plug into the same interface.
@@ -148,7 +148,7 @@ Each project's backend selection lives in `.cascade/backends.toml` at the repo r
 [planning]
 backend = "github"
 project_number = 4              # the Projects v2 board number
-repo = "j4th/tuitor"
+repo = "<your-org>/<your-repo>"
 auto_status_via_board_rules = true   # cascade does not set Status field directly
 
 [knowledge]
@@ -157,16 +157,16 @@ docs_path = "docs/cbk/"
 
 [code]
 backend = "github"
-repo = "j4th/tuitor"
+repo = "<your-org>/<your-repo>"
 default_branch = "main"
 ```
 
 ```toml
-# Profile: opinionated (kara-validated — Linear operations not fully validated)
+# Profile: opinionated (partially validated — Linear operations not fully validated)
 [planning]
 backend = "linear"
-team_id = "TINCT"
-workspace_url = "https://linear.app/tinct"
+team_id = "<TEAM_ID>"
+workspace_url = "https://linear.app/<your-workspace>"
 
 [knowledge]
 backend = "notion"
@@ -174,7 +174,7 @@ hub_page_id = "abc123..."
 
 [code]
 backend = "github"
-repo = "justin/tinct"
+repo = "<your-org>/<your-repo>"
 default_branch = "main"
 ```
 
@@ -189,7 +189,7 @@ docs_path = "docs/cbk/"
 
 [code]
 backend = "github"
-repo = "j4th/tuitor"
+repo = "<your-org>/<your-repo>"
 default_branch = "main"
 ```
 

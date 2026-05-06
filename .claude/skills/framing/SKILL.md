@@ -173,7 +173,7 @@ The **rough issues** list for each milestone is the seed that rough-in's Step 4 
 **Each rough issue is an intent, not a prescription.** The shape should be a one-sentence statement of *what the sub-sub-issue exists to do*, not *how it should be implemented*. Compare:
 
 - ✅ *"Define the Verifier trait with associated types for Input, Context, Error per IC-1 from this framing"* — intent, points at the IC that locks the shape
-- ❌ *"Create `crates/tuitor-engine/src/verifier.rs` with `pub trait Verifier { type Input; type Context; type Error; fn verify(...) -> Result<(), Self::Error>; }`"* — prescription, inlines a signature rough-in should either derive from IC-1 or leave to plan mode
+- ❌ *"Create `crates/core-engine/src/verifier.rs` with `pub trait Verifier { type Input; type Context; type Error; fn verify(...) -> Result<(), Self::Error>; }`"* — prescription, inlines a signature rough-in should either derive from IC-1 or leave to plan mode
 
 The intent phrasing matters because rough-in's Implementation sections (the thing handed to Claude Code plan mode) inherit their shape from framing's rough issues. If framing produces prescriptive rough issues, rough-in naturally inherits that prescriptive framing and produces over-specified Implementation sections. If framing produces intent-shaped rough issues, rough-in has room to apply its own eight-properties discipline without fighting against framing's seeds. See rough-in's `references/plan-mode-prompts.md` § Property 8 for the downstream discipline; framing's job is to set that discipline up for success by starting with intents.
 
@@ -195,7 +195,7 @@ Detailed milestone-shape guidance and the milestone template live in `references
 
 ### Example excerpt (what one milestone looks like in practice)
 
-To make the output shape concrete: here's what one milestone spec looks like for the regex project from the Tinct cascade. Note the specificity — the capability is a verb the system can do, the rough issues are concrete enough for rough-in to decompose, and the dependency is explicit.
+To make the output shape concrete: here's what one milestone spec looks like, taken from a real cascade run on a CLI-tutorial project whose first workstream was a "regex pack" of lessons. Note the specificity — the capability is a verb the system can do, the rough issues are concrete enough for rough-in to decompose, and the dependency is explicit.
 
 **Input fragment** (user during milestone HITL):
 > "M1 should be the smallest thing that proves the verifier trait works. Just enough to pass one regex lesson end-to-end. Nothing fancy."

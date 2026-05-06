@@ -234,7 +234,7 @@ The parent-pointer sentence is load-bearing: without it, rough-in has to reconst
 **Robust pattern for referencing other issues**: when the handoff context (or any other section) names specific issues, reference them by **issue number only** (`#37`, `#23`). Do not reproduce the issue's title in prose — titles can drift during later cascade revisions (see failure mode "Title drift in cross-referenced issues" in `references/planning-backend-commit.md`), while issue numbers are stable. GitHub's hover-card UI renders the current title dynamically, so number-only references stay fresh without needing edits.]
 
 [Example handoff context, ~150 words:
-> The regex project is the first pack in the tuitor cascade and proves
+> The regex project is the first workstream in the cascade and proves
 > the Verifier trait against the simplest verifier shape (pure function).
 > Approach: minimal trait with `Input`, `Context`, `Error` associated
 > types; concrete `RegexVerifier` impl using the `regex` crate; lessons

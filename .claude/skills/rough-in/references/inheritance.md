@@ -127,7 +127,7 @@ The milestone being roughed-in — **M<n>: <name>**:
 > If the framing sketch's count diverges from the surviving "not started" count after this classification, surface the divergence explicitly in the issue plan (Step 4) so the user sees the compression rationale at a glance.]
 ```
 
-**Why this subsection is mandatory**: framing-sketch rough-issue lists are written before the milestone's siblings have shipped, so by rough-in time some of the sketch items may already exist on `main` (landed in earlier milestones, in scaffold, in side cleanup commits, etc.). Without this classification, rough-in proposes redoing already-done work — the F4 / KAR-13 run hit this when "excoveralls + coverage upload" had already shipped in F1 but was still in the sketch, so the rough-in had to compress 4→3 with explicit rationale rather than mechanically reproducing the sketch. Doing the classification at inheritance time makes the compression visible and justifiable rather than improvised.
+**Why this subsection is mandatory**: framing-sketch rough-issue lists are written before the milestone's siblings have shipped, so by rough-in time some of the sketch items may already exist on `main` (landed in earlier milestones, in scaffold, in side cleanup commits, etc.). Without this classification, rough-in proposes redoing already-done work — concretely, real-world cascade runs have hit this when an item that was still in a milestone's sketch had already shipped in an earlier milestone (e.g., a coverage-upload setup that landed in an infrastructure milestone but was still listed in the sketch for a later milestone), forcing rough-in to compress the issue count with explicit rationale rather than mechanically reproducing the sketch. Doing the classification at inheritance time makes the compression visible and justifiable rather than improvised.
 
 The summary is dense by design. Anything skipped here will need to be re-fetched later in the rough-in run, and re-fetching mid-run is where errors creep in. Front-load the reading.
 
@@ -203,7 +203,7 @@ If a foundation doc is missing a section that rough-in expected to inherit from 
 - **Rough-in specs from prior rough-in runs of the same milestone** — re-rough-in is a deliberate cascade event that supersedes prior runs (see Step 2 in SKILL.md). Prior specs are historical record, not inheritance input. The new rough-in starts from frame-NN.md, not from the prior rough-in output.
 - **Implementation code from prior milestones** — rough-in operates at the spec level. Code review and pattern extraction from prior milestones happens during research (Step 3, sub-track 3a), not during inheritance.
 - **PR feedback from prior `/finish` runs** — useful context but not authoritative. If the user wants to incorporate lessons from prior PR feedback, they can mention it during research phase, but rough-in doesn't automatically read closed PRs.
-- **The opinionated profile's Linear-side state** — rough-in operates against github-only profile primarily. Opinionated profile is a kara-validated.
+- **The opinionated profile's Linear-side state** — rough-in operates against github-only profile primarily. Opinionated profile is partially validated.
 
 ## After inheritance: the HITL gate
 

@@ -186,7 +186,7 @@ The exemption must be specific: name the gate, name the commits or sub-batch, an
 
 The strictness of STANDARDS.md should match scaffold.md's quality bar entry. Concrete examples:
 
-**Loose during WIP, tighter at public release** (Tinct's pattern): PR review checklist has the structural items (tests, CI passing) but skips items that would slow iteration (no broad exception catching, CHANGELOG updates). Add a header note: *"Standards tighten as the project approaches v1.0 / public release. Items marked [STRICT] become required at that threshold."*
+**Loose during WIP, tighter at public release**: PR review checklist has the structural items (tests, CI passing) but skips items that would slow iteration (no broad exception catching, CHANGELOG updates). Add a header note: *"Standards tighten as the project approaches v1.0 / public release. Items marked [STRICT] become required at that threshold."*
 
 **Strict from day one** (production system, regulatory environment): PR review checklist has every item, CI gates are comprehensive, ADR-required-for-stack-changes is enforced, no exceptions.
 

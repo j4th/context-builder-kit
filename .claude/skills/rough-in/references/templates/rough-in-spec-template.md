@@ -194,28 +194,27 @@ The mapping is:
   - For ExUnit: `Module.FunctionTest > "fits within 2048 tokens"` form
   - For pytest: `path/to/test_file.py::test_chunks_at_sentence_boundaries` form
 
-Test regime per module class (see .claude/rules/testing.md for the full
-classification):
-  - **Logic** (PromptBudget, RuleEnforcer, Arbiter, Face.State, Memory, Pilot,
-    sidecar internals): test-first. Tests fail red before any implementation
-    lands. Named here.
-  - **Boundary adapters** (Sidecar.Adapter, Hardware.*, LLM.Backend,
-    Integration.Surface): conformance-first. The conformance loop test +
-    shim dispatch tests are named here; the per-impl smoke tests are named
+Test regime per module class (see .claude/rules/testing.md or whichever rules
+file the project uses for the full classification):
+  - **Logic** (pure functions, internal state machines, business-rule modules):
+    test-first. Tests fail red before any implementation lands. Named here.
+  - **Boundary adapters** (driver/port modules, external-service backends,
+    hardware/sidecar interfaces): conformance-first. The conformance loop test
+    + shim dispatch tests are named here; the per-impl smoke tests are named
     here too.
-  - **UI / integration** (Phoenix LiveView render, voice-turn integration,
-    hardware-on-Pi rehearsals): tests-as-shape-of-done. Named here, but
-    the order is build → assert, not assert → build.
+  - **UI / integration** (web framework views, end-to-end orchestrations,
+    hardware-on-real-device rehearsals): tests-as-shape-of-done. Named here,
+    but the order is build → assert, not assert → build.
 
 If a regime mix applies (e.g., a logic module accessed via a behaviour),
 group the tests by file and note the regime per group:
 
   ### Logic (test-first)
-  - `Kara.Cognition.PromptBudgetTest > "fits within 2048 tokens with all sections present"`
-  - `Kara.Cognition.PromptBudgetTest > "drops oldest few-shot examples first when overflowing"`
+  - `MyApp.MyModuleTest > "first criterion phrased as a declarative outcome"`
+  - `MyApp.MyModuleTest > "second criterion phrased as a declarative outcome"`
 
   ### Conformance (conformance-first)
-  - `Kara.Cognition.LLM.Backend.ConformanceTest > "HailoOllama implements every Kara.Cognition.LLM.Backend callback"`
+  - `MyApp.MyBackend.ConformanceTest > "concrete impl satisfies every behaviour callback"`
 
 If the issue is purely UI / integration, note "Regime: tests-as-shape-of-done"
 at the top of this section so the implementer knows the named tests are

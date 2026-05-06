@@ -243,7 +243,7 @@ Blueprint's behavior differs between the GitHub-only and opinionated profiles. T
 - Linear initiative is created via Linear MCP in planned/draft state
 - Methodology selection may inform Linear cycle length
 
-Read `references/github-only-vs-opinionated.md` for the per-operation differences. The opinionated profile is a kara-validated same as in scaffold — walk through what's documented, fall back to manual where it isn't.
+Read `references/github-only-vs-opinionated.md` for the per-operation differences. The opinionated profile is partially validated — same status as in scaffold — walk through what's documented, fall back to manual where it isn't.
 
 ## HITL gates summary
 

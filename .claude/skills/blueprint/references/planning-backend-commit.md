@@ -85,7 +85,7 @@ Blueprint's existing final commit gate now mentions both halves of the transitio
 
 **github-only profile** (default and validated): parent Issues are created via `issue_write`, the sub-issue tree is built via `sub_issue_write` in subsequent phases. Atomic with the markdown commit.
 
-**opinionated profile** (Linear, kara-validated): per `backends.md`, Linear's hierarchy is Project → Milestone → Issue. Workstreams map to Linear Projects, framing capabilities to Linear Milestones, rough-in items to Linear Issues. The sub-issue collapse is github-only-specific.
+**opinionated profile** (Linear, partially validated): per `backends.md`, Linear's hierarchy is Project → Milestone → Issue. Workstreams map to Linear Projects, framing capabilities to Linear Milestones, rough-in items to Linear Issues. The sub-issue collapse is github-only-specific.
 
 **markdown-only profile**: this entire step is **skipped**. No parent Issues get created on the planning backend because there is no planning backend. The atomic transition collapses to a single half — just the markdown commit (`blueprint.md` + foundation docs). There is no rollback to perform on the planning side because no planning ops ran. The cascade still uses the same naming conventions inside `blueprint.md` § Workstreams (`[<workstream-slug>] <name>` headings, slug-derivation rule, etc.) so the hierarchy is grep-able and the markdown-only output remains structurally identical to the github-only output minus the GitHub Issue tree.
 

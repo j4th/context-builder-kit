@@ -111,7 +111,7 @@ The default heuristic (3-4 → append, 5+ → new file) is rough-in's proposal; 
 Rough-in detects the profile by reading `scaffold.md`'s `profile:` field during Step 1 (inheritance). The profile field is one of:
 
 - `github-only` — proceed with the full validated path
-- `opinionated` — surface the kara-validated status, ask user to confirm Linear workspace is configured, proceed with caution
+- `opinionated` — surface the partial-validation status, ask user to confirm Linear workspace is configured, proceed with caution
 - `markdown-only` — surface the markdown-only acknowledgment in the inheritance gate (parallel to blueprint's markdown-only acknowledgment), confirm with user that the planning-backend half of every commit will be skipped, proceed with the markdown-only flow
 
 If `scaffold.md` is missing, rough-in surfaces the gap and asks the user to either provide the file or confirm the profile manually. **Do not assume a default profile** — the choice is too consequential to fall back silently.

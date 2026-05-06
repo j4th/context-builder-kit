@@ -30,7 +30,7 @@ The failure modes that cause the most damage when they happen.
 
 **What it looks like**: blueprint recommends Shape Up because the cascade examples use it, not because it actually fits the user's project. Or recommends Scrum because the team is "agile" without checking whether they want sprint ceremonies.
 
-**Why it happens**: the methodology register is opinionated, and Tinct's pattern (Shape Up appetite-based for solo bursty work) is the canonical example. It's easy to default-recommend Shape Up for everything because it's the pattern blueprint sees most often in its own training material.
+**Why it happens**: the methodology register is opinionated, and Shape Up appetite-based for solo bursty work is the canonical example. It's easy to default-recommend Shape Up for everything because it's the pattern blueprint sees most often in its own training material.
 
 **Defense**: the methodology selection step requires the recommendation to be tied to *inherited context* with a citation. "Given the bursty solo cadence and per-pack scope discipline you mentioned in the brief, I'd recommend Shape Up appetite-based" is grounded. "I'd recommend Shape Up" is dogmatism. Documented in `references/methodology-selection.md`.
 

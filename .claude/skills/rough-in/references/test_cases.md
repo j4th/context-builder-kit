@@ -186,7 +186,7 @@ Add a new test when:
 - A revision introduces a new behavior that should be regression-tested
 - A bug surfaces that the existing tests didn't catch
 - A failure mode in `references/failure-modes.md` doesn't have a corresponding test
-- A new profile is added (e.g., when the opinionated profile graduates from kara-validated to validated)
+- A new profile is added (e.g., when the opinionated profile graduates from partially-validated to fully validated)
 - The cascade adds a new phase that changes rough-in's handoff contract
 
-Tests are intentionally minimal — they're not a comprehensive coverage matrix, they're a smoke test set that catches the most common regressions. The full coverage comes from real cascade runs against tuitor and other dogfooded projects.
+Tests are intentionally minimal — they're not a comprehensive coverage matrix, they're a smoke test set that catches the most common regressions. The full coverage comes from real cascade runs against dogfooded projects.

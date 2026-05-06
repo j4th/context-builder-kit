@@ -16,7 +16,7 @@ The profile is determined by `scaffold.md`'s Cascade metadata section. **Read it
 | Initiative content destination | Lives only in `docs/cbk/blueprint.md` | Lives in `docs/cbk/blueprint.md` AND mirrored as a Linear initiative |
 | Tooling configs | Commit to repo (`.github/workflows/`, task runner config, .env.example) | Same |
 | Linear MCP needed? | No | Yes |
-| Notion MCP needed? | No | Yes (for the kara-validated: surface gap, fall back to manual) |
+| Notion MCP needed? | No | Yes (for the partially-validated paths: surface gap, fall back to manual) |
 | HITL gate count | 6 default | 6 default + 1 extra for Linear initiative confirmation |
 
 ## GitHub-only profile behavior
@@ -35,13 +35,13 @@ Concretely:
 
 **No Linear operations**, ever, in github-only mode. If the user asks "where do I see this in Linear?" the answer is "Linear isn't in scope for this profile — the cascade is in github-only mode, so initiatives live as markdown documents in `docs/cbk/`. If you want Linear, that would mean switching profiles, which is a scaffold-level decision."
 
-## Opinionated profile behavior — kara-validated
+## Opinionated profile behavior — partially validated
 
 **Status: stub.** Same as in scaffold's `references/opinionated_profile.md`. The opinionated profile is structurally supported in blueprint's SKILL.md but the operational detail for Linear and Notion operations is deferred to a follow-up after one full cascade run through github-only mode validates the patterns.
 
 If the user picked opinionated in scaffold, blueprint should:
 
-1. **Tell the user honestly** that the opinionated profile is a kara-validated: *"Heads up — the opinionated profile is structurally supported but the detailed Linear/Notion operations for blueprint are a stub in v1. I'll walk through what's documented and flag gaps as we hit them. If we hit something I don't have a clean answer for, I'll either fall back to manual instructions or offer to switch to github-only mode for this phase. Sound okay to start?"*
+1. **Tell the user honestly** that the opinionated profile is partially validated: *"Heads up — the opinionated profile is structurally supported but the detailed Linear/Notion operations for blueprint are a stub in v1. I'll walk through what's documented and flag gaps as we hit them. If we hit something I don't have a clean answer for, I'll either fall back to manual instructions or offer to switch to github-only mode for this phase. Sound okay to start?"*
 2. **Run the parts that are documented**: inheritance read (same as github-only), stack decisions (same), methodology selection (same), foundation doc production (same — commit to GitHub repo), blueprint.md commit (same — commit to `docs/cbk/blueprint.md` via GitHub MCP).
 3. **For the Linear initiative creation step**: walk through what should happen at a high level, ask if the user wants to attempt it via Linear MCP (with the caveat that exact tool names and inputs aren't documented in this stub) or do it manually in Linear's UI.
 4. **Flag every gap as it happens**. Do not pretend coverage that doesn't exist.
@@ -62,7 +62,7 @@ If the user picked opinionated in scaffold, blueprint should:
 
 ### When to fall back to github-only mid-session
 
-If a user picked opinionated in scaffold and blueprint hits a gap they can't work around, offer a fallback: *"This Linear operation isn't documented in the kara-validated. We have two options: (a) you do the Linear initiative creation manually in the UI after we finish, and I just commit blueprint.md to `docs/cbk/`; or (b) we treat this phase as github-only, which means no Linear initiative gets created at all — the cascade still works, you just lose the Linear-side aggregation. Which do you prefer?"*
+If a user picked opinionated in scaffold and blueprint hits a gap they can't work around, offer a fallback: *"This Linear operation isn't documented yet in the opinionated reference. We have two options: (a) you do the Linear initiative creation manually in the UI after we finish, and I just commit blueprint.md to `docs/cbk/`; or (b) we treat this phase as github-only, which means no Linear initiative gets created at all — the cascade still works, you just lose the Linear-side aggregation. Which do you prefer?"*
 
 Most users hitting a stub gap pick (a) — manual Linear creation is fine, and blueprint.md still serves as the cascade record. The (b) option exists for users who don't want to maintain a Linear entity at all.
 
@@ -85,10 +85,10 @@ Until then, opinionated mode in blueprint is honest-and-stub.
 - **Guessing the profile from context.** Always read `scaffold.md` first. The Cascade metadata section names the profile explicitly — there's no excuse for inferring it from the user's word choice.
 - **Assuming Linear MCP is connected in opinionated mode.** It might not be. Probe early; if missing, fall back to manual Linear operations or offer to switch to github-only fallback.
 - **Committing blueprint.md to a different location based on profile.** Don't. Blueprint.md is always at `docs/cbk/blueprint.md`. The profile determines what *additional* artifacts get created (Linear initiative entity in opinionated mode), never where the markdown lives.
-- **Skipping the gap-honesty disclosure in opinionated mode.** kara-validateds are bugs only if blueprint pretends they aren't. Disclose, fall back, document.
+- **Skipping the gap-honesty disclosure in opinionated mode.** Documentation gaps are bugs only if blueprint pretends they aren't. Disclose, fall back, document.
 
 ## Light-mode behavior
 
 Profile detection and routing is non-negotiable in light mode. The light-mode collapses apply to *what blueprint produces* (fewer foundation docs, batched HITL gates, etc.), not to which profile the operations target.
 
-For opinionated profile + light mode: still disclose the kara-validated status. *"Opinionated profile, light mode. I'll produce the docs you asked for, commit them via GitHub MCP, and commit blueprint.md to `docs/cbk/`. Linear initiative creation is a kara-validated — I'll generate manual instructions for you to run after we finish. Sound okay?"*
+For opinionated profile + light mode: still disclose the partial-validation status. *"Opinionated profile, light mode. I'll produce the docs you asked for, commit them via GitHub MCP, and commit blueprint.md to `docs/cbk/`. Linear initiative creation is partially validated — I'll generate manual instructions for you to run after we finish. Sound okay?"*
