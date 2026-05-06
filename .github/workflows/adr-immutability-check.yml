@@ -1,0 +1,69 @@
+name: ADR immutability check
+
+# Closes the raw-git-access gap that the PreToolUse hook can't catch.
+# Per ADR-0000, ADRs are immutable once accepted — revisions go via new ADRs
+# that supersede the old. This workflow fails the PR if any existing
+# `docs/adr/[0-9]{4}-*.md` file has been modified (additions of new ADR
+# files are allowed; deletions and modifications are not).
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/adr/**'
+
+jobs:
+  immutability:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect modified or deleted ADR files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          # List changes restricted to docs/adr/NNNN-*.md (numbered ADR files;
+          # README.md, template.md, and other supporting files are exempt).
+          mapfile -t changes < <(
+            git diff --name-status "$BASE_SHA" "$HEAD_SHA" -- 'docs/adr/' \
+              | awk '$2 ~ /^docs\/adr\/[0-9]{4}-.*\.md$/ { print }'
+          )
+
+          if [ ${#changes[@]} -eq 0 ]; then
+            echo "No numbered ADR files changed in this PR."
+            exit 0
+          fi
+
+          echo "Numbered ADR file changes in this PR:"
+          printf '%s\n' "${changes[@]}"
+
+          # Allowed: A (added). Forbidden: M (modified), D (deleted), R (renamed
+          # — would lose the immutable ADR identity), C (copied — same).
+          violations=()
+          for change in "${changes[@]}"; do
+            status="${change%%$'\t'*}"
+            path="${change#*$'\t'}"
+            if [ "${status}" != "A" ]; then
+              violations+=("${status}\t${path}")
+            fi
+          done
+
+          if [ ${#violations[@]} -gt 0 ]; then
+            echo ""
+            echo "::error::ADR immutability violation: existing ADRs cannot be modified."
+            echo "Per docs/adr/0000-record-architecture-decisions.md, ADRs are immutable once accepted."
+            echo "To revise a decision, write a new ADR that supersedes the old one."
+            echo ""
+            echo "Forbidden changes:"
+            printf '  %b\n' "${violations[@]}"
+            exit 1
+          fi
+
+          echo ""
+          echo "All ADR changes are additions (allowed)."

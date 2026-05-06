@@ -1,4 +1,4 @@
-# Opinionated profile (Linear + GitHub) — validated
+# Opinionated profile (Linear + GitHub)
 
 **Status: stub.** This profile is structurally supported in SKILL.md but the operational detail is deferred to a follow-up. If a user picks it, walk them through what's documented here, flag gaps explicitly, and offer to fall back to GitHub-only mode if they hit blockers.
 
@@ -35,4 +35,4 @@ The honesty disclosure to give the user up front lives in `profile_selection.md`
 
 ## When to flesh this out
 
-The opinionated profile reference should get its full treatment after one real run through GitHub-only mode produces a working cascade end-to-end. Premature documentation of operations that haven't been validated against a real session is exactly the kind of speculative work the cascade is supposed to avoid.
+The opinionated profile reference should get its full treatment after one real run through GitHub-only mode produces a working cascade end-to-end. Premature documentation of operations that haven't been exercised against a real session is exactly the kind of speculative work the cascade is supposed to avoid.

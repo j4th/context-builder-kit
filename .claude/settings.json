@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/protect-immutable-adrs.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "_comment_enabledPlugins": "Plugins the cascade kit expects. Install each via Claude Code's plugin system before running /finish. The plugin names below match what /finish step 7 invokes; rename to match installed plugin IDs if your install uses different identifiers.",
+  "enabledPlugins": {
+    "pr-review-toolkit": true,
+    "simplify": true,
+    "commit-commands": true
+  },
+  "_comment_enabledMcpjsonServers": "MCP servers the cascade reads from .mcp.json. Copy .mcp.json.example to .mcp.json and configure the credentials/endpoints for each server you want enabled. Comment out any server you don't use.",
+  "enabledMcpjsonServers": [
+    "github",
+    "linear",
+    "context7",
+    "time"
+  ]
+}

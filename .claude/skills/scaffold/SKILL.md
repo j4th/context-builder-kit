@@ -1,6 +1,6 @@
 ---
 name: scaffold
-description: Provision the workspace infrastructure (repo, planning surface, knowledge surface) that the rest of the AI-assisted development cascade will use. Use this skill whenever the user has a problem brief and needs to set up where the work will live, or says things like "set up the workspace", "bootstrap the repo", "I'm starting a new repo", "where should I put this project", "I need to set up GitHub for this", "I have my plan, now what", or references the cascade at the scaffold level. Also use when a user wants to start a new project end-to-end and skipped consultation. **Use this skill even when the user doesn't explicitly ask for "scaffolding" or "bootstrap" — the trigger is the moment of "I have a plan and need a place to put it", not the vocabulary.** Phase 2 of the cascade. Supports three backend profiles — GitHub-only (validated), opinionated Linear+Notion (validated), and markdown-only (no planning surface, for users who don't want a board). Produces a scaffold output doc and bootstrap checklist.
+description: Provision the workspace infrastructure (repo, planning surface, knowledge surface) that the rest of the AI-assisted development cascade will use. Use this skill whenever the user has a problem brief and needs to set up where the work will live, or says things like "set up the workspace", "bootstrap the repo", "I'm starting a new repo", "where should I put this project", "I need to set up GitHub for this", "I have my plan, now what", or references the cascade at the scaffold level. Also use when a user wants to start a new project end-to-end and skipped consultation. **Use this skill even when the user doesn't explicitly ask for "scaffolding" or "bootstrap" — the trigger is the moment of "I have a plan and need a place to put it", not the vocabulary.** Phase 2 of the cascade. Supports three backend profiles — GitHub-only (default), opinionated Linear+Notion, and markdown-only (no planning surface, for users who don't want a board). Produces a scaffold output doc and bootstrap checklist.
 ---
 
 # Scaffold
@@ -79,7 +79,7 @@ The gate language:
 > - The cascade-event model and supersedes-not-overwrites discipline at the markdown level
 > - Full design history, decision rationale, and traceability — markdown-only is a complete record, just without the live work tracker
 >
-> Sound right? If yes, I'll commit `profile: markdown-only` and continue. If you'd rather have a board after all (even a bare-bones one), say so now and we'll go with **github-only** instead — that's the validated primary path and matches most cascade users."
+> Sound right? If yes, I'll commit `profile: markdown-only` and continue. If you'd rather have a board after all (even a bare-bones one), say so now and we'll go with **github-only** instead — that's the default and matches most cascade users."
 
 The user's confirmation is binary: explicit "yes, markdown-only" or any hesitation → propose github-only as the alternative and re-run the gate against the new choice. **Never proceed past this gate on an implicit or ambiguous answer.** Scaffold's job here is to make sure the user is making the choice deliberately, not falling into it because the conversation was moving fast.
 

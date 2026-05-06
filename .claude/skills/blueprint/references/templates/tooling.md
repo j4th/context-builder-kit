@@ -40,7 +40,7 @@ The set depends on stack decisions. Default set:
    - Skip entirely if the project has no env config
 
 4. **Optional**: review automation
-   - `claude-code-action` workflow if scaffold.md's PR/review process said to use it (e.g., Tinct's "CI must trigger Claude code review on PRs")
+   - `claude-code-action` workflow if scaffold.md's PR/review process said to use it (e.g., a "CI must trigger Claude code review on PRs" preference)
    - Skip if scaffold didn't ask for it
 
 ## Rules

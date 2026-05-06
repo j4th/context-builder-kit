@@ -120,7 +120,7 @@ This isn't a script — rough-in doesn't ask every question in every run. It's a
 ### Profile-aware variants
 
 - *"This is markdown-only profile — no planning backend half. Where do you want the rough-in specs to land? (a) appended to the existing `frame-NN.md` file as a new `## Rough-in M<#>` section, or (b) new per-milestone rough-in markdown file at `docs/cbk/frame-NN-M<#>-rough-in.md`. Default for [N] R-issues is [a/b]. Override?"*
-- *"This is opinionated profile — Linear is the planning backend. The Linear-side specifics for rough-in are a kara-validated, so I'll proceed cautiously and surface anything I'm uncertain about. The Linear Milestone for this framing is [name]. Confirm I should create N Linear Issues under it?"*
+- *"This is opinionated profile — Linear is the planning backend. I'll proceed cautiously and surface anything I'm uncertain about as I go. The Linear Milestone for this framing is [name]. Confirm I should create N Linear Issues under it?"*
 
 ## Cross-step: when rough-in needs to escalate
 

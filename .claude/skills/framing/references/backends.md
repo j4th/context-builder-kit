@@ -3,8 +3,8 @@
 The five planning skills (consultation, scaffold, blueprint, framing, rough-in) and the Claude Code finish skill all interact with three logical systems: a **planning backend** (where the cascade hierarchy lives as queryable, statused work items), a **knowledge backend** (where long-form specs and the cascade event log live), and a **code backend** (where the repo, branches, and PRs live). This spec defines the operations skills can call against those backends so skills can be written tool-agnostically and concrete backends can be swapped via configuration.
 
 The cascade ships with three backend profiles in v1:
-- **github-only** — GitHub Projects v2 board + GitHub Issues with sub-issues + markdown in `docs/cbk/`. **Validated primary path.**
-- **opinionated** — Linear (planning) + GitHub (code). **Validated** — exercised end-to-end via Linear MCP (`mcp__linear__save_issue` with `parentId`, label scheme, atomic transition with markdown commits).
+- **github-only** — GitHub Projects v2 board + GitHub Issues with sub-issues + markdown in `docs/cbk/`. The default profile.
+- **opinionated** — Linear (planning) + GitHub (code). Linear operations go through Linear MCP (`mcp__linear__save_issue` with `parentId`, label scheme, atomic transition with markdown commits); when a specific Linear operation isn't documented in the references, fall back to manual instructions or surface the gap.
 - **markdown-only** — markdown in `docs/cbk/` and nothing else. No planning backend. The cascade event log IS the entire artifact set. **Use this when**: the user explicitly doesn't want a kanban/board surface, the cascade is being run as design documentation rather than active work tracking, the audience for the cascade output (e.g., a manager, a PM, a stakeholder) won't be living in GitHub Issues day-to-day, or the project is small enough that markdown alone is sufficient.
 
 Future profiles (Jira, Confluence, GitLab, Plane, Obsidian) plug into the same interface.
@@ -144,11 +144,11 @@ If the disk copy and the bundled copy diverge (the user has hand-edited the disk
 Each project's backend selection lives in `.cascade/backends.toml` at the repo root, committed alongside the AI agent config that blueprint produces. Skills read this file to know which concrete tool to call.
 
 ```toml
-# Profile: github-only (validated primary path)
+# Profile: github-only (default)
 [planning]
 backend = "github"
 project_number = 4              # the Projects v2 board number
-repo = "j4th/tuitor"
+repo = "<your-org>/<your-repo>"
 auto_status_via_board_rules = true   # cascade does not set Status field directly
 
 [knowledge]
@@ -157,16 +157,16 @@ docs_path = "docs/cbk/"
 
 [code]
 backend = "github"
-repo = "j4th/tuitor"
+repo = "<your-org>/<your-repo>"
 default_branch = "main"
 ```
 
 ```toml
-# Profile: opinionated (kara-validated — Linear operations not fully validated)
+# Profile: opinionated
 [planning]
 backend = "linear"
-team_id = "TINCT"
-workspace_url = "https://linear.app/tinct"
+team_id = "<TEAM_ID>"
+workspace_url = "https://linear.app/<your-workspace>"
 
 [knowledge]
 backend = "notion"
@@ -174,7 +174,7 @@ hub_page_id = "abc123..."
 
 [code]
 backend = "github"
-repo = "justin/tinct"
+repo = "<your-org>/<your-repo>"
 default_branch = "main"
 ```
 
@@ -189,7 +189,7 @@ docs_path = "docs/cbk/"
 
 [code]
 backend = "github"
-repo = "j4th/tuitor"
+repo = "<your-org>/<your-repo>"
 default_branch = "main"
 ```
 
@@ -289,10 +289,10 @@ The interface is intentionally small so the lift is bounded. If a future backend
 
 **Q1 — Markdown audit trail**: phase-named branches give clean review/revert but produce branch noise. Direct commits to `docs/cbk/` on main with structured commit messages are simpler. **Resolved**: direct commits to main with the atomic transition pattern. The cascade-event model (frame-NN.md numbering, append-only) gives review and revert via git history rather than branches.
 
-**Q2 — GitHub Projects three-level constraint**: faking initiatives with labels was tempting and wrong. **Resolved**: the cascade uses GitHub's native sub-issue feature (GA'd 2025) to build a three-deep Issue tree per workstream — workstream parent Issue, framing capability sub-issue, rough-in sub-sub-issue. The github MCP exposes `sub_issue_write` natively, so this is fully MCP-supported with no `gh` CLI shell-out. The cascade does NOT use GitHub Milestones because the github MCP exposes only Milestone *assignment*, not Milestone *creation*. There is no separate "initiative" object — the Projects v2 board itself plays that role, and the `blueprint.md` markdown file plays the documentation role. This is now the validated primary path.
+**Q2 — GitHub Projects three-level constraint**: faking initiatives with labels was tempting and wrong. **Resolved**: the cascade uses GitHub's native sub-issue feature (GA'd 2025) to build a three-deep Issue tree per workstream — workstream parent Issue, framing capability sub-issue, rough-in sub-sub-issue. The github MCP exposes `sub_issue_write` natively, so this is fully MCP-supported with no `gh` CLI shell-out. The cascade does NOT use GitHub Milestones because the github MCP exposes only Milestone *assignment*, not Milestone *creation*. There is no separate "initiative" object — the Projects v2 board itself plays that role, and the `blueprint.md` markdown file plays the documentation role. This is now the primary path.
 
 ## Open questions deferred to future passes
 
-1. **Opinionated-profile validation**: the Linear/Notion mapping is structurally documented but has not been validated against a real cascade run. First opinionated-profile run will surface gaps and either fill in this spec or flag them as known limitations.
+1. **Opinionated-profile coverage**: the Linear/Notion mapping is structurally documented; some operational details for edge cases may need to be filled in or flagged as known limitations during real opinionated-profile runs.
 2. **Cross-workstream interface commitments on the planning backend**: the Interface Commitments table in `frame-NN.md` is currently markdown-only. There's no planning-backend representation of "this Issue commits to a stable interface that another Issue depends on." Future revision may add a `relates_to` link with custom semantics or a separate label taxonomy.
 3. **Sub-rough-in nesting**: GitHub sub-issues support up to 8 levels deep. The cascade currently uses two levels (framing Issue → rough-in sub-issue). A future deepening (rough-in producing nested implementation steps) is structurally supported by the planning backend but not yet by the cascade skills.

@@ -29,7 +29,7 @@ Properties 1-7 are shape and discipline checks. Property 8 is the calibration ch
 
 ### 1. Written in second person
 
-The prompt is an instruction, not a description. Write *"Create `crates/tuitor-engine/src/verifier.rs`..."* not *"The file `crates/tuitor-engine/src/verifier.rs` should exist..."*. Plan mode reads second-person prose as something it can act on; third-person descriptive prose reads as documentation that summarizes what already exists.
+The prompt is an instruction, not a description. Write *"Create `crates/core-engine/src/verifier.rs`..."* not *"The file `crates/core-engine/src/verifier.rs` should exist..."*. Plan mode reads second-person prose as something it can act on; third-person descriptive prose reads as documentation that summarizes what already exists.
 
 **The discipline test**: every sentence in the Implementation section should start with a verb that the executor (human or Claude Code) can perform. *Create. Add. Update. Modify. Implement. Define. Wire. Configure. Run. Verify.* Sentences that start with "The trait..." or "There should be..." are descriptions, not instructions.
 
@@ -112,7 +112,7 @@ The load-bearing calibration property. The Implementation section should tell pl
 
 **Good**:
 
-> Create `crates/tuitor-engine/src/verifier.rs` with a `pub trait Verifier` that has three associated types (`Input`, `Context`, `Error`) and a single method `fn verify(&self, input: &Self::Input, ctx: &Self::Context) -> Result<(), Self::Error>`. Add `pub mod verifier;` to `crates/tuitor-engine/src/lib.rs`. Do not create any concrete implementations — those come in R2.
+> Create `crates/core-engine/src/verifier.rs` with a `pub trait Verifier` that has three associated types (`Input`, `Context`, `Error`) and a single method `fn verify(&self, input: &Self::Input, ctx: &Self::Context) -> Result<(), Self::Error>`. Add `pub mod verifier;` to `crates/core-engine/src/lib.rs`. Do not create any concrete implementations — those come in R2.
 
 **What changed**: every sentence is a specific instruction with a verifiable outcome. The signature is named explicitly. The scope creep ("create concrete impls") is forbidden.
 
@@ -148,13 +148,13 @@ The load-bearing calibration property. The Implementation section should tell pl
 
 **Bad**:
 
-> Create the file at exactly `crates/tuitor-engine/src/verifier.rs`. Use exactly four spaces for indentation. Name the trait exactly `Verifier`. The associated types must be named exactly `Input`, `Context`, and `Error` in that order. The method must be named exactly `verify`.
+> Create the file at exactly `crates/core-engine/src/verifier.rs`. Use exactly four spaces for indentation. Name the trait exactly `Verifier`. The associated types must be named exactly `Input`, `Context`, and `Error` in that order. The method must be named exactly `verify`.
 
 **Why this is bad**: most of these are conventions that are already enforced by the project's lint config or follow obvious patterns. Restating them dogmatically clutters the prompt and signals distrust of the executor's judgment.
 
 **Good**:
 
-> Create `crates/tuitor-engine/src/verifier.rs` with a `pub trait Verifier` that has associated types `Input`, `Context`, `Error` and a method `verify(&self, input: &Self::Input, ctx: &Self::Context) -> Result<(), Self::Error>`. The trait will be the load-bearing abstraction every pack implements, so name and shape matter — keep them as written.
+> Create `crates/core-engine/src/verifier.rs` with a `pub trait Verifier` that has associated types `Input`, `Context`, `Error` and a method `verify(&self, input: &Self::Input, ctx: &Self::Context) -> Result<(), Self::Error>`. The trait will be the load-bearing abstraction every pack implements, so name and shape matter — keep them as written.
 
 **What changed**: the parts that matter (trait name, type names, method signature) are specified once with a brief note that they're load-bearing. The parts that don't need restating (indentation, file location convention) are left to the project's lint config and the executor's judgment.
 
@@ -243,7 +243,7 @@ This example is a **legitimate exception** to pitfall 6: the trait code block is
 ```markdown
 ## Implementation
 
-Create `crates/tuitor-engine/src/verifier.rs` with the following trait:
+Create `crates/core-engine/src/verifier.rs` with the following trait:
 
     pub trait Verifier {
         type Input;
@@ -253,7 +253,7 @@ Create `crates/tuitor-engine/src/verifier.rs` with the following trait:
             -> Result<(), Self::Error>;
     }
 
-Add `pub mod verifier;` to `crates/tuitor-engine/src/lib.rs`. Include
+Add `pub mod verifier;` to `crates/core-engine/src/lib.rs`. Include
 full rustdoc on the trait that cites `docs/ARCHITECTURE.md § "The
 Verifier trait"` for the rationale and the v0.4 hard gate language.
 
@@ -262,7 +262,7 @@ Constraints (all from `docs/STANDARDS.md § Unenforced invariants`):
 - The trait is **pure**: no async, no I/O, no network.
 - The trait must accommodate four implementation shapes (regex pure-fn,
   tmux external-process, vim embedded-RPC, bash PTY) without growing
-  variant logic in `tuitor-engine` — this is the v0.4 hard gate from
+  variant logic in `core-engine` — this is the v0.4 hard gate from
   `docs/ARCHITECTURE.md § "The v0.4 hard gate as an architectural commitment"`.
 - Do not create any concrete implementations in this issue — those come
   in R2.
@@ -280,7 +280,7 @@ want background.
 
 1. ✅ **Second person**: "Create...", "Add...", "Include...", "verify with..." — every sentence starts with a verb the executor can act on
 2. ✅ **Self-contained**: the full trait signature is inlined, the constraints are listed explicitly, the cited sections are pointers not prerequisites. A reader can act on this cold.
-3. ✅ **Specific files, constraints, and locked signatures**: `crates/tuitor-engine/src/verifier.rs` is named; the trait code block is verbatim from IC-1 (the locked-signature carve-out applies); constraints (purity, no concrete impls, v0.4 hard gate) are explicit
+3. ✅ **Specific files, constraints, and locked signatures**: `crates/core-engine/src/verifier.rs` is named; the trait code block is verbatim from IC-1 (the locked-signature carve-out applies); constraints (purity, no concrete impls, v0.4 hard gate) are explicit
 4. ✅ **Cites cascade docs by section name**: ARCHITECTURE.md sections cited twice with exact section names, STANDARDS.md cited once
 5. ✅ **Verification step embedded**: `cargo check --workspace && cargo doc --no-deps`
 6. ✅ **Length**: ~210 words — short for the 300-800 range, but this is a genuinely simple issue (one trait, no implementations) and the brevity is honest, not a sign of vagueness. A longer spec here would be padding.

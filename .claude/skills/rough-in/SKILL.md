@@ -25,7 +25,7 @@ Rough-in is one-milestone-at-a-time, just-in-time, **by design**. Framing alread
 - One rough-in spec per sub-sub-issue, committed atomically as:
   - **In github-only profile**: a GitHub sub-issue parented under the framing sub-issue via `issue_write` + `sub_issue_write`, labeled `cascade-depth:roughed-in`, titled `[<slug>:F<#>:R<#>] <intent>`, with body containing the full spec
   - **In markdown-only profile**: an appended section to the framing's markdown file (or a new per-milestone rough-in markdown file — see profile-aware behavior section), no planning backend commit
-  - **In Linear+GitHub profile**: a Linear sub-sub-issue (validated) parented under the framing F-issue via `mcp__linear__save_issue` with `parentId`, `team`, `labels: ["workstream:<slug>", "cascade-depth:roughed-in", <type>]`, `assignee`, and `blockedBy` chain to prior R-issues. Single-step (no separate parent-linkage call). See `references/github-only-vs-opinionated.md` § Linear+GitHub profile for full MCP-call shapes.
+  - **In Linear+GitHub profile**: a Linear sub-sub-issue parented under the framing F-issue via `mcp__linear__save_issue` with `parentId`, `team`, `labels: ["workstream:<slug>", "cascade-depth:roughed-in", <type>]`, `assignee`, and `blockedBy` chain to prior R-issues. Single-step (no separate parent-linkage call). See `references/github-only-vs-opinionated.md` § Linear+GitHub profile for full MCP-call shapes.
 - An update to `docs/cbk/README.md` chronological index noting that milestone M_n was roughed-in (append-only)
 
 ## Required pre-flight check: deferred meta-issues
@@ -143,18 +143,18 @@ Detailed spec drafting guidance, the full eight-property list, pitfalls (includi
 
 ### Example excerpt (what one rough-in spec looks like in practice)
 
-To make the output shape concrete: here's what one sub-sub-issue spec looks like for R1 of the regex-pack M1 from the Tinct cascade. Note the specificity — acceptance is observable, technical detail is concrete, plan-mode prompt is self-contained.
+To make the output shape concrete: here's what one sub-sub-issue spec looks like, taken from a real cascade run — R1 of M1 of a "regex-pack" workstream. Note the specificity — acceptance is observable, technical detail is concrete, plan-mode prompt is self-contained.
 
 **Output fragment** (resulting `[regex-pack:F1:R1]` sub-issue body):
 
 ```markdown
 ## Intent
 
-Define the `Verifier` trait as the load-bearing abstraction every pack will implement. This is the first concrete touch of the v0.4 hard gate's architectural commitment — the trait must accommodate all four verifier shapes without growing variant logic in `tuitor-engine`.
+Define the `Verifier` trait as the load-bearing abstraction every pack will implement. This is the first concrete touch of the v0.4 hard gate's architectural commitment — the trait must accommodate all four verifier shapes without growing variant logic in `core-engine`.
 
 ## Acceptance criteria
 
-- `crates/tuitor-engine/src/verifier.rs` exists and compiles cleanly under `cargo check --workspace`
+- `crates/core-engine/src/verifier.rs` exists and compiles cleanly under `cargo check --workspace`
 - The trait has associated types for `Input`, `Context`, `Error` and a single `verify` method
 - `cargo doc --no-deps` renders the trait with complete rustdoc
 - The trait compiles with no concrete impls (impls come in R2)
@@ -168,16 +168,16 @@ Regime: conformance-first (this is the trait declaration; concrete-impl conforma
 
 ## Technical detail
 
-- File: `crates/tuitor-engine/src/verifier.rs` (new file)
+- File: `crates/core-engine/src/verifier.rs` (new file)
 - Function: `trait Verifier { type Input; type Context; type Error; fn verify(&self, input: &Self::Input, ctx: &Self::Context) -> Result<(), Self::Error>; }`
-- Add `pub mod verifier;` to `crates/tuitor-engine/src/lib.rs`
+- Add `pub mod verifier;` to `crates/core-engine/src/lib.rs`
 - Cite `docs/ARCHITECTURE.md § "The Verifier trait"` for the rationale in the rustdoc header
 
 ## Claude Code plan-mode prompt
 
 Implement the `Verifier` trait as defined in `docs/ARCHITECTURE.md § "The Verifier trait"`. The trait has associated types `Input`, `Context`, and `Error`, and a single method `verify(&self, input: &Self::Input, ctx: &Self::Context) -> Result<(), Self::Error>`. The trait is pure — no async, no I/O, no network, per the engine sync/offline invariant in STANDARDS.md § Unenforced invariants.
 
-Create `crates/tuitor-engine/src/verifier.rs`, define the trait with full rustdoc citing the ARCHITECTURE.md section, and add `pub mod verifier;` to `crates/tuitor-engine/src/lib.rs`. Do not create any concrete implementations — those come in a later issue. Verify via `cargo check --workspace` and `cargo doc --no-deps`. Open a PR with `closes #<N>` where <N> is this issue's number.
+Create `crates/core-engine/src/verifier.rs`, define the trait with full rustdoc citing the ARCHITECTURE.md section, and add `pub mod verifier;` to `crates/core-engine/src/lib.rs`. Do not create any concrete implementations — those come in a later issue. Verify via `cargo check --workspace` and `cargo doc --no-deps`. Open a PR with `closes #<N>` where <N> is this issue's number.
 
 ## Dependencies
 
@@ -276,7 +276,7 @@ Running them in separate transitions is cleaner than bundling: if the slash comm
 
 **github-only profile**: as described above. The slash command file is committed to the repo via GitHub MCP, same pattern as the cascade issue templates scaffold commits during its Stage 2.5.
 
-**opinionated profile** (Linear, kara-validated): the slash command still lives in the GitHub repo (code is in GitHub even when planning is in Linear), so the step runs identically to github-only profile. The `/finish` command's behavior may differ slightly in opinionated profile — specifically, step 1 of the slash command would read the Linear Issue rather than the GitHub Issue — but that's a concern for the bundled template's content, not for Step 5.5's provisioning logic.
+**opinionated profile** (Linear): the slash command still lives in the GitHub repo (code is in GitHub even when planning is in Linear), so the step runs identically to github-only profile. The `/finish` command's behavior may differ slightly in opinionated profile — specifically, step 1 of the slash command would read the Linear Issue rather than the GitHub Issue — but that's a concern for the bundled template's content, not for Step 5.5's provisioning logic.
 
 **markdown-only profile**: Step 5.5 is **skipped entirely**. There are no GitHub sub-sub-issues in markdown-only profile, so there's nothing for `/finish` to pick up, so the slash command isn't needed. Rough-in logs *"Markdown-only profile — Step 5.5 skipped (no sub-sub-issues to /finish)"* in the inheritance summary and moves to Step 6 (which in markdown-only profile is itself a markdown-only commit per `references/github-only-vs-opinionated.md`).
 
@@ -373,7 +373,7 @@ Step 7 runs in every rigor mode. Light mode can trim the subsection prose (short
 
 **github-only profile** (default, fully fleshed out): sub-sub-issues are created via the two-step `issue_write` + `sub_issue_write` pattern, parented under the framing sub-issue, assigned the `cascade-depth:roughed-in` label, initial board Status set to Ready via the board automation rules (not directly by the cascade, since the github MCP doesn't expose Projects v2 field operations).
 
-**Linear+GitHub profile**: validated. Sub-sub-issues are created via single-step `mcp__linear__save_issue` with `parentId` referencing the framing F-issue, full labels, `blockedBy` chain to prior R-issues, and the same atomic transition discipline as github-only (capture-execute-rollback, partial failure recovery via stop-and-surface). The `parentId` field eliminates the orphan-sub-issue failure mode that github-only's two-step pattern can hit. Closes-keyword for downstream PRs uses `Closes <TEAM>-<N>` per project's `cbk-conventions.md`. Full MCP shapes in `references/github-only-vs-opinionated.md`.
+**Linear+GitHub profile**: sub-sub-issues are created via single-step `mcp__linear__save_issue` with `parentId` referencing the framing F-issue, full labels, `blockedBy` chain to prior R-issues, and the same atomic transition discipline as github-only (capture-execute-rollback, partial failure recovery via stop-and-surface). The `parentId` field eliminates the orphan-sub-issue failure mode that github-only's two-step pattern can hit. Closes-keyword for downstream PRs uses `Closes <TEAM>-<N>` per project's `cbk-conventions.md`. Full MCP shapes in `references/github-only-vs-opinionated.md`.
 
 **markdown-only profile**: the entire planning-backend commit step is skipped. Rough-in specs land as appended sections in the framing's markdown file OR as a new per-milestone rough-in markdown file at `docs/cbk/frame-NN-M<#>-rough-in.md`, depending on user preference (gate question: *"Want the rough-in specs in a new file or appended to frame-NN.md?"*). The slug + F-number + R-number naming convention still applies in the markdown headings so the hierarchy is grep-able.
 

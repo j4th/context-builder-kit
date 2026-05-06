@@ -12,7 +12,7 @@ Blueprint cares mostly about the **scoping methodologies** category (Shape Up, S
 
 Use inherited context to propose a default. The branches:
 
-**Solo + bursty + no deadline pressure** → **Shape Up appetite-based**, applied per-deliverable rather than per-six-week-cycle. The user fixes scope per pack/feature/release, and the calendar floats. This matches Tinct's pattern and is a strong default for hobby projects, side projects, and any solo work where the user wants discipline without ceremony.
+**Solo + bursty + no deadline pressure** → **Shape Up appetite-based**, applied per-deliverable rather than per-six-week-cycle. The user fixes scope per pack/feature/release, and the calendar floats. This is a strong default for hobby projects, side projects, and any solo work where the user wants discipline without ceremony.
 
 **Solo + steady + flow-shaped work** → **Kanban**, with WIP limits even for one person. Useful when the project is more about ongoing maintenance, content production, or research than feature shipping. Less common as a default, but real.
 
