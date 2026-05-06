@@ -12,7 +12,7 @@ See `references/handoff-to-finish.md` for the full contract `/finish` follows an
 
 ## Provenance and revision path
 
-This version reflects the **dogfood-validated revision** of the template — the speculative v0 was iterated against real cascade execution and the major changes are: (1) `/simplify` and `pr-review-toolkit:review-pr` both run pre-PR with auto-triage of findings, (2) atomic-commits-not-squash discipline on the branch (the squash happens at merge-time on `main`, not pre-PR), (3) the four-class triage rubric (Apply / Apply with care / Surface / Defer / Reject) with Apply reserved for correctness/validity/defensive findings and Surface for taste/style, (4) the PR opens as draft with the triage audit in the body, and (5) the user flips to ready (the slash command never does).
+This version of the template reflects the iteration the speculative v0 went through during real cascade execution. The major properties are: (1) `/simplify` and `pr-review-toolkit:review-pr` both run pre-PR with auto-triage of findings, (2) atomic-commits-not-squash discipline on the branch (the squash happens at merge-time on `main`, not pre-PR), (3) the four-class triage rubric (Apply / Apply with care / Surface / Defer / Reject) with Apply reserved for correctness/validity/defensive findings and Surface for taste/style, (4) the PR opens as draft with the triage audit in the body, and (5) the user flips to ready (the slash command never does).
 
 Future revisions land here first; existing repos can either manually update their `.claude/commands/finish.md` or wait for the next rough-in-step-5.5 run to detect drift and propose an update (see Step 5.5's drift handling in rough-in's SKILL.md).
 
@@ -41,7 +41,7 @@ Do **not** dump the full ~170-line template inline at the HITL gate by default. 
 
 **Present**:
 - **What this is**: one sentence naming the file path and its role (*"`.claude/commands/finish.md` — the Claude Code slash command that `/finish <N>` invokes to pick up a rough-in sub-sub-issue, verify dependencies, run plan mode, execute, simplify, run review-toolkit with auto-triage, and open a draft PR"*)
-- **Provenance**: one sentence on where the template came from (*"dogfood-validated revision of the speculative v0 — runs `/simplify` and `pr-review-toolkit:review-pr` pre-PR with a four-class auto-triage, opens draft, hands off to user for ready-flip"*)
+- **Provenance**: one sentence on where the template came from (*"current revision of the speculative v0 — runs `/simplify` and `pr-review-toolkit:review-pr` pre-PR with a four-class auto-triage, opens draft, hands off to user for ready-flip"*)
 - **Structure**: a numbered list of the template's steps with one-line descriptions each (*"Step 1: Read the issue body / Step 2: Parse sections / Step 3: Verify dependencies / Step 4: Idempotency / Step 5: Plan mode / Step 6: Execute / Step 7: Simplify, review, triage, draft PR"* — roughly 7-8 lines total)
 - **Scope boundary**: one sentence on what `/finish` does NOT do (*"does not write specs, modify issue bodies, auto-create dependent issues, bypass dependencies, mark the PR ready, or merge"*)
 - **Approval prompt**: *"Commit this template to `.claude/commands/finish.md`? You can review the full content first — reply 'show full' — or approve as-is with 'yes' / 'ok' / 'approved'."*

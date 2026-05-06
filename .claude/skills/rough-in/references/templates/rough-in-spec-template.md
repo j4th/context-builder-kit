@@ -100,7 +100,7 @@ tag prefix per item so /finish can grep for them at execution time.
 If empty, write `- None — all parameters explicit from the framing intent
 and acceptance criteria.` Do not delete the section.
 
-Resolved assumptions (validated during implementation) move out of this
+Resolved assumptions (confirmed during implementation) move out of this
 section and inline into the relevant ## Implementation paragraph; do not
 maintain a separate "Resolved" subsection.
 -->

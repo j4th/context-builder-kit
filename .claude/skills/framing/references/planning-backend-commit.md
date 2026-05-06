@@ -87,9 +87,9 @@ For re-framings, the gate also lists the prior sub-issues that will be supersede
 
 ## Profile-aware behavior
 
-**github-only profile** (default and validated): sub-issues created via the two-step `issue_write` + `sub_issue_write` pattern.
+**github-only profile** (default): sub-issues created via the two-step `issue_write` + `sub_issue_write` pattern.
 
-**opinionated profile (Linear+GitHub, validated)**: per `backends.md`, framing capabilities map to Linear Milestones (Linear has a Milestone primitive that GitHub doesn't). Created via Linear MCP.
+**opinionated profile (Linear+GitHub)**: per `backends.md`, framing capabilities map to Linear Milestones (Linear has a Milestone primitive that GitHub doesn't). Created via Linear MCP.
 
 **markdown-only profile**: this entire step is **skipped**. No sub-issues get created on the planning backend because there is no planning backend. The atomic transition collapses to a single half — just the markdown commits (`frame-NN.md` + `README.md` index update). There is no parent Issue to query (because blueprint didn't create one in markdown-only mode either), so the inheritance step reads the workstream's row in `blueprint.md` § Workstreams directly instead of querying a parent Issue. The slug is inherited from `blueprint.md`'s workstream entry, not from a parent Issue title — this is the one place where markdown-only mode's slug-derivation differs from github-only mode, and it works because both modes share the same slug-naming convention in the markdown.
 

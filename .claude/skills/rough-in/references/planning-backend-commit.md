@@ -110,9 +110,9 @@ For re-rough-ins, the gate also lists the prior sub-sub-issues that will be supe
 
 ## Profile-aware behavior
 
-**github-only profile** (default and validated): sub-sub-issues created via the two-step `issue_write` + `sub_issue_write` pattern, parented under the framing sub-issue, atomic with the markdown commit.
+**github-only profile** (default): sub-sub-issues created via the two-step `issue_write` + `sub_issue_write` pattern, parented under the framing sub-issue, atomic with the markdown commit.
 
-**opinionated profile** (Linear, partially validated): per `references/backends.md`, rough-in items map to Linear Issues created via Linear MCP. Linear's hierarchy is Project → Milestone → Issue, so rough-in's sub-sub-issues become Linear Issues under the Linear Milestone that framing created. Same atomic transition pattern.
+**opinionated profile** (Linear): per `references/backends.md`, rough-in items map to Linear Issues created via Linear MCP. Linear's hierarchy is Project → Milestone → Issue, so rough-in's sub-sub-issues become Linear Issues under the Linear Milestone that framing created. Same atomic transition pattern.
 
 **markdown-only profile**: this entire step is **skipped**. No sub-sub-issues get created on the planning backend because there is no planning backend. The atomic transition collapses to a single half — just the markdown commits (the rough-in spec content lands as appended sections in the framing's markdown file or as a new per-milestone rough-in markdown file at `docs/cbk/frame-NN-M<#>-rough-in.md`, depending on user preference; plus the `README.md` index update). There is no rollback to perform on the planning side because no planning ops ran. The cascade still uses the same naming conventions inside the markdown (`[<workstream-slug>:F<#>:R<#>]` headings) so the hierarchy is grep-able even without a sub-sub-issue tree to render it.
 

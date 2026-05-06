@@ -320,7 +320,7 @@ Detailed failure mode analysis with recovery patterns lives in `references/failu
 
 ## Project-level overrides
 
-Project-specific overrides (workstream slugs, Linear team key, branch-naming convention, layout choice flat-vs-nested, validated evidence) live in the project's `.claude/rules/cbk-conventions.md`. Read that file at session start when running framing in a configured project; treat its content as overrides on top of this skill's defaults. If no `cbk-conventions.md` exists, framing operates with the defaults documented here.
+Project-specific overrides (workstream slugs, Linear team key, branch-naming convention, layout choice flat-vs-nested, project-specific operational evidence) live in the project's `.claude/rules/cbk-conventions.md`. Read that file at session start when running framing in a configured project; treat its content as overrides on top of this skill's defaults. If no `cbk-conventions.md` exists, framing operates with the defaults documented here.
 
 ## Reference files
 

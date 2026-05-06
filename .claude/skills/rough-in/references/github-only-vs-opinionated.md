@@ -4,9 +4,9 @@ This file is the operational detail behind rough-in's profile-aware behavior. It
 
 The cascade ships three backend profiles defined in scaffold and documented in `references/backends.md`. Rough-in inherits the profile choice from `scaffold.md`'s `profile:` field and adapts its Step 6 (planning-backend commit) accordingly. Steps 1-5 (inheritance, milestone selection, research, issue plan, spec drafting) are mostly profile-agnostic — the spec content is the same regardless of where it lands. The differences live in how the specs get committed.
 
-## github-only profile (validated primary path)
+## github-only profile (default)
 
-**Status**: validated. This is the profile rough-in is built to run cleanly against, with full atomic transition, partial failure recovery, and inherit-from-disk discipline.
+This is the profile rough-in is built to run cleanly against, with full atomic transition, partial failure recovery, and inherit-from-disk discipline.
 
 **Hierarchy**: rough-in creates **sub-sub-issues** parented under the framing capability sub-issue via GitHub's native sub-issue API. The full Issue tree per workstream is three deep:
 
@@ -36,11 +36,11 @@ Each level is created via the two-step `issue_write` + `sub_issue_write` pattern
 
 **Atomic transition**: full pattern from `references/planning-backend-commit.md` § Atomic transition pattern. Two-step per sub-sub-issue, capture-execute-rollback discipline, partial failure recovery via stop-and-surface-to-user.
 
-**This is the profile rough-in is built to run cleanly against**, and the Linear+GitHub profile below mirrors its discipline with single-step issue creation. All other profiles either inherit this skill's full validated patterns or accept deliberate planning-surface omissions.
+**This is the profile rough-in is built to run cleanly against**, and the Linear+GitHub profile below mirrors its discipline with single-step issue creation. All other profiles either inherit this skill's full patterns or accept deliberate planning-surface omissions.
 
-## Linear+GitHub profile (validated)
+## Linear+GitHub profile
 
-**Status**: validated. Full atomic transition, partial failure recovery, and inherit-from-disk discipline run cleanly against Linear's MCP. The patterns below are portable across projects; project-specific identifiers (Linear team key, workstream slugs, label conventions) live in the project's `.claude/rules/cbk-conventions.md`.
+Full atomic transition, partial failure recovery, and inherit-from-disk discipline run against Linear's MCP. The patterns below are portable across projects; project-specific identifiers (Linear team key, workstream slugs, label conventions) live in the project's `.claude/rules/cbk-conventions.md`.
 
 **Hierarchy**: Linear's planning hierarchy uses parent/sub-issue relationships at arbitrary depth (rather than the Project → Milestone → Issue triplet which exists alongside but is orthogonal to the cascade structure). The cascade hierarchy maps cleanly to parent-child links:
 
@@ -110,7 +110,7 @@ The default heuristic (3-4 → append, 5+ → new file) is rough-in's proposal; 
 
 Rough-in detects the profile by reading `scaffold.md`'s `profile:` field during Step 1 (inheritance). The profile field is one of:
 
-- `github-only` — proceed with the full validated path
+- `github-only` — proceed with the full standard path
 - `opinionated` — surface the partial-validation status, ask user to confirm Linear workspace is configured, proceed with caution
 - `markdown-only` — surface the markdown-only acknowledgment in the inheritance gate (parallel to blueprint's markdown-only acknowledgment), confirm with user that the planning-backend half of every commit will be skipped, proceed with the markdown-only flow
 

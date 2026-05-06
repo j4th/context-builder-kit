@@ -49,7 +49,7 @@ For Claude.ai's qualitative test loop (no subagents, no benchmarking): a real hu
 
 **What success looks like:**
 - Skill detects opinionated profile preference and acknowledges it explicitly
-- Skill **discloses honestly** that the opinionated profile is a stub : *"The opinionated profile (Linear+GitHub) is fully validated. I'll walk through what's documented and flag gaps as we hit them. If we hit something I don't have a clean answer for, I'll either fall back to manual instructions or offer to switch to GitHub-only for this phase. Sound okay to start?"*
+- Skill **discloses honestly** that the opinionated profile has documentation gaps: *"The opinionated profile (Linear+GitHub) is structurally supported but some Linear/Notion operations aren't fully documented. I'll walk through what's documented and flag gaps as we hit them. If we hit something I don't have a clean answer for, I'll either fall back to manual instructions or offer to switch to GitHub-only for this phase. Sound okay to start?"*
 - Discovery captures team shape with team-specific questions (timezone, decision recording, review process)
 - Skill attempts what is documented and falls back to manual instructions for what isn't
 - Scaffold.md notes the gaps explicitly so blueprint inherits a complete picture of what was set up vs. what wasn't

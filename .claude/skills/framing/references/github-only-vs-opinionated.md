@@ -134,6 +134,6 @@ Profile detection and routing is non-negotiable in light mode. The light-mode co
 
 For Linear+GitHub profile + light mode: still run the full atomic transition. Light mode collapses HITL gates (one final review of frame-NN.md + the Linear F-issue plan as a single batch), not the structural commitments to both surfaces.
 
-## Validation
+## Project-specific evidence
 
-The Linear+GitHub profile behavior in this file is validated against production cascade runs. See the project's `.claude/rules/cbk-conventions.md` for project-specific evidence (which Linear team, which framings have run, which PRs landed). Future projects validate the same patterns; the patterns themselves are project-agnostic.
+The patterns in this file are project-agnostic. For project-specific operational evidence (which Linear team, which framings have run, which PRs landed), see the project's `.claude/rules/cbk-conventions.md`.
