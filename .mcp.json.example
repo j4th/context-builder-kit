@@ -1,0 +1,30 @@
+{
+  "_comment": "Starter MCP server config for the cascade kit. Copy to .mcp.json (which is gitignored or repo-local) and fill in credentials/endpoints. Each server below is documented inline; remove any you don't use. The cascade skills will fall back to manual / web-search paths when an expected MCP is absent, but install the github + context7 servers at minimum for the github-only profile to work cleanly.",
+  "mcpServers": {
+    "github": {
+      "_comment": "Used by every cascade phase that writes to a GitHub repo (scaffold, blueprint, framing, rough-in, finish). Install via the official GitHub MCP server. Personal Access Token with repo + read:project scopes (classic PAT) or fine-grained PAT with Contents/Metadata write + Issues/Pull-requests write per repo.",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "<your-PAT-here>"
+      }
+    },
+    "linear": {
+      "_comment": "Optional. Required only for the opinionated profile (Linear+GitHub). Install Linear's official MCP server and supply an API key from Linear settings. Cascade calls: get_issue, save_issue (with parentId for sub-issues), list_issues, list_issue_labels, list_issue_statuses.",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-linear"],
+      "env": {
+        "LINEAR_API_KEY": "<your-Linear-API-key-here>"
+      }
+    },
+    "context7": {
+      "_comment": "Used by framing and rough-in research phases for library / framework / SDK documentation lookups. Reduces stale-knowledge errors when the cascade picks dependencies. The cascade falls back to web search if context7 is unavailable, but library-API misses are a recurring failure mode without it.",
+      "url": "<context7-mcp-endpoint>"
+    },
+    "time": {
+      "_comment": "Optional. Used by skills that need ISO-8601 conversions or timezone math (e.g. cbk-conventions ADR dates). The cascade can ask the user to confirm dates if absent.",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-time"]
+    }
+  }
+}
