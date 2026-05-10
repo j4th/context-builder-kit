@@ -20,9 +20,10 @@ Verify:
 
 ## Step 2: Parse the body section structure
 
-The issue body should have these seven sections, in this order, with heading names preserved exactly:
+The issue body should have these eight sections, in this order, with heading names preserved exactly:
 
 - `## Context` — orientation for where this issue sits in the cascade
+- `## Assumptions` — explicit calibration surface for ambiguity the rough-in author filled in (per Addy Osmani's "good spec for AI agents" pattern); each gap tagged `[ASSUMPTION:]` so plan mode can enumerate them. Valid contents include `- None — all parameters explicit from the framing intent and acceptance criteria.` when no assumptions were made; the section must be present even when empty.
 - `## Implementation` — the load-bearing section you will use as the primary plan-mode anchor
 - `## Acceptance criteria` — observable, verifiable outcomes the work must satisfy
 - `## Test plan` — named tests the implementer writes red-first; one per acceptance criterion for logic-regime modules (see `.claude/rules/testing.md` for regime classification)
@@ -59,6 +60,7 @@ This isn't comprehensive — Claude Code can't detect every in-progress state. B
 Construct a plan-mode prompt using the issue body. The primary anchor is the `## Implementation` section. The other sections are supporting context:
 
 - `## Context` tells plan mode why this issue exists and where it sits in the cascade
+- `## Assumptions` lists `[ASSUMPTION:]`-tagged calibration points the rough-in author surfaced. Plan mode **must enumerate each tagged item** in the plan output as a "Confirm or correct" line so the user can revise during plan iteration. **Do not silently resolve assumptions at plan time** — even when plan mode has a strong default, surface it so the user can push back. Resolved assumptions (those the user confirms or corrects) inline into the plan's relevant Implementation step rather than persisting as a separate "Resolved" subsection. If the section says `- None — ...` or contains no `[ASSUMPTION:]` lines, proceed silently.
 - `## Acceptance criteria` become the contract the plan must satisfy
 - `## Test plan` names the tests the plan must scaffold red-first (Step 6) before implementing — these are the executable form of the acceptance criteria
 - `## Done signal` is the verification command the plan must produce as its final step
@@ -113,13 +115,13 @@ Once the implementation is complete and `mise run check` passes:
 
    **Quick summary of the rubric for orientation** (the rules file is authoritative when in doubt):
 
-   - **Apply** — behavior-preserving fix with concrete evidence of need: defects with reproducible failing path, factually wrong comments / rot, dead code / unused imports, existing-doc clarity improvements, defensive additions with concrete evidence, local-symbol renames when fact-based, missing docstrings on entirely-undocumented surfaces. One focused commit per finding with a Conventional Commits message that names it.
+   - **Apply** — behavior-preserving fix with concrete evidence of need (defects with reproducible failing path, factually wrong comments / rot, dead code / unused imports, existing-doc clarity improvements, defensive additions with concrete evidence, local-symbol renames when fact-based, missing docstrings on entirely-undocumented surfaces) **OR low-risk small changes** (≤ ~15 LOC, confined, no design call required, plausibly an improvement — typo fixes, redundant assertion drops, inlining one-shot helpers, extracting constants the agent already named, simplifying obvious-once-named expressions). One focused commit per finding with a Conventional Commits message that names it.
    - **Apply with care** — execute as its own commit but flag in the hand-off summary: cross-file refactors >~50 LOC, new module outside named files, materially altering changes, non-obvious correctness fixes.
-   - **Surface** — do not apply, note with agent's rationale verbatim: stylistic disagreement, structural refactors, speculative defensive guards (no concrete failing scenario), doc *expansions* of existing-but-thin sections, rule-of-three not hit on suggested abstractions, alternative approaches the agent prefers but the existing one is also fine.
+   - **Surface** — do not apply, note with agent's rationale verbatim. **Genuine design or taste calls only**: structural refactors that change surface area, speculative defensive guards (no concrete failing scenario), doc *expansions* of existing-but-thin sections, rule-of-three not hit on suggested abstractions, alternative approaches the agent prefers but the existing one is also fine. **NOT Surface**: small low-risk improvements (those go to Apply); style nits without strong rationale (those go to Reject with a one-line dismissal — surfacing them inflates the user's review surface).
    - **Defer** — conflicts with an ADR or out-of-scope.
-   - **Reject** — agent factually misunderstood.
+   - **Reject** — agent factually misunderstood, OR style nit suggested without strong rationale (one-line dismissal is enough).
 
-   **When uncertain, Surface — don't Apply.** The Apply gate is **behavior-preservation + concrete evidence**, not "the agent's reasoning is sound." Speculative findings without a demonstrated path go to Surface. Auto-applying speculative changes trains future humans (and agents) to ignore the bot.
+   **When uncertain about a small low-risk change, Apply. When uncertain about a design or taste call, Surface.** Atomic-commit history makes any wrong Apply call cheap to revert during draft review, and the user-side cost of triaging Surface items routinely exceeds applying-and-showing the diff. Reserve Surface for genuine taste calls and design decisions where reasonable people disagree. **Medium-confidence findings follow the same triage as high-confidence findings** — confidence is about whether the finding is real, not whether to apply it. **Don't bias away from being defensive**: defensive hardening (race guards, missing cleanups, future-edit foot-guns) is a correctness concern even when the test passes today — those go in Apply, not Surface.
 
    **Pre-filter generated files, lock files, vendored deps, and build artifacts** before the agents read them — see `pr-review.md` § Pre-filters.
 
