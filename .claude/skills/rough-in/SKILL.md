@@ -56,7 +56,7 @@ Rough-in's full flow (target identification → context gathering → research �
 
 **Detect-then-confirm** at session start: propose a mode in one sentence based on the user's opening message and any prior rough-in runs visible in `README.md` index. Let the user override in one word. If the opening message gives no signal, default to **standard mode** for first-time users.
 
-**What rough-in must NOT skip even in light mode**: reading all required inputs in full, the deferred meta-issues pre-flight check, at least one HITL gate on the final sub-sub-issue set before commit, and the planning-backend commit atomic transition discipline.
+**What rough-in must NOT skip even in light mode**: reading all required inputs in full, the deferred meta-issues pre-flight check, at least one HITL gate on the final sub-sub-issue set before commit, the planning-backend commit atomic transition discipline, and **framing-invited judgment calls** — if the framing's milestone notes explicitly invite a rough-in-time decision (e.g. "may compress 1+2", "rough-in shapes the final boundaries", "decision deferred to rough-in"), the issue plan gate is non-collapsible regardless of rigor mode. These are the calls light mode is wrong about by default — the framing flagged that judgment lives at this layer.
 
 ## Step 1 — Inheritance and pre-flight checks
 
@@ -128,6 +128,8 @@ For each approved issue plan entry, draft the full sub-sub-issue spec using the 
 6. **Claude Code plan-mode prompt** — the actual prompt the user (or the bootstrap-finish CLAUDE.md section) will hand to Claude Code's plan mode. This is the load-bearing output of rough-in. It must be self-contained enough that Claude Code can read it and produce a plan without needing to chase down external context.
 7. **Dependencies** — explicit list of prior R-issues that must be complete before this one can start
 8. **Done signal** — a specific, observable outcome that means this issue is done. Usually the same as the acceptance criteria's top-line check but stated as a verification command the user can run.
+
+**Section names + ordering on disk are project-specific.** The 8 properties above are conceptual — *what* every spec must express, not *what headings* to use. The literal heading names and ordering are parser-driven by the project's executor (`/finish` slash command or equivalent — see the project's `cbk-conventions.md` for the canonical list). Before drafting spec bodies, check the executor's body-parser section to confirm the required headings; mismatched headings will fail the parser even when the content is correct. Concepts like "Technical detail" and "Plan-mode prompt" typically merge into a single `## Implementation` section in the executor's template; "Intent" typically maps to `## Context`. Express the 8 properties in whatever heading shape the project's executor expects.
 
 **The Claude Code plan-mode prompt is the most important part of each spec.** It's the thing that makes rough-in valuable over just "framing plus a wish list." A plan-mode prompt has these properties:
 
