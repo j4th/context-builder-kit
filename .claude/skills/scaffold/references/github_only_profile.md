@@ -1,6 +1,6 @@
 # GitHub-only profile
 
-The fully-fleshed-out reference for the GitHub-only backend profile. Covers what scaffold actually does in each of the four detection states (see SKILL.md), every fallback path, and the operations against the consolidated GitHub MCP toolset. This is the v1 priority — the opinionated profile reference is a stub.
+The fully-fleshed-out reference for scaffold's provisioning when the planning backend axis = `github-issues`. Covers what scaffold actually does in each of the four detection states (see SKILL.md), every fallback path, and the operations against the consolidated GitHub MCP toolset. Companion files: `linear_planning.md` (when planning = `linear`), `notion_knowledge.md` (when knowledge = `notion`).
 
 ## What this profile provisions
 
@@ -89,4 +89,4 @@ If the user has invoked light mode (see SKILL.md), collapse the provisioning flo
 - **Skip the `.github/` issue templates** unless the brief implies they matter
 - **Conventions doc is one paragraph**, not a full template
 
-Even in light mode, the three-level constraint conversation still happens at least once (in one-sentence form). See `profile_selection.md`.
+Even in light mode, the three-level constraint conversation still happens at least once (in one-sentence form). See `backend_selection.md`.

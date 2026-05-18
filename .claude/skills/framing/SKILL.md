@@ -248,17 +248,30 @@ Auto-checkable list that fires after the final HITL gate, before declaring frami
 - [ ] Markdown commit and (Linear+GitHub) F-issue creation atomic transition succeeded, or partial state surfaced cleanly
 - [ ] `docs/cbk/README.md` updated with new entry + status `Active`
 
-## Profile-aware behavior
+## Backend-axis-aware behavior
 
-**GitHub-only profile**: `frame-NN.md` lives entirely as markdown in `docs/cbk/`. No Linear involvement. GitHub repo milestones may be created via GitHub MCP in the user's repo (one milestone per framing milestone) if the user wants tracking, but this is optional and not the source of truth — the markdown file is.
+Framing's behavior differs along **two independent axes** set by scaffold: the planning backend (`github-issues` / `linear` / `in-repo-markdown`) and the knowledge backend (`notion` / `none`). The planning-axis differences live in `references/planning-backend-matrix.md`; the knowledge-axis contract lives in `.claude/rules/knowledge-backend.md`. Short version:
 
-**Linear+GitHub profile**: framing produces both the markdown artifact AND a Linear F-issue per milestone. The markdown is the canonical record (audit trail, timeline, interface commitments); Linear is the planning surface (assignment, status flow, parent/sub-issue rollup, the operator's daily board). Concrete operations:
-- Read the workstream parent issue via `mcp__linear__get_issue` (parent must exist before framing — created by blueprint at workstream-definition time).
-- Idempotency check via `mcp__linear__list_issues` with `parentId` — abort if F-issues already exist for this milestone unless the user opts to resume.
-- After the final HITL gate, atomic transition: commit `frame-NN.md` + `docs/cbk/README.md` index update via GitHub MCP, then create one Linear F-issue per milestone via `mcp__linear__save_issue` with `parentId` (workstream parent), `team`, `title` (`[<workstream-slug>:F<#>] <intent>`), `description` (capability + AC with `[F<N>.AC<M>]` trace IDs + reference back to frame-NN.md), `labels` (`workstream:<slug>` + `cascade-depth:framed` + appetite label), `assignee`, and empty `blockedBy`.
-- On partial failure (markdown committed but Linear creation failed, or vice versa), surface the partial state — do not retry blindly.
+**Planning axis**:
+- `github-issues`: framing creates one F-sub-issue per milestone under the workstream parent Issue via `issue_write` + `sub_issue_write add`. Markdown commit + sub-issue creation form one atomic transition.
+- `linear`: framing creates one Linear F-issue per milestone via `mcp__linear__save_issue` parented under the workstream issue. Same atomic-transition discipline. Read the workstream parent via `mcp__linear__get_issue` first; idempotency-check via `mcp__linear__list_issues`. On partial failure, surface state — do not retry blindly.
+- `in-repo-markdown`: no external planning entities. The frame-NN.md markdown is the entire planning artifact. Atomic transition collapses to a single half.
 
-Detailed profile-aware behavior including failure modes lives in `references/github-only-vs-opinionated.md`. Project-specific identifiers (Linear team key, workstream slugs, label conventions) live in the project's `.claude/rules/cbk-conventions.md`.
+**Knowledge axis**:
+- `notion`: framing **may optionally** read from the project's Notion hub at inheritance for richer context. Framing **may optionally** promote a cross-project meta-issue to a Notion runbook page when the meta-issue surfaces material that genuinely spans repos (NOT for normal milestone deferred-decision meta-issues; those stay in the planning backend or markdown). Both reads and writes are HITL-gated and default-SKIP.
+- `none`: no Notion interactions.
+
+The two axes compose independently. Always read `scaffold.md` to learn the operator's choice before behaving along either axis.
+
+Detailed planning-axis behavior including failure modes lives in `references/planning-backend-matrix.md`. Knowledge-axis discipline lives in `.claude/rules/knowledge-backend.md`. Project-specific identifiers (Linear team key, workstream slugs, label conventions, hub URLs) live in the project's `.claude/rules/cbk-conventions.md`.
+
+### Optional Notion-write gate (knowledge = `notion`, cross-project meta-issues only)
+
+When framing surfaces a Pre-flight check / deferred meta-issue that's genuinely cross-project (e.g., a runbook that spans this repo and another, a vendor evaluation, an architectural decision affecting multiple workstreams), the closing HITL gate also asks:
+
+> *"This meta-issue (`<title>`) looks cross-project. Want me to promote it to a Notion runbook page under the Engineering Wiki, so it's discoverable from outside this repo? Defaults to SKIP — the meta-issue stays in the planning backend (or in `frame-NN.md` for in-repo-markdown) regardless."*
+
+Defaults to **SKIP**. Fires only for meta-issues marked as cross-project; never for normal milestone-blocking meta-issues. Per `.claude/rules/knowledge-backend.md` HITL discipline, announce the planned write before committing.
 
 ## HITL gates summary
 
@@ -331,8 +344,11 @@ Project-specific overrides (workstream slugs, Linear team key, branch-naming con
 - `references/templates/frame-output-template.md` — the frame-NN.md cascade event file template with worked example
 - `references/templates/milestone-template.md` — milestone shape guidance and the per-milestone template
 - `references/hitl-question-bank.md` — clarifying questions for inheritance, project selection, research, refined definition, and milestone rounds
-- `references/github-only-vs-opinionated.md` — profile-aware behavior differences
+- `references/planning-backend-matrix.md` — planning-axis behavior differences (`github-issues` / `linear` / `in-repo-markdown`)
 - `references/failure-modes.md` — framing-specific failure modes with examples
 - `references/test_cases.md` — three realistic test prompts (canonical first framing / subsequent framing builds on prior / re-framing after code) with success criteria for verifying the skill still works after revisions
+
+Kit-wide operational contracts (`.claude/rules/`):
+- `knowledge-backend.md` — knowledge-axis behavior (read patterns, write tiering, HITL discipline). Loaded when scaffold.md records knowledge backend = `notion`.
 
 Read references on demand, not all at once. The SKILL.md is a routing document; the heavy operational content lives in the references.

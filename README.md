@@ -99,12 +99,20 @@ Medium — 3 weeks, solo developer.
 
 ### 2. `scaffold` — provision the workspace where work will live
 
-**Phase 2.** Sets up the infrastructure later phases will use: a code repo, a planning surface (GitHub Projects, Linear, or markdown-only), conventions for branches/commits/labels. Captures team shape and working preferences.
+**Phase 2.** Sets up the infrastructure later phases will use: a code repo, a planning surface (GitHub Issues, Linear, or in-repo markdown), an optional knowledge-base surface (Notion or none), conventions for branches/commits/labels. Captures team shape and working preferences.
 
-Three backend profiles:
-- **github-only** *(default)* — GitHub repo + Projects v2 board + Issues with sub-issues + markdown in `docs/cbk/`. One tool. Recommended starting point.
-- **opinionated** — Linear (planning) + GitHub (code) + markdown for cascade artifacts. Three tools, four-level hierarchy on the planning side.
-- **markdown-only** — no planning backend, the cascade event log IS the entire artifact set. Use when audience for the cascade is non-technical, or it's documentation rather than active work tracking.
+The kit composes three independent surfaces — one constant, two axes the operator picks:
+
+- **Constant: a GitHub repo (or other git host)** containing the core markdown docs (`CLAUDE.md`, `ARCHITECTURE.md`, `STANDARDS.md`, `CONTRIBUTING.md`, `docs/adr/*`, `docs/cbk/*`). Always present, always immediate AI/dev context.
+- **Axis 1 — Planning backend** (where live work-tracking happens): `GitHub Issues` (sub-issues + Projects v2 board) / `Linear` (initiatives + projects + milestones + issues) / `in-repo markdown` (status tracked in `docs/cbk/README.md`; no external board).
+- **Axis 2 — Knowledge backend** (durable longer-lived reference library): `Notion` (with hub-as-DB-row pattern) / `none`.
+
+These compose into 3 × 2 = 6 configurations. See `.claude/rules/knowledge-backend.md` for the knowledge-backend operational contract. Common shapes:
+
+- `GitHub Issues + none` — solo / small team, default starting point
+- `GitHub Issues + Notion` — solo / small team with existing Notion reference content
+- `Linear + Notion` — larger team with planning-tool standardization and durable knowledge curation
+- `In-repo markdown + none` — design-doc mode; audience for the cascade is non-technical, or the project is small enough that markdown alone suffices
 
 **Abbreviated example** of what scaffold produces (`docs/cbk/scaffold.md`):
 
@@ -112,8 +120,8 @@ Three backend profiles:
 # Scaffold: Tuitor
 
 ## Cascade metadata
-**Profile**: github-only
-**Hierarchy levels**: 3
+**Planning backend**: GitHub Issues (3-level hierarchy)
+**Knowledge backend**: none
 **Repo**: github.com/you/tuitor
 **Project board**: github.com/you/tuitor/projects/4
 
@@ -124,6 +132,19 @@ Three backend profiles:
 
 ## Quality bar
 Move fast on packs; deliberate on engine. Tests for engine internals; smoke tests for packs.
+```
+
+A different shape — `GitHub Issues + Notion`:
+
+```markdown
+# Scaffold: ProjectX
+
+## Cascade metadata
+**Planning backend**: GitHub Issues (3-level hierarchy)
+**Knowledge backend**: Notion
+**Notion hub**: notion.so/yourworkspace/projects-db/projectx
+**Engineering Wiki** (cross-project, optional): notion.so/yourworkspace/eng-wiki
+**Repo**: github.com/you/projectx
 ```
 
 **Skip when:** the repo already exists with conventions, you've picked your planning backend, and you can write a verbal `scaffold.md` from memory. Most experienced adopters skip — scaffold is heavier in chat than in a browser tab.
@@ -277,7 +298,8 @@ The user then reviews the draft and flips it to ready when satisfied — that tr
 │   ├── testing.md                     ← three-regime test classification
 │   ├── logging.md                     ← correlation IDs, level taxonomy, sensitive data
 │   ├── simplification.md              ← /simplify plugin contract
-│   └── pr-review.md                   ← review-toolkit triage rubric (Apply/Surface calibration)
+│   ├── pr-review.md                   ← review-toolkit triage rubric (Apply/Surface calibration)
+│   └── knowledge-backend.md           ← Notion-axis operational contract (read patterns, write tiering, HITL, brownfield)
 ├── hooks/
 │   └── protect-immutable-adrs.sh      ← PreToolUse hook blocking ADR edits
 └── settings.json                      ← hook registration + plugin/MCP manifest
@@ -315,7 +337,8 @@ The slash commands and skills these provide are referenced by name in `/finish` 
 Listed declaratively in `.claude/settings.json` under `enabledMcpjsonServers`. Configure in `.mcp.json` (copy from `.mcp.json.example`):
 
 - **`github`** — required by every cascade phase that writes to a GitHub repo. PAT with repo + read:project scopes (classic) or fine-grained PAT with Contents/Metadata write + Issues/Pull-requests write per repo.
-- **`linear`** — required only for the opinionated profile.
+- **`linear`** — required only when the planning backend is Linear.
+- **`notion`** (Notion's official MCP, `notion.com/help/notion-mcp`) — required only when the knowledge backend is Notion. Used by every phase that reads from or writes to the knowledge backend.
 - **`context7`** — used by framing and rough-in research phases for library/framework doc lookups. Reduces stale-knowledge errors when the cascade picks dependencies.
 - **`time`** — optional, used by skills that need ISO-8601 conversions or timezone math.
 
@@ -381,7 +404,7 @@ rough-in:     reads everything above + the specific frame-NN.md being roughed-in
 - **Not a runtime or framework.** Just markdown, slash commands, hooks, and conventions.
 - **Not a replacement for thinking.** The skills are HITL-heavy by design; they slow you down at one-way doors so you don't have to undo decisions later.
 - **Not opinionated about your stack.** The cascade is stack-agnostic; `blueprint` makes the stack decisions per project, and `/finish` adapts to what blueprint chose (with the customization friction noted above).
-- **Not finished.** The opinionated profile has documentation gaps in some places (the kit falls back to manual where Linear/Notion ops aren't fully documented). The kit is at evergreen v0 — usable, but expect rough edges and surface them.
+- **Not finished.** Some operations along the Linear-planning and Notion-knowledge paths have documentation gaps (the kit falls back to manual where MCP-based ops aren't fully documented). The kit is at evergreen v0 — usable, but expect rough edges and surface them.
 
 ## Influences and related work
 

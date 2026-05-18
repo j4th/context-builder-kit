@@ -203,7 +203,21 @@ If a foundation doc is missing a section that rough-in expected to inherit from 
 - **Rough-in specs from prior rough-in runs of the same milestone** — re-rough-in is a deliberate cascade event that supersedes prior runs (see Step 2 in SKILL.md). Prior specs are historical record, not inheritance input. The new rough-in starts from frame-NN.md, not from the prior rough-in output.
 - **Implementation code from prior milestones** — rough-in operates at the spec level. Code review and pattern extraction from prior milestones happens during research (Step 3, sub-track 3a), not during inheritance.
 - **PR feedback from prior `/finish` runs** — useful context but not authoritative. If the user wants to incorporate lessons from prior PR feedback, they can mention it during research phase, but rough-in doesn't automatically read closed PRs.
-- **The opinionated profile's Linear-side state** — rough-in operates against github-only profile primarily; opinionated profile uses the same patterns with Linear MCP and falls back to manual where operations aren't documented.
+- **Operations governed by the `linear` planning axis** — rough-in operates against `github-issues` planning primarily; `linear` planning uses the same patterns with Linear MCP and falls back to manual where operations aren't documented. See `planning-backend-matrix.md`.
+
+## Optional knowledge-backend fetch (when knowledge backend = `notion`)
+
+If `scaffold.md` records knowledge backend = `notion`, rough-in may **optionally** consult the project's Notion hub for richer milestone-specific context than the prior cascade artifacts carry. Rough-in's read is **narrow** — scoped to the current milestone being roughed-in, not the whole project. The operator is asked:
+
+> *"Knowledge backend = Notion is configured. Want me to do a narrow opt-in search of the Notion hub for context specific to milestone M`<n>` before drafting R-issue specs? (Examples: an existing runbook for a similar feature, a vendor-doc page the milestone depends on, an architectural rationale page from a prior project.) Defaults to **proceed without fetching**."*
+
+Defaults to **proceed without fetching**. Operator opts in to specific fetches; every fetch announces per `.claude/rules/knowledge-backend.md` § "HITL announcement discipline."
+
+If the operator opts in, the fetched content is summarized into the inheritance summary (per the verbatim-discipline rule: quote where wording matters). R-issue specs may then cite the Notion URLs in their Context section so `/finish` can resolve them at execution time.
+
+**Rough-in never writes to Notion** — this step is read-only. The "promote to runbook" gates exist at framing (cross-project meta-issues) and at `/finish` (post-PR learnings), not at rough-in. If the operator wants durable knowledge captured *during* rough-in, surface the suggestion in the loose-threads section of the Step 7 completion summary rather than attempting a write.
+
+If knowledge backend = `none`, skip this step entirely.
 
 ## After inheritance: the HITL gate
 

@@ -117,10 +117,10 @@ This isn't a script — rough-in doesn't ask every question in every run. It's a
 
 - *"I detected [N] sub-sub-issues that already exist under the parent framing sub-issue with R-numbers I was about to use. The most likely cause is a previous rough-in run that committed some sub-sub-issues before failing partway through. Three options: (a) skip duplicates and only commit the missing ones, (b) supersede the existing ones and commit a fresh set, or (c) abort and resolve the duplication manually. Which?"*
 
-### Profile-aware variants
+### Planning-axis-aware variants
 
-- *"This is markdown-only profile — no planning backend half. Where do you want the rough-in specs to land? (a) appended to the existing `frame-NN.md` file as a new `## Rough-in M<#>` section, or (b) new per-milestone rough-in markdown file at `docs/cbk/frame-NN-M<#>-rough-in.md`. Default for [N] R-issues is [a/b]. Override?"*
-- *"This is opinionated profile — Linear is the planning backend. I'll proceed cautiously and surface anything I'm uncertain about as I go. The Linear Milestone for this framing is [name]. Confirm I should create N Linear Issues under it?"*
+- *"Planning backend = `in-repo-markdown` — no external planning backend half. Where do you want the rough-in specs to land? (a) appended to the existing `frame-NN.md` file as a new `## Rough-in M<#>` section, or (b) new per-milestone rough-in markdown file at `docs/cbk/frame-NN-M<#>-rough-in.md`. Default for [N] R-issues is [a/b]. Override?"*
+- *"Planning backend = `linear` — I'll proceed cautiously and surface anything I'm uncertain about as I go. The Linear Milestone for this framing is [name]. Confirm I should create N Linear Issues under it?"*
 
 ## Cross-step: when rough-in needs to escalate
 

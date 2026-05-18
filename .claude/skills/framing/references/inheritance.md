@@ -111,6 +111,18 @@ The foundation docs from blueprint (CLAUDE.md, ARCHITECTURE.md, STANDARDS.md, CO
 - **STANDARDS.md** is read for the **testing philosophy**, the **PR review checklist**, AND the **Unenforced invariants table** (added to the STANDARDS.md template after the cascade learned this lesson during blueprint's first real run). The milestones inherit the testing requirements from STANDARDS.md verbatim — don't impose stricter testing in framing than blueprint approved. **The Unenforced invariants table is a constraint set on milestone design**: every row is a textual rule that no CI gate enforces, so framing's milestones must respect every row or rough-in's code will fail review after the fact. If a row says "the engine is sync and offline — no tokio/.await/network I/O," framing must not produce a milestone that adds an async lesson loader to the engine. If the user wants to violate a row, that's an explicit decision to revise STANDARDS.md § Unenforced invariants first (Suggested foundation doc update), then frame the milestone — never silently violate.
 - **CONTRIBUTING.md** may not exist if blueprint deferred it (per the solo-private-pre-v1.0 rule). Treat its absence as expected, not as an error.
 
+## Optional knowledge-backend fetch (when knowledge backend = `notion`)
+
+If `scaffold.md` records knowledge backend = `notion`, framing may **optionally** consult the project's Notion hub for richer context than the prior cascade artifacts carry. The brief and any prior framings may cite Notion sources in their `## Pre-cascade sources` sections (consultation) or note Notion runbooks promoted at earlier phases — framing surfaces those sources to the operator and asks if any should be re-read for framing context:
+
+> *"Prior cascade artifacts cite these Notion sources: `<list with titles>`. Want me to re-read any of them for framing context (e.g., interface-commitment background, cross-project constraints, prior runbooks)? Or proceed with the cascade inheritance only?"*
+
+Defaults to **proceed without fetching**. Operator opts in to specific re-reads. Every fetch announces per `.claude/rules/knowledge-backend.md` § "HITL announcement discipline."
+
+If the prior artifacts have no Notion citations, framing can still offer an ad-hoc read: *"Knowledge backend = Notion is configured but the prior artifacts don't cite Notion sources. Want to designate Notion content for framing context (e.g., a hub-scoped search), or proceed with cascade inheritance only?"* — again, defaults to proceed.
+
+This step is **always opt-in**; framing never auto-fetches. If knowledge backend = `none`, skip this step entirely.
+
 ## The HITL gate
 
 Present the inheritance summary inline. Get explicit user approval before moving to project selection (Step 2). The gate question is the same shape as blueprint's:

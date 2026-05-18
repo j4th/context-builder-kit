@@ -18,14 +18,14 @@ Rough-in is one-milestone-at-a-time, just-in-time, **by design**. Framing alread
 - `docs/cbk/scaffold.md` — for the quality bar and working conventions
 - `docs/cbk/blueprint.md` — for stack decisions, methodology, the workstream entry for this project
 - `docs/cbk/frame-NN.md` (the **highest-numbered active** framing for the workstream being roughed-in) — for the refined definition, the specific milestone being roughed-in, the deferred meta-issues table, and the interface commitments
-- **The framing sub-issue** on the planning backend (via `issue_read` in github-only profile) — for the slug inheritance, the milestone F-number, and any comments posted after framing committed
+- **The framing sub-issue** on the planning backend (via `issue_read` when planning = `github-issues`, `mcp__linear__get_issue` when planning = `linear`; not applicable when planning = `in-repo-markdown`) — for the slug inheritance, the milestone F-number, and any comments posted after framing committed
 - `docs/ARCHITECTURE.md`, `docs/STANDARDS.md`, `CLAUDE.md` — foundation docs for architectural constraints, testing philosophy, and command conventions
 
 **Produces**:
 - One rough-in spec per sub-sub-issue, committed atomically as:
-  - **In github-only profile**: a GitHub sub-issue parented under the framing sub-issue via `issue_write` + `sub_issue_write`, labeled `cascade-depth:roughed-in`, titled `[<slug>:F<#>:R<#>] <intent>`, with body containing the full spec
-  - **In markdown-only profile**: an appended section to the framing's markdown file (or a new per-milestone rough-in markdown file — see profile-aware behavior section), no planning backend commit
-  - **In Linear+GitHub profile**: a Linear sub-sub-issue parented under the framing F-issue via `mcp__linear__save_issue` with `parentId`, `team`, `labels: ["workstream:<slug>", "cascade-depth:roughed-in", <type>]`, `assignee`, and `blockedBy` chain to prior R-issues. Single-step (no separate parent-linkage call). See `references/github-only-vs-opinionated.md` § Linear+GitHub profile for full MCP-call shapes.
+  - **In `github-issues` planning**: a GitHub sub-issue parented under the framing sub-issue via `issue_write` + `sub_issue_write`, labeled `cascade-depth:roughed-in`, titled `[<slug>:F<#>:R<#>] <intent>`, with body containing the full spec
+  - **In `in-repo-markdown` planning**: an appended section to the framing's markdown file (or a new per-milestone rough-in markdown file — see backend-axis-aware behavior section), no planning backend commit
+  - **In `linear` planning**: a Linear sub-sub-issue parented under the framing F-issue via `mcp__linear__save_issue` with `parentId`, `team`, `labels: ["workstream:<slug>", "cascade-depth:roughed-in", <type>]`, `assignee`, and `blockedBy` chain to prior R-issues. Single-step (no separate parent-linkage call). See `references/planning-backend-matrix.md` § `linear` planning axis for full MCP-call shapes.
 - An update to `docs/cbk/README.md` chronological index noting that milestone M_n was roughed-in (append-only)
 
 ## Required pre-flight check: deferred meta-issues
@@ -274,13 +274,13 @@ Running them in separate transitions is cleaner than bundling: if the slash comm
 
 **Partial failure recovery**: same discipline as the planning-backend commit. Stop immediately, surface state, do not retry blindly, wait for user direction. See `references/planning-backend-commit.md` § Partial failure recovery for the full protocol (Step 5.5 borrows it verbatim).
 
-### Profile-aware behavior
+### Planning-axis-aware behavior
 
-**github-only profile**: as described above. The slash command file is committed to the repo via GitHub MCP, same pattern as the cascade issue templates scaffold commits during its Stage 2.5.
+**`github-issues` planning**: as described above. The slash command file is committed to the repo via GitHub MCP, same pattern as the cascade issue templates scaffold commits during its Stage 2.5.
 
-**opinionated profile** (Linear): the slash command still lives in the GitHub repo (code is in GitHub even when planning is in Linear), so the step runs identically to github-only profile. The `/finish` command's behavior may differ slightly in opinionated profile — specifically, step 1 of the slash command would read the Linear Issue rather than the GitHub Issue — but that's a concern for the bundled template's content, not for Step 5.5's provisioning logic.
+**`linear` planning**: the slash command still lives in the GitHub repo (code is in GitHub even when planning is in Linear), so the step runs identically to `github-issues`. The `/finish` command's behavior may differ slightly when planning = `linear` — specifically, step 1 of the slash command would read the Linear Issue rather than the GitHub Issue — but that's a concern for the bundled template's content, not for Step 5.5's provisioning logic.
 
-**markdown-only profile**: Step 5.5 is **skipped entirely**. There are no GitHub sub-sub-issues in markdown-only profile, so there's nothing for `/finish` to pick up, so the slash command isn't needed. Rough-in logs *"Markdown-only profile — Step 5.5 skipped (no sub-sub-issues to /finish)"* in the inheritance summary and moves to Step 6 (which in markdown-only profile is itself a markdown-only commit per `references/github-only-vs-opinionated.md`).
+**`in-repo-markdown` planning**: Step 5.5 is **skipped entirely**. There are no GitHub sub-sub-issues (and no Linear issues) in `in-repo-markdown` planning, so there's nothing for `/finish` to pick up, so the slash command isn't needed. Rough-in logs *"`in-repo-markdown` planning — Step 5.5 skipped (no sub-sub-issues to /finish)"* in the inheritance summary and moves to Step 6 (which in `in-repo-markdown` planning is itself a markdown-only commit per `references/planning-backend-matrix.md`).
 
 ### Why this step belongs in rough-in, not in a separate skill
 
@@ -371,15 +371,23 @@ Step 7 does NOT have a HITL gate. The summary is rough-in's final output, not a 
 
 Step 7 runs in every rigor mode. Light mode can trim the subsection prose (shorter handoff, one-line commits) but cannot skip any of the four sections. The loose threads section is especially load-bearing for cascade calibration and light mode must not collapse it.
 
-## Profile-aware behavior
+## Backend-axis-aware behavior
 
-**github-only profile** (default, fully fleshed out): sub-sub-issues are created via the two-step `issue_write` + `sub_issue_write` pattern, parented under the framing sub-issue, assigned the `cascade-depth:roughed-in` label, initial board Status set to Ready via the board automation rules (not directly by the cascade, since the github MCP doesn't expose Projects v2 field operations).
+Rough-in's behavior differs along **two independent axes** set by scaffold: the planning backend (`github-issues` / `linear` / `in-repo-markdown`) and the knowledge backend (`notion` / `none`). The planning-axis differences live in `references/planning-backend-matrix.md`; the knowledge-axis contract lives in `.claude/rules/knowledge-backend.md`.
 
-**Linear+GitHub profile**: sub-sub-issues are created via single-step `mcp__linear__save_issue` with `parentId` referencing the framing F-issue, full labels, `blockedBy` chain to prior R-issues, and the same atomic transition discipline as github-only (capture-execute-rollback, partial failure recovery via stop-and-surface). The `parentId` field eliminates the orphan-sub-issue failure mode that github-only's two-step pattern can hit. Closes-keyword for downstream PRs uses `Closes <TEAM>-<N>` per project's `cbk-conventions.md`. Full MCP shapes in `references/github-only-vs-opinionated.md`.
+**Planning axis**:
 
-**markdown-only profile**: the entire planning-backend commit step is skipped. Rough-in specs land as appended sections in the framing's markdown file OR as a new per-milestone rough-in markdown file at `docs/cbk/frame-NN-M<#>-rough-in.md`, depending on user preference (gate question: *"Want the rough-in specs in a new file or appended to frame-NN.md?"*). The slug + F-number + R-number naming convention still applies in the markdown headings so the hierarchy is grep-able.
+- **`github-issues`** (default, fully fleshed out): sub-sub-issues are created via the two-step `issue_write` + `sub_issue_write` pattern, parented under the framing sub-issue, assigned the `cascade-depth:roughed-in` label, initial board Status set to Ready via the board automation rules (not directly by the cascade, since the github MCP doesn't expose Projects v2 field operations).
+- **`linear`**: sub-sub-issues are created via single-step `mcp__linear__save_issue` with `parentId` referencing the framing F-issue, full labels, `blockedBy` chain to prior R-issues, and the same atomic transition discipline as `github-issues` (capture-execute-rollback, partial failure recovery via stop-and-surface). The `parentId` field eliminates the orphan-sub-issue failure mode that the `github-issues` two-step pattern can hit. Closes-keyword for downstream PRs uses `Closes <TEAM>-<N>` per project's `cbk-conventions.md`. Full MCP shapes in `references/planning-backend-matrix.md`.
+- **`in-repo-markdown`**: the entire planning-backend commit step is skipped. Rough-in specs land as appended sections in the framing's markdown file OR as a new per-milestone rough-in markdown file at `docs/cbk/frame-NN-M<#>-rough-in.md`, depending on operator preference (gate question: *"Want the rough-in specs in a new file or appended to frame-NN.md?"*). The slug + F-number + R-number naming convention still applies in the markdown headings so the hierarchy is grep-able.
 
-Detailed per-profile behavior and edge cases live in `references/planning-backend-commit.md` and `references/github-only-vs-opinionated.md`.
+Detailed per-axis behavior and edge cases live in `references/planning-backend-commit.md` and `references/planning-backend-matrix.md`.
+
+**Knowledge axis** (`notion` / `none`):
+
+- **`notion`**: rough-in **may optionally** read from Notion at its inheritance step (Step 1) — narrow opt-in search scoped to the current milestone, never auto-fetched. The operator decides per fetch. Per `.claude/rules/knowledge-backend.md` § "When to read."
+- **Rough-in NEVER writes to the knowledge backend**, regardless of the knowledge-axis value. R-issue specs may LINK to Notion pages by URL when relevant context exists in Notion, but rough-in does not create or update Notion pages. This is by design: rough-in's specs land on the planning backend (or in markdown for `in-repo-markdown` planning); promoting durable knowledge to Notion is the operator's call at later phases or via direct edits, not a rough-in concern. There is no closing HITL gate for Notion writes at rough-in.
+- **`none`**: no Notion interactions at all.
 
 ## The capstone pattern
 
@@ -449,10 +457,13 @@ Detailed failure mode analysis with recovery patterns lives in `references/failu
 - `references/planning-backend-commit.md` — atomic transition pattern for rough-in, two-step `issue_write` + `sub_issue_write`, slug inheritance from parent, partial failure recovery, profile-aware behavior
 - `references/finish-command.md` — bundled template for `.claude/commands/finish.md`, committed by Step 5.5 during the first rough-in run in a repo. Contains a wrapper explaining the template's purpose followed by the canonical slash command content below a `--- BEGIN TEMPLATE ---` marker.
 - `references/hitl-question-bank.md` — categorized questions for inheritance, milestone selection, research, issue plan review, spec drafting, final pre-commit
-- `references/github-only-vs-opinionated.md` — profile-aware behavior differences (including markdown-only handling)
+- `references/planning-backend-matrix.md` — planning-axis behavior differences (`github-issues` / `linear` / `in-repo-markdown`); also documents the explicit "rough-in never writes to knowledge backend" policy
 - `references/failure-modes.md` — rough-in-specific failure modes with examples and recovery patterns
 - `references/handoff-to-finish.md` — the handoff contract to Claude Code's finish phase, the revision path for the slash command template, timing guidance for the automation recommender pass
 - `references/test_cases.md` — realistic test prompts (canonical first rough-in / subsequent rough-in / markdown-only / deferred meta-issue blocker hit / partial failure recovery) with success/failure criteria
 - `references/backends.md` — the cascade meta-doc, bundled with this skill for self-contained reference
+
+Kit-wide operational contracts (`.claude/rules/`):
+- `knowledge-backend.md` — knowledge-axis behavior (rough-in's read-only opt-in pattern; no writes). Loaded when scaffold.md records knowledge backend = `notion`.
 
 Read references on demand, not all at once. SKILL.md is a routing document; operational content lives in the references.

@@ -199,13 +199,15 @@ Earlier versions of this template had a "Manual setup runlist" section with the 
 
 **Rule**: if you're drafting blueprint.md content that reads like "do these steps once," stop — that content goes in the handoff issue. blueprint.md is for evergreen reference only.
 
-## Profile-aware behavior
+## Planning-axis-aware behavior
 
-**GitHub-only profile**: this file is the *only* place the initiative content lives. There's no Linear initiative entity. Framing will read this file, decompose the workstreams into proper project specs, and create the GitHub Projects board from there.
+**`github-issues` planning**: this file is the *only* place the initiative content lives. There's no Linear initiative entity. Framing will read this file, decompose the workstreams into proper project specs, and create the GitHub workstream parent Issues + framing sub-issues from there.
 
-**Opinionated profile**: this file still gets committed to `docs/cbk/blueprint.md`, AND a Linear initiative entity gets created via Linear MCP with the same Goal, Success Criteria, Not In Scope, and Dependencies content. The file is the source of truth; the Linear entity is a queryable mirror. Framing reads the file; Linear is for human navigation and roll-up reporting.
+**`linear` planning**: this file still gets committed to `docs/cbk/blueprint.md`, AND a Linear initiative entity gets created via Linear MCP with the same Goal, Success Criteria, Not In Scope, and Dependencies content. The file is the source of truth; the Linear entity is a queryable mirror. Framing reads the file; Linear is for human navigation and roll-up reporting.
 
-In either profile, the file structure above is the same. Profile differences only affect *what additional artifacts get created*, not what goes in the file.
+**`in-repo-markdown` planning**: this file is the only place the initiative content lives. There's no external planning backend at all. The Workstreams table inside this file is the workstream registry; framing operates against the markdown directly.
+
+Across all three planning axes, the file structure above is the same. Axis differences only affect *what additional artifacts get created* (Linear initiative, GitHub Issues, or neither), not what goes in the file.
 
 ## Authoring guidance per section
 

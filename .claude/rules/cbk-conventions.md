@@ -275,12 +275,54 @@ Beyond what the cascade skills auto-configure, projects using a planning backend
 4. **Workflow > Sub-issue rollup display**: ON (renders the cascade-tree view in project tables)
 5. **Branch name template** (in `Settings > Workspace > Branch names`): `{type}/{teamPrefix}-{issueIdNumber}-{title}` matches the `<type>/<TEAM>-N-<slug>` convention
 
-**GitHub Projects v2 (github-only profile)**:
+**GitHub Projects v2 (when planning backend = GitHub Issues)**:
 1. Create a Projects v2 board with sub-issue rendering enabled
 2. Configure swimlanes grouped by parent issue
 3. Status field with the cascade-relevant states (Backlog / Ready / In progress / In review / Done)
 
 These are user actions, not auto-applied via MCP. Document the post-merge step in any PR that affects the cascade.
+
+## Knowledge backend — operator's specific choices
+
+If the project's knowledge backend is Notion (the v1 reference impl), record the operator's specific choices here. The operational contract for *how* the cascade uses the knowledge backend lives at `.claude/rules/knowledge-backend.md` — this section records *what* the operator has wired up for this specific project.
+
+If knowledge backend = `none`, this section can stay blank or be deleted entirely.
+
+```
+Knowledge backend: Notion | none
+
+Notion-specific (if Notion):
+
+Hub URL:            <https://notion.so/...>
+Hub location:       <teamspace> > <Projects DB> > <project name>
+Engineering Wiki:   <URL or "n/a — cross-project artifacts live under hub">
+
+Sub-pages adopted (mark which the project actually uses; see
+`knowledge-backend.md` for the recommended vocabulary):
+  [ ] Start here / Onboarding
+  [ ] Decision Log              (DB)
+  [ ] Meeting Notes             (DB)
+  [ ] Research & Reference      (DB)
+  [ ] Runbooks & Playbooks      (DB)
+  [ ] Cascade Artifacts (mirror) (sync-block page)
+  [ ] People & Context
+  [ ] Archive
+
+Verification cadence (per DB; default per knowledge-backend.md):
+  Decision Log:           <90 / 180 / 365 days; default 180>
+  Meeting Notes:          <cadence or "n/a">
+  Research & Reference:   <cadence or "n/a">
+  Runbooks & Playbooks:   <cadence or "n/a">
+
+Notion MCP server:        <Notion's official MCP | other; specify>
+
+Workspace deviations from kit recommendation (if any):
+  <e.g., "ADRs is the local name for what the kit calls Decision Log">
+  <e.g., "We use a flat page hierarchy, no Projects DB rollup">
+  <e.g., "Verification disabled on Research & Reference (org policy)">
+```
+
+The kit's brownfield detection (run by scaffold's Stage 2 when knowledge backend = Notion) will surface what already exists in the operator's Notion. Record the post-detection state here so later phases inherit it rather than re-detecting cold.
 
 ## Quick reference
 
@@ -296,6 +338,7 @@ These are user actions, not auto-applied via MCP. Document the post-merge step i
 | Skipping CI on a docs-only commit | Append `[skip ci]` to commit message subject |
 | Mid-session gate trimming | See § HITL gate load-bearing heuristics |
 | Phase exit | Run the `## Phase exit checklist` from the relevant cascade skill |
+| Knowledge backend operations (Notion reads/writes, HITL discipline, brownfield detection, lazy provisioning) | See `.claude/rules/knowledge-backend.md`; project-specific values in § Knowledge backend above |
 
 ## Verification
 
@@ -319,6 +362,14 @@ grep -rn "\[F[0-9]\.AC[0-9]\]" .claude/skills/*/references/templates/
 # Replace <TEAM> with the project's actual issue-key prefix (e.g. ABC, FOO, BAR).
 # Replace <project-name> with the project's name.
 ! grep -rn "<TEAM>-[0-9]\|<project-name>" .claude/skills/
+
+# Knowledge-backend portability: project-specific Notion identifiers must
+# NOT appear in skill content (only in this file or in `.cascade/backends.toml`).
+! grep -rn "notion\.so/\|notion\.site/" .claude/skills/
+
+# Old "opinionated profile" terminology must NOT appear in skill content
+# (the constant + two axes refactor removed this concept).
+! grep -rn -i "opinionated profile\|opinionated_profile" .claude/skills/
 
 # This file is referenced from CLAUDE.md (or wherever the project's project-instructions live)
 grep "@.claude/rules/cbk-conventions.md" CLAUDE.md

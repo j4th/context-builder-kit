@@ -5,9 +5,37 @@ description: Turn a raw idea into a bounded problem brief before any workspace, 
 
 # Consultation
 
-Phase 1 of the six-phase AI-assisted development cascade. Transforms a raw idea into a bounded **problem brief** with explicit appetite, proposed approach, rabbit holes, and no-gos. Produces exactly one artifact: the brief. No Linear issues, no GitHub repos, no Notion pages, no code — those come later.
+Phase 1 of the six-phase AI-assisted development cascade. Transforms a raw idea into a bounded **problem brief** with explicit appetite, proposed approach, rabbit holes, and no-gos. Produces exactly one artifact: the brief. No Linear issues, no GitHub repos, no code — those come later. (If the operator brings existing Notion context as input to the cascade, see § Incoming context below — the brief can be informed by that material but stays the canonical output regardless.)
 
 This skill is deliberately conversational and HITL-heavy. The human is the source of truth about what problem is worth solving; Claude's job is to interview well, reflect back honestly, and refuse to solutionize prematurely.
+
+## Incoming context — Notion or other pre-cascade material (optional, runs first if applicable)
+
+Before the four-step interview, check whether the operator is arriving with existing context worth ingesting as starting material — typically Notion pages they've curated, prior design docs, research from another tool. This is especially common for operators who picked the cascade to organize *existing* thinking, not to start from scratch.
+
+**Opening question** (skip if the user's first message already provided rich context):
+
+> *"Any existing context I should ingest as starting material? If you've connected a Notion MCP, I can: (a) search a subtree under a root page you designate, (b) search your whole workspace, or (c) fetch specific pages you list. Without MCP, paste content directly. Or skip if nothing existing applies."*
+
+The four access modes (richest first) live in `references/notion_ingestion.md` along with the per-mode HITL discipline. Short version:
+
+| Mode | Operator setup | What consultation does |
+|---|---|---|
+| **A — Designated root + MCP search** | "Use `<page URL>` as root." | Search within subtree on demand; walk to summarize |
+| **B — Workspace + MCP search** | "Use my whole workspace." | Broader scope; selectively fetch with announcements |
+| **C — Specific URLs + MCP fetch** | Operator pastes URLs | Fetch listed URLs only; no broader search |
+| **D — Paste content directly** | No MCP configured | Standard inheritance from pasted content |
+
+Every fetch and every search **announces before executing** per `.claude/rules/knowledge-backend.md` § "HITL announcement discipline." Operator can decline per-page or refine the query.
+
+**Scope designation rolls forward to scaffold.** Whatever the operator designates here (root URL in Mode A, workspace in Mode B, specific URLs in Mode C) is recorded in the brief's `## Pre-cascade sources` section. Scaffold's backend selection reuses it rather than re-asking when knowledge backend = `notion`.
+
+**What this DOES NOT change about consultation**:
+- The four-step interview still runs (informed by ingested content, not replaced by it)
+- The brief is still canonical, still committed to repo at scaffold time
+- The brief is repo-bound; consultation's optional companion-page write to Notion (see closing HITL gate) is opt-in and defaults to SKIP
+
+If MCP isn't connected, surface honestly and fall through to Mode D (paste). If the operator skips the incoming-context question entirely, proceed straight to the four-step interview as before.
 
 ## The two dials
 
@@ -103,8 +131,14 @@ In all cases, **also surface key points inline** — at minimum the problem stat
 
 Before the skill considers itself done, explicitly ask for approval: *"Does this brief accurately capture the problem, appetite, and no-gos? Anything to revise before I mark consultation complete?"* Iterate until the user approves. Do not auto-close.
 
+**If Notion content was ingested at § Incoming context**, the closing gate also asks the opt-in companion-page question:
+
+> *"You brought in Notion context at the start. Want me to promote a companion page in Notion that links to the (about-to-be-committed) repo brief and includes longer-form research from the pages I read? Useful if Notion is your durable knowledge reference. Defaults to SKIP — your existing Notion structure stays untouched unless you opt in."*
+
+Defaults to **SKIP**. If the operator opts in, surface the planned write per `.claude/rules/knowledge-backend.md` § "HITL announcement discipline" (announce title, parent, body preview before committing). Otherwise, proceed to the standard handoff.
+
 Once approved, state clearly:
-> "Consultation complete. The brief is ready for phase 2 (scaffold), which will provision the workspace — repo, planning tool, knowledge base — based on what this brief says. You can hand the brief to the scaffold skill, or use it standalone."
+> "Consultation complete. The brief is ready for phase 2 (scaffold), which will provision the workspace — repo, planning tool, optional knowledge backend — based on what this brief says. You can hand the brief to the scaffold skill, or use it standalone."
 
 **Required to be present at the gate**: problem statement, target users, appetite, proposed approach, at least one no-go, 2+ success criteria. Plus current-state section if brownfield.
 
@@ -137,9 +171,13 @@ The scaffold phase consumes the approved brief and extracts: project name (for n
 ## Reference files
 
 - `references/steps.md` — the four-step interview playbook with source prompts from Harper Reed, Claude Code, and Shape Up; rigor-dial phrasings
-- `references/problem_brief_template.md` — structured template with per-section prose guidance and one worked example
+- `references/problem_brief_template.md` — structured template with per-section prose guidance, including the optional `## Pre-cascade sources` section populated when Notion content was ingested
 - `references/methodology_register_excerpt.md` — Shape Up, spikes, YAGNI entries plus pointers to the full register
 - `references/brownfield_addendum.md` — current-state-assessment step and brownfield-specific brief additions
+- `references/notion_ingestion.md` — operational reference for the Notion-as-input flow at § Incoming context: four access modes, MCP fetch dialogue, per-search HITL announcements, what to record in `## Pre-cascade sources`
 - `references/test_cases.md` — three realistic test prompts (greenfield / brownfield / partial-context) with success criteria for verifying the skill still works after revisions
+
+Kit-wide operational contracts (`.claude/rules/`):
+- `knowledge-backend.md` — read patterns, write tiering, HITL discipline. Loaded when consultation actually consults Notion (Modes A/B/C) or considers the optional companion-page write at the closing HITL gate.
 
 Read a reference when you need it; don't front-load them all.

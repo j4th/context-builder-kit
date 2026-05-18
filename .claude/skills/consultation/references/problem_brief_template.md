@@ -9,6 +9,24 @@ The one and only artifact consultation produces. Eight sections, in order. Secti
 
 *Produced in consultation phase. Hand off to scaffold (phase 2) when approved.*
 
+## 0. Pre-cascade sources *(optional; populated only when consultation ingested existing context)*
+
+<List the existing pages, docs, or pasted-in material that informed this
+brief. One bullet per source. Format:
+
+- **<title>** — `<URL or "pasted inline">`. <1-2 line summary of what was
+  extracted from this source.>
+
+If consultation used Notion access Mode A or B (designated root or whole
+workspace), also record the scope here so scaffold can reuse it without
+re-asking:
+
+  - **Notion scope** — `<root URL or "workspace">` (designated at consultation;
+    scaffold may promote to project hub).
+
+Omit this section entirely if no pre-cascade content was ingested
+(greenfield-from-conversation).>
+
 ## 1. Problem statement
 
 <One paragraph. One specific story about why the status quo doesn't work.
@@ -65,6 +83,8 @@ needed — flag it for blueprint, do not run it here.>
 ```
 
 ## Per-section writing guidance
+
+**§0 Pre-cascade sources** *(optional)* — Populated only when consultation ingested existing material via the four access modes in `notion_ingestion.md` (Mode A/B/C/D). Each entry must include URL or "pasted inline" + a 1-2 line summary of what was extracted. The cascade's "inheritance is verbatim, not paraphrased" discipline (per CLAUDE.md) extends here: quote specific load-bearing content where the brief's logic depends on the source's wording, don't just summarize. Omit the entire section if no pre-cascade content was used.
 
 **§1 Problem statement** — The hardest section. Default failure is writing a feature description instead of a problem description. Test: if you can replace "the problem" with "the missing feature" and the sentence still makes sense, you're solutioning. Rewrite in terms of pain, cost, or frustration.
 

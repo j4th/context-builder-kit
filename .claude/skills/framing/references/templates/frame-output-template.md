@@ -281,11 +281,13 @@ The parent-pointer sentence is load-bearing: without it, rough-in has to reconst
 - **Production deployment decisions** — those happen later in the cascade
 - **Test specifications below the milestone-acceptance level** — milestone-level acceptance is enough; test detail is rough-in's job
 
-## Profile-aware behavior
+## Planning-axis-aware behavior
 
-**GitHub-only profile**: the entire frame-NN.md content lives in `docs/cbk/frame-NN.md`. Optionally, GitHub repo milestones can be created via GitHub MCP (one per milestone) for tracking, but the markdown file is the source of truth.
+**`github-issues` planning**: the entire frame-NN.md content lives in `docs/cbk/frame-NN.md`, and one F-sub-issue per milestone is created via GitHub MCP and parented under the workstream parent Issue. The markdown file is the source of truth.
 
-**Opinionated profile (Linear stub)**: the same markdown file gets committed to `docs/cbk/`, AND a corresponding Linear project + milestones get created via Linear MCP. The Linear entities mirror the markdown; the markdown is still the source of truth for the cascade.
+**`linear` planning**: the same markdown file gets committed to `docs/cbk/`, AND a corresponding Linear F-issue per milestone gets created via Linear MCP under the workstream parent issue. The Linear entities mirror the markdown; the markdown is still the source of truth for the cascade.
+
+**`in-repo-markdown` planning**: only the markdown commits happen. The Workstreams table in `blueprint.md` is the workstream registry; no external entities exist.
 
 ## HITL gate
 
