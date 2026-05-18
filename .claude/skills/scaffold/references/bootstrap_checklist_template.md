@@ -44,7 +44,7 @@ These are operations scaffold cannot automate. Do them in browser tabs:
 - **Branch protection**: Visit <repo URL>/settings/branches → "Add rule" → branch name pattern `main` → enable "Require pull request before merging" and "Require status checks to pass". Expected outcome: main is protected from direct pushes.
 - **Repository secrets** (if needed): Visit <repo URL>/settings/secrets/actions → "New repository secret" for any deployment tokens or API keys. Expected outcome: secrets visible in the secrets list.
 - **Team member invites** (team only): Visit <repo URL>/settings/access → "Invite a collaborator". Expected outcome: invitees receive email.
-- **OAuth integrations** (opinionated profile only): see profile-specific instructions in `manual_steps.md`.
+- **OAuth integrations** (only when planning = `linear` or knowledge = `notion`): see axis-specific instructions in `manual_steps.md`.
 ```
 
 Use the canonical list from `manual_steps.md` — do not invent new manual steps. If the project genuinely needs something not in that list, surface it as an exception and note the gap.

@@ -128,13 +128,15 @@ For brownfield blueprint runs (existing repo, existing history), the issue still
 - Body opening line: drop "marks the end of the bootstrap exemption" *unless* the run actually installed a new gate; brownfield runs that didn't install gates should say *"This issue tracks the validation work for the build-system files blueprint just committed."* instead.
 - Section 5 ("What's next") may point to whatever phase the user wants next, not necessarily framing — brownfield users sometimes run blueprint as a one-off without continuing the cascade.
 
-## Profile differences
+## Planning-axis differences
 
-**GitHub-only profile**: create the issue via GitHub MCP. Use `chore` and any area labels that match the bootstrap work.
+**`github-issues` planning**: create the issue via GitHub MCP. Use `chore` and any area labels that match the bootstrap work.
 
-**Opinionated profile (Linear)**: create the issue in the project's Linear team via Linear MCP. Use whatever Linear label the project uses for chore-equivalent. The issue should link to the GitHub repo so the user can navigate from Linear to the actual setup commands.
+**`linear` planning**: create the issue in the project's Linear team via Linear MCP. Use whatever Linear label the project uses for chore-equivalent. The issue should link to the GitHub repo so the user can navigate from Linear to the actual setup commands.
 
-In both profiles, the issue is **non-optional** and **uniform in shape** — same body template, same checklist structure. The only profile-dependent piece is which tracker it lives in.
+**`in-repo-markdown` planning**: there is no external planning backend; the handoff content lives in `blueprint.md` § Manual setup instead of as a separate tracker entity.
+
+In `github-issues` and `linear`, the issue is **non-optional** and **uniform in shape** — same body template, same checklist structure. The only axis-dependent piece is which tracker it lives in.
 
 ## Issue numbering edge case
 

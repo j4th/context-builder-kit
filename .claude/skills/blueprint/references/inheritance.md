@@ -37,9 +37,10 @@ Read the full file. Scaffold's output has five sections (cascade metadata, team 
 
 | Scaffold section | What blueprint uses it for |
 |---|---|
-| **Profile** | Determines whether blueprint creates a Linear initiative or only commits `docs/cbk/blueprint.md`. **Critical** — gets the wrong profile and the whole production flow misroutes. |
-| **Hierarchy levels** | Sanity check — should match profile (3 for github-only, 4 for opinionated) |
-| **Knowledge surface** | Where to commit `blueprint.md` and other cascade artifacts (always `docs/cbk/`) |
+| **Planning backend** | Determines whether blueprint creates a Linear initiative + Linear Projects, or GitHub workstream parent Issues, or commits only to markdown. **Critical** — gets the wrong planning backend and the whole production flow misroutes. See `planning-backend-matrix.md`. |
+| **Knowledge backend** | Determines whether blueprint may optionally read from Notion at inheritance and may optionally promote cross-project strategy companion pages to Notion. Default behavior: rely on repo + inheritance. Per `.claude/rules/knowledge-backend.md`. |
+| **Hierarchy levels** | Sanity check — should match planning backend (3 for `github-issues`, 4 for `linear`) |
+| **In-repo cascade artifacts surface** | Where to commit `blueprint.md` and other cascade artifacts (always `docs/cbk/`) |
 | **Team shape** | CONTRIBUTING.md tone, STANDARDS.md PR review process, methodology selection (solo vs team changes the appropriate methodology) |
 | **Working conventions** (branch naming, commit format, label taxonomy, team identifier) | **Carry into CONTRIBUTING.md verbatim**. Do not re-derive. The whole point of scaffold capturing these was so blueprint doesn't have to invent them. |
 | **Quality bar** | The single highest-leverage piece. Drives STANDARDS.md testing rigor, CI strictness in tooling configs, code review norms, methodology selection. *Read this section twice.* |
@@ -66,9 +67,21 @@ Read the full file. Scaffold's output has five sections (cascade metadata, team 
 
 **The user wants to skip inheritance.** Don't. This is the one light-mode override floor. Even at light rigor, blueprint must read both files. If the user pushes back, explain once: *"Skipping inheritance is the most common way blueprint produces docs that contradict the brief or duplicate what scaffold already decided. It takes me 30 seconds to read both files — please let me do it."* If they still refuse, note the override in `blueprint.md` and proceed, but expect rework.
 
+## Optional knowledge-backend fetch (when knowledge backend = `notion`)
+
+If `scaffold.md` records knowledge backend = `notion`, blueprint may **optionally** consult the project's Notion hub for richer context than the brief carries. The brief's `## Pre-cascade sources` section lists what was already consulted at consultation — blueprint surfaces those sources to the operator and asks if any should be re-read for blueprint context:
+
+> *"The brief cites these Notion sources: `<list with titles>`. Want me to re-read any of them for blueprint context (e.g., stack-decision background, cross-project constraints), or proceed with the brief as inherited?"*
+
+Defaults to **proceed without fetching**. Operator opts in to specific re-reads. Every fetch announces per `.claude/rules/knowledge-backend.md` § "HITL announcement discipline."
+
+If the brief has no `## Pre-cascade sources` section (consultation didn't ingest Notion), blueprint can still offer an ad-hoc read: *"Knowledge backend = Notion is configured but the brief doesn't cite any Notion sources. Want to designate Notion content for blueprint context, or proceed with the brief as inherited?"* — again, defaults to proceed.
+
+This step is **always opt-in**; blueprint never auto-fetches from Notion. If knowledge backend = `none`, skip this step entirely.
+
 ## The inheritance summary (HITL gate 1)
 
-After reading both files, present a summary in this exact shape:
+After reading both files (and optionally re-reading any Notion content the operator confirmed), present a summary in this exact shape:
 
 ```
 ## Inheritance summary
@@ -81,9 +94,11 @@ After reading both files, present a summary in this exact shape:
 - No-gos (carrying forward): <bulleted list, verbatim from brief>
 - Success criteria (carrying forward): <bulleted list, possibly summarized>
 - Deferred decisions for blueprint: <bulleted list from "notes for blueprint">
+- Pre-cascade sources (if any): <bulleted list from brief's § Pre-cascade sources>
 
 **From the scaffold output:**
-- Profile: <github-only | opinionated>
+- Planning backend: <github-issues | linear | in-repo-markdown>
+- Knowledge backend: <notion | none> (if notion: hub URL)
 - Team shape: <one-sentence summary>
 - Quality bar: <verbatim from scaffold.md — do not paraphrase>
 - Working conventions: <one-line summary, full details preserved for CONTRIBUTING.md>
@@ -91,7 +106,10 @@ After reading both files, present a summary in this exact shape:
 - Decision recording: <verbatim from scaffold.md>
 - Tool comfort: <verbatim from scaffold.md>
 
-**My read of the scope:** <one paragraph stating what blueprint will produce — which foundation docs, which stack categories need decisions, which methodology you'll propose, profile-aware behavior. This is the "are we on the same page?" check.>
+**Knowledge backend reads (if any):**
+- <page title> — <URL>. <1-2 line summary of what was extracted, quoted where the wording matters>
+
+**My read of the scope:** <one paragraph stating what blueprint will produce — which foundation docs, which stack categories need decisions, which methodology you'll propose, planning-axis behavior, whether any Notion companion writes are likely. This is the "are we on the same page?" check.>
 
 Anything to correct before I proceed?
 ```

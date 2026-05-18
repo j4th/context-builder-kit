@@ -4,21 +4,21 @@ The canonical list of operations that scaffold **never automates**, regardless o
 
 When generating manual instructions in the bootstrap checklist's section 2, use this file as the source. Do not invent new manual steps. If the project genuinely needs something not listed here, surface it as an exception and flag the gap.
 
-## Always-manual operations (both profiles)
+## Always-manual operations (across all axis combinations)
 
 ### Account creation and billing
 
 - **GitHub account creation**: scaffold cannot create accounts. If the user doesn't have one, point them at https://github.com/signup.
 - **GitHub paid plans**: free tier is fine for most projects. Pro/Team/Enterprise upgrades happen at https://github.com/settings/billing/plans. Scaffold never recommends upgrading unless the user explicitly hits a tier limit.
-- **Linear account creation** (opinionated profile): https://linear.app/signup. Free tier supports up to 10 users.
-- **Notion account creation** (opinionated profile): https://notion.so/signup.
+- **Linear account creation** (when planning = `linear`): https://linear.app/signup. Free tier supports up to 10 users.
+- **Notion account creation** (when knowledge = `notion`): https://notion.so/signup.
 
 ### OAuth and integrations
 
 - **GitHub MCP authentication**: handled by Claude's MCP connection flow, not scaffold. If GitHub MCP isn't connected at the start of the session, tell the user to connect it via their Claude settings before scaffold can do automated provisioning.
-- **Linear ↔ GitHub app installation** (opinionated profile): Visit https://linear.app/settings/integrations/github → "Connect" → authorize the Linear GitHub app → select repos. Expected outcome: branches with Linear issue IDs auto-link to issues.
-- **Linear ↔ Notion integration** (opinionated profile): Visit https://linear.app/settings/integrations/notion → enable. Then in Notion, share the relevant pages with the Linear integration. Expected outcome: pasting a Linear URL in Notion shows a live preview.
-- **Notion integration creation** (opinionated profile): Visit https://notion.so/my-integrations → "New integration" → name it, give it the workspace, copy the secret. Then share each Notion page with the integration manually. There is no API for "share all pages with this integration" — it's per-page.
+- **Linear ↔ GitHub app installation** (when planning = `linear`): Visit https://linear.app/settings/integrations/github → "Connect" → authorize the Linear GitHub app → select repos. Expected outcome: branches with Linear issue IDs auto-link to issues.
+- **Linear ↔ Notion integration** (when both planning = `linear` and knowledge = `notion`): Visit https://linear.app/settings/integrations/notion → enable. Then in Notion, share the relevant pages with the Linear integration. Expected outcome: pasting a Linear URL in Notion shows a live preview.
+- **Notion integration creation + per-page sharing** (when knowledge = `notion`): Visit https://notion.so/my-integrations → "New integration" → name it, give it the workspace, copy the secret. Then share each Notion page with the integration manually. There is no API for "share all pages with this integration" — it's per-page. This applies whether or not Linear is also in use.
 
 ### Repository administration
 
@@ -30,7 +30,7 @@ When generating manual instructions in the bootstrap checklist's section 2, use 
 
 ### Workflow customization
 
-- **Linear workflow state customization** (opinionated profile): Visit `https://linear.app/<workspace>/settings/teams/<team>/workflow` → customize states. Linear ships with sensible defaults (Backlog → Todo → In Progress → In Review → Done) which scaffold recommends keeping unchanged for the first few cycles.
+- **Linear workflow state customization** (when planning = `linear`): Visit `https://linear.app/<workspace>/settings/teams/<team>/workflow` → customize states. Linear ships with sensible defaults (Backlog → Todo → In Progress → In Review → Done) which scaffold recommends keeping unchanged for the first few cycles.
 - **GitHub Projects custom fields**: Visit the project board → "..." → "Settings" → "Custom fields". Scaffold creates the board with default fields only; custom fields are user-added later if needed.
 - **GitHub Actions workflows beyond the stub**: scaffold creates an empty CI workflow file as a structural placeholder. Real CI configuration depends on stack decisions that happen in blueprint, so it's deliberately deferred.
 
@@ -42,7 +42,7 @@ When generating manual instructions in the bootstrap checklist's section 2, use 
 
 ## How to use this file when generating the bootstrap checklist
 
-1. Identify which operations are required for this specific project (based on profile, team size, and brief).
+1. Identify which operations are required for this specific project (based on the planning and knowledge axis choices, team size, and brief).
 2. Pull the relevant entries from this file verbatim — copy the URL and expected outcome.
 3. Customize only the placeholders (`<repo URL>`, `<workspace>`, etc.) with real values from the current session.
 4. Group entries by category in the bootstrap checklist's section 2 if there are more than ~5 items.

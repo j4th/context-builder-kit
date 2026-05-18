@@ -85,13 +85,13 @@ For re-framings, the gate also lists the prior sub-issues that will be supersede
 - **Sub-sub-issues** — those belong to rough-in. Framing creates the framing-capability sub-issues; rough-in decomposes each into ready-to-implement sub-sub-issues.
 - **Milestones** — not used by the cascade.
 
-## Profile-aware behavior
+## Planning-axis-aware behavior
 
-**github-only profile** (default): sub-issues created via the two-step `issue_write` + `sub_issue_write` pattern.
+**`github-issues` planning** (default): sub-issues created via the two-step `issue_write` + `sub_issue_write` pattern.
 
-**opinionated profile (Linear+GitHub)**: per `backends.md`, framing capabilities map to Linear Milestones (Linear has a Milestone primitive that GitHub doesn't). Created via Linear MCP.
+**`linear` planning**: per `backends.md`, framing capabilities map to Linear Milestones (Linear has a Milestone primitive that GitHub doesn't). Created via Linear MCP. See `planning-backend-matrix.md` for full operational detail.
 
-**markdown-only profile**: this entire step is **skipped**. No sub-issues get created on the planning backend because there is no planning backend. The atomic transition collapses to a single half — just the markdown commits (`frame-NN.md` + `README.md` index update). There is no parent Issue to query (because blueprint didn't create one in markdown-only mode either), so the inheritance step reads the workstream's row in `blueprint.md` § Workstreams directly instead of querying a parent Issue. The slug is inherited from `blueprint.md`'s workstream entry, not from a parent Issue title — this is the one place where markdown-only mode's slug-derivation differs from github-only mode, and it works because both modes share the same slug-naming convention in the markdown.
+**`in-repo-markdown` planning**: this entire step is **skipped**. No sub-issues get created on any external planning backend. The atomic transition collapses to a single half — just the markdown commits (`frame-NN.md` + `README.md` index update). There is no parent Issue to query (because blueprint didn't create one with `in-repo-markdown` planning either), so the inheritance step reads the workstream's row in `blueprint.md` § Workstreams directly instead of querying a parent Issue. The slug is inherited from `blueprint.md`'s workstream entry, not from a parent Issue title — this is the one place where `in-repo-markdown` planning's slug-derivation differs from `github-issues` planning, and it works because both share the same slug-naming convention in the markdown.
 
 The cascade still uses the same naming conventions inside `frame-NN.md` § Milestones (capability headings prefixed `[<slug>:F<#>]`, depends-on lines, acceptance signals, etc.) so the hierarchy is grep-able even without an Issue tree to render it. Re-framing detection still uses the cascade-event model (frame-NN.md numbering, supersedes via the status field in the markdown) — the planning-backend supersede operations are no-ops because there's nothing to close not-planned.
 

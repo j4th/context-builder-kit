@@ -183,7 +183,7 @@ Before starting a blueprint session, walk through this list mentally:
 - [ ] I will carry working conventions forward verbatim
 - [ ] I will produce only the docs the user asks for, in the documented order
 - [ ] I will commit only after explicit HITL approval
-- [ ] I will surface gaps in the opinionated profile honestly if that's the profile
+- [ ] I will surface gaps in Linear-planning or Notion-knowledge operations honestly if those axes are in use
 - [ ] I will resist doc bloat — every line earns its place
 
 If any item feels uncertain, pause and re-read the relevant reference file before starting.

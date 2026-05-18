@@ -1,6 +1,6 @@
 ---
 name: scaffold
-description: Provision the workspace infrastructure (repo, planning surface, knowledge surface) that the rest of the AI-assisted development cascade will use. Use this skill whenever the user has a problem brief and needs to set up where the work will live, or says things like "set up the workspace", "bootstrap the repo", "I'm starting a new repo", "where should I put this project", "I need to set up GitHub for this", "I have my plan, now what", or references the cascade at the scaffold level. Also use when a user wants to start a new project end-to-end and skipped consultation. **Use this skill even when the user doesn't explicitly ask for "scaffolding" or "bootstrap" — the trigger is the moment of "I have a plan and need a place to put it", not the vocabulary.** Phase 2 of the cascade. Supports three backend profiles — GitHub-only (default), opinionated Linear+Notion, and markdown-only (no planning surface, for users who don't want a board). Produces a scaffold output doc and bootstrap checklist.
+description: Provision the workspace infrastructure (repo, planning surface, knowledge surface) that the rest of the AI-assisted development cascade will use. Use this skill whenever the user has a problem brief and needs to set up where the work will live, or says things like "set up the workspace", "bootstrap the repo", "I'm starting a new repo", "where should I put this project", "I need to set up GitHub for this", "I have my plan, now what", or references the cascade at the scaffold level. Also use when a user wants to start a new project end-to-end and skipped consultation. **Use this skill even when the user doesn't explicitly ask for "scaffolding" or "bootstrap" — the trigger is the moment of "I have a plan and need a place to put it", not the vocabulary.** Phase 2 of the cascade. The kit composes a constant (GitHub repo + core markdown) plus two independent axes the operator picks separately: planning backend (GitHub Issues / Linear / in-repo markdown) and knowledge backend (Notion / none). Produces a scaffold output doc and bootstrap checklist.
 ---
 
 # Scaffold
@@ -17,7 +17,7 @@ If the user shows up wanting to scaffold but doesn't have any problem brief at a
 
 ## Light mode — when the user wants this lighter
 
-Scaffold's full flow (profile selection → discovery → audit → provisioning → output, with five HITL gates) is the **full** mode, not a requirement. A user who says *"just give me a repo and some labels"*, *"keep it minimal"*, *"I know what I'm doing"* should get **light** mode. The skill is opinionated, not dogmatic.
+Scaffold's full flow (backend selection → discovery → audit → provisioning → output, with five HITL gates) is the **full** mode, not a requirement. A user who says *"just give me a repo and some labels"*, *"keep it minimal"*, *"I know what I'm doing"* should get **light** mode. The skill is opinionated, not dogmatic.
 
 Light-mode patterns:
 
@@ -26,68 +26,60 @@ Light-mode patterns:
 - **Skip the verification matrix**: offer it, don't force it.
 - **Scaffold output is minimal**: cascade metadata + the few working conventions captured, no elaboration.
 
-What scaffold should *not* skip even in light mode: the **three-level constraint conversation** (if GitHub-only is picked) — one sentence is enough. And a **minimal discovery round** — at least team shape and quality bar, because blueprint can't calibrate without them.
+What scaffold should *not* skip even in light mode: the **three-level constraint conversation** (if planning = `github-issues` is picked) — one sentence is enough. And a **minimal discovery round** — at least team shape and quality bar, because blueprint can't calibrate without them.
 
 If the user pushes back even on those, proceed. Note the override and move on.
 
-## Profile selection (runs first)
+## Backend selection (runs first)
 
-Scaffold supports three backend profiles. The user picks one before any work begins. Profile choice determines which MCPs the skill expects, which artifacts get produced, and how much (or whether) cascade hierarchy lives on a planning backend versus only in markdown.
+Scaffold's first conversation is backend selection — a sequenced pass over the planning axis and the knowledge axis. Read `references/backend_selection.md` for the full conversation script. Short version:
 
-### Profile A — GitHub-only *(recommended starting point, fully fleshed out)*
+1. **Stage 0 — Acknowledge the constant** (one sentence). The repo + core markdown always lands; not a choice.
+2. **Stage 1 — Planning backend** (`github-issues` / `linear` / `in-repo-markdown`). Detect from context, propose one option in a sentence, let the operator confirm or override.
+3. **Stage 2 — Knowledge backend** (`notion` / `none`). Same shape. Defaults to `none` if no signal.
+4. **Stage 3 — Confirm the resulting combination** (one sentence recap). Not a gate; just a recap before provisioning.
 
-Code, planning, and knowledge all live in a single GitHub repository. Planning uses GitHub Projects v2 boards + Issues with sub-issues (GA'd 2025) for the parent/child hierarchy. Knowledge lives as markdown files in `docs/cbk/`. Workstreams become parent Issues, framing capabilities become sub-issues, rough-in items become sub-sub-issues, all on one Projects v2 board with one Status field and swimlanes grouped by parent. See `references/backends.md` for the full mapping.
+Two confirmation gates fire within Stage 1 depending on the planning choice:
+- **Three-level constraint conversation** when planning = `github-issues` — surface the 3-level constraint (vs Linear's 4) before proceeding.
+- **In-repo-markdown confirmation gate** when planning = `in-repo-markdown` — one-way-door warning; binary confirmation required.
 
-### Profile B — Opinionated (Linear + GitHub) *(stub in v1)*
+If knowledge = `notion`, Stage 2's follow-up runs the **brownfield Notion detection** from `.claude/rules/knowledge-backend.md` § "Brownfield detection at scaffold." Read-only; surfaces what exists; offers the three-option choice (create new hub row / designate existing / skip).
 
-Planning in Linear (four-level hierarchy). Knowledge in Notion. Code in GitHub. Detailed reference (`references/opinionated_profile.md`) is a stub in v1.
+The two axes generate 3 × 2 = 6 valid combinations. The kit composes these dynamically — there are no named preset profiles.
 
-### Profile C — Markdown-only *(no planning surface)*
+### The in-repo-markdown confirmation gate (mandatory before committing planning = `in-repo-markdown`)
 
-Cascade artifacts live entirely as markdown files in `docs/cbk/`. **No GitHub Project board, no Issues, no Milestones, no Linear, no Notion** — just the markdown event log. The cascade still produces every markdown file it would produce in github-only mode (`problem_brief.md`, `scaffold.md`, `blueprint.md` with workstreams table, `framings/frame-NN.md` event files, `README.md` chronological index) and uses the same naming conventions inside the markdown (`[<workstream-slug>:F<#>]` headings, etc.) so the hierarchy is grep-able even without an Issue tree to render it.
-
-**When to pick markdown-only**: the user explicitly doesn't want a kanban/board surface; the cascade is being run as design documentation rather than active work tracking; the audience for the cascade output (e.g., a manager, a PM, a stakeholder) won't be living in GitHub Issues day-to-day; the project is small enough that markdown alone is sufficient; the user is bootstrapping the cascade against a workspace where they don't have permission to create boards or labels; or the user is running the cascade purely for design rationale and decision history without intending to track work execution against it.
-
-**What scaffold does in markdown-only mode**: provisions the repo (or verifies an existing repo) and the `docs/cbk/` directory, commits a `scaffold.md` with `profile: markdown-only`, and skips every planning-backend setup step (no Project board check, no label taxonomy creation, no Linear/Notion provisioning, no PAT scope check for `read:project`). The bootstrap checklist becomes much shorter — only the repo and `docs/cbk/` matter. Manual setup steps that exist in the other profiles for OAuth/board configuration/integration installation simply don't apply.
-
-**What blueprint and framing do in markdown-only mode**: the entire planning-backend-commit step is skipped in both phases. The atomic transition collapses to a single half (just the markdown commit, no rollback needed). See blueprint and framing's `references/planning-backend-commit.md` for the per-phase markdown-only behavior, which is already plumbed through both skills.
-
-### How to pick
-
-Read `references/profile_selection.md`. Short version: detect from context, propose in one sentence, let user confirm or override. Signals that point to markdown-only specifically: user says *"I don't need a board"*, *"just give me the docs"*, *"I'm not going to track this in GitHub"*, *"this is for documentation"*, *"my manager won't read GitHub Issues"*, or describes the audience as non-technical / non-developer / not GitHub-native.
-
-### Markdown-only confirmation gate (mandatory before committing to Profile C)
-
-Markdown-only is a one-way door at the cascade level — once scaffold commits `profile: markdown-only` and blueprint and framing run against it, switching to a planning-backed profile later means re-running scaffold and re-doing the planning-backend half of every prior phase by hand. The choice deserves an explicit confirmation gate at the moment of selection, not a casual "sure, sounds good." Even if the user's opening message strongly signals markdown-only (they said *"my manager won't read GitHub Issues"* explicitly), scaffold runs this gate before committing.
+In-repo-markdown is a one-way door at the cascade level — once scaffold commits `planning.backend = "none"` and blueprint and framing run against it, switching to an external planning backend later means re-running scaffold and re-doing the planning half of every prior phase by hand. The choice deserves an explicit confirmation gate at the moment of selection, not a casual "sure, sounds good." Even if the user's opening message strongly signals it (they said *"my manager won't read GitHub Issues"* explicitly), scaffold runs this gate before committing.
 
 The gate language:
 
-> "Before I commit to markdown-only, I want to make sure you understand what you're opting out of, because this choice is hard to reverse later:
+> "Before I commit to in-repo markdown for planning, I want to make sure you understand what you're opting out of, because this choice is hard to reverse later:
 >
-> - **No GitHub Project board**, no Issues, no sub-issues. The cascade produces zero entities on the planning backend.
+> - **No GitHub Project board** (or Linear board), no Issues, no sub-issues. The cascade produces zero entities on the planning backend.
 > - **No kanban view** of work in progress. There is no "what's currently being worked on" surface anywhere — the cascade event log (`README.md` index) is the only place to see what's been framed and what's next.
 > - **No automated work tracking**. Status, in-progress, in-review, done — none of these exist as queryable state. If you (or anyone else) want to know what state a workstream is in, you read the markdown.
 > - **No board for collaborators to look at**. If anyone other than you needs to see work-in-flight, they're reading markdown files in the repo, not browsing a board.
 > - **Setup steps stay in `blueprint.md` § Manual setup** instead of becoming a tracked GitHub handoff issue. You read the section, work through the steps, commit updates as you go.
-> - **Switching profiles later is hard**. If you start in markdown-only and decide three workstreams in that you want a board after all, you'll need to re-run scaffold and re-create the planning-backend objects for every prior workstream by hand. The cascade can help, but it's not a one-command flip.
+> - **Switching later is hard**. If you start with in-repo markdown and decide three workstreams in that you want a board after all, you'll need to re-run scaffold and re-create the planning-backend objects for every prior workstream by hand. The cascade can help, but it's not a one-command flip.
 >
 > What you keep:
 >
-> - Every markdown file the cascade would produce in any other profile (problem brief, scaffold output, blueprint with workstreams table, framings, foundation docs)
+> - Every markdown file the cascade would produce with any external planning backend (problem brief, scaffold output, blueprint with workstreams table, framings, foundation docs)
 > - All naming conventions inside the markdown (`[<workstream-slug>:F<#>]` headings, slug discipline, etc.) so the hierarchy is grep-able
 > - Unenforced invariants section, sanity pass, review-bot construction — all stack-config concerns work identically
 > - The cascade-event model and supersedes-not-overwrites discipline at the markdown level
-> - Full design history, decision rationale, and traceability — markdown-only is a complete record, just without the live work tracker
+> - Full design history, decision rationale, and traceability — in-repo markdown is a complete record, just without the live work tracker
+> - Independent choice on the **knowledge backend axis** — you can still wire Notion as a durable knowledge reference alongside in-repo markdown planning; the two axes are orthogonal
 >
-> Sound right? If yes, I'll commit `profile: markdown-only` and continue. If you'd rather have a board after all (even a bare-bones one), say so now and we'll go with **github-only** instead — that's the default and matches most cascade users."
+> Sound right? If yes, I'll commit `planning.backend = "none"` and continue. If you'd rather have a board after all (even a bare-bones one), say so now and we'll go with **GitHub Issues** instead — that's the default and matches most cascade users."
 
-The user's confirmation is binary: explicit "yes, markdown-only" or any hesitation → propose github-only as the alternative and re-run the gate against the new choice. **Never proceed past this gate on an implicit or ambiguous answer.** Scaffold's job here is to make sure the user is making the choice deliberately, not falling into it because the conversation was moving fast.
+The user's confirmation is binary: explicit "yes, in-repo markdown" or any hesitation → propose GitHub Issues as the alternative and re-run the gate against the new choice. **Never proceed past this gate on an implicit or ambiguous answer.** Scaffold's job here is to make sure the user is making the choice deliberately, not falling into it because the conversation was moving fast.
 
 This gate runs in **every rigor mode**, not just full mode. It cannot be skipped or collapsed even in light mode — the one-way-door property is too strong to leave to inference. The light-mode collapse applies only to the *other* gates in scaffold's flow, not this one.
 
-## The detection matrix (GitHub-only profile)
+## The detection matrix (planning = `github-issues`)
 
-Before provisioning, detect what's possible in this session. As of early 2026, the GitHub MCP server can create repositories and push files, but **cannot** create labels, milestones, or project boards — regardless of PAT scopes. There is no "full automation" state. Every run involves MCP operations + manual instructions.
+Before provisioning, detect what's possible in this session for the GitHub planning surface. As of early 2026, the GitHub MCP server can create repositories and push files, but **cannot** create labels, milestones, or project boards — regardless of PAT scopes. There is no "full automation" state. Every run involves MCP operations + manual instructions.
 
 | State | GitHub MCP? | What MCP can do | What's manual | Behavior |
 |---|---|---|---|---|
@@ -126,19 +118,24 @@ Answers feed into the scaffold output doc's Team Shape and Development Preferenc
 
 Goal: confirm accounts exist and surface anything pre-existing.
 
-For greenfield: fast confirmation that the user has the relevant accounts and permissions.
+For greenfield: fast confirmation that the user has the relevant accounts and permissions for the picked planning backend (and knowledge backend if `notion`).
 
-For brownfield: run the workspace audit from `references/brownfield_audit.md` — read existing state via MCP, surface what exists, ask what to keep/replace/avoid.
+For brownfield: run the workspace audit from `references/brownfield_audit.md` — read existing state via MCP (axis-aware: planning-backend reads + optional Notion knowledge-backend reads), surface what exists, ask what to keep/replace/avoid.
 
-**What must always be manual**: account creation, billing, OAuth, admin permissions, team invites, SSO, branch protection, secrets. Canonical list in `references/manual_steps.md`.
+**What must always be manual**: account creation, billing, OAuth, admin permissions, team invites, SSO, branch protection, secrets, Notion integration sharing (per page). Canonical list in `references/manual_steps.md`.
 
 **HITL gate**: user confirms account state and audit findings.
 
 ## Stage 2 — Resource provisioning
 
-Goal: create the repo, planning surface, and label taxonomy.
+Goal: create the repo, planning surface, optional knowledge-backend hub, and label taxonomy.
 
-What gets provisioned depends on profile and detection state. Full per-profile steps in `references/github_only_profile.md` and `references/opinionated_profile.md` (stub).
+What gets provisioned depends on the operator's two-axis choice and detection state. Full per-axis steps:
+- **planning = `github-issues`**: `references/github_only_profile.md` (provisioning detail unchanged)
+- **planning = `linear`**: `references/linear_planning.md`
+- **planning = `in-repo-markdown`**: skip planning provisioning entirely (see in-repo-markdown gate above)
+- **knowledge = `notion`**: `references/notion_knowledge.md` — provisions only the hub row (or designates existing); sub-pages are lazy-provisioned by later phases per `.claude/rules/knowledge-backend.md`
+- **knowledge = `none`**: skip knowledge-backend provisioning entirely
 
 **Working conventions captured during this stage**: as you provision labels, branch naming, and commit format, confirm each with the user. These decisions become part of the scaffold output doc.
 
@@ -193,9 +190,11 @@ Each template has YAML frontmatter (`name`, `about`, `title`, `labels`, `assigne
 
 ## Stage 3 — Scaffold output and knowledge surface
 
-Goal: write the scaffold output doc, commit it alongside the problem brief to `docs/cbk/`, and establish the knowledge surface.
+Goal: write the scaffold output doc, commit it alongside the problem brief to `docs/cbk/`, and establish the in-repo cascade artifacts surface.
 
-**The knowledge surface: `docs/cbk/`.** All cascade planning artifacts live here. The `cbk` prefix (Context Builder Kit) keeps cascade artifacts separate from whatever docs the user writes organically.
+**The in-repo cascade artifacts surface: `docs/cbk/`.** All cascade artifacts (problem brief, scaffold output, blueprint, frame-NN, README index) live here regardless of the knowledge backend axis. The `cbk` prefix (Context Builder Kit) keeps cascade artifacts separate from whatever docs the user writes organically.
+
+**The optional knowledge backend** (`notion` if picked at Stage 2 of backend selection) is a *separate* surface for durable reference content that sits *alongside* `docs/cbk/`, not in place of it. See `.claude/rules/knowledge-backend.md` for the operational distinction.
 
 ```
 docs/
@@ -207,7 +206,7 @@ docs/
 
 **The scaffold output doc: `docs/cbk/scaffold.md`.** Template in `references/scaffold_output_template.md`. Five sections:
 
-1. **Cascade metadata** — profile, hierarchy levels, knowledge surface path, repo URL, project board URL, provisioned date. For Claude in future sessions.
+1. **Cascade metadata** — planning backend choice, knowledge backend choice, planning hierarchy levels, in-repo cascade artifacts path, repo URL, project board URL (if planning = `github-issues`), Linear workspace URL (if planning = `linear`), Notion hub URL (if knowledge = `notion`), provisioned date. For Claude in future sessions.
 2. **Team shape** — solo or team, size, roles, decision-maker, timezone/sync info. From discovery.
 3. **Working conventions** — team identifier, branch naming, commit format, label taxonomy. From stage 2.
 4. **Development preferences** — quality bar, PR/review process, testing philosophy, pace, decision recording. From discovery.
@@ -258,11 +257,11 @@ Present inline + downloadable artifact. Do not commit to repo (session-scoped).
 
 ## HITL gates summary
 
-Six gates in the full flow. In light mode, they collapse to 1–2 — that's a legitimate user choice. The markdown-only confirmation gate (in Profile selection) and the issue-templates approval gate (Stage 2.5) cannot collapse even in light mode.
+Six gates in the full flow. In light mode, they collapse to 1–2 — that's a legitimate user choice. The in-repo-markdown confirmation gate (in backend selection) and the issue-templates approval gate (Stage 2.5) cannot collapse even in light mode.
 
-1. **Profile selection + detection** — user confirms profile, acknowledges three-level constraint if GitHub-only, runs the markdown-only confirmation gate if Profile C is being chosen
+1. **Backend selection + detection** — user confirms planning axis and knowledge axis per `references/backend_selection.md`, acknowledges three-level constraint if planning = `github-issues`, runs the in-repo-markdown confirmation gate if planning = `in-repo-markdown`, runs the brownfield Notion detection if knowledge = `notion`
 2. **Discovery** — user confirms team shape and working preferences
-3. **Account/audit** — user confirms account state and audit findings
+3. **Account/audit** — user confirms account state and audit findings (axis-aware reads)
 4. **Provisioning** — user confirms what was created, walks verification matrix
 5. **Cascade issue templates** — user approves the four templates (or the subset that needs committing after the idempotency check) before they land in `.github/ISSUE_TEMPLATE/`
 6. **Scaffold output** — user approves `docs/cbk/scaffold.md` and confirms problem brief committed
@@ -292,20 +291,25 @@ Blueprint reads scaffold's outputs at session start via GitHub MCP, or the user 
 - **Over-provisioning** — elaborate setup before needs are understood. Default is minimal; accommodate the user if they have clear reasons for more.
 - **Premature AI configuration** — CLAUDE.md, AGENTS.md, `.claude/` belong in blueprint, not scaffold. Stack decisions don't exist yet.
 - **Skipping discovery** — scaffold without discovery produces a scaffold output doc with empty preferences, forcing blueprint to re-derive everything. Even at light mode, capture team shape and quality bar.
-- **Skipping the three-level constraint** — surface before profile commitment.
+- **Skipping the three-level constraint** — surface before the planning-axis commitment when planning = `github-issues`.
+- **Eager Notion sub-page provisioning** — scaffold creates only the hub row when knowledge = `notion`. Provisioning the eight recommended sub-pages at scaffold clutters the workspace with empty containers. Defense: `notion_knowledge.md` + `.claude/rules/knowledge-backend.md` § "Lazy provisioning at write-back" make sub-pages lazy.
 - **Committing before presenting** — the MCP commit is one tool call away. Always present inline and get approval first.
 - **Skipping the issue templates step** — without `.github/ISSUE_TEMPLATE/cascade-*.md` in the repo, downstream skills fall back to bundle-internal templates and lose the inherit-from-disk discipline. Defense: Stage 2.5 is mandatory in every rigor mode; light mode collapses other gates but not this one.
 - **Overwriting hand-curated existing templates** — if a user's repo has a hand-curated `feature_request.md` or `bug_report.md`, the cascade templates land alongside (not on top of) them. Defense: idempotency check distinguishes "already cascade-provisioned" from "exists but is not a cascade template" and never touches the latter.
 
 ## Reference files
 
-- `references/profile_selection.md` — conversation script for picking between profiles, three-level constraint phrasing, markdown-only confirmation gate language
-- `references/github_only_profile.md` — fully fleshed out provisioning for GitHub-only profile
-- `references/opinionated_profile.md` — *stub* for Linear+GitHub profile
-- `references/brownfield_audit.md` — workspace audit for users with existing repos/workspaces
+- `references/backend_selection.md` — conversation script for the two-axis backend selection (planning + knowledge), three-level constraint phrasing, in-repo-markdown confirmation gate language
+- `references/github_only_profile.md` — fully fleshed out provisioning when planning = `github-issues`
+- `references/linear_planning.md` — provisioning when planning = `linear`
+- `references/notion_knowledge.md` — provisioning when knowledge = `notion` (hub-row creation, brownfield detection, lazy sub-pages)
+- `references/brownfield_audit.md` — workspace audit for operators with existing repos / workspaces / Notion structures
 - `references/scaffold_output_template.md` — template and worked example for `docs/cbk/scaffold.md`
 - `references/bootstrap_checklist_template.md` — template for the session checklist
 - `references/manual_steps.md` — canonical list of always-manual operations
 - `references/issue-templates/` — the four cascade GitHub issue templates that Stage 2.5 commits to `.github/ISSUE_TEMPLATE/`. Each is a standalone markdown file with YAML frontmatter (`cascade-workstream.md`, `cascade-framing.md`, `cascade-rough-in.md`, `cascade-meta.md`). Source of truth for the cascade Issue body shapes — downstream skills read the committed copies from the repo, not the bundled copies here.
-- `references/test_cases.md` — three realistic test prompts (solo greenfield / solo brownfield / team opinionated) with success criteria for verifying the skill still works after revisions
+- `references/test_cases.md` — realistic test prompts with success criteria for verifying the skill still works after revisions
+
+Kit-wide operational contracts (`.claude/rules/`):
+- `knowledge-backend.md` — read patterns, write tiering, HITL discipline, brownfield detection, lazy provisioning. Loaded when knowledge = `notion`.
 

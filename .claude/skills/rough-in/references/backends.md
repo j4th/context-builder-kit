@@ -2,12 +2,22 @@
 
 The five planning skills (consultation, scaffold, blueprint, framing, rough-in) and the Claude Code finish skill all interact with three logical systems: a **planning backend** (where the cascade hierarchy lives as queryable, statused work items), a **knowledge backend** (where long-form specs and the cascade event log live), and a **code backend** (where the repo, branches, and PRs live). This spec defines the operations skills can call against those backends so skills can be written tool-agnostically and concrete backends can be swapped via configuration.
 
-The cascade ships with three backend profiles in v1:
-- **github-only** — GitHub Projects v2 board + GitHub Issues with sub-issues + markdown in `docs/cbk/`. The default profile.
-- **opinionated** — Linear (planning) + GitHub (code). Linear operations go through Linear MCP (`mcp__linear__save_issue` with `parentId`, label scheme, atomic transition with markdown commits); when a specific Linear operation isn't documented in the references, fall back to manual instructions or surface the gap.
-- **markdown-only** — markdown in `docs/cbk/` and nothing else. No planning backend. The cascade event log IS the entire artifact set. **Use this when**: the user explicitly doesn't want a kanban/board surface, the cascade is being run as design documentation rather than active work tracking, the audience for the cascade output (e.g., a manager, a PM, a stakeholder) won't be living in GitHub Issues day-to-day, or the project is small enough that markdown alone is sufficient.
+The cascade composes a **constant** plus **two independent axes** the operator picks separately at scaffold (see `scaffold/references/backend_selection.md`):
 
-Future profiles (Jira, Confluence, GitLab, Plane, Obsidian) plug into the same interface.
+**Constant**: a GitHub repo (or other git host) containing core markdown docs (`CLAUDE.md`, `ARCHITECTURE.md`, `STANDARDS.md`, `CONTRIBUTING.md`, `docs/adr/*`, `docs/cbk/*`). Always present; the immediate AI/dev context.
+
+**Axis 1 — Planning backend** (where live work-tracking happens):
+- `github-issues` — GitHub Projects v2 board + GitHub Issues with sub-issues + markdown in `docs/cbk/`. 3 planning levels. Most common starting point.
+- `linear` — Linear (initiatives + projects + milestones + issues) via Linear MCP. 4 planning levels. Operations go through Linear MCP (`mcp__linear__save_issue` with `parentId`, label scheme, atomic transition with markdown commits); when a specific Linear operation isn't documented in the references, fall back to manual instructions or surface the gap.
+- `in-repo-markdown` — markdown in `docs/cbk/` and nothing else. No external planning. The cascade event log IS the entire planning artifact set. **Use when**: the operator explicitly doesn't want a kanban/board surface; the cascade is being run as design documentation rather than active work tracking; the audience for the cascade output (manager, PM, stakeholder) won't be living in GitHub Issues day-to-day; the project is small enough that markdown alone suffices.
+
+**Axis 2 — Knowledge backend** (durable longer-lived reference library):
+- `notion` — Notion with the hub-as-DB-row pattern. See `.claude/rules/knowledge-backend.md` for the operational contract.
+- `none` — no external knowledge surface. Repo markdown is the entire AI/dev context.
+
+The axes generate a 3 × 2 = 6 matrix. Common shapes: `github-issues + none` (solo default), `github-issues + notion` (solo / small team with incoming Notion context), `linear + notion` (larger team with planning standardization and curated knowledge), `in-repo-markdown + none` (design-doc mode).
+
+Future planning backends (Jira, GitLab, Plane) and future knowledge backends (Confluence, Obsidian) plug into the same interface.
 
 ## The cascade hierarchy and what each phase produces
 
@@ -141,59 +151,65 @@ If the disk copy and the bundled copy diverge (the user has hand-edited the disk
 
 ## Configuration
 
-Each project's backend selection lives in `.cascade/backends.toml` at the repo root, committed alongside the AI agent config that blueprint produces. Skills read this file to know which concrete tool to call.
+Each project's backend selection lives in `.cascade/backends.toml` at the repo root, committed alongside the AI agent config that blueprint produces. The file has three top-level sections — `[planning]`, `[knowledge]`, `[code]` — each independently configured. Skills read this file to know which concrete tool to call.
+
+The `[code]` section is the constant — always present, always GitHub (or other git host):
 
 ```toml
-# Profile: github-only (default)
+[code]
+backend = "github"
+repo = "<your-org>/<your-repo>"
+default_branch = "main"
+```
+
+The `[planning]` section takes one of three values per the planning axis:
+
+```toml
+# planning = github-issues
 [planning]
 backend = "github"
 project_number = 4              # the Projects v2 board number
 repo = "<your-org>/<your-repo>"
 auto_status_via_board_rules = true   # cascade does not set Status field directly
-
-[knowledge]
-backend = "markdown"
-docs_path = "docs/cbk/"
-
-[code]
-backend = "github"
-repo = "<your-org>/<your-repo>"
-default_branch = "main"
 ```
 
 ```toml
-# Profile: opinionated
+# planning = linear
 [planning]
 backend = "linear"
 team_id = "<TEAM_ID>"
 workspace_url = "https://linear.app/<your-workspace>"
-
-[knowledge]
-backend = "notion"
-hub_page_id = "abc123..."
-
-[code]
-backend = "github"
-repo = "<your-org>/<your-repo>"
-default_branch = "main"
 ```
 
 ```toml
-# Profile: markdown-only
+# planning = in-repo-markdown
 [planning]
 backend = "none"
-
-[knowledge]
-backend = "markdown"
-docs_path = "docs/cbk/"
-
-[code]
-backend = "github"
-repo = "<your-org>/<your-repo>"
-default_branch = "main"
 ```
 
-In markdown-only mode, all `planning.*` operations become no-ops. The cascade still produces every markdown artifact it would produce in github-only mode (the workstreams table in `blueprint.md`, the framings in `frame-NN.md`, etc.) and uses the same naming conventions inside the markdown (`[<workstream-slug>:F<#>]` etc.) so the hierarchy is grep-able even without an Issue tree to render it. Setup steps that would normally land in a GitHub handoff issue stay in `blueprint.md` as a § Manual setup section instead. The atomic transition collapses to a single half (just the markdown commit) — there is no planning-backend half to roll back.
+The `[knowledge]` section takes one of two values per the knowledge axis:
+
+```toml
+# knowledge = notion
+[knowledge]
+backend = "notion"
+hub_page_id = "abc123..."        # the project hub row in Projects DB
+hub_url = "https://notion.so/<workspace>/projects/<project>"
+engineering_wiki_url = "<URL or empty>"  # cross-project; optional
+mcp_server = "notion-official"   # see .claude/rules/knowledge-backend.md
+```
+
+```toml
+# knowledge = none
+[knowledge]
+backend = "none"
+```
+
+The constant `[knowledge]` setting for projects that don't externalize knowledge is `backend = "none"` — the cascade artifacts and repo markdown are the entire knowledge surface.
+
+When `planning.backend = "none"` (the `in-repo-markdown` axis), all `planning.*` operations become no-ops. The cascade still produces every markdown artifact it would produce with an external planning backend (the workstreams table in `blueprint.md`, the framings in `frame-NN.md`, etc.) and uses the same naming conventions inside the markdown (`[<workstream-slug>:F<#>]` etc.) so the hierarchy is grep-able even without an Issue tree to render it. Setup steps that would normally land in a GitHub handoff issue stay in `blueprint.md` as a § Manual setup section instead. The atomic transition collapses to a single half (just the markdown commit) — there is no planning-backend half to roll back.
+
+When `knowledge.backend = "notion"`, the operational contract for reads, writes, HITL discipline, brownfield detection, and lazy provisioning lives in `.claude/rules/knowledge-backend.md`. Skills that interact with the knowledge backend route through that contract, not through ad-hoc per-skill conventions.
 
 ## The interface — operations
 
@@ -293,6 +309,7 @@ The interface is intentionally small so the lift is bounded. If a future backend
 
 ## Open questions deferred to future passes
 
-1. **Opinionated-profile coverage**: the Linear/Notion mapping is structurally documented; some operational details for edge cases may need to be filled in or flagged as known limitations during real opinionated-profile runs.
+1. **Per-axis operational coverage gaps**: some operations along the Linear-planning and Notion-knowledge paths are structurally documented but lack full per-MCP-call detail. Real cascade runs informed by the two-axis model will surface which gaps matter and warrant codification.
 2. **Cross-workstream interface commitments on the planning backend**: the Interface Commitments table in `frame-NN.md` is currently markdown-only. There's no planning-backend representation of "this Issue commits to a stable interface that another Issue depends on." Future revision may add a `relates_to` link with custom semantics or a separate label taxonomy.
 3. **Sub-rough-in nesting**: GitHub sub-issues support up to 8 levels deep. The cascade currently uses two levels (framing Issue → rough-in sub-issue). A future deepening (rough-in producing nested implementation steps) is structurally supported by the planning backend but not yet by the cascade skills.
+4. **Second knowledge backend** (Confluence, Obsidian, etc.): the knowledge-backend interface is generalized in concept but Notion-specific in operational reference (`.claude/rules/knowledge-backend.md`). Adding a second knowledge backend will inform what generalizes and what stays per-backend.

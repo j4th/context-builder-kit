@@ -79,6 +79,8 @@ In addition, the plan must respect:
 
 You are allowed to fetch additional context during plan mode if the spec genuinely needs it — read cited docs (`docs/ARCHITECTURE.md`, individual ADR files in `docs/adr/`, `docs/STANDARDS.md`, `CLAUDE.md`, `docs/cbk/frame-NN.md` for the parent framing), look at sibling files in the affected module, query the parent framing sub-issue for background. But don't fetch context speculatively; only fetch what the current step actually needs.
 
+**Resolving Notion URLs cited in the spec**: if the issue body (Context, Implementation, or any section) cites Notion page URLs as reference material, you may resolve those URLs via the Notion MCP if it's configured. Per `.claude/rules/knowledge-backend.md` § "HITL announcement discipline," announce each fetch before running: *"About to fetch `<page title>` from Notion. OK?"* Operator can decline per-page. If Notion MCP is not configured, surface and proceed without the Notion content (the URLs remain in the issue body as informational references).
+
 ## Step 6: Execute the plan
 
 After the user approves the plan, execute it. The execution order matters for logic-regime modules (see `.claude/rules/testing.md`):
@@ -143,6 +145,8 @@ Once the implementation is complete and `mise run check` passes:
 8. **End your turn** with the PR URL, the review-toolkit triage summary (counts per class plus the concrete actioned items and the verbatim Surface entries), and a note that the PR is draft awaiting the user's review-and-flip-to-ready. Do not call `gh pr ready` and do not merge — those remain the user's calls.
 
    If any finding was classified **Defer** because it would conflict with an ADR or with the issue's design, lead the hand-off with that count and an explicit "Recommend addressing before flipping to ready, or accepting the deferral explicitly" line — the user still owns the call, but the framing must not flatten the conflict.
+
+   **Optional learning-runbook write to Notion** (only when knowledge backend = `notion` is configured for this repo, per `.cascade/backends.toml`): if this execution surfaced a learning that would be a useful durable cross-project runbook entry (e.g., a non-obvious gotcha with the stack, a recipe for a recurring task spanning repos, a corrected understanding of an external system's behavior), prompt the operator: *"Want to promote this learning to a Notion runbook page under the Engineering Wiki? Defaults to SKIP."* Defaults to **SKIP**. Per `.claude/rules/knowledge-backend.md` § "When to write" — this is the rare opt-in path; HITL-gated; never default. If the operator opts in, announce the planned write (title, parent, body preview) before committing. This step is gated to genuinely cross-project learnings only — local-to-the-PR observations stay in the PR body and the loose-threads section of the hand-off summary, not in Notion.
 
    The user's draft-review pass is where Surface findings get decided. They can ask you to apply any of them in the PR-feedback-loop turn, or wave them through.
 

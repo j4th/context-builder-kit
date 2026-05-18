@@ -42,21 +42,24 @@ For Claude.ai's qualitative test loop (no subagents, no benchmarking): a real hu
 - Scaffold.md doesn't note the brownfield context, making blueprint think it's a fresh repo
 - Discovery is skipped entirely because the user said "keep this fast" — violates the light-mode safety floor
 
-## Test 3 — small team, opinionated profile (stub graceful handling)
+## Test 3 — small team, `linear` planning + `notion` knowledge (per-operation honesty)
 
-**Prompt** (user wants the Linear+GitHub profile):
+**Prompt** (user wants the Linear + Notion combination):
 > "We're a team of 4 working on a SaaS product. We use Linear for planning and Notion for docs. Set up the cascade with all three tools — Linear, Notion, and GitHub."
 
 **What success looks like:**
-- Skill detects opinionated profile preference and acknowledges it explicitly
-- Skill **discloses honestly** that the opinionated profile has documentation gaps: *"The opinionated profile (Linear+GitHub) is structurally supported but some Linear/Notion operations aren't fully documented. I'll walk through what's documented and flag gaps as we hit them. If we hit something I don't have a clean answer for, I'll either fall back to manual instructions or offer to switch to GitHub-only for this phase. Sound okay to start?"*
+- Skill detects the operator's preference for `linear` planning + `notion` knowledge and acknowledges each axis explicitly per `backend_selection.md`'s detect-then-confirm pattern
+- Skill **discloses honestly** that some Linear/Notion operations have documentation gaps (per-operation, not per-profile): *"Linear-planning and Notion-knowledge are both structurally supported but some MCP operations aren't fully documented. I'll walk through what's documented and flag gaps as we hit them. If we hit something I don't have a clean answer for, I'll either fall back to manual instructions or offer to switch to `github-issues` planning for this phase. Sound okay to start?"*
+- For Notion: skill runs the brownfield Notion detection from `.claude/rules/knowledge-backend.md` (Engineering teamspace + Projects DB) and offers the three-option hub designation
 - Discovery captures team shape with team-specific questions (timezone, decision recording, review process)
 - Skill attempts what is documented and falls back to manual instructions for what isn't
 - Scaffold.md notes the gaps explicitly so blueprint inherits a complete picture of what was set up vs. what wasn't
 
 **What failure looks like:**
-- Skill pretends the opinionated profile is fully fleshed out and produces fictional Linear MCP tool calls
-- Skill silently switches to GitHub-only without telling the user
+- Skill pretends Linear/Notion operations are fully documented and produces fictional MCP tool calls
+- Skill silently switches the planning axis to `github-issues` without telling the user
+- Skill silently disables the knowledge axis without confirming
+- Skill eagerly provisions all eight Notion sub-pages at scaffold time (violates `knowledge-backend.md` § "Brownfield-first + lazy provisioning")
 - Skill fails to capture team-specific discovery questions (timezone, decision recording, review)
 - Scaffold.md doesn't surface the gaps, so blueprint inherits the false impression that everything was provisioned
 

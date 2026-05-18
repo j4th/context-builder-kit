@@ -227,23 +227,28 @@ Detailed templates and production guidance:
 - `references/foundation-doc-templates.md` — overview and per-doc guidance
 - `references/templates/claude-md.md`, `architecture.md`, `standards.md`, `contributing.md`, `readme.md`, `tooling.md` — the templates themselves
 
-## Profile-aware behavior
+## Backend-axis-aware behavior
 
-Blueprint's behavior differs between the GitHub-only and opinionated profiles. The differences are documented in `references/github-only-vs-opinionated.md`. Short version:
+Blueprint's behavior differs along **two independent axes** set by scaffold: the planning backend (`github-issues` / `linear` / `in-repo-markdown`) and the knowledge backend (`notion` / `none`). The per-axis differences are documented in `references/planning-backend-matrix.md` (planning axis) and `.claude/rules/knowledge-backend.md` (knowledge axis). Short version:
 
-**GitHub-only profile**:
-- All foundation docs commit to the GitHub repo via MCP
-- `blueprint.md` commits to `docs/cbk/blueprint.md` — there is no Linear initiative entity
-- The initiative content (goal, success criteria, workstreams, dependencies) lives inside `blueprint.md`, not in any planning tool
-- Methodology selection is informational only; no Linear cycle configuration
+**Planning axis** (read `references/planning-backend-matrix.md` for full detail):
+- `github-issues`: all foundation docs + `blueprint.md` commit to the GitHub repo via MCP; workstream parent Issues created via GitHub MCP; no Linear initiative entity. Methodology selection is informational only.
+- `linear`: foundation docs + `blueprint.md` still commit to GitHub; `blueprint.md` also mirrors as a Linear initiative; Linear Projects created per workstream via Linear MCP. Methodology selection may inform Linear cycle length.
+- `in-repo-markdown`: only the markdown commits happen; no external planning entities are created. Setup steps that would be a GitHub handoff issue (or Linear initiative description) move into `blueprint.md` § Manual setup.
 
-**Opinionated profile**:
-- Foundation docs still commit to GitHub
-- `blueprint.md` still commits to `docs/cbk/blueprint.md` *and* the initiative gets created as a Linear entity with the same content
-- Linear initiative is created via Linear MCP in planned/draft state
-- Methodology selection may inform Linear cycle length
+**Knowledge axis** (read `.claude/rules/knowledge-backend.md` for full detail):
+- `notion`: blueprint **may optionally** read from the project's Notion hub at inheritance (opt-in, never auto-fetched) for richer context than the brief carries. Blueprint **may optionally** promote a "strategy companion" page to Notion when stack decisions or methodology selection surface material that's genuinely cross-project (e.g., a vendor evaluation spanning repos). Both reads and writes are HITL-gated and default-SKIP.
+- `none`: no Notion interactions. Blueprint relies entirely on repo + inheritance.
 
-Read `references/github-only-vs-opinionated.md` for the per-operation differences. For the opinionated profile, walk through what's documented and fall back to manual where it isn't.
+The two axes compose independently — `github-issues` + `notion` and `linear` + `none` are both valid configurations the operator may have picked. Always read `scaffold.md` to learn the operator's choice before behaving along either axis.
+
+### Optional Notion-write gate (knowledge = `notion` only)
+
+After foundation docs and stack decisions are committed, but before the final blueprint.md HITL gate, ask:
+
+> *"You picked Notion as the knowledge backend. Want me to promote a strategy companion page to Notion alongside the repo's `blueprint.md`? Useful when the stack decisions or workstream definitions reference material that benefits from longer-form discussion (vendor evaluations, cross-repo concerns, architectural rationale with diagrams). Defaults to SKIP — repo's `blueprint.md` is canonical regardless."*
+
+Defaults to **SKIP**. If the operator opts in, announce the planned write per `.claude/rules/knowledge-backend.md` § "HITL announcement discipline." Use the operator's response to inform whether the companion goes under the project hub (single-project material) or under the Engineering Wiki (cross-project material).
 
 ## HITL gates summary
 
@@ -318,8 +323,11 @@ Detailed in `references/failure-modes.md`. Highlights:
 - `references/templates/tooling.md` — tooling config production guidance
 - `references/blueprint-output-template.md` — the docs/cbk/blueprint.md template with cascade metadata top section
 - `references/hitl-question-bank.md` — clarifying questions for inheritance, stack, methodology, and project-grouping rounds
-- `references/github-only-vs-opinionated.md` — profile-aware behavior differences
+- `references/planning-backend-matrix.md` — planning-axis behavior differences (`github-issues` / `linear` / `in-repo-markdown`)
 - `references/failure-modes.md` — blueprint-specific failure modes with examples
 - `references/test_cases.md` — three realistic test prompts (canonical run / unusual stack / conflicting constraints) with success criteria for verifying the skill still works after revisions
+
+Kit-wide operational contracts (`.claude/rules/`):
+- `knowledge-backend.md` — knowledge-axis behavior (read patterns, write tiering, HITL discipline). Loaded when scaffold.md records knowledge backend = `notion`.
 
 Read references on demand, not all at once. The SKILL.md is a routing document; the heavy operational content lives in the references.

@@ -15,7 +15,7 @@ The skills compose into a six-phase **AI-assisted development cascade**. Each ph
 | # | Phase | Skill / command | Input | Output |
 |---|---|---|---|---|
 | 1 | Consultation | `.claude/skills/consultation/` | A raw idea, verbally | `problem_brief.md` |
-| 2 | Scaffold | `.claude/skills/scaffold/` | The problem brief | A repo + `scaffold.md` (planning surface, conventions) |
+| 2 | Scaffold | `.claude/skills/scaffold/` | The problem brief | A repo + `scaffold.md` (planning surface choice, knowledge surface choice, conventions) |
 | 3 | Blueprint | `.claude/skills/blueprint/` | Brief + scaffold output | Foundation docs (CLAUDE.md, ARCHITECTURE.md, STANDARDS.md, CONTRIBUTING.md) + `blueprint.md` (stack + workstreams) |
 | 4 | Framing | `.claude/skills/framing/` | Blueprint + one workstream | `frame-NN.md` (milestones + rough issues for one workstream) |
 | 5 | Rough-in | `.claude/skills/rough-in/` | One framing + one milestone | Sub-sub-issues with plan-mode prompts, each Claude-Code-ready |
@@ -52,7 +52,12 @@ These are load-bearing across the kit. Edits that violate them break the cascade
 - **Inheritance is verbatim, not paraphrased.** Each phase reads prior-phase artifacts in full and quotes the relevant content into its inheritance summary. Paraphrasing is the most common cascade failure mode.
 - **`/finish` is the executor; planning happens upstream.** `/finish` does not modify issue bodies, does not handle re-rough-in, does not bypass dependencies, does not skip `/simplify` or `pr-review-toolkit:review-pr`. When `/finish` hits something the spec didn't anticipate, it surfaces and aborts rather than improvising — the gap is data for the next revision.
 - **Rough-in's specs target Claude Code plan mode, not a human typing.** The Implementation section states intent and constraints, not implementation sequences (plan mode is a decomposition engine; over-prescribing overrides its priors). Granularity is "coherent review units" (2-6 R-issues per milestone), not atomic work units.
-- **Three backend profiles** are first-class: `github-only` (default), `opinionated` Linear+GitHub (less complete refs in some places — falls back to manual where ops aren't documented), `markdown-only` (no planning surface, design-doc mode). Profile selection is a one-way door at the cascade level — every phase has profile-aware behavior; new features must consider all three.
+- **Constant + two independent axes** for the backend shape:
+  - **Constant**: GitHub repo (or other git host) with core markdown docs (CLAUDE.md, ARCHITECTURE.md, STANDARDS.md, CONTRIBUTING.md, `docs/adr/*`, `docs/cbk/*`). Always present, always the immediate AI/dev context, not negotiable.
+  - **Axis 1 — Planning backend**: GitHub Issues / Linear / in-repo markdown. Where live work-tracking with status, parent/child, queryable state happens.
+  - **Axis 2 — Knowledge backend**: Notion / none. A durable longer-lived reference library — pre-cascade research, cross-project decisions, runbooks that span repos. Distinct from the constant; sits *alongside* rather than replacing.
+  - The axes generate a 3 × 2 = 6 matrix. There are no named "preset profiles" — operators pick each axis independently. Skills are profile-aware along both axes; new features must consider both. The `.cascade/backends.toml` file records the operator's per-axis choice.
+- **Knowledge backend is read-primary at lower phases; writes are tiered and HITL-gated.** Default behavior: rely on repo + inheritance. Reach to the knowledge backend on demand when richer detail is needed. Writes are routine at consultation and scaffold (companion-page, hub establishment); HITL-gated and default-SKIP at blueprint / framing / rough-in / `/finish`. The operational contract lives in `.claude/rules/knowledge-backend.md`.
 
 ## Working in this repo
 
@@ -63,13 +68,18 @@ Because there is no build/test/lint, the verification surface is editorial:
 - **When adding a new reference doc to a skill**, follow the existing `references/<topic>.md` naming and add a pointer from `SKILL.md` to it. Skills don't auto-discover references; the entrypoint must cite them.
 - **Templates live in `references/templates/`** and are quoted verbatim in skill output. Edits to a template change every future cascade artifact — treat them as the contract.
 
-Common cross-cutting reference docs that recur in multiple skills (similar shape, profile-specific behavior in each):
-- `references/backends.md` — backend profile mapping for the phase
+Common cross-cutting reference docs that recur in multiple skills (similar shape, axis-specific behavior in each):
+- `references/backends.md` — backend interface mapping for the phase (both axes)
 - `references/inheritance.md` — what to read from prior phases and how
 - `references/failure-modes.md` — known traps for that phase
 - `references/hitl-question-bank.md` — the gate language for that phase
 - `references/planning-backend-commit.md` — the atomic-transition discipline for committing to the planning backend
-- `references/github-only-vs-opinionated.md` — per-operation differences across profiles
+- `references/planning-backend-matrix.md` — per-operation differences across planning backends (replaces the older `github-only-vs-opinionated.md` naming)
+
+Kit-wide operational contracts (`.claude/rules/`):
+- `cbk-conventions.md` — project-level conventions template (target projects copy + fill in)
+- `pr-review.md`, `simplification.md`, `testing.md`, `logging.md` — operational discipline for the named tooling concern
+- `knowledge-backend.md` — the operational contract for the knowledge-backend axis (read patterns, write tiering, HITL discipline, brownfield detection, lazy provisioning)
 
 ## When the user invokes a skill
 

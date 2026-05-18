@@ -5,8 +5,8 @@ Runs at the start of scaffold stage 1 when the user already has a repo, an exist
 ## When to run the audit
 
 Trigger the audit when any of these are true:
-- The user mentions an existing repo, Linear workspace, or Notion hub in the brief or opening message
-- The user picks a profile and a quick read shows resources already exist (e.g. `list_repositories` returns a repo with the project name from the brief)
+- The user mentions an existing repo, Linear workspace, Notion workspace/hub, or other prior planning/knowledge surface in the brief or opening message
+- The operator's backend selection picks an axis whose backend already shows pre-existing resources (e.g. `list_repositories` returns a repo with the project name from the brief; Notion detection returns an existing hub matching the slug)
 - The user explicitly says "this isn't greenfield" or "we already have stuff set up"
 
 If none of these are true, skip the audit and proceed directly to stage 1's account verification.
@@ -21,7 +21,20 @@ Five questions, batched at standard rigor (one-at-a-time at full), one combined 
 4. **What constraints does the existing state impose on the new work?** Naming conventions you can't change, integrations you can't break, branch names downstream tooling depends on?
 5. **Anything in the existing setup the cascade should *not* touch under any circumstances?** Production repos, customer-facing assets, archived projects?
 
-After the answers, run a **non-mutating MCP read pass** to verify what the user described matches reality. For GitHub-only profile: list repos, read existing labels on the named repo, list project boards, list milestones. For opinionated profile: same plus Linear team read and Notion page list. **Surface any discrepancies** between what the user said and what actually exists — this catches "I forgot we set that up" moments before they cause provisioning failures.
+After the answers, run a **non-mutating MCP read pass** to verify what the user described matches reality. The read pass is **axis-aware** — it reads from whichever planning backend and knowledge backend the operator picked at `backend_selection.md`:
+
+**Always (the constant)** — list repos, read existing labels on the named repo.
+
+**Planning backend axis**:
+- `github-issues`: list project boards on the named repo, list milestones
+- `linear`: Linear team read, project list under the team, label taxonomy read
+- `in-repo-markdown`: nothing additional (no external planning to detect)
+
+**Knowledge backend axis**:
+- `notion`: run the brownfield Notion detection from `.claude/rules/knowledge-backend.md` § "Brownfield detection at scaffold" — detect Engineering teamspace, Projects DB, Engineering Wiki, existing project hub. Read-only; no writes. If the operator already designated a Notion scope during consultation (Mode A/B from `consultation/references/notion_ingestion.md`), the scope is in `problem_brief.md` § Pre-cascade sources — read that first and let it inform the detection.
+- `none`: skip the knowledge-backend half entirely.
+
+**Surface any discrepancies** between what the user said and what actually exists — this catches "I forgot we set that up" moments before they cause provisioning failures.
 
 ## What the audit produces
 

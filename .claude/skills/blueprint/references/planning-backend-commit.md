@@ -81,15 +81,15 @@ Blueprint's existing final commit gate now mentions both halves of the transitio
 - **Project board (Projects v2)** — that's a one-time scaffold-phase / manual setup. Blueprint assumes the board already exists with its automation rules configured. If the board doesn't exist, blueprint surfaces this as a setup gap.
 - **Labels and label taxonomy** — blueprint may create the cascade-depth label set as part of label taxonomy creation, but this is a separate operation from parent Issue creation.
 
-## Profile-aware behavior
+## Planning-axis-aware behavior
 
-**github-only profile** (default): parent Issues are created via `issue_write`, the sub-issue tree is built via `sub_issue_write` in subsequent phases. Atomic with the markdown commit.
+**`github-issues` planning** (default): parent Issues are created via `issue_write`, the sub-issue tree is built via `sub_issue_write` in subsequent phases. Atomic with the markdown commit.
 
-**opinionated profile** (Linear): per `backends.md`, Linear's hierarchy is Project → Milestone → Issue. Workstreams map to Linear Projects, framing capabilities to Linear Milestones, rough-in items to Linear Issues. The sub-issue collapse is github-only-specific.
+**`linear` planning**: per `backends.md`, Linear's hierarchy is Project → Milestone → Issue. Workstreams map to Linear Projects, framing capabilities to Linear Milestones, rough-in items to Linear Issues. The sub-issue collapse is `github-issues`-specific.
 
-**markdown-only profile**: this entire step is **skipped**. No parent Issues get created on the planning backend because there is no planning backend. The atomic transition collapses to a single half — just the markdown commit (`blueprint.md` + foundation docs). There is no rollback to perform on the planning side because no planning ops ran. The cascade still uses the same naming conventions inside `blueprint.md` § Workstreams (`[<workstream-slug>] <name>` headings, slug-derivation rule, etc.) so the hierarchy is grep-able and the markdown-only output remains structurally identical to the github-only output minus the GitHub Issue tree.
+**`in-repo-markdown` planning**: this entire step is **skipped**. No parent Issues get created because there is no external planning backend. The atomic transition collapses to a single half — just the markdown commit (`blueprint.md` + foundation docs). There is no rollback to perform on the planning side because no planning ops ran. The cascade still uses the same naming conventions inside `blueprint.md` § Workstreams (`[<workstream-slug>] <name>` headings, slug-derivation rule, etc.) so the hierarchy is grep-able and the `in-repo-markdown` output remains structurally identical to the `github-issues` output minus the GitHub Issue tree.
 
-In markdown-only mode, **the handoff content stays in `blueprint.md` itself** as a § Manual setup section instead of being hoisted into a GitHub handoff issue. Same content shape (the rough setup layout), same trip-wire discipline for cleanup tracking, just lives in the markdown file rather than as a separate GitHub artifact. The user reads it from `blueprint.md` and works through the steps; updates to setup state go in commits to `blueprint.md` (or, after framing runs, in commits to `README.md` index or the relevant `frame-NN.md`), not in a separate handoff issue.
+In `in-repo-markdown` planning, **the handoff content stays in `blueprint.md` itself** as a § Manual setup section instead of being hoisted into a GitHub handoff issue. Same content shape (the rough setup layout), same trip-wire discipline for cleanup tracking, just lives in the markdown file rather than as a separate GitHub artifact. The operator reads it from `blueprint.md` and works through the steps; updates to setup state go in commits to `blueprint.md` (or, after framing runs, in commits to `README.md` index or the relevant `frame-NN.md`), not in a separate handoff issue.
 
 The HITL gate in markdown-only mode mentions only the markdown commit half:
 
