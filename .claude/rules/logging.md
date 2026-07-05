@@ -28,6 +28,8 @@ Common correlation-ID names you'll see in cascade projects (rename to fit your d
 - `session_id` — for the lifetime of a logged-in user session
 - `pilot_session_id` / `persona_session_id` — for the lifetime of an active persona configuration
 
+A correlation or lineage ID is often **two things at once**: a transient *log-propagation handle* (a contextvar / bound-then-cleared-in-`finally` metadata key) and a durable *persisted lineage column* on the data it annotates. Keep the two concerns distinct — the rules here govern propagation through logs; a separate data/schema contract governs persistence — and don't conflate a log field with a stored column.
+
 ### Propagation patterns by language
 
 The language's logger should have a metadata-binding API that propagates across `await` / `Task.async` / async boundaries automatically. Use it.

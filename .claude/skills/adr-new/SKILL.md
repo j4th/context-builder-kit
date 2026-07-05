@@ -69,3 +69,21 @@ When invoked, ask the user (in this order, one question at a time — don't batc
 - **Date is always today** in `YYYY-MM-DD` format. Use the `time` MCP if uncertain rather than guessing.
 - **Title in the file header must match the title in all three indexes** — drift here is the most common mistake.
 - The skill produces files only; it does not commit, push, or open PRs.
+
+## Refines vs Supersedes
+
+A new ADR connects to an existing one through one of two relationships. Both are recorded as header fields and both preserve the parent's immutability — neither ever edits the parent file.
+
+- **`Supersedes: ADR-NNNN`** — the new ADR *replaces* the parent's decision. The parent's status becomes `Superseded by ADR-MMMM`; new code follows the new ADR. This is the relationship the interactive **Supersedes?** input captures, and the one Step 3's index-marking handles.
+- **`Refines: ADR-NNNN (Dn, …)`** — the new ADR *clause-level-clarifies or narrows* a specific decision `Dn` in the parent **without invalidating it**. The parent stays `Accepted`; both parent and child are consulted when evaluating conformance. Use this when implementation reveals that an accepted clause was written too generally and needs a scoped reading (e.g. "this rule applies only to <entity-type>"), not a reversal.
+
+**Clause-scoped supersession.** Supersession can also target a single clause rather than a whole ADR: `Supersedes: ADR-NNNN Dn` reverses only decision `Dn` of the parent while the parent's other clauses stand. The parent's status stays `Accepted` (it is not wholly superseded); the child's index row names the specific clause it replaces.
+
+**How the skill handles each:**
+
+- Add a **Refines?** input alongside the Supersedes? input (Inputs, above) — if yes, capture the parent number and the specific decision clauses in `ADR-NNNN (Dn, …)` form.
+- In Step 2, fill the `Refines:` field (or the clause-scoped `Supersedes:` field) in the new ADR's header.
+- In Step 3, add the child's index row naming its `Refines:` (or clause-scoped supersession) target. **A refined parent gains no back-pointer and no status change** — it stays `Accepted`, and discoverability comes from the child's header field plus the child's index row. Only a *whole-ADR* supersession flips the parent's index status to `Superseded by ADR-NNNN`; a pure refine (or a clause-scoped supersede) leaves the parent `Accepted`.
+
+**Reviewers must follow the `Refines:` chain.** When an ADR-conformance check finds an ADR that intersects a diff, it also loads any ADR that names that ADR in a `Refines:` (or clause-scoped `Supersedes:`) field and applies the refiner's scoped clauses. A parent read in isolation — without its refiners — yields the pre-narrowing, too-general reading.
+
