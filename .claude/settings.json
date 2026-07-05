@@ -1,5 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "_comment_hooks": "PreToolUse guards (non-negotiable enforcement): protect-immutable-adrs.sh blocks Edit/Write/MultiEdit on existing docs/adr/NNNN-*.md; protect-lock-files.sh blocks edits to lock files (change them via the package manager instead). Both fail open (exit 0 + stderr warning) on environment defects, so a missing jq or unset CLAUDE_PROJECT_DIR can't turn a targeted guard into a universal edit block. A project may add a PostToolUse advisory formatter — see .claude/hooks/format-on-edit.sh (exemplar; wire its case arms to your stack and register it here).",
   "hooks": {
     "PreToolUse": [
       {
@@ -8,12 +9,16 @@
           {
             "type": "command",
             "command": ".claude/hooks/protect-immutable-adrs.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/protect-lock-files.sh"
           }
         ]
       }
     ]
   },
-  "_comment_enabledPlugins": "Plugins the cascade kit expects. Install each via Claude Code's plugin system before running /finish. The plugin names below match what /finish step 7 invokes; rename to match installed plugin IDs if your install uses different identifiers.",
+  "_comment_enabledPlugins": "Plugins the cascade kit expects. Install each via Claude Code's plugin system before running /finish. The plugin names below match what /finish's simplify and review passes invoke; rename to match installed plugin IDs if your install uses different identifiers.",
   "enabledPlugins": {
     "pr-review-toolkit": true,
     "simplify": true,

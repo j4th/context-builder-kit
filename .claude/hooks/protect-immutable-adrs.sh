@@ -13,8 +13,24 @@
 #   - any Edit/Write/MultiEdit on docs/adr/NNNN-*.md when that file already exists
 #
 # Hook receives JSON on stdin with the tool input. Exit 2 + stderr blocks.
+#
+# Fail-open on environment defects (missing jq, unset CLAUDE_PROJECT_DIR):
+# exit 0 with a loud stderr warning. Failing closed would convert a targeted
+# ADR guard into a universal Edit/Write/MultiEdit block, which is worse.
 
-set -euo pipefail
+set -uo pipefail
+# Note: deliberately NOT using `set -e` — we fail open (exit 0) on environment
+# defects rather than abort with cryptic stderr that blocks all tool calls.
+
+# Defensive: hook may run without CLAUDE_PROJECT_DIR set; default to PWD.
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$PWD}"
+
+# jq is required for stdin parsing. Missing jq → fail-open with warning.
+if ! command -v jq &>/dev/null; then
+  echo "protect-immutable-adrs: WARNING — jq not installed; ADR protection DISABLED." >&2
+  echo "                        Install jq to re-enable." >&2
+  exit 0
+fi
 
 input="$(cat)"
 tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"
@@ -29,7 +45,7 @@ esac
 [[ -z "$file_path" ]] && exit 0
 
 # Normalise to repo-relative path for matching.
-rel="${file_path#"$CLAUDE_PROJECT_DIR/"}"
+rel="${file_path#"$PROJECT_DIR/"}"
 
 # Match docs/adr/NNNN-*.md but NOT template.md, README.md.
 if [[ "$rel" =~ ^docs/adr/[0-9]{4}-.*\.md$ ]]; then
