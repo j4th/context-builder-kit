@@ -26,6 +26,7 @@ Rough-in is one-milestone-at-a-time, just-in-time, **by design**. Framing alread
   - **In `github-issues` planning**: a GitHub sub-issue parented under the framing sub-issue via `issue_write` + `sub_issue_write`, labeled `cascade-depth:roughed-in`, titled `[<slug>:F<#>:R<#>] <intent>`, with body containing the full spec
   - **In `in-repo-markdown` planning**: an appended section to the framing's markdown file (or a new per-milestone rough-in markdown file — see backend-axis-aware behavior section), no planning backend commit
   - **In `linear` planning**: a Linear sub-sub-issue parented under the framing F-issue via `mcp__linear__save_issue` with `parentId`, `team`, `labels: ["workstream:<slug>", "cascade-depth:roughed-in", <type>]`, `assignee`, and `blockedBy` chain to prior R-issues. Single-step (no separate parent-linkage call). See `references/planning-backend-matrix.md` § `linear` planning axis for full MCP-call shapes.
+    - **Set the Feature/Bug/Improvement type label in this initial `save_issue` call** (map from the R-issue's Conventional Commits `<type>`: `feat`→Feature, `fix`→Bug, everything else→Improvement). Linear caches the `{type}` branch-name prefix from the type label *at creation*, so applying it afterward won't fix the suggested branch. See `cbk-conventions.md` § Branch naming § Linear `{type}` placeholder.
 - An update to `docs/cbk/README.md` chronological index noting that milestone M_n was roughed-in (append-only)
 
 ## Required pre-flight check: deferred meta-issues

@@ -52,6 +52,8 @@ Full atomic transition, partial failure recovery, and inherit-from-disk discipli
 
 Rough-in's Step 6 creates **Linear sub-sub-issues** under the framing F-issue (which framing created in its Step 6) inside the workstream parent issue (which blueprint created at workstream-definition time). The MCP operations are different from `github-issues` — `mcp__linear__save_issue` instead of `github:issue_write` — but the atomic transition discipline is the same: capture, execute, rollback on failure, partial failure recovery via stop-and-surface.
 
+**Set the type label at creation.** Include the Linear built-in **Feature / Bug / Improvement** type label in the initial `mcp__linear__save_issue` call (map from the R-issue's Conventional Commits `<type>`: `feat`→Feature, `fix`→Bug, everything else→Improvement). Linear's branch-name template resolves `{type}` from that label and **caches it into the issue's `gitBranchName` at creation** — relabeling later doesn't update the suggested branch, and a missing type label defaults to `Feature`, producing `feature/…` branches for non-feature work. This applies equally to bug-lane / enhancement-lane issues created by `/intake` / `/enrich`. See `cbk-conventions.md` § Branch naming § Linear `{type}` placeholder.
+
 **MCP operations rough-in calls in `linear` planning**:
 
 | Operation | Tool | Purpose |
