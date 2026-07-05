@@ -113,6 +113,7 @@ The highest-leverage tuning surface for AI code review (per Cloudflare's evidenc
 - **Speculative future-risk warnings.** "If you ever scale this to 1M users…" — out of scope unless the issue says so.
 - **Alternative implementation approaches the agent prefers** when the existing one is also fine.
 - **Style or naming on exported APIs** without a concrete compelling reason (back-compat breakage, naming-collision, etc.).
+- **ADR-literal violations that a `Refines:` child ADR or a project-local reconciliation layer scopes away.** Before flagging "violates ADR-NNNN Dn", follow the ADR's `Refines:` chain and check the reconciliation layer — a scoped reading there is authoritative, and a literal-clause flag against it is a false-positive. The `adr-conformance-reviewer` enforces this; the rubric reinforces it.
 
 **Project may exclude additionally** (configure as the `pr-review-toolkit` configuration permits):
 
