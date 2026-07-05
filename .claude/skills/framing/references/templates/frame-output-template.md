@@ -202,6 +202,8 @@ explicit "none" tells rough-in the table was considered, not skipped.]
 
 ## Rough-in events
 
+> Per event, a short structured note beats a bare status row: record any frame-vs-reality drift correction, open-question resolution, and research provenance (agent counts / live probes) alongside the milestone + date + capstone PR. The immutable frame body never changes; this ledger is where corrections and provenance live.
+
 [Required section. Append-only log of rough-in cascade events that decomposed
 this framing's milestones into Claude-Code-ready sub-sub-issues. Rough-in's
 Step 6 atomic transition appends a row to this table per run.
