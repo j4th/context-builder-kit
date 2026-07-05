@@ -20,8 +20,11 @@ When the diff touches code under their topics, dispatch project-local reviewers 
 
 - **`adr-conformance-reviewer`** (`.claude/agents/adr-conformance-reviewer.md`) — runs when the diff touches code governed by an ADR. Reads `docs/adr/README.md` and intersects the diff against ADRs whose decisions plausibly govern the changed files.
 - **`logging-discipline-reviewer`** (`.claude/agents/logging-discipline-reviewer.md`) — runs when the diff touches logging or telemetry surfaces. Reads `.claude/rules/logging.md` and checks structured-only logging, correlation-ID propagation, level taxonomy, sensitive-data rules.
+- **`cascade-rule-reviewer`** (`.claude/agents/cascade-rule-reviewer.md`) — runs when the diff touches code or commits governed by any `.claude/rules/*.md` other than `logging.md` (testing regimes, `cbk-conventions.md` branch/commit/label/skip-ci/mutation discipline, `simplification.md`, `knowledge-backend.md`). Applies this file's rubric to classify what it finds; it does not check the diff for whether *this* file is being followed.
 
 If your project authors additional reviewer agents (e.g., for a dependency-injection contract, a security-boundary policy, an i18n discipline), list them here so the dispatch list stays in this file rather than scattered across `/finish`.
+
+**Authoring a project-local reviewer.** The reviewers above share a portable shape worth reusing: frontmatter (`tools: Read, Glob, Grep, Bash` [+ `Skill` if it invokes one], `model: sonnet`); a **Scope** section stating what it does and doesn't review, with explicit hand-offs to the other reviewers; a **Contract-surface** section naming the frozen sources it checks against (a rule file, an ADR, a reconciliation doc) with a stated precedence; a numbered checklist of concrete checks; and an output shape that emits `file:line` + the violated contract + this file's rubric class. One cardinal rule for any reviewer covering a **fast-moving or niche stack dependency**: *never answer from memory* — invoke a docs-expert skill (or read the installed source) first and ground every API claim in a citation; an ungrounded assertion about the library is itself a defect. Distinguish idiom *correctness* (flag) from idiom *preference* (Surface at most).
 
 ## Pre-filters — strip before the agent reads
 
