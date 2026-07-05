@@ -326,8 +326,8 @@ The kit assumes a few things about the host project. None are kit-shipped becaus
 
 Listed declaratively in `.claude/settings.json` under `enabledPlugins`. Install each via Claude Code's plugin system before running `/finish`:
 
-- **`pr-review-toolkit`** — `/finish` Step 7 dispatches `pr-review-toolkit:review-pr` for the auto-triage sweep
-- **`simplify`** — `/finish` Step 6 invokes `/simplify` before the review pass
+- **`pr-review-toolkit`** — `/finish`'s review pass dispatches `pr-review-toolkit:review-pr` for the auto-triage sweep
+- **`simplify`** — `/finish`'s simplify pass invokes `/simplify` before the review pass
 - **`commit-commands`** — convenient wrappers for staging + committing (used by examples in this kit's docs)
 
 The slash commands and skills these provide are referenced by name in `/finish` and the rules files; if your install uses different identifiers, edit the references.
@@ -361,7 +361,7 @@ Three files reliably need editing per project:
 
 1. **`.claude/rules/cbk-conventions.md`** — fill in `<TEAM>`, workstream slugs, branch-naming patterns, methodology choices. Delete the "this file is a template" callout at the top once you're done.
 
-2. **`.claude/commands/finish.md`** — bakes in `mise run check`, `docs/STANDARDS.md § Step 4`, `.claude/rules/testing.md`, `.claude/rules/logging.md`, `pr-review-toolkit:review-pr`, `/simplify`. If your stack doesn't have one of these, edit the file. The seven-section spec contract that `/finish` reads from issue bodies is the stable interface; the tooling assumptions are the swap-out point.
+2. **`.claude/commands/finish.md`** — bakes in the project's `check` task, `docs/STANDARDS.md § Step 4`, `.claude/rules/testing.md`, `.claude/rules/logging.md`, `pr-review-toolkit:review-pr`, `/simplify`. If your stack doesn't have one of these, edit the file. The eight-section spec contract that `/finish` reads from issue bodies is the stable interface; the tooling assumptions are the swap-out point.
 
 3. **`.claude/settings.json`** — adjust `enabledPlugins` if your installed identifiers differ; adjust `enabledMcpjsonServers` if you don't use one of the four defaults or want to add others.
 

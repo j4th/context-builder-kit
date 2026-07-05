@@ -10,7 +10,7 @@ Operational rules for the `pr-review-toolkit:review-pr` invocation in the cascad
 
 ## When to invoke
 
-`/finish` Step 7 dispatches `pr-review-toolkit:review-pr` against the local branch before opening the draft PR. Invoke with no args for the default full sweep — do **not** pass the PR number as an argument (that's not the skill's interface; the skill auto-discovers via `git diff` + `gh pr view`, falling back to `git diff main...HEAD` pre-PR).
+`/finish`'s review pass dispatches `pr-review-toolkit:review-pr` against the local branch before opening the draft PR. Invoke with no args for the default full sweep — do **not** pass the PR number as an argument (that's not the skill's interface; the skill auto-discovers via `git diff` + `gh pr view`, falling back to `git diff main...HEAD` pre-PR).
 
 If the toolkit isn't installed or fails to invoke, **stop and surface** — do not silently skip. The "does not skip" rule in `/finish` makes a missing toolkit blocking.
 
@@ -135,7 +135,7 @@ The "I disagree with the bot, ship anyway" escape hatch. Practitioners report it
 
 Two mechanisms:
 
-1. **PR body marker**: include `<!-- skip-review-toolkit -->` (or similar agreed marker) in the PR description. `/finish` reads this in Step 1 and skips Step 7's review-toolkit invocation. Document the rationale in the PR body itself ("review-toolkit was wrong about X; addressing in follow-up Y").
+1. **Issue-body / operator-instruction marker**: include `<!-- skip-review-toolkit -->` (or a similar agreed marker) in the issue body, or pass it in the operator's instructions to `/finish`. `/finish` reads it in its issue-read step — a surface that exists *before* the review pass runs — and skips the review pass's review-toolkit invocation. (The marker can't live in the PR body: the review pass runs before the draft PR is created, so a PR-body marker would never gate the review it's meant to skip.) Document the rationale so the hand-off and the PR body carry it ("review-toolkit was wrong about X; addressing in follow-up Y").
 2. **`/finish` flag** (if the user invoked manually with extra args): `--skip-review` on the slash command. Same effect.
 
 Either path produces the same hand-off summary line: "Review-toolkit explicitly skipped per <reason>." Don't silently skip; the audit trail is in the PR body.
@@ -168,7 +168,7 @@ The hand-off is the audit surface. List counts per class plus the concrete actio
 
 ## When to update this file
 
-This rules file is load-bearing the moment `/finish` Step 7 dispatches `pr-review-toolkit`. Update it when:
+This rules file is load-bearing the moment `/finish`'s review pass dispatches `pr-review-toolkit`. Update it when:
 
 - A finding type recurs in the Surface column that should clearly be Apply (or vice versa) — add a row to the Apply/Surface calibration table.
 - A new noise pattern emerges that should be excluded — add it to the "What NOT to flag" list.
