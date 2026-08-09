@@ -7,8 +7,9 @@
 # diverges (e.g. after a squash-merge) — and hooks enforce non-negotiables
 # more reliably than instructions.
 #
-# Blocked:  Bash tool calls whose command contains a token-anchored
-#           `git commit` while the repo's current branch is main or master.
+# Blocked:  Bash tool calls whose command contains a token-anchored `git`
+#           followed (any number of option tokens later) by a `commit` token,
+#           while the call's working directory is on main or master.
 # Allowed:  everything else — commits on feature branches, and all
 #           non-commit git commands on main.
 #
@@ -20,8 +21,6 @@ set -uo pipefail
 # Deliberately NOT `set -e` — fail-open on environment defects rather than
 # aborting with cryptic stderr that blocks all Bash calls.
 
-PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$PWD}"
-
 if ! command -v jq &>/dev/null; then
   echo "protect-main-branch: WARNING — jq not installed; main-branch commit protection DISABLED." >&2
   echo "                     Install jq to re-enable. Until then the only backstop is the operator" >&2
@@ -32,17 +31,24 @@ fi
 input="$(cat)"
 tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"
 command="$(printf '%s' "$input" | jq -r '.tool_input.command // empty')"
+# The Bash tool's payload carries the call's working directory; the branch
+# check must use it (not a fixed project dir), or a commit run from a
+# worktree / nested repo is judged against the wrong repo's branch.
+cwd="$(printf '%s' "$input" | jq -r '.cwd // empty')"
+PROJECT_DIR="${cwd:-${CLAUDE_PROJECT_DIR:-$PWD}}"
 
 [[ "$tool_name" != "Bash" ]] && exit 0
 [[ -z "$command" ]] && exit 0
 
-# Only inspect commands containing a token-anchored `git commit` invocation
-# (start-of-command or after ; & | whitespace) — avoids false-blocking text
-# that merely contains the phrase. Known residuals: `git -C path commit`
-# passes through; a quoted "git commit" inside another command still matches
-# (cost: one wrongly blocked call on main, where legitimate ops are read-only
-# anyway). Refine if one recurs.
-if ! printf '%s' "$command" | grep -Eq '(^|[;&|[:space:]])git[[:space:]]+commit([[:space:]]|$)'; then
+# Token-anchored and flag-tolerant: `commit` may appear any number of tokens
+# after a token-anchored `git` (so global options like `-c k=v`, `--no-pager`,
+# or `-C path` don't silently defeat a hard-deny guard). Over-matching — a
+# quoted "git … commit" phrase inside another command, a `commit` token in an
+# unrelated git call, or a `git -C <other-repo> commit` judged against this
+# repo's branch — costs one wrongly BLOCKED call with a loud message the
+# operator can override by running the commit themselves; under-matching
+# would be a silent bypass, which is worse for a deny-tier guard.
+if ! printf '%s' "$command" | grep -Eq '(^|[;&|[:space:]])git([[:space:]]+[^[:space:]]+)*[[:space:]]+commit([[:space:]]|$)'; then
   exit 0
 fi
 
