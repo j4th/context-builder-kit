@@ -30,7 +30,7 @@
         ]
       },
       {
-        "matcher": "mcp__(plugin_Notion_)?notion__notion-(create|update|move|duplicate).*",
+        "matcher": "mcp__(plugin_Notion_)?notion__notion-(create|update|move|duplicate|convert|delete).*",
         "hooks": [
           {
             "type": "command",
