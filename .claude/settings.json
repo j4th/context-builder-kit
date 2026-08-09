@@ -50,6 +50,7 @@
   "enabledMcpjsonServers": [
     "github",
     "linear",
+    "notion",
     "context7",
     "time"
   ]

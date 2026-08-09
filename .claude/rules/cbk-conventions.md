@@ -244,8 +244,8 @@ The rough-in / `/intake` / `/enrich` flows set this at issue-creation time — s
 
 PR body close markers depend on which planning backend the project picked at scaffold:
 
-- **Linear-tracked issues** (opinionated profile): `Closes <TEAM>-N` in the PR **body** (not just the title — body is the durable surface; titles can be edited at squash-merge time without affecting the close marker)
-- **GitHub-tracked issues** (github-only profile, or any GitHub-only sub-issue): `Closes #N` in the PR body
+- **Linear-tracked issues** (linear planning): `Closes <TEAM>-N` in the PR **body** (not just the title — body is the durable surface; titles can be edited at squash-merge time without affecting the close marker)
+- **GitHub-tracked issues** (github-issues planning, or any GitHub-tracked sub-issue): `Closes #N` in the PR body
 - **Both can coexist** in the same PR body if the PR closes one of each.
 - **Markdown-only projects**: there are no issue-tracker entities to close; the cascade-event log entries are updated by hand.
 
@@ -439,17 +439,18 @@ The checklist runs auto-checkable; surfacing only failures. Per [GitHub Spec Kit
 
 Beyond what the cascade skills auto-configure, projects using a planning backend require these settings (one-time setup per project):
 
-**Linear (opinionated profile)**:
+**Linear (linear planning)**:
 1. **Cycles**: enable or disable per the methodology section above
 2. **Workflow > Auto-complete parent when all sub-issues complete**: ON (matches cascade rollup semantics)
 3. **Workflow > Auto-complete sub-issues when parent completes**: OFF (preserves R-issue independence)
 4. **Workflow > Sub-issue rollup display**: ON (renders the cascade-tree view in project tables)
 5. **Branch name template** (in `Settings > Workspace > Branch names`): `{type}/{teamPrefix}-{issueIdNumber}-{title}` matches the `<type>/<TEAM>-N-<slug>` convention
 
-**GitHub Projects v2 (when planning backend = GitHub Issues)**:
+**GitHub Projects v2 (when planning backend = GitHub Issues)** — *designed-unexercised as of 2026-08-09 (no real cascade run has exercised this board contract yet; the canonical spec is `backends.md` § the Projects v2 board — expect calibration on first real use)*:
 1. Create a Projects v2 board with sub-issue rendering enabled
 2. Configure swimlanes grouped by parent issue
-3. Status field with the cascade-relevant states (Backlog / Ready / In progress / In review / Done)
+3. One Status field with the seven canonical values (Triage / Refinement / Ready / In Progress / In Review / Done / Archived) per `backends.md` — not a reduced set
+4. Board automation rules: entry Status from label, parent In Progress/Done from the sub-issue progress field, PR open → In Review, PR merged → Done — the cascade does **not** set the Status field via MCP (`auto_status_via_board_rules = true`)
 
 These are user actions, not auto-applied via MCP. Document the post-merge step in any PR that affects the cascade.
 
@@ -544,6 +545,17 @@ grep -rn "\[F[0-9]\.AC[0-9]\]" .claude/skills/*/references/templates/
 
 # This file is referenced from CLAUDE.md (or wherever the project's project-instructions live)
 grep "@.claude/rules/cbk-conventions.md" CLAUDE.md
+
+# Producer templates emit the two-axis vocabulary (positive checks — must match)
+grep -n "Planning backend" .claude/skills/scaffold/references/scaffold_output_template.md
+grep -n "Knowledge backend" .claude/skills/scaffold/references/scaffold_output_template.md
+grep -rn "F<#> — M<#>" .claude/skills/framing/references/templates/
+
+# Pre-refactor vocabulary must NOT appear anywhere in kit content — widened
+# beyond .claude/skills/ (the narrow greps missed producer + config surfaces)
+! grep -rn "github-only | opinionate[d]" .claude/
+! grep -rn "initiative\.md" .claude/ README.md
+! grep -rn -i "opinionated profile" .claude/commands/ .claude/rules/pr-review.md .claude/rules/knowledge-backend.md README.md .mcp.json.example
 ```
 
 ## References

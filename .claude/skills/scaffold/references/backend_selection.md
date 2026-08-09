@@ -152,6 +152,6 @@ If the user already has an existing setup (a repo, a Linear workspace, an existi
 
 Once both axes are chosen, the resulting combination is recorded in `.cascade/backends.toml` (see `backends.md` § Configuration). Run the three-state detection matrix from SKILL.md to figure out what's actually possible in this chat session for the planning backend, then proceed to discovery (the working-style step) before stage 1.
 
-## A note on the old "opinionated profile" framing
+## A note on the old bundled-profile framing
 
-Prior versions of this kit bundled `linear` planning and `notion` knowledge into a single "opinionated" profile. The constant + two axes refactor removed that bundling because it forced operators into either Linear+Notion together or neither — with no clean home for the most common mismatch (`github-issues` + `notion`, the "I have Notion context but no Linear" shape). Operators who arrive expecting "the opinionated profile" should be guided to picking `linear` for planning and `notion` for knowledge in sequence; the resulting combination is functionally identical to the old preset.
+Prior versions of this kit bundled `linear` planning and `notion` knowledge into a single named preset. The constant + two axes refactor removed that bundling because it forced operators into either Linear+Notion together or neither — with no clean home for the most common mismatch (`github-issues` + `notion`, the "I have Notion context but no Linear" shape). Operators who arrive expecting the old preset name should be guided to picking `linear` for planning and `notion` for knowledge in sequence; the resulting combination is functionally identical to the old bundle.
