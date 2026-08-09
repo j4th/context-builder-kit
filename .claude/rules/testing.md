@@ -51,6 +51,8 @@ Typical examples:
 4. Implement to green, one test at a time. Resist implementing past the next failing test — that's how TDD's documenting-the-design value gets lost.
 5. Refactor while green. Your project's `check` task (whatever runs lint + typecheck + test) is the gate; passing it is non-negotiable before the simplify pass.
 
+**Calibration on the placeholder body.** The canonical scaffold form above — `pytest.fail("not implemented")` / `flunk("not implemented")` / `throw new Error("not implemented")` — is preferred: the assertions arrive only when the implementer reads the contract, so spec-pinning stays unambiguous. But **assertion-form red-first** (committing the full assertion body before the implementation lands) is *also* acceptable when the assertions come verbatim from a spec source — the rough-in `## Test plan`, EARS-style acceptance criteria, or an upstream contract document. Transcribing a pre-existing spec into assertions is not the post-hoc-TDD anti-pattern (§ Anti-patterns): that anti-pattern is writing the implementation first and then a test that pins its output. When the spec source is ambiguous or the assertions require a judgment call about *what* to assert, default to the canonical placeholder form — it forces the spec-pinning conversation up front.
+
 **Why TDD here**: the test is the spec. When the test name is quotable verbatim from the acceptance criterion, the rough-in spec, the test file, and the implementation all stay in sync — and a future maintainer reading the test runner's trace output sees the contract written in the same words the issue body uses.
 
 ### 2. Conformance-first — required for boundary adapters
@@ -84,6 +86,7 @@ Typical examples:
 - End-to-end integration tests with mocked boundaries (write the pipeline, then assert on observable telemetry/output)
 - Hardware-on-real-device rehearsal tests (only run on the target; the scaffolding has to exist before assertions are useful)
 - Dashboard / operator-console interaction tests
+- Declarative / data-transformation models where the query (or config) *is* the implementation (SQL models, dataframe pipelines, warehouse transformations) — materialize the model, then assert invariants (idempotency/append-only, lineage-completeness, grain/shape) as queries over the live output, not via mocks. The exception: any pure functions the model relies on (identity/hash derivations) and their cross-language parity are conformance-first, not shape-of-done.
 
 **Workflow**:
 

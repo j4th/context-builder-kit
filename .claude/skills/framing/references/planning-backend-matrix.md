@@ -40,6 +40,7 @@ Concretely:
 6. **Atomic transition** at the final HITL gate:
    - Commit `frame-NN.md` + `docs/cbk/README.md` index update via GitHub MCP (single commit)
    - Create one F-sub-issue per milestone via `issue_write` + `sub_issue_write add` parented under the workstream Issue
+   - **Reconcile absorbed intake candidates** (if the project runs a contribution-intake lane — see project `cbk-conventions.md`): for each candidate folded into a milestone, promote it 1:1 to its F-issue or close it as superseded via `issue_write` (drop the project's intake-holding label + add `cascade-depth:framed`, or close + comment-link the F-issue) — so it leaves the project's holding surface.
 7. **No Linear operations**, ever, in `github-issues` mode.
 
 ## `linear` planning behavior
@@ -82,6 +83,7 @@ The workstream parent issue is created **before** framing runs — typically at 
      - `labels`: `workstream:<slug>` + `cascade-depth:framed` + appetite label (`appetite:small|medium|big` per blueprint)
      - `assignee`: per scaffold.md / cbk-conventions.md
      - `blockedBy`: empty initially (rough-in chains R-issues with blockedBy; framing doesn't pre-chain F-issues unless milestones depend on each other across workstreams)
+   - **Reconcile absorbed intake candidates** (if the project runs a contribution-intake lane — see project `cbk-conventions.md`): for each candidate the framing folded into a milestone (they surface in the parent's issue list read in step 4), either **promote** it 1:1 to its F-issue (`save_issue` by `id` → retitle `[<slug>:F<#>] …`, drop the project's intake-holding label and add `cascade-depth:framed`, both per `cbk-conventions.md`) instead of minting a duplicate, or **close it as superseded** (`save_issue` by `id` → status `Canceled` + a comment linking the F-issue it informed). Either way it leaves the project's holding surface.
    - On partial failure (markdown committed but Linear creation failed, or vice versa), STOP and surface the partial state — do not retry blindly. The user decides recovery.
 7. **Append a row to `docs/cbk/README.md`** describing this framing event in the same commit as the frame-NN.md commit.
 8. **Optional Linear project description sync** — if the user wants the Linear phase project's description to mirror the workstream's framing summary, propose a manual paste (Linear MCP doesn't yet expose project-description editing in a stable way; document as user-action).

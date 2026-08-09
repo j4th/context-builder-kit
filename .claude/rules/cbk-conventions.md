@@ -10,6 +10,17 @@ The principle:
 - **Two-way reference.** Skills cite this file as the project-level override surface. This file cites skills as the upstream pattern source. No project-specific identifiers (issue keys, framing numbers, slug names) should leak into skill content.
 - **Exercised, not provisional.** Sections in a project's filled-in copy of this file should record choices the project has actually exercised, not guesses. As the project runs cascade cycles, update this file with what proved out.
 
+## Surface inventory
+
+A single glanceable manifest of where every surface for this project actually lives, so any "see your project's `cbk-conventions.md`" pointer resolves in one place. Fill in the bracketed values (delete rows that don't apply):
+
+- **Code + cascade artifacts (the constant):** `<repo URL>`
+- **Planning backend (`<GitHub Issues | Linear | in-repo markdown>`):** `<workspace / initiative / team+key / project pointers, as applicable>`
+- **Knowledge backend (`<Notion | none>`):** `<hub URL + MCP server, if configured>`
+- **Upstream / pre-cascade docs:** `<path to any frozen reference material, or "none">`
+- **Problem brief / scaffold output:** `docs/cbk/problem_brief.md` · `docs/cbk/scaffold.md`
+- **Tooling conventions:** `<record any project-specific tool / MCP-selection conventions here — e.g. which code-intelligence or live-docs MCP to prefer over the built-ins — or "defaults">`
+
 ## Cascade artifact layout — flat (default) or nested
 
 The default layout is **flat** under `docs/cbk/`:
@@ -71,10 +82,95 @@ Title prefixes are the structural identifier across the cascade. They survive an
 | Workstream parent | `[<workstream-slug>]` | `[<slug>] <Workstream name>` |
 | Framing F sub-issue | `[<workstream-slug>:F<#>]` | `[<slug>:F1] <Milestone intent>` |
 | Rough-in R sub-sub-issue | `[<workstream-slug>:F<#>:R<#>]` | `[<slug>:F1:R1] <R-issue intent>` |
+| Bug-lane issue (externally-sourced) | `[<workstream-slug>:bug]` | `[<slug>:bug] <intent>` |
+| Enhancement-lane issue (small capability) | `[<workstream-slug>:enh]` | `[<slug>:enh] <intent>` |
+| Deferred meta-issue | `[<workstream-slug>:meta]` | `[<slug>:meta] <setup/decision intent>` |
+| Meta-issue R sub-sub-issue | `[<workstream-slug>:<meta-tag>:R<#>]` | `[<slug>:<meta-tag>:R1] <intent>` |
 
 **Workstream slugs** are locked at blueprint and immutable across the workstream's lifetime. The slug list lives in `docs/cbk/blueprint.md` § Workstreams. Each project fills in its own list there; this file shouldn't enumerate them.
 
 Slug stability is load-bearing: branches reference it (`<type>/<TEAM>-<N>-<slug>...`), labels reference it (`workstream:<slug>`), commit messages reference it. A workstream that needs renaming triggers a re-blueprint, not in-place mutation.
+
+A deferred meta-issue (`[<slug>:meta]`) can itself be roughed-in into R sub-sub-issues when a setup/decision meta is too large for one `/finish`. Its children take `[<slug>:<meta-tag>:R<#>]`, where `<meta-tag>` is a **short descriptive slug for that specific meta** (not the literal `meta`) — a workstream routinely carries several `[<slug>:meta]` issues, so `[<slug>:meta:R<#>]` would collide across them. The `<meta-tag>` is chosen at the meta's rough-in (a meta has no F-number — it is not a framing milestone) and stays stable across its children, keeping the hierarchy grep-able.
+
+## Contribution intake — bug lane + enhancement lane
+
+The cascade is **top-down**: workstream → framing → rough-in → `/finish` answers *"what capability are we building."* Externally-sourced reports — a collaborator's bug, a feature request, a member-filed ticket — are **bottom-up** (*"something's broken"* / *"I want X"*) and must **not** be forced through framing. This section defines the bottom-up lane. The `/intake` command (`.claude/commands/intake.md`) walks it — investigate + reproduce, or scope the acceptance shape — and `/enrich` (`.claude/commands/enrich.md`) is the single-issue sibling of `rough-in` that finishes an enhancement-lane spec.
+
+### Front door — a holding surface for raw arrivals
+
+Raw, externally-sourced reports land in a **holding surface** that is strictly *pre-`/intake`* — a place for incoming work *before* it is investigated and shaped, kept separate from cascade-structured issues. Pick whatever your planning backend offers:
+
+- **Linear** — the team's **Triage** inbox (GitHub issues arrive via the Linear GitHub integration; members file directly).
+- **GitHub Issues** — a `triage` label (or an unassigned / no-status column on the Projects v2 board) for issues not yet shaped.
+- **Markdown-only** — an `## Inbox` section at the top of the cascade-events index (or a dedicated `docs/cbk/inbox.md`).
+
+Once `/intake` shapes a report it **leaves the holding surface** carrying its cascade labels (`cascade-depth:*` and/or `enhancement`) and does **not** return. The complementary "shaped but not yet `/finish`-able" pool lives on a *label* axis (§ Awaiting cascade work), not on the holding surface — two non-overlapping surfaces: the holding state for raw arrivals, the `enhancement` label for post-`/intake` candidates awaiting `/enrich` or framing.
+
+### Provenance marker
+
+Every externally-sourced issue carries a provenance label; cascade-native issues carry none. This is the queryable external-vs-native distinction:
+
+- **`source:<origin>`** — e.g. `source:github` (originated as a GitHub issue; also created in the repo so issue forms auto-apply it), `source:linear` (filed directly by a collaborator), or a generic `source:external`. "All external" is the union of the `source:*` labels.
+
+The reporter and the origin URL also go in the issue body.
+
+### The discriminator — four routes
+
+`/intake` investigates + reproduces (a bug) or scopes the acceptance shape (a capability), then classifies into exactly one route:
+
+| Incoming | Route | Skips framing? | Lands as |
+|---|---|---|---|
+| **Bug** in existing code | Bug lane | yes | Roughed-in bug issue under the relevant workstream — `/finish`-able directly |
+| **Small net-new capability** (one `/finish`, no decomposition) | Enhancement lane | yes | A thin `[<slug>:enh]` candidate under the workstream, **enriched in place** by `/enrich` → `/finish`-able (no framing milestone) |
+| **Large net-new capability / idea** | Framing backlog | no | Framing candidate under the workstream; **not** `/finish`-able until framed + roughed-in |
+| **Cascade / tooling gap** | Cascade/tooling lane | usually | A meta-issue or roughed-in directly |
+
+**Small vs large capability.** A *small* capability is one a single `/finish` can fully implement + test + review **without decomposing into multiple R-issues**: a bounded feature (≈ [Shape Up](https://basecamp.com/shapeup) "small" appetite) with no sub-dependencies on other unbuilt capabilities and no multi-workstream spread. It skips the framing milestone and is enriched in place by `/enrich` into a `[<slug>:enh]` roughed-in issue. A *large* capability — needs sequencing into multiple R-issues, depends on a prior capability landing first, or spans workstreams — goes to the framing backlog. **When `/intake` is unsure, it defaults to framing** (the conservative call); the operator can always collapse a frame into an enhancement-lane issue if the capability proves simpler than expected.
+
+### The bug-lane convention
+
+An investigated, reproduced bug becomes a roughed-in-quality issue **without an F-number**:
+
+- **Title:** `[<slug>:bug] <intent>`. `<slug>` is a locked **workstream** slug (`docs/cbk/blueprint.md` § Workstreams) — *not* a label-only area. `/finish` validates the slug against the blueprint list, so cascade/tooling bugs do **not** use the bug lane; they route via the discriminator's "cascade / tooling gap" row.
+- **Parent:** the workstream `[<slug>]` issue directly (no framing/F sub-issue between them).
+- **Labels:** the rough-in R-issue label set for a bug — the workstream label (`workstream:<slug>`), `cascade-depth:roughed-in`, the planning backend's bug type label, and the `source:*` provenance label. Apply the type label at issue-creation (`save_issue`) time, not retroactively — some planning backends cache the suggested branch name from the creation-time type label (the real branch is hand-named at `/finish` time regardless).
+- **Body:** the same eight sections `/finish` requires (`## Context` … `## PR contract`), generated by `/intake` with a verified failing test in `## Test plan` and `## Dependencies: None` (a bug fix to existing code has no rough-in dependencies).
+- **Branch (at `/finish` time):** `fix/<TEAM>-<N>-<slug>`.
+- **It skips framing.** There is no new capability to decompose; the investigation already produced the spec.
+
+`/finish` accepts this `[<slug>:bug]` format alongside the standard `[<slug>:F<N>:R<M>]` rough-in format.
+
+### The enhancement-lane convention
+
+A small, scoped net-new capability becomes a roughed-in-quality issue **without an F-number** — the bottom-up sibling of the bug lane, mirroring it 1:1 except the spec comes from `/enrich`'s brainstorm + investigation (not a bug reproduction):
+
+- **Title:** `[<slug>:enh] <intent>`. `<slug>` is a locked **workstream** slug — *not* a label-only area (a small cascade/tooling capability routes via the "cascade / tooling gap" row, not the enhancement lane).
+- **Parent:** the workstream `[<slug>]` issue directly (no framing/F sub-issue between them).
+- **Labels:** the rough-in R-issue label set — the workstream label (`workstream:<slug>`), `cascade-depth:roughed-in`, the type label matching the work (a feature type for a net-new capability, an improvement type for a small refactor/chore), and the `source:*` provenance label when externally-sourced via `/intake`. The transient framing-backlog `enhancement` marker that `/intake` applied to the *candidate* is **dropped** when the issue is enriched to roughed-in — `cascade-depth:roughed-in` is the readiness signal; the type label is the persistent nature (the same type-persists / state-graduates split the bug lane uses).
+- **Body:** the same eight sections `/finish` requires (`## Context` … `## PR contract`), generated by **`/enrich`** (not `/intake`) with acceptance criteria sufficient for a single `/finish` and `## Dependencies: None` unless the capability depends on a prior rough-in issue. `/enrich` also posts a **provenance comment** capturing the framing + rough-in reasoning it collapsed inline.
+- **Branch (at `/finish` time):** `feat/<TEAM>-<N>-<slug>` (or the type-matching prefix).
+- **It skips framing.** The capability is small enough that `/enrich`'s scoped spec suffices; there is no milestone to decompose.
+
+`/finish` accepts this `[<slug>:enh]` format alongside the `[<slug>:F<N>:R<M>]` rough-in and `[<slug>:bug]` bug-lane formats.
+
+### Net-new *large* capabilities do NOT skip framing
+
+If `/intake` classifies a report as a *large* net-new capability (multi-R, sub-dependent, or cross-workstream), it files a framing candidate and says so — it does **not** pretend the issue is `/finish`-able, and it does **not** route it through the enhancement lane. The operator runs `framing` → `rough-in` on it like any other capability. Honesty about the cascade boundary is the rule: only *small* capabilities (one `/finish`, no decomposition) take the enhancement lane.
+
+### Awaiting cascade work — the not-yet-`/finish`-able holding signal
+
+`/intake` files both non-bug routes — the enhancement-lane `[<slug>:enh]` candidate and the large-capability framing candidate — with the transient **`enhancement`** marker and **without** `cascade-depth:roughed-in`. That marker is the cascade's "shaped by `/intake`, not yet ready for `/finish`" signal, so an **open issue still carrying `enhancement`** is exactly a candidate awaiting a human-or-skill action — the queryable "holding" set. Surface it with your planning backend's **saved-view / filtered-query** mechanic, **not** a workflow-state change (candidates stay in the default backlog state `save_issue` assigns; the holding signal rides the *label* axis every skill already writes):
+
+- **A saved view / filter "Awaiting cascade work"** — filter on **`label = enhancement`** (optionally `AND state is not Done/Canceled`). Surfaces both non-bug routes in one place. Mid-cascade issues — framed `[<slug>:F<#>]` F-issues (`cascade-depth:framed`), meta-issues, roughed-in R-issues — correctly stay out; they don't carry `enhancement`.
+- For **markdown-only** projects, the equivalent is a section or query over the cascade-events index for entries tagged `enhancement`.
+
+**Graduation (leaving the view).** Both routes **auto-clear** `enhancement`, so a candidate drops out the instant it graduates — no manual step, no orphans:
+
+- **Enhancement lane** — `/enrich` swaps `enhancement` → `cascade-depth:roughed-in`.
+- **Framing backlog** — `framing` absorbs the candidate into a milestone and reconciles it via one of: **promote** it 1:1 to that `[<slug>:F<#>]` F-issue (`save_issue` by id → retitle `[<slug>:F<#>] …`, drop `enhancement`, add `cascade-depth:framed`), or **close it as superseded** by the F-issue(s) it informed (`save_issue` by id → status Canceled + a comment linking the F-issue).
+
+**Why a label, not the holding state.** The holding/triage surface is reserved for raw *pre-`/intake`* arrivals (§ Front door) and is driven by your backend's native inbox lifecycle (accept / decline / merge / snooze on Linear; the equivalent triage actions elsewhere). Setting a *shaped* candidate back into the holding state (a) clashes with that pre-investigation meaning, (b) collides with the native inbox actions — an inbox-clearer could accept/decline a held candidate — and (c) has **no exit** for framing candidates (they graduate via `framing → rough-in`, neither of which mutates backend state), so they'd accumulate there. The label view has none of these failure modes and needs no skill change.
 
 ## Trace ID convention
 
@@ -117,6 +213,18 @@ Example shapes:
 **Why include the issue ID**: Linear's GitHub integration auto-links branches to issues when the issue ID appears anywhere in the branch name (substring match, not full match — see [Linear's branch-naming announcement](https://linear.app/changelog/2020-04-13-branch-naming)). Including the ID eliminates the magic-word-in-PR-body fallback path. The body marker (`Closes <TEAM>-N`) still works, but the branch-name path fires earlier and is more reliable.
 
 `/finish` already creates branches in this shape; this convention codifies what was already happening.
+
+### Linear `{type}` placeholder — set the type label at issue creation (Linear only)
+
+*Applies only when the planning backend is Linear.* Linear's branch-name template (`Settings > Workspace > Branch names`) resolves `{type}` from the issue's built-in **Feature / Bug / Improvement** type label — and **caches the resolved value into the issue's `gitBranchName` at creation time**. Relabeling afterward does *not* update the suggested branch name, and an issue with no type label defaults to `Feature`, producing `feature/…` branches for `chore`/`docs`/`refactor` work that aren't in the Conventional Commits type list. So the type label must be set in the **initial** `save_issue` call, not retroactively. Mapping from the Conventional Commits type to Linear's coarser taxonomy:
+
+| Conventional Commits type | Linear type label |
+|---|---|
+| `feat` | Feature |
+| `fix` | Bug |
+| everything else (`chore`, `docs`, `refactor`, `test`, `perf`, `style`, `build`, `ci`) | Improvement |
+
+The rough-in / `/intake` / `/enrich` flows set this at issue-creation time — see the rough-in skill's planning-backend matrix.
 
 ## Closes-keyword conventions
 
@@ -164,6 +272,27 @@ How to avoid:
 
 **Substring trap — quoting the literal marker token in a commit-message body re-triggers the matcher.** GitHub's match is a substring scan across the entire message, not anchored to the subject line or the end. A commit whose body explains *why* it's a fix for this trap, but quotes the literal token while explaining, is itself skipped. Use a paraphrase (e.g., "the CI-skip marker", "the conventional skip-tag") in prose; reserve the literal `[skip ci]` for the actual flag at the end of the subject line where you intend it to fire.
 
+**Required-checks-block-merge trap — a skip-marked HEAD commit can't merge under strict branch protection.** When `main` requires status-check contexts with "require branches to be up to date" (strict), the CI-skip marker suppresses the CI workflow entirely, so those required contexts **never report** — the platform parks them as "Expected — Waiting for status to be reported" and the merge stays blocked indefinitely. (A separate always-on workflow can still run, making the PR *look* green while it stays unmergeable.) Net: `[skip ci]` saves nothing for a PR that has to merge through branch protection. For a docs-only PR bound for `main`, either (a) skip the marker on the final commit so CI runs and reports, or (b) keep the marker on the content commits but end the branch on a non-marker commit (`git commit --allow-empty -m "ci: run gates to satisfy required checks"`) before requesting merge. Same root cause and fix as the auto-review trap; the marker still earns its keep on intermediate WIP commits that don't open a PR to `main`.
+
+## Dependency settle-window — supply-chain discipline
+
+No dependency version is adopted until its release is **≥ `<N>` days old** (7 is a common default) — a *settle window* so a yanked or day-zero-compromised release is caught upstream before this project is first-to-install. The window applies to **every lockfile-managed ecosystem** in the repo, not just the primary language's.
+
+**Enforcement is per-ecosystem, at the tool that resolves versions.** Each lockfile-managed surface gets the release-age floor wired into its own mechanism — your ecosystem's cooldown mechanism (e.g. the dependency-update bot's cooldown setting, the package manager's release-age floor on its resolve / add / non-frozen sync operations, or a CI guard that fails the build when an active ecosystem is missing the floor). Record the concrete `<N>` and the per-ecosystem mechanism this project uses in this section of the filled-in copy — the pattern is portable, the config keys are not.
+
+Two invariants keep the window honest; violate either and the policy inverts from protection into liability:
+
+- **Cooldowns gate VERSION-updates only — security advisories still patch instantly.** The settle window slows *routine* version bumps, never security fixes. **Never widen a window to delay a security patch.** The whole point is to run behind on convenience updates and current on security ones.
+- **Floors are a compatibility contract, not a volume lever.** A version-update fires on a new *release*, not on the floor value, so raising the floor (the oldest version the project supports) does **not** reduce update volume. Bump a floor only for a security advisory or a hard requirement — never to "catch up to latest". The one lever on update *volume* is the sweep schedule (how often routine bumps are batched — e.g. monthly).
+
+**When you touch dependency plumbing:**
+
+- **Adding a new ecosystem to the update bot** (a new package-ecosystem entry, uncommenting a stub): it MUST carry the release-age floor. A bare ecosystem with no floor should fail the CI guard rather than merge.
+- **Scaffolding a new lockfile-managed surface** (e.g. a second language, or a frontend workstream landing): apply that ecosystem's release-age analogue in the *same* change that introduces the lockfile — don't defer it to a follow-up.
+- **Lockfiles are tool-managed, not hand-edited.** Version changes flow through the package manager's lock / sync commands, never a manual edit to the lockfile. Where a project enforces this with a PreToolUse hook, note the hook path here.
+
+Dependency-update-bot PRs are triaged by `pr-review.md`'s four-class rubric; this section states the adoption policy those PRs are gated by.
+
 ## Methodology — choice space
 
 Blueprint picks a methodology from the register based on team shape, appetite, and quality bar. Common choices:
@@ -172,8 +301,18 @@ Blueprint picks a methodology from the register based on team shape, appetite, a
 - **Issue execution: Kanban-flow vs sprint-bounded**: with cycles disabled, pick the next available issue (top of the Ready column), finish, merge, next. With cycles enabled, sprint scope sets the work-in-flight bound.
 - **WIP limit**: `/finish` enforces single-issue execution by virtue of the slash-command shape, so a hard "one issue at a time" limit is the natural floor.
 - **Appetite tagging**: framings can tag milestones with [Shape Up](https://basecamp.com/shapeup) appetite (small ~1 week, medium ~3 weeks, big ~6 weeks). Calendar weeks are aspirational, not enforced.
+- **Flop / kill checkpoint** (optional): a pre-declared point at which the project honestly stops rather than continuing on sunk cost — a Shape-Up-adjacent circuit breaker (e.g. "if the core hypothesis hasn't proven out by milestone N, we end it deliberately"). Record the criterion if the project wants one.
 
 Whichever methodology blueprint picks, this section in the project's filled-in copy of `cbk-conventions.md` should record: cycles on/off, pull-flow style, WIP discipline, appetite-tagging convention. Without this record, the methodology selection from blueprint is hard to operate against.
+
+## Verify-against-reality before a one-way door (optional practice)
+
+The portable framing skill trusts documentation. A project can add a heavier discipline if its stack is fast-moving or its data assumptions are load-bearing: **before committing a frame (or any one-way-door decision), verify the load-bearing assumptions against reality** rather than the docs. Two shapes, adopt if useful:
+
+- **Prove-it spike** — a throwaway run against the real stack for a single load-bearing recipe (does this library API / this catalog / this data shape actually behave as the docs claim?), discarded once it answers the question. Distinct from a *shippable* spike milestone.
+- **Rigor pass** — for a high-stakes frame, a short pre-commit pass that live-probes tooling currency and key data/interface assumptions, optionally with a multi-lens adversarial review of the draft frame before it's locked.
+
+If a project adopts either, record its trigger here (e.g. "rigor pass on any frame that introduces a new external dependency"). Large research/rigor outputs can be committed as a companion file (`frame-NN-<slug>.md`) the frame links and rough-in inherits, rather than inlined or discarded.
 
 ## ADR index sync
 
@@ -213,6 +352,7 @@ Use this mapping when explaining the cascade to someone familiar with Spec Kit o
 | `docs/adr/[0-9]{4}-*.md` | **Immutable** | New ADR with `Supersedes: ADR-NNNN` field; old ADR's status changes to "Superseded by ADR-MMMM" | ADR-0000 immutability discipline + hook enforcement + CI lint |
 | `docs/cbk/blueprint.md` | **Append-only for new ADRs** (the Stack decisions table); otherwise immutable to preserve cascade history | Re-blueprint creates new file | Blueprint is a cascade event; mutation breaks the audit trail |
 | `docs/cbk/frame-NN.md` | **Append-only for `## Rough-in events` table**; otherwise immutable post-commit | Re-framing creates `frame-MM.md` with `Supersedes: frame-NN` field; old frame's status → "Superseded" | Frames are cascade events; rough-in events are the timeline log |
+| `docs/cbk/frame-MM.md` (additive increment) | **New file** (next sequential number); the prior frame is not mutated and stays `Active` | *No* supersession — an additive increment carries a `Builds on: frame-NN` header (not `Supersedes`); both frames stay `Active` and their open milestones coexist | Not every new framing replaces: an increment extends a workstream whose prior milestones are still valid and open, so the prior frame must not flip to `Superseded` (see framing SKILL.md Step 2 pattern D) |
 | `docs/cbk/README.md` | **Append-only for new entries**; status column updates allowed | Status updates are mutations to single column, not whole-file rewrites | Status changes (Active → Superseded → Completed) need to flow |
 | `docs/STANDARDS.md`, `docs/ARCHITECTURE.md`, `CLAUDE.md` | **Freely mutable** | n/a — living docs | Project-context docs evolve with the project; git history is the version archive |
 | `.claude/rules/*.md` | **Freely mutable** | n/a | Operational rules; mutations are routine |
@@ -220,6 +360,12 @@ Use this mapping when explaining the cascade to someone familiar with Spec Kit o
 | Code | **Freely mutable** | n/a | Standard code evolution |
 
 Cascade events being append-only is structurally important: the cascade IS the audit trail of decisions. A new framing supersedes an old one with a new file; the old one stays in `docs/cbk/` for future readers to understand "we used to think X, now we think Y."
+**ADR supersession has more than one grain.** The `docs/adr/*` row above shows whole-ADR supersession; two finer-grained relationships sit alongside it, both preserving the parent's immutability (neither edits the parent file):
+
+- **Refine** — `Refines: ADR-NNNN (Dn, …)` in the child's header narrows or clause-level-clarifies a specific decision `Dn` in the parent **without invalidating it**. The parent stays **Accepted**; both parent and child are consulted for conformance. Use when implementation reveals an accepted clause was written too generally and needs a scoped reading, not a reversal. The parent gains **no back-pointer** (it is immutable) and **no status change** — discoverability comes from the child's `Refines:` field plus the child's ADR-index row.
+- **Clause-scoped supersede** — `Supersedes: ADR-NNNN Dn` reverses only decision `Dn` of the parent while the parent's other clauses stand. The parent stays **Accepted** (it is not wholly superseded); the child's index row names the specific clause it replaces.
+
+**Reviewers that check ADR conformance must follow the `Refines:` chain.** When an ADR intersecting a diff names a refiner (or a clause-scoped superseder), load that child too and apply its scoped clauses — a parent read in isolation yields the pre-narrowing reading. The kit's `adr-conformance-reviewer` agent (see `.claude/rules/pr-review.md` § Project-local agents to dispatch alongside) is where this chain-following lives.
 
 ## HITL gate load-bearing heuristics
 

@@ -25,12 +25,20 @@ The cascade is a **funnel, not a waterfall**: phases 4 and 5 operate **one proje
 
 `adr-new` is auxiliary: a skill the *target* project's blueprint installs alongside the cascade skills to record immutable architecture decisions.
 
+The cascade is top-down, but a **bottom-up contribution lane** complements it for externally-sourced work: `/intake` turns a bug report or feature request into a shaped `/finish`-able issue (investigate → reproduce → classify → shape, never lands code); `/enrich` is rough-in for a single small capability that skips the framing milestone; `/pr-respond` closes the PR-feedback loop (the inverse of `/finish`). The convention that governs the lane — bug/enhancement lanes, what skips framing vs stays framed — lives in `.claude/rules/cbk-conventions.md § Contribution intake`.
+
 ## Repo layout
 
 ```
 .claude/
-├── commands/finish.md             ← the executor slash-command (phase 6)
-├── rules/cbk-conventions.md       ← project-level convention overrides template (a target project copies this and fills in)
+├── commands/
+│   ├── finish.md                  ← the executor slash-command (phase 6)
+│   ├── intake.md                  ← bottom-up entry: externally-sourced report → /finish-able issue
+│   ├── enrich.md                  ← rough-in for one small capability (enhancement lane, skips framing)
+│   └── pr-respond.md              ← the PR feedback-loop executor (inverse of /finish)
+├── agents/                        ← project-local PR reviewers (adr-conformance, logging-discipline, cascade-rule)
+├── hooks/                         ← PreToolUse guards (protect-immutable-adrs, protect-lock-files) + format-on-edit exemplar
+├── rules/                         ← operational contracts (cbk-conventions template, pr-review, testing, logging, simplification, knowledge-backend)
 └── skills/
     ├── consultation/SKILL.md      + references/   ← phase 1
     ├── scaffold/SKILL.md          + references/   ← phase 2

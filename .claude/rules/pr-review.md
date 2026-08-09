@@ -10,7 +10,7 @@ Operational rules for the `pr-review-toolkit:review-pr` invocation in the cascad
 
 ## When to invoke
 
-`/finish` Step 7 dispatches `pr-review-toolkit:review-pr` against the local branch before opening the draft PR. Invoke with no args for the default full sweep — do **not** pass the PR number as an argument (that's not the skill's interface; the skill auto-discovers via `git diff` + `gh pr view`, falling back to `git diff main...HEAD` pre-PR).
+`/finish`'s review pass dispatches `pr-review-toolkit:review-pr` against the local branch before opening the draft PR. Invoke with no args for the default full sweep — do **not** pass the PR number as an argument (that's not the skill's interface; the skill auto-discovers via `git diff` + `gh pr view`, falling back to `git diff main...HEAD` pre-PR).
 
 If the toolkit isn't installed or fails to invoke, **stop and surface** — do not silently skip. The "does not skip" rule in `/finish` makes a missing toolkit blocking.
 
@@ -20,8 +20,11 @@ When the diff touches code under their topics, dispatch project-local reviewers 
 
 - **`adr-conformance-reviewer`** (`.claude/agents/adr-conformance-reviewer.md`) — runs when the diff touches code governed by an ADR. Reads `docs/adr/README.md` and intersects the diff against ADRs whose decisions plausibly govern the changed files.
 - **`logging-discipline-reviewer`** (`.claude/agents/logging-discipline-reviewer.md`) — runs when the diff touches logging or telemetry surfaces. Reads `.claude/rules/logging.md` and checks structured-only logging, correlation-ID propagation, level taxonomy, sensitive-data rules.
+- **`cascade-rule-reviewer`** (`.claude/agents/cascade-rule-reviewer.md`) — runs when the diff touches code or commits governed by any `.claude/rules/*.md` other than `logging.md` (testing regimes, `cbk-conventions.md` branch/commit/label/skip-ci/mutation discipline, `simplification.md`, `knowledge-backend.md`). Applies this file's rubric to classify what it finds; it does not check the diff for whether *this* file is being followed.
 
 If your project authors additional reviewer agents (e.g., for a dependency-injection contract, a security-boundary policy, an i18n discipline), list them here so the dispatch list stays in this file rather than scattered across `/finish`.
+
+**Authoring a project-local reviewer.** The reviewers above share a portable shape worth reusing: frontmatter (`tools: Read, Glob, Grep, Bash` [+ `Skill` if it invokes one], `model: sonnet`); a **Scope** section stating what it does and doesn't review, with explicit hand-offs to the other reviewers; a **Contract-surface** section naming the frozen sources it checks against (a rule file, an ADR, a reconciliation doc) with a stated precedence; a numbered checklist of concrete checks; and an output shape that emits `file:line` + the violated contract + this file's rubric class. One cardinal rule for any reviewer covering a **fast-moving or niche stack dependency**: *never answer from memory* — invoke a docs-expert skill (or read the installed source) first and ground every API claim in a citation; an ungrounded assertion about the library is itself a defect. Distinguish idiom *correctness* (flag) from idiom *preference* (Surface at most).
 
 ## Pre-filters — strip before the agent reads
 
@@ -113,6 +116,7 @@ The highest-leverage tuning surface for AI code review (per Cloudflare's evidenc
 - **Speculative future-risk warnings.** "If you ever scale this to 1M users…" — out of scope unless the issue says so.
 - **Alternative implementation approaches the agent prefers** when the existing one is also fine.
 - **Style or naming on exported APIs** without a concrete compelling reason (back-compat breakage, naming-collision, etc.).
+- **ADR-literal violations that a `Refines:` child ADR or a project-local reconciliation layer scopes away.** Before flagging "violates ADR-NNNN Dn", follow the ADR's `Refines:` chain and check the reconciliation layer — a scoped reading there is authoritative, and a literal-clause flag against it is a false-positive. The `adr-conformance-reviewer` enforces this; the rubric reinforces it.
 
 **Project may exclude additionally** (configure as the `pr-review-toolkit` configuration permits):
 
@@ -135,7 +139,7 @@ The "I disagree with the bot, ship anyway" escape hatch. Practitioners report it
 
 Two mechanisms:
 
-1. **PR body marker**: include `<!-- skip-review-toolkit -->` (or similar agreed marker) in the PR description. `/finish` reads this in Step 1 and skips Step 7's review-toolkit invocation. Document the rationale in the PR body itself ("review-toolkit was wrong about X; addressing in follow-up Y").
+1. **Issue-body / operator-instruction marker**: include `<!-- skip-review-toolkit -->` (or a similar agreed marker) in the issue body, or pass it in the operator's instructions to `/finish`. `/finish` reads it in its issue-read step — a surface that exists *before* the review pass runs — and skips the review pass's review-toolkit invocation. (The marker can't live in the PR body: the review pass runs before the draft PR is created, so a PR-body marker would never gate the review it's meant to skip.) Document the rationale so the hand-off and the PR body carry it ("review-toolkit was wrong about X; addressing in follow-up Y").
 2. **`/finish` flag** (if the user invoked manually with extra args): `--skip-review` on the slash command. Same effect.
 
 Either path produces the same hand-off summary line: "Review-toolkit explicitly skipped per <reason>." Don't silently skip; the audit trail is in the PR body.
@@ -168,7 +172,7 @@ The hand-off is the audit surface. List counts per class plus the concrete actio
 
 ## When to update this file
 
-This rules file is load-bearing the moment `/finish` Step 7 dispatches `pr-review-toolkit`. Update it when:
+This rules file is load-bearing the moment `/finish`'s review pass dispatches `pr-review-toolkit`. Update it when:
 
 - A finding type recurs in the Surface column that should clearly be Apply (or vice versa) — add a row to the Apply/Surface calibration table.
 - A new noise pattern emerges that should be excluded — add it to the "What NOT to flag" list.
