@@ -2,38 +2,43 @@
 
 Operational reference for scaffold's provisioning when the planning backend axis is `linear`. Companion to `github_only_profile.md` (which covers the same shape when planning backend is `github-issues`).
 
+*One-run-exercised (a full real cascade ran on this configuration; recorded 2026-08-09 — per the dated-empirical-rails principle, re-verify the MCP tool surface before re-citing). Individually-unexercised call shapes are flagged inline; disclose and fall back per operation, never per axis.*
+
 The honesty disclosure to give the operator up front lives in `backend_selection.md`. Use it before starting.
 
 ## What this configuration provisions
 
-- **Linear**: a team (admin-only, manual), a project under that team (via Linear MCP), workspace-level label taxonomy consistent with the cascade-standard label set, recommended cycle length based on appetite. Supports the full four-level hierarchy: initiatives → projects → milestones → issues.
-- **GitHub**: same as the `github_only_profile.md` flow minus the GitHub Projects board (planning lives in Linear instead). Repo, labels, milestones (optional), starter `.github/` files.
-- **Cross-tool integration**: Linear's GitHub app (OAuth, manual install) so commits and PRs from the GitHub repo flow into Linear's activity timeline.
+The **shell** the later phases build inside — provisioned here because it is workspace infrastructure, exactly like the repo and its labels:
+
+```
+Initiative                      (the cascade's top-level container)
+└── Project shell               (one per phase/release; status + target date set)
+    └── [workstream parent issues — created by BLUEPRINT, not scaffold]
+        └── [F / R sub-issues — framing / rough-in]
+```
+
+Two load-bearing negatives from the exercised run: the cascade uses the planner's **parent/sub-issue links, never its Project-milestones field** (framing capabilities are F sub-issues), and workstreams are **parent issues, never Projects**.
+
+- **Linear**: the team (admin-only — the operator creates it in the planner UI mid-scaffold; record the team name and the issue-key prefix `<TEAM>`), the initiative, the project shell with target date, and the team label taxonomy — the cascade-depth set (`cascade-depth:rough` / `framed` / `roughed-in`, `meta`) plus one `area:<slug>` label per anticipated workstream area, mirroring the GitHub label set.
+- **Linear workflow settings** (operator-manual, from `cbk-conventions.md` § Recommended planning-backend settings): auto-complete parent ON, auto-complete sub-issues OFF, sub-issue rollup display ON, branch-name template `{type}/{teamPrefix}-{issueIdNumber}-{title}`.
+- **GitHub**: same as the `github_only_profile.md` flow minus the GitHub Projects board (planning lives in Linear instead). Repo, labels, starter `.github/` files.
+- **Cross-tool integration**: Linear's GitHub app (OAuth, manual install). Exercised heavily: branch names carrying the lowercase `<team>-<n>` substring auto-link to issues, and `Closes <TEAM>-N` in PR bodies closes them on merge.
 
 The knowledge backend is **orthogonal** to this file. If the operator also picked `notion` for knowledge, see `notion_knowledge.md` for that axis's provisioning. Either knowledge backend (`notion` or `none`) is valid alongside Linear planning.
 
-## What's documented enough to attempt
+## Provisioning sequence
 
-- **Repo creation in GitHub**: same as `github_only_profile.md` stage 1 steps 1–3 and 5. Skip the project board step (planning is in Linear, not GitHub Projects).
-- **Conventions document with `planning = linear`**: same flow as the github-only path's stage 3, committed to the GitHub repo. The `.cascade/backends.toml` records `planning.backend = "linear"` per `backends.md` § Configuration.
-- **Linear team verification**: read-only check via Linear MCP that the team exists and the operator has permission to create projects under it.
+1. **Confirm Linear MCP is configured** (probe with `mcp__linear__list_teams`). If not, surface and offer fallback (manual Linear UI walkthrough for every planner step below).
+2. **GitHub repo provisioning** — same as `github_only_profile.md` stage 1 steps 1–3 and 5; skip the project board step.
+3. **Team** — operator-manual in the planner UI (team creation is admin-scoped). Capture the team name + `<TEAM>` prefix; verify via a read (`list_teams`).
+4. **Team labels** — provision the cascade-depth + area label set (`mcp__linear__create_issue_label` per label). Exercised.
+5. **Initiative + project shell** — create the initiative and one project (status, target date) under it. *Call shapes individually unexercised via MCP (`save_initiative` / `save_project`) — the exercised run's entities were created interactively; attempt, disclose, fall back to the planner UI without ceremony.*
+6. **Workflow settings** — walk the operator through the four settings above (manual; not exposed via MCP).
+7. **GitHub app integration** — operator installs Linear's GitHub app (OAuth). Verify with one test: a branch named `<type>/<team>-<n>-test` shows up on the issue's activity, or a draft PR body `Closes <TEAM>-N` links.
+8. **Record everything in scaffold.md's Cascade metadata** (workspace, initiative, team + prefix, project shell — with URLs) and mirror the axis choice to `.cascade/backends.toml`. Blueprint verifies this shell rather than re-detecting it.
 
-## What's deferred (gaps to flag honestly)
+At the final HITL gate, note anything the operator provisioned manually so blueprint knows the state.
 
-- **Linear project creation via MCP**: the operations exist (`mcp__linear__save_issue` with appropriate `teamId` and `parentId`), but the exact MCP tool names and inputs aren't documented in full here. Walk the operator through it, surface uncertainty, fall back to manual project creation in Linear's UI if MCP calls fail.
-- **Linear label taxonomy provisioning**: same — exists but not documented in detail here.
-- **Cross-tool integration verification**: every test action in the verification matrix needs to be defined per-integration, and that detailed table doesn't exist yet for the Linear-GitHub pairing.
+## Exercise status
 
-These gaps don't block the configuration from being usable; they mean the skill walks the operator through manual fallback when MCP-driven automation hits one.
-
-## Behavior when the operator picks `linear` for planning
-
-1. Confirm Linear MCP is configured. If not, surface and offer fallback (manual Linear UI walkthrough).
-2. Run the parts that *are* documented: GitHub repo provisioning, conventions doc with `planning = linear`, Linear team read-check.
-3. For the gaps: walk through what should happen at a high level, ask the operator if they want to attempt it via MCP (with the caveat that the skill is guessing tool names for some operations) or do it manually in browser tabs.
-4. Surface every gap as it happens. Do not pretend coverage that doesn't exist.
-5. At the final HITL gate, mark scaffold as complete-with-gaps and document which pieces the operator provisioned manually so blueprint knows the state.
-
-## When to flesh this out
-
-The Linear-planning reference should get its full operational detail (MCP tool names per operation, label-taxonomy provisioning script, cross-tool verification matrix) after one real run through the `linear` + `notion` shape produces a working cascade end-to-end. Premature documentation of operations that haven't been exercised against a real session is exactly the kind of speculative work the cascade is supposed to avoid.
+The shell model and steps 2–4, 7–8 are exercised; step 5's MCP call shapes and step 6's settings walk are flagged above. When a later real run exercises a flagged call, drop its flag and restamp the date.
