@@ -1,6 +1,6 @@
 ---
-description: Pick up a rough-in sub-sub-issue, verify dependencies, research the Implementation section executably (current permission mode) then plan-mode the plan for approval, execute on a fresh branch, then run `/simplify` and `pr-review-toolkit:review-pr` with four-class auto-triage of findings (Apply correctness/validity/defensive items as their own atomic commits; Surface taste/style items in the PR body for the user to decide). Opens a draft PR with a triage audit; the user marks ready. Expects one positional argument — the issue number.
-argument-hint: <issue-number>
+description: Pick up a rough-in sub-sub-issue, verify dependencies, research the Implementation section executably (current permission mode) then plan-mode the plan for approval, execute on a fresh branch, then run `/simplify` and `pr-review-toolkit:review-pr` with four-class auto-triage of findings (Apply correctness/validity/defensive items as their own atomic commits; Surface taste/style items in the PR body for the user to decide). Opens a draft PR with a triage audit; the user marks ready. Expects one positional argument — the issue number (github-issues planning) or planner issue ID like TEAM-42 (linear planning).
+argument-hint: <issue-number-or-planner-id>
 ---
 
 You are being asked to execute the rough-in sub-sub-issue **#$1** in this repository.
@@ -11,7 +11,13 @@ The shape of a run: read and validate the issue (Steps 1–4), research it execu
 
 ## Step 1: Read the issue
 
-Read issue #$1 from this repository using the github MCP (`github:issue_read` with `method: get`), or `gh issue view $1 --json number,title,body,labels,state,comments` if MCP isn't available. **Read the comments as well as the body** — comments carry provenance and roll-forward context (prior-run hand-offs, upstream shaping reasoning) that refines the spec without amending the body. Treat comments as *supporting context, not contract*: the body is the contract; comments inform how you read it.
+**Resolve the planning backend first** — from `docs/cbk/scaffold.md` § Cascade metadata (canonical), falling back to `.cascade/backends.toml`. The argument and the read mechanism follow the axis:
+
+- **`github-issues`**: `$1` is the GitHub issue number (`/finish 42`). Read issue #$1 via the github MCP (`github:issue_read` with `method: get`), or `gh issue view $1 --json number,title,body,labels,state,comments` if MCP isn't available.
+- **`linear`**: `$1` is the planner issue ID (`/finish <TEAM>-42`). Read it **via the planner's MCP** (`mcp__linear__get_issue` plus its comments call) — never a GitHub issue read against a planner ID. Wherever this document says `#$1`, read the planner ID; the close marker is `Closes $1` per `cbk-conventions.md` § Closes-keyword conventions.
+- **`in-repo-markdown`**: there is no `/finish` on this axis (design-doc mode — the scaffold gate disclosed this; rough-in specs are executed by running Claude Code against the markdown directly). If invoked anyway, stop and say so.
+
+**Read the comments as well as the body** — comments carry provenance and roll-forward context (prior-run hand-offs, upstream shaping reasoning) that refines the spec without amending the body. Treat comments as *supporting context, not contract*: the body is the contract; comments inform how you read it.
 
 Verify:
 
@@ -38,10 +44,10 @@ If any section is missing or renamed, surface the mismatch to the user and ask w
 
 ## Step 3: Verify dependencies
 
-Read the `## Dependencies` section. For each issue number listed:
+Read the `## Dependencies` section. For each issue listed:
 
-- Query the issue state (`github:issue_read` with `method: get`, or `gh issue view <N>`)
-- Confirm the issue is **closed** with `state_reason: completed`
+- Query the issue state via the planning backend resolved in Step 1 (`github:issue_read` with `method: get` / `gh issue view <N>` on github-issues; `mcp__linear__get_issue` on linear)
+- Confirm the issue is **closed as completed** (GitHub: `state_reason: completed`; Linear: a `Done`-type state, not Canceled/Duplicate)
 
 If any dependency is open, or closed with a reason other than `completed`, **stop and refuse to proceed**. Tell the user: *"Issue #$1 depends on [list of unmet dependencies with their current states]. I can't proceed until those are resolved. Once they are, re-run `/finish $1` and I'll try again."*
 
@@ -53,7 +59,7 @@ If the Dependencies section says "None" or is empty, the check passes immediatel
 
 Before starting work, check for existing state that suggests this issue is already in progress or done:
 
-- Is there already an open PR with `closes #$1` in its description? If yes, stop and tell the user: *"PR #[pr-number] is already open against issue #$1. Do you want me to continue working on that PR, or is this a new attempt after the prior PR was closed?"* Wait for explicit direction.
+- Is there already an open PR carrying this issue's close marker in its description (`closes #$1`, or `Closes $1` for a planner ID — check both families)? If yes, stop and tell the user: *"PR #[pr-number] is already open against issue #$1. Do you want me to continue working on that PR, or is this a new attempt after the prior PR was closed?"* Wait for explicit direction.
 - Is there a branch matching this repo's branch naming convention (`<type>/<short-description>`, see `CONTRIBUTING.md` § Branches) that looks like it was created for this issue? If yes, surface it and ask whether to continue on that branch or start fresh.
 
 This isn't comprehensive — Claude Code can't detect every in-progress state. But the common cases (open PR, existing branch) are cheap to check and save the user from duplicate work.
@@ -74,7 +80,7 @@ Research against the `## Implementation` anchor (primary) and the supporting sec
 - `## Test plan` — the tests the plan scaffolds red-first in Step 6 (the executable form of the acceptance criteria)
 - `## Done signal` — the verification command the plan ends on
 - `## Dependencies` — already verified; context if the plan references prior work
-- `## PR contract` — how the plan finishes (open draft PR with `closes #$1`, Conventional Commits title)
+- `## PR contract` — how the plan finishes (open draft PR with the axis's close marker — `closes #$1` on github-issues, `Closes $1` on linear — Conventional Commits title)
 - **Issue comments** (read in Step 1) — supporting context, not contract: provenance, prior-run hand-offs, and roll-forward notes that can sharpen the plan. Fold what's relevant; the body still governs.
 
 Research is **not** read-only here — execute what informs the plan:
@@ -104,7 +110,7 @@ The plan must:
 
 **The branch must exist before any code lands.** Create it first; everything from here runs on the branch, so nothing is ever committed to the base branch by accident.
 
-1. **Create the branch** following this repo's naming from `CONTRIBUTING.md` § Branches: `<type>/<short-description>`, with the planning-backend ID embedded if applicable (e.g., `chore/abc-14-umbrella-init`). Type is one of: `feat`, `fix`, `chore`, `refactor`, `docs`, `test`, `perf`, `style`, `build`, `ci`. **Do not push and do not open the PR yet.**
+1. **Create the branch** following this repo's naming from `CONTRIBUTING.md` § Branches: `<type>/<short-description>`, with the planning-backend ID embedded in lowercase (e.g., `chore/abc-14-umbrella-init`) — on linear planning the ID substring is what fires the planner's branch auto-link to the issue, so it is load-bearing, not decorative. Type is one of: `feat`, `fix`, `chore`, `refactor`, `docs`, `test`, `perf`, `style`, `build`, `ci`. **Do not push and do not open the PR yet.**
 2. **Scaffold the named tests from `## Test plan` as failing tests first.** ExUnit `flunk("not implemented")` or pytest `pytest.fail("not implemented")` is fine — what matters is that the named tests exist and fail red before any implementation lands. Run the test runner once to confirm red. **If the runner reports "no tests ran" or passes silently when you expected red, stop and surface** — it isn't discovering the new tests (the path, naming convention, or test config is wrong). Don't implement over an unverified red gate.
 3. **Implement to green, one test at a time.** Resist implementing past the next failing test — that's how TDD's documenting-the-design value gets lost.
 4. **Refactor while green.**
@@ -228,7 +234,7 @@ Common surprises worth flagging explicitly when they occur:
 
 - **The issue body has a different structure** (more or fewer sections, different heading names). Don't normalize. Surface and ask.
 - **The plan touches a component where a configurability-first principle ADR applies** but the spec doesn't say which way to go (configurable vs locked). Surface the configurability question; don't unilaterally make the call.
-- **The dependency chain references a planning-backend-only ID** (e.g., `KEY-123`) instead of a GitHub issue number. `/finish` operates on GitHub issues. Surface and ask the user how to bridge — likely either the planning-backend↔GitHub sync isn't configured yet, or the issue body is using the wrong identifier.
+- **The dependency chain references an ID from the other planning backend** (a `KEY-123` planner ID on github-issues planning, or a bare `#N` GitHub number on linear planning). `/finish` reads the axis resolved in Step 1; a cross-axis identifier means either the issue body used the wrong form or the project's axis record is stale. Surface and ask — don't guess a bridge.
 - **The cascade artifact referenced in the issue body doesn't exist** (e.g., `docs/cbk/frame-NN.md` not present). Means framing was skipped, the file is named differently, or the issue body is wrong. Surface, don't search blindly.
 - **The implementation needs a new `.claude/rules/<topic>.md` file** to be load-bearing (e.g., the spec asks for a pattern and there's no rules file yet). Surface and ask whether to create the rules file as part of this PR or as a separate one first.
 - **The implementation conflicts with an existing ADR.** Surface the conflict and propose either (a) writing a new ADR that supersedes the conflicting one (chat-skill territory, abort `/finish`) or (b) revising the spec via re-rough-in. Don't silently violate an ADR.
