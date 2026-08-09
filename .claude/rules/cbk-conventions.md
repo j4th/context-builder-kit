@@ -92,6 +92,8 @@ Title prefixes are the structural identifier across the cascade. They survive an
 
 Slug stability is load-bearing: branches reference it (`<type>/<TEAM>-<N>-<slug>...`), labels reference it (`workstream:<slug>`), commit messages reference it. A workstream that needs renaming triggers a re-blueprint, not in-place mutation.
 
+**Letters reflect skills; M is frame-local, F continues per workstream.** `M<#>` labels a milestone *inside its frame* (frame-local; a re-cut milestone may sub-letter, e.g. M6a / M6b when one milestone is replaced by two). `F<#>` numbers the framing capability issue and **continues across frames within a workstream** — never restarting per frame — so `[F<N>.AC<M>]` trace IDs stay unique across the workstream's whole cascade history (a superseded milestone's F-number retires with it, un-executed; its replacements take fresh F-numbers). Milestone headings in `frame-NN.md` carry both: `### F<#> — M<#>: <name>`. `R<#>` numbers rough-in's issues under their F.
+
 A deferred meta-issue (`[<slug>:meta]`) can itself be roughed-in into R sub-sub-issues when a setup/decision meta is too large for one `/finish`. Its children take `[<slug>:<meta-tag>:R<#>]`, where `<meta-tag>` is a **short descriptive slug for that specific meta** (not the literal `meta`) — a workstream routinely carries several `[<slug>:meta]` issues, so `[<slug>:meta:R<#>]` would collide across them. The `<meta-tag>` is chosen at the meta's rough-in (a meta has no F-number — it is not a framing milestone) and stays stable across its children, keeping the hierarchy grep-able.
 
 ## Contribution intake — bug lane + enhancement lane
@@ -113,8 +115,21 @@ Once `/intake` shapes a report it **leaves the holding surface** carrying its ca
 Every externally-sourced issue carries a provenance label; cascade-native issues carry none. This is the queryable external-vs-native distinction:
 
 - **`source:<origin>`** — e.g. `source:github` (originated as a GitHub issue; also created in the repo so issue forms auto-apply it), `source:linear` (filed directly by a collaborator), or a generic `source:external`. "All external" is the union of the `source:*` labels.
+- **Markdown-only** — a `labels:` line inside the issue record (below) carrying the same tokens (`source:github`, `cascade-depth:roughed-in`, `enhancement`, the type), greppable exactly like the backend labels. Graduation = editing that line.
 
 The reporter and the origin URL also go in the issue body.
+
+### The markdown issue record (in-repo-markdown planning)
+
+On the markdown planning axis the lane's "issue entity" is a file: `docs/cbk/issues/<slug>-<lane>-<NN>.md` (lane = `bug` | `enh`; `NN` sequential per slug+lane), listed in the cascade-events index. Its shape:
+
+- **H1** = the would-be issue title (`[<slug>:bug] <intent>` / `[<slug>:enh] <intent>`) — this heading (or the file path) is what `/enrich` takes as its argument.
+- **A `labels:` line** directly under the H1 carrying the token set the backend lanes would use (provenance, cascade-depth, type, transient `enhancement`) plus a `status:` token (`open` | `done` | `superseded`) — the per-record analog of backend state, flipped by hand post-merge.
+- **The eight-section body** (`## Context` … `## PR contract`), identical to the backend lanes; `/enrich`'s provenance note appends as a `## Provenance` section rather than a comment.
+
+The same `labels:` / `status:` line convention applies to the **R-spec sections rough-in emits on this axis** (whether appended to `frame-NN.md` or in a per-milestone rough-in file): each `[<slug>:F<#>:R<#>]` heading carries its own `status:` token, which is what a dependent spec's `## Dependencies` check reads and what the operator flips post-merge.
+
+There is no `/finish` on this axis — the record is executed by opening a Claude Code session against it directly; the hand-off from `/intake`/`/enrich` says so.
 
 ### The discriminator — four routes
 
@@ -178,14 +193,14 @@ If `/intake` classifies a report as a *large* net-new capability (multi-R, sub-d
 Acceptance criteria in framing F-issues carry inline IDs of the form `[F<N>.AC<M>]`:
 
 ```markdown
-### M3 acceptance criteria
+### F3 — M3: <name>
 
 - [F3.AC1] <Boundary or behavioural criterion> ...
 - [F3.AC2] <Test-runnable criterion> ...
 - [F3.AC3] <Demonstrable-capability criterion> ...
 ```
 
-Rough-in R-issues then reference these IDs in their own `## Acceptance criteria` and `## Test plan` sections:
+`F<N>` is workstream-unique and continues across frames (§ Title-prefix scheme), so a trace ID never collides with an earlier frame's. Nested criteria (`[F3.AC2.1]`) are permitted when a criterion decomposes. Rough-in R-issues then reference these IDs in their own `## Acceptance criteria` and `## Test plan` sections:
 
 ```markdown
 ## Acceptance criteria
@@ -233,8 +248,8 @@ The rough-in / `/intake` / `/enrich` flows set this at issue-creation time — s
 
 PR body close markers depend on which planning backend the project picked at scaffold:
 
-- **Linear-tracked issues** (opinionated profile): `Closes <TEAM>-N` in the PR **body** (not just the title — body is the durable surface; titles can be edited at squash-merge time without affecting the close marker)
-- **GitHub-tracked issues** (github-only profile, or any GitHub-only sub-issue): `Closes #N` in the PR body
+- **Linear-tracked issues** (linear planning): `Closes <TEAM>-N` in the PR **body** (not just the title — body is the durable surface; titles can be edited at squash-merge time without affecting the close marker)
+- **GitHub-tracked issues** (github-issues planning, or any GitHub-tracked sub-issue): `Closes #N` in the PR body
 - **Both can coexist** in the same PR body if the PR closes one of each.
 - **Markdown-only projects**: there are no issue-tracker entities to close; the cascade-event log entries are updated by hand.
 
@@ -428,17 +443,18 @@ The checklist runs auto-checkable; surfacing only failures. Per [GitHub Spec Kit
 
 Beyond what the cascade skills auto-configure, projects using a planning backend require these settings (one-time setup per project):
 
-**Linear (opinionated profile)**:
+**Linear (linear planning)**:
 1. **Cycles**: enable or disable per the methodology section above
 2. **Workflow > Auto-complete parent when all sub-issues complete**: ON (matches cascade rollup semantics)
 3. **Workflow > Auto-complete sub-issues when parent completes**: OFF (preserves R-issue independence)
 4. **Workflow > Sub-issue rollup display**: ON (renders the cascade-tree view in project tables)
 5. **Branch name template** (in `Settings > Workspace > Branch names`): `{type}/{teamPrefix}-{issueIdNumber}-{title}` matches the `<type>/<TEAM>-N-<slug>` convention
 
-**GitHub Projects v2 (when planning backend = GitHub Issues)**:
+**GitHub Projects v2 (when planning backend = GitHub Issues)** — *designed-unexercised as of 2026-08-09 (no real cascade run has exercised this board contract yet; the canonical spec is `backends.md` § Lifecycle stages and kanban mapping (the board contract) — expect calibration on first real use)*:
 1. Create a Projects v2 board with sub-issue rendering enabled
 2. Configure swimlanes grouped by parent issue
-3. Status field with the cascade-relevant states (Backlog / Ready / In progress / In review / Done)
+3. One Status field with the seven canonical values (Triage / Refinement / Ready / In Progress / In Review / Done / Archived) per `backends.md` — not a reduced set
+4. Board automation rules: entry Status from label, parent In Progress/Done from the sub-issue progress field, PR open → In Review, PR merged → Done — the cascade does **not** set the Status field via MCP (`auto_status_via_board_rules = true`)
 
 These are user actions, not auto-applied via MCP. Document the post-merge step in any PR that affects the cascade.
 
@@ -533,6 +549,17 @@ grep -rn "\[F[0-9]\.AC[0-9]\]" .claude/skills/*/references/templates/
 
 # This file is referenced from CLAUDE.md (or wherever the project's project-instructions live)
 grep "@.claude/rules/cbk-conventions.md" CLAUDE.md
+
+# Producer templates emit the two-axis vocabulary (positive checks — must match)
+grep -n "Planning backend" .claude/skills/scaffold/references/scaffold_output_template.md
+grep -n "Knowledge backend" .claude/skills/scaffold/references/scaffold_output_template.md
+grep -rn "F<#> — M<#>" .claude/skills/framing/references/templates/
+
+# Pre-refactor vocabulary must NOT appear anywhere in kit content — widened
+# beyond .claude/skills/ (the narrow greps missed producer + config surfaces)
+! grep -rnE "github-only \| opinionate[d]|Profile.*github-onl[y]" .claude/
+! grep -rn "initiative\.md" .claude/ README.md
+! grep -rn -i "opinionated profile" .claude/commands/ .claude/rules/pr-review.md .claude/rules/knowledge-backend.md README.md .mcp.json.example
 ```
 
 ## References

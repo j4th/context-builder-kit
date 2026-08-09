@@ -239,16 +239,23 @@ with expected output, or a "the smoke test in CI passes" statement.
 
 <!--
 Other rough-in issues that must be closed before this one can start.
-List them by issue number only so /finish can verify them via the
-GitHub API before handing the body to plan mode.
+List them by issue identifier only so /finish can verify them via the
+planning backend (GitHub issue number on github-issues; planner ID like
+TEAM-N on linear) before handing the body to plan mode. On
+in-repo-markdown planning, reference the sibling R-heading
+([<slug>:F<#>:R<#>]) instead — dependency state is read from the
+`status:` line each R-heading carries per `cbk-conventions.md` § The
+markdown issue record.
 
-IMPORTANT: reference dependencies by issue number ONLY (e.g., `#42`), not
-by number + title. Issue titles can drift during later cascade revisions
-(e.g., a slug prefix gets added during a cleanup pass), and a body that
-reproduces a stale title becomes misleading even though the number still
-resolves correctly. GitHub renders the current title dynamically via
-hover cards, so number-only references stay fresh without needing body
-edits. If a dependency's context needs more than the hover card shows,
+IMPORTANT: reference dependencies by identifier ONLY (`#42` on
+github-issues, `TEAM-42` on linear, the `[<slug>:F<#>:R<#>]` heading on
+in-repo-markdown), not by identifier + title. Issue titles can drift
+during later cascade revisions (e.g., a slug prefix gets added during a
+cleanup pass), and a body that reproduces a stale title becomes
+misleading even though the identifier still resolves correctly. Backend
+UIs render the current title dynamically (GitHub hover cards, the
+planner's inline previews), so identifier-only references stay fresh
+without needing body edits. If a dependency's context needs more than the hover card shows,
 add a one-line note about what the dependency is FOR (what it enables
 for this issue), not what it is CALLED.
 
@@ -264,4 +271,4 @@ How to close this issue when implementation is complete. Standard text
 across all rough-in issues so the pattern is uniform on the board.
 -->
 
-When all acceptance criteria are met, open a PR with `closes #<this_issue_number>` in the description. PR title follows Conventional Commits (e.g., `feat(<scope>): <subject>`). The board automation moves this issue to Done on PR merge and ticks the parent's sub-issue progress field forward.
+When all acceptance criteria are met, open a PR with the planning axis's close marker in the description — `closes #<this_issue_number>` (github-issues) or `Closes <TEAM>-<N>` (linear); on in-repo-markdown planning there is no close marker — flip the record's `status:` token by hand post-merge. PR title follows Conventional Commits (e.g., `feat(<scope>): <subject>`). On backend axes the board/rollup automation moves this issue to Done on PR merge and ticks the parent's progress forward.

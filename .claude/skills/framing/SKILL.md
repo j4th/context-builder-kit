@@ -242,7 +242,7 @@ To make the output shape concrete: here's what one milestone spec looks like, ta
 
 **Output fragment** (resulting frame-01.md milestone excerpt):
 ```markdown
-### M1: Pure-function verifier proves the trait
+### F1 — M1: Pure-function verifier proves the trait
 
 **Capability**: After this, the system can run one TOML-defined regex lesson, verify the user's input against the lesson's expected matches, and report pass/fail with a hint on failure.
 
@@ -283,9 +283,9 @@ Auto-checkable list that fires after the final HITL gate, before declaring frami
 
 - [ ] `frame-NN.md` content includes all required sections: Purpose, Approach, Components, Boundaries, Interface Commitments, **Pre-flight checks** table (with empty-default `"No pre-flight blockers from this framing"` if none), Open questions, Milestones (each with `[F<N>.AC<M>]` trace IDs in acceptance criteria)
 - [ ] Frame-NN's number was correctly identified (highest existing in `docs/cbk/README.md` + 1)
-- [ ] Workstream parent issue exists (Linear+GitHub profile only) and matches the workstream slug
+- [ ] Workstream parent issue exists (github-issues and linear planning; n/a on in-repo-markdown) and matches the workstream slug
 - [ ] No prior F-issue exists for this milestone (idempotency)
-- [ ] Markdown commit and (Linear+GitHub) F-issue creation atomic transition succeeded, or partial state surfaced cleanly
+- [ ] Markdown commit and (on backend planning axes) F-issue creation atomic transition succeeded, or partial state surfaced cleanly
 - [ ] `docs/cbk/README.md` updated with new entry + status `Active`
 - [ ] If the project runs a contribution-intake lane (cbk-conventions): no candidate it filed under this workstream remains un-reconciled — each was promoted to an F-issue or closed as superseded
 
@@ -343,7 +343,7 @@ When framing is complete, rough-in inherits:
 - **The latest frame-NN.md** at `docs/cbk/frame-NN.md` (flat) or `docs/cbk/framings/frame-NN.md` (nested, per project's `cbk-conventions.md`) — containing refined definition, milestones, rough issues, interface commitments, **and the Pre-flight checks table**
 - **The cascade-events index** at `docs/cbk/README.md` — for finding the latest framing (highest-numbered Active row)
 - **All prior framings** at `docs/cbk/frame-NN.md` — for cross-framing interface commitments
-- **Planning-backend issues created by framing** (in Linear+GitHub profile) — F-level sub-issues (labeled `cascade-depth:framed`) and any deferred meta-issues (labeled `cascade-depth:framed` + `meta`), all parented under the workstream parent issue
+- **Planning-backend issues created by framing** (github-issues and linear planning) — F-level sub-issues (labeled `cascade-depth:framed`) and any deferred meta-issues (labeled `cascade-depth:framed` + `meta`), all parented under the workstream parent issue
 
 **What rough-in does with this**: reads the latest frame-NN.md (the highest-numbered one), picks one milestone from it, decomposes that milestone's rough issues into ready-to-implement issues (with acceptance criteria, technical detail, and Claude Code plan-mode prompts).
 

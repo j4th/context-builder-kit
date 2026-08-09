@@ -1,6 +1,6 @@
 # backends.md — Backend Interface Specification
 
-The five planning skills (consultation, scaffold, blueprint, framing, rough-in) and the Claude Code finish skill all interact with three logical systems: a **planning backend** (where the cascade hierarchy lives as queryable, statused work items), a **knowledge backend** (where long-form specs and the cascade event log live), and a **code backend** (where the repo, branches, and PRs live). This spec defines the operations skills can call against those backends so skills can be written tool-agnostically and concrete backends can be swapped via configuration.
+The five planning skills (consultation, scaffold, blueprint, framing, rough-in) and the Claude Code finish skill all interact with three logical systems: a **planning backend** (where the cascade hierarchy lives as queryable, statused work items), a **knowledge backend** (the durable longer-lived reference library — Notion or none; cascade artifacts never live here), and a **code backend** (the constant — the repo, where branches, PRs, the cascade artifacts, and the event log live). This spec defines the operations skills can call against those backends so skills can be written tool-agnostically and concrete backends can be swapped via configuration.
 
 The cascade composes a **constant** plus **two independent axes** the operator picks separately at scaffold (see `scaffold/references/backend_selection.md`):
 
@@ -48,7 +48,7 @@ The bracketed prefix is searchable on flat lists, survives GitHub UI title trunc
 
 ## Lifecycle stages and kanban mapping
 
-The cascade uses **one Projects v2 board per repo with one Status field and swimlanes grouped by parent Issue**. The board's swimlane-by-parent view gives a "full chain for this workstream" layout that maps to how humans actually work a cascade: you sit down on a workstream, not on all workstreams at once.
+*Designed-unexercised (recorded 2026-08-09): no real cascade run has exercised this board contract yet — expect calibration on first real use, and restamp when one does.* The cascade uses **one Projects v2 board per repo with one Status field and swimlanes grouped by parent Issue**. The board's swimlane-by-parent view gives a "full chain for this workstream" layout that maps to how humans actually work a cascade: you sit down on a workstream, not on all workstreams at once.
 
 **Status field — seven values, ordered left-to-right**:
 
@@ -115,11 +115,11 @@ The cascade never leaves the system in a half-done state (e.g., markdown committ
 
 This pattern means **failures and corrections never cause overwrites, only new cascade events**. The cascade is append-only at the event-log level; correction happens by adding newer events that supersede older ones.
 
-## Deferred meta-issues
+## Pre-flight checks
 
 Framing surfaces concerns that don't decompose cleanly into any specific milestone's rough issues but DO need tracking because they gate transitions between milestones, gate the start of rough-in, or need to land independently of the milestone sequence. The cascade tracks these as **deferred meta-issues** — a first-class artifact alongside the milestone tree, not a footnote.
 
-Every framing's `frame-NN.md` includes a required `## Deferred meta-issues` section, even if empty. Each row in the table has: issue number (the GitHub issue created during framing's planning-backend commit), one-line subject, depends-on (what has to happen before this can start), blocks (what this gates — typically a milestone start or rough-in start), and type (`gate` / `decision` / `infrastructure`).
+Every framing's `frame-NN.md` includes a required `## Pre-flight checks` section, even if empty. Each row in the table has: issue number (the GitHub issue created during framing's planning-backend commit), one-line subject, depends-on (what has to happen before this can start), blocks (what this gates — typically a milestone start or rough-in start), and type (`gate` / `decision` / `infrastructure`).
 
 The corresponding GitHub issues are created during framing's planning-backend commit, parented under the workstream parent Issue with the `meta` label distinguishing them from framing capability sub-issues. Rough-in's mandatory inheritance step includes verifying that any meta-issue blocking the milestone it's about to decompose has been resolved or explicitly cleared — see the framing skill's handoff contract for the obligation language. Empty meta-issue tables explicitly say "No deferred meta-issues from this framing" so rough-in knows the table was considered, not skipped.
 
@@ -217,11 +217,11 @@ Skill prompts call these operations by their abstract name. Tool names appear on
 
 ```
 planning.create_workstream(slug, description, metadata) → {id, url}
-  # Creates a parent Issue (github-only) or Project (opinionated)
+  # Creates the workstream parent issue (github-issues: issue_write; linear: save_issue in the project shell) — never a planner Project
 planning.create_capability(workstream_id, slug, capability, body, metadata) → {id, url}
-  # Creates a sub-issue parented under the workstream Issue (github-only) or Linear Milestone (opinionated)
+  # Creates the F sub-issue parented under the workstream parent issue (github-issues: issue_write + sub_issue_write; linear: save_issue with parentId) — never a planner Milestone
 planning.create_work_unit(capability_id, slug, intent, body, metadata) → {id, url}
-  # Creates a rough-in sub-sub-issue parented under the framing sub-issue (github-only) or Linear Issue (opinionated)
+  # Creates the R sub-sub-issue parented under the framing F sub-issue (same per-axis mechanisms)
 planning.update_node(node_id, fields) → {id, url}
 planning.link_nodes(parent_id, child_id, relation) → ok
   # relation: "parent" | "blocks" | "blocked_by" | "relates_to"
@@ -244,21 +244,21 @@ code.atomic_transition(planning_ops, knowledge_ops) → ok | rollback
 
 ## Backend implementation matrix
 
-| Operation | GitHub (github-only) | Linear (opinionated) | None (markdown-only) | Markdown (knowledge) | Notion (knowledge) |
+| Operation | GitHub Issues (planning) | Linear (planning) | In-repo markdown (planning) | Repo markdown (the constant) | Notion (knowledge) |
 |---|---|---|---|---|---|
-| `create_workstream` | parent Issue (no parent) | Project | no-op (returns synthetic id from slug) | — | — |
-| `create_capability` | sub-issue (`issue_write` + `sub_issue_write add`) | Milestone | no-op | — | — |
-| `create_work_unit` | sub-sub-issue (`issue_write` + `sub_issue_write add`) | Issue | no-op | — | — |
-| `supersede_node` | close `not_planned` + `superseded` label | archive + label | no-op (markdown supersede via frame-NN.md status field) | — | — |
+| `create_workstream` | parent Issue (no parent) | parent issue via `save_issue` (in the project shell) | no-op (returns synthetic id from slug) | — | — |
+| `create_capability` | sub-issue (`issue_write` + `sub_issue_write add`) | F sub-issue via `save_issue` + `parentId` | no-op | — | — |
+| `create_work_unit` | sub-sub-issue (`issue_write` + `sub_issue_write add`) | R sub-sub-issue via `save_issue` + `parentId` | no-op | — | — |
+| `supersede_node` | close `not_planned` + `superseded` label | cancel + `superseded` label | no-op (markdown supersede via frame-NN.md status field) | — | — |
 | `query_nodes` | native (REST + GraphQL for sub-issues) | native | reads markdown event log | — | — |
-| `create_label_taxonomy` | repo labels | workspace labels | no-op | — | — |
-| `create_doc` | — | — | `.md` file in `docs_path` | native page |
-| `update_doc` | — | — | git commit | native edit |
-| `read_doc` | — | — | file read | native fetch |
-| `append_to_event_log` | — | — | git commit (append-only file) | native append |
-| `bootstrap_repo` | native (GH MCP) | — | — | — |
-| `commit_artifacts` | native (GH MCP) | — | — | — |
-| `atomic_transition` | implemented in skill code (capture ids, rollback on failure) | same | — | — |
+| `create_label_taxonomy` | repo labels | team labels | no-op | — | — |
+| `create_doc` | — | — | — | `.md` file in `docs_path` (cascade artifacts live ONLY here) | companion page only — never a cascade artifact |
+| `update_doc` | — | — | — | git commit | native edit (companions only) |
+| `read_doc` | — | — | — | file read | native fetch (HITL-announced) |
+| `append_to_event_log` | — | — | — | git commit (append-only file; the constant owns the event log) | — |
+| `bootstrap_repo` | — | — | — | native (GH MCP) | — |
+| `commit_artifacts` | — | — | — | native (GH MCP) | — |
+| `atomic_transition` | implemented in skill code (capture ids, rollback on failure) | same | markdown half only | — | — |
 
 ## Brownfield handling
 

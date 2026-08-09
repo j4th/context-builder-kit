@@ -1,5 +1,5 @@
 {
-  "_comment": "Starter MCP server config for the cascade kit. Copy to .mcp.json (which is gitignored or repo-local) and fill in credentials/endpoints. Each server below is documented inline; remove any you don't use. The cascade skills will fall back to manual / web-search paths when an expected MCP is absent, but install the github + context7 servers at minimum for the github-only profile to work cleanly.",
+  "_comment": "Starter MCP server config for the cascade kit. Copy to .mcp.json (which is gitignored or repo-local) and fill in credentials/endpoints. Each server below is documented inline; remove any you don't use. The cascade skills fall back to manual / web-search paths when an expected MCP is absent, but install the github + context7 servers at minimum for github-issues planning to work cleanly. Wire linear when planning = linear, and notion when knowledge = notion (per docs/cbk/scaffold.md § Cascade metadata / .cascade/backends.toml).",
   "mcpServers": {
     "github": {
       "_comment": "Used by every cascade phase that writes to a GitHub repo (scaffold, blueprint, framing, rough-in, finish). Install via the official GitHub MCP server. Personal Access Token with repo + read:project scopes (classic PAT) or fine-grained PAT with Contents/Metadata write + Issues/Pull-requests write per repo.",
@@ -10,12 +10,16 @@
       }
     },
     "linear": {
-      "_comment": "Optional. Required only for the opinionated profile (Linear+GitHub). Install Linear's official MCP server and supply an API key from Linear settings. Cascade calls: get_issue, save_issue (with parentId for sub-issues), list_issues, list_issue_labels, list_issue_statuses.",
+      "_comment": "Required when planning backend = linear. Install Linear's official MCP server and supply an API key from Linear settings. Cascade calls: get_issue, save_issue (with parentId for sub-issues; type label set at creation), list_issues, list_issue_labels, list_issue_statuses, create_issue_label, list_teams.",
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-linear"],
       "env": {
         "LINEAR_API_KEY": "<your-Linear-API-key-here>"
       }
+    },
+    "notion": {
+      "_comment": "Required when knowledge backend = notion. Notion's official MCP via its hosted endpoint (in-browser OAuth on first use). The server key MUST be 'notion' — the require-knowledge-backend-ok.sh ask-gate's matcher in .claude/settings.json targets mcp__notion__* tool names; a different key silently loses the write-gate enforcement. Every read/write is HITL-announced per .claude/rules/knowledge-backend.md. Remove this entry when knowledge = none.",
+      "url": "https://mcp.notion.com/mcp"
     },
     "context7": {
       "_comment": "Used by framing and rough-in research phases for library / framework / SDK documentation lookups. Reduces stale-knowledge errors when the cascade picks dependencies. The cascade falls back to web search if context7 is unavailable, but library-API misses are a recurring failure mode without it.",

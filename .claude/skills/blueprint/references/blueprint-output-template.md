@@ -24,8 +24,8 @@ This is the file that ties the whole blueprint phase together, so inheritance is
 | `problem_brief.md` no-gos | Not In Scope section — verbatim, do not relax |
 | `problem_brief.md` success criteria | Success Criteria section, possibly refined or expanded |
 | `problem_brief.md` "Notes for blueprint" | Cascade metadata: deferred decisions list (now resolved) |
-| `scaffold.md` profile | Cascade metadata: profile + hierarchy_levels |
-| `scaffold.md` knowledge surface | Cascade metadata: confirms `docs/cbk/` location |
+| `scaffold.md` Cascade metadata | Cascade metadata: planning backend + knowledge backend (verbatim) + hierarchy levels |
+| `scaffold.md` cascade artifact layout | Cascade metadata: confirms `docs/cbk/` location |
 | `scaffold.md` team shape | Implicit context for the workstreams section (how granular projects should be) |
 | Stack decisions (this phase) | Cascade metadata: one-line per decision with pointer to ARCHITECTURE.md DECISION-NNN |
 | Methodology selection (this phase) | Cascade metadata: top-level methodology + planning patterns + citations |
@@ -45,9 +45,9 @@ This is the file that ties the whole blueprint phase together, so inheritance is
 
 ## Cascade metadata
 
-**Profile**: <github-only | opinionated>
-**Hierarchy levels**: <3 | 4>
-**Knowledge surface**: docs/cbk/
+**Planning backend**: <github-issues | linear | in-repo-markdown> *(inherited verbatim from scaffold.md's Cascade metadata)*
+**Knowledge backend**: <notion | none> *(inherited verbatim from scaffold.md)*
+**Hierarchy levels**: 3 issue levels (workstream → framing → rough-in)
 
 ### Stack decisions
 
@@ -238,11 +238,11 @@ Common revision requests:
 - "Add an open question about Y" → add to Open Questions
 - "The dependency map is wrong" → fix
 
-Iterate until approved. Then commit via GitHub MCP to `docs/cbk/blueprint.md`. If the profile is opinionated, also create the Linear initiative entity with matching content.
+Iterate until approved. Then commit via GitHub MCP to `docs/cbk/blueprint.md`. When planning = `linear`, also create the planner's initiative entity with matching content (see § planning-axis notes above).
 
 ## Light-mode behavior
 
-Even in light mode, the cascade metadata top section is non-negotiable — that's how later phases find the profile, hierarchy levels, stack decisions, and methodology choice. What can collapse:
+Even in light mode, the cascade metadata top section is non-negotiable — that's how later phases find the axis values, hierarchy levels, stack decisions, and methodology choice. What can collapse:
 
 - **Foundation docs produced list** — already short
 - **Resolved deferrals** — one line per item instead of detailed

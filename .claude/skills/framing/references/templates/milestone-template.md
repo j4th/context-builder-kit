@@ -113,7 +113,7 @@ The project lacks a named methodology but still has discipline (testing, review,
 Every milestone in `frame-NN.md` follows this structure:
 
 ```markdown
-### M<#>: <Name>
+### F<#> — M<#>: <Name>
 
 **Capability**: After this, [concrete verb phrase — what the system can now do].
 

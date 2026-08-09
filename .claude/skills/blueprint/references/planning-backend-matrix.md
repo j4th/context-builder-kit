@@ -12,9 +12,9 @@ The planning backend is determined by `scaffold.md`'s Cascade metadata section. 
 | Stack decisions | Recorded in ARCHITECTURE.md + blueprint.md | Same | Same |
 | Methodology selection | Recorded in blueprint.md | Same, plus may inform Linear cycle length | Same |
 | Foundation docs (CLAUDE.md, ARCHITECTURE.md, STANDARDS.md, CONTRIBUTING.md, README.md) | Commit to repo via GitHub MCP | Same | Same |
-| `blueprint.md` | Commit to `docs/cbk/blueprint.md` via GitHub MCP | Same, plus create Linear initiative entity | Same; planning-side setup steps land in § Manual setup |
-| Initiative content destination | Lives only in `docs/cbk/blueprint.md` | Lives in `docs/cbk/blueprint.md` AND mirrored as a Linear initiative | Lives only in `docs/cbk/blueprint.md`; no external initiative |
-| Workstream parent Issues | Create one per workstream via GitHub MCP `issue_write` | Create one Project per workstream via Linear MCP | Recorded as rows in `blueprint.md` Workstreams table only |
+| `blueprint.md` | Commit to `docs/cbk/blueprint.md` via GitHub MCP | Same, plus write the initiative content into the planner's initiative entity (provisioned at scaffold) | Same; planning-side setup steps land in § Manual setup |
+| Initiative content destination | Lives only in `docs/cbk/blueprint.md` | Lives in `docs/cbk/blueprint.md` AND mirrored into the existing initiative entity's description | Lives only in `docs/cbk/blueprint.md`; no external initiative |
+| Workstream parent Issues | Create one per workstream via GitHub MCP `issue_write` | Create one **parent issue** per workstream via `mcp__linear__save_issue` (titled `[<slug>] <Workstream name>`, in the project shell) — workstreams are issues, never Projects | Recorded as rows in `blueprint.md` Workstreams table only |
 | Tooling configs | Commit to repo (`.github/workflows/`, task runner config, .env.example) | Same | Same |
 | Linear MCP needed? | No | Yes | No |
 | HITL gate count | 6 default | 6 default + 1 extra for Linear initiative confirmation | 6 default; planning-write gates collapse |
@@ -38,34 +38,31 @@ Concretely:
 
 ## `linear` planning behavior
 
-The `linear` planning path is structurally supported in blueprint's SKILL.md but the operational detail for some Linear operations isn't fully documented; gaps are flagged inline where they apply. (This honesty is per-operation, not per-profile — the old "opinionated profile stub" framing is gone; specific Linear MCP calls are documented or not, individually.)
+*One-run-exercised (verified against a full real cascade run; recorded 2026-08-09 — per the dated-empirical-rails principle, re-verify the MCP tool surface before re-citing).* The structural model below is the exercised one; the individually-unexercised call shapes are flagged inline.
+
+**The exercised hierarchy** — the planner's entities map to the cascade like this, and the exercised run proved the shape:
+
+```
+Initiative                          (provisioned at scaffold — workspace infrastructure)
+└── Project shell (one per phase/release, with target date + status; provisioned at scaffold)
+    └── Workstream parent ISSUE     (created by blueprint; title `[<slug>] <Workstream name>`)
+        └── Framing F sub-issue     (created by framing via parentId)
+            └── Rough-in R sub-sub-issue  (created by rough-in via parentId)
+```
+
+Two load-bearing negatives from the exercised run: **workstreams are parent issues, never planner Projects** (one-Project-per-workstream fragments the roll-up and breaks framing's parent-issue expectation), and **the Project's native milestones field is deliberately unused** (framing capabilities live as sub-issues, not planner milestones).
 
 If scaffold picked `linear`, blueprint should:
 
-1. **Tell the user honestly** about the documented vs deferred operations: *"Linear-planning is structurally supported but the detailed Linear MCP operations for blueprint aren't all documented. I'll walk through what's documented and flag gaps as we hit them. If we hit something I don't have a clean answer for, I'll either fall back to manual instructions or offer to switch to `github-issues` mode for this phase. Sound okay to start?"*
-2. **Run the parts that are documented**: inheritance read (same as `github-issues`), stack decisions (same), methodology selection (same), foundation doc production (same — commit to GitHub repo), blueprint.md commit (same — commit to `docs/cbk/blueprint.md` via GitHub MCP).
-3. **For the Linear initiative creation step**: walk through what should happen at a high level, ask if the user wants to attempt it via Linear MCP (with the caveat that exact tool names and inputs aren't fully documented here) or do it manually in Linear's UI.
-4. **Flag every gap as it happens**. Do not pretend coverage that doesn't exist.
-5. **At the final HITL gate**, mark blueprint as "complete-with-gaps" and document which Linear operations the user did manually so framing knows the state.
+1. **Verify the shell scaffold provisioned**: read scaffold.md's Cascade metadata rows (workspace, initiative, team + issue-key prefix, project shell) and probe them via the planner MCP (`mcp__linear__list_teams`, `get_initiative`/`get_project` reads). If any is missing, surface — the shell is scaffold's job; offer to loop back rather than improvising it here.
+2. **Run the axis-common parts**: inheritance read, stack decisions, methodology selection, foundation doc production, blueprint.md commit — identical to `github-issues`.
+3. **Write the initiative content into the existing initiative entity** (Goal, Success criteria, Not in scope, Dependencies — mirroring blueprint.md, which stays the source of truth; the entity is the queryable mirror). *Call shape individually unexercised — the exercised run authored the description at provisioning time; disclose and fall back to a manual paste into the planner UI if the update call misbehaves.*
+4. **Create one workstream parent issue per Workstreams-table row** via `mcp__linear__save_issue`: `team` = the scaffold-recorded team, `title` = `[<slug>] <Workstream name>`, `description` = the workstream row content + a link back to `docs/cbk/blueprint.md § Workstreams`, `labels` = the workstream area label + `cascade-depth:rough`, project = the project shell. Framing's pre-flight expects these parents to exist.
+5. **At the final HITL gate**, record in blueprint.md which planner entities now exist (with URLs) so framing inherits the state instead of re-detecting it.
 
-### What's documented enough to attempt in `linear` mode
+### When to fall back mid-session
 
-- **GitHub repo operations**: same as `github-issues` — file commits via GitHub MCP work identically
-- **`docs/cbk/blueprint.md` commit**: same path, same mechanism
-- **Linear team verification**: a read-only check via Linear MCP that the team exists and the user has permission to create initiatives under it
-- **Linear initiative entity creation**: high-level outline only — propose creating it via Linear MCP, fall back to manual Linear UI if MCP calls fail or the tool surface doesn't match
-
-### What's deferred (gaps to flag honestly)
-
-- **Linear initiative entity creation via MCP**: the operations exist but the exact tool names and input shapes aren't fully documented here
-- **Linear Project creation per workstream**: the cascade's parent-Issue equivalent is a Linear Project; MCP-driven creation isn't fully documented for this case
-- **Linear label taxonomy alignment**: applying the cascade-standard label set to a Linear workspace via MCP isn't documented in detail
-
-### When to fall back to `github-issues` mid-session
-
-If the operator picked `linear` in scaffold and blueprint hits a gap they can't work around, offer a fallback: *"This Linear operation isn't documented yet. We have two options: (a) you do the Linear initiative creation manually in the UI after we finish, and I just commit blueprint.md to `docs/cbk/`; or (b) we treat this phase as `github-issues`, which means no Linear initiative gets created at all — the cascade still works, you just lose the Linear-side aggregation. Which do you prefer?"*
-
-Most operators hitting a documentation gap pick (a) — manual Linear creation is fine, and blueprint.md still serves as the cascade record. The (b) option exists for operators who don't want to maintain a Linear entity at all.
+If a specific planner call misbehaves, offer: *(a)* do that one operation manually in the planner UI and continue (the markdown record stays authoritative), or *(b)* drop to `github-issues` semantics for this phase — the cascade still works; the planner-side aggregation is what's lost. Most operators pick (a).
 
 ## `in-repo-markdown` planning behavior
 
@@ -78,19 +75,9 @@ If scaffold picked `in-repo-markdown` (the operator opted out of an external pla
 
 The foundation doc production and stack decisions are unchanged — those still produce CLAUDE.md, ARCHITECTURE.md, etc. in the repo. Only the *planning* half is collapsed.
 
-## When this file should be fleshed out
+## Exercise status
 
-The `linear` planning operations should get their full operational detail (Linear MCP tool names per operation, label-taxonomy alignment script, cross-tool verification matrix) after one real run through `linear` mode exercises the patterns. Premature documentation of operations that haven't been exercised against real sessions is exactly the kind of speculative work the cascade is supposed to avoid.
-
-When that real `linear` run happens, this file gets:
-
-- Exact Linear MCP tool names and input shapes for initiative + Project creation
-- Verified handling of Linear initiative state (planned/active/completed) at blueprint time
-- The initiative description format for Linear that mirrors blueprint.md content
-- Linear-side label taxonomy alignment with the cascade labels from scaffold
-- A verification matrix entry for "the Linear initiative was created and is queryable"
-
-Until then, `linear` mode in blueprint operates with the documented operations and discloses gaps honestly.
+The `linear` structural model above is **one-run-exercised** (a full real cascade ran on it; recorded 2026-08-09). Individually-unexercised call shapes are flagged inline where they appear — disclose and fall back per operation, never per axis. When a second real run exercises a flagged call, drop its flag and restamp the date.
 
 ## Planning-axis detection failure modes
 
@@ -103,7 +90,7 @@ Until then, `linear` mode in blueprint operates with the documented operations a
 
 Planning-axis detection and routing is non-negotiable in light mode. The light-mode collapses apply to *what blueprint produces* (fewer foundation docs, batched HITL gates, etc.), not to which planning backend the operations target.
 
-For `linear` planning + light mode: still disclose the documentation gaps. *"Linear planning, light mode. I'll produce the docs you asked for, commit them via GitHub MCP, and commit blueprint.md to `docs/cbk/`. Linear initiative creation isn't fully documented — I'll generate manual instructions for you to run after we finish. Sound okay?"*
+For `linear` planning + light mode: still verify the scaffold-provisioned shell and still flag any individually-unexercised call before attempting it. *"Linear planning, light mode. I'll produce the docs you asked for, commit them via GitHub MCP, commit blueprint.md to `docs/cbk/`, then verify the planner shell and create the workstream parent issues. If a specific planner call misbehaves I'll hand you the one-step manual fallback rather than improvising. Sound okay?"*
 
 ## Knowledge backend interactions
 

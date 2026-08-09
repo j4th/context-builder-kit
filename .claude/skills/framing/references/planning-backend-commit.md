@@ -89,7 +89,7 @@ For re-framings, the gate also lists the prior sub-issues that will be supersede
 
 **`github-issues` planning** (default): sub-issues created via the two-step `issue_write` + `sub_issue_write` pattern.
 
-**`linear` planning**: per `backends.md`, framing capabilities map to Linear Milestones (Linear has a Milestone primitive that GitHub doesn't). Created via Linear MCP. See `planning-backend-matrix.md` for full operational detail.
+**`linear` planning**: framing capabilities are created as **F sub-issues** via `mcp__linear__save_issue` with `parentId` = the workstream parent issue (titled `[<slug>:F<#>] <intent>`); the planner's native Project-milestones primitive is deliberately unused by the cascade — milestones live in `frame-NN.md` and surface on the backend as these F sub-issues. See `planning-backend-matrix.md` for full operational detail.
 
 **`in-repo-markdown` planning**: this entire step is **skipped**. No sub-issues get created on any external planning backend. The atomic transition collapses to a single half — just the markdown commits (`frame-NN.md` + `README.md` index update). There is no parent Issue to query (because blueprint didn't create one with `in-repo-markdown` planning either), so the inheritance step reads the workstream's row in `blueprint.md` § Workstreams directly instead of querying a parent Issue. The slug is inherited from `blueprint.md`'s workstream entry, not from a parent Issue title — this is the one place where `in-repo-markdown` planning's slug-derivation differs from `github-issues` planning, and it works because both share the same slug-naming convention in the markdown.
 

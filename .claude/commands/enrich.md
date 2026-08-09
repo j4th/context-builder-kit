@@ -75,7 +75,7 @@ End your turn with:
 1. The enriched issue — $1 (URL / reference), now `[<slug>:enh]` + `cascade-depth:roughed-in`.
 2. The resolved intent + the resolved forks (one line each).
 3. The investigation summary — affected subsystems, key constraints, dependencies.
-4. The next action — *"`/finish $1` when ready."*
+4. The next action — *"`/finish $1` when ready."* (On `in-repo-markdown` planning there is no `/finish`: say *"open a Claude Code session against the enriched markdown record"* instead.)
 5. Loose threads — anything deferred or worth its own follow-up issue.
 
 ## What `/enrich` does NOT do

@@ -1,6 +1,6 @@
 # Handoff issue — the seventh step
 
-After all foundation docs are committed, all tooling configs are committed, and `docs/cbk/blueprint.md` is committed, blueprint creates **one issue** in the project's tracker (GitHub issue in github-only mode, Linear issue in opinionated mode) that serves as the human's runlist for getting the repo functional. This is the cascade's transition from "blueprint-controlled bootstrap with exempted gates" to "normal development with full gates applied."
+After all foundation docs are committed, all tooling configs are committed, and `docs/cbk/blueprint.md` is committed, blueprint creates **one issue** on the project's planning backend (a GitHub issue on github-issues planning, a planner issue on linear planning) that serves as the human's runlist for getting the repo functional. This is the cascade's transition from "blueprint-controlled bootstrap with exempted gates" to "normal development with full gates applied."
 
 ## Why an issue and not a doc section
 

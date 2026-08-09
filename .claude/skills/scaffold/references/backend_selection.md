@@ -7,7 +7,7 @@ The kit composes three surfaces:
 - **Constant**: a GitHub repo (or other git host) containing core markdown docs (`CLAUDE.md`, `ARCHITECTURE.md`, `STANDARDS.md`, `CONTRIBUTING.md`, `docs/adr/*`, `docs/cbk/*`). Always present, always the immediate AI/dev context — not a choice.
 - **Axis 1 — Planning backend**: where live work-tracking happens.
   - `github-issues` — GitHub Issues (sub-issues + Projects v2 board); 3 planning levels
-  - `linear` — Linear (initiatives + projects + milestones + issues); 4 planning levels
+  - `linear` — Linear (initiative + project shell above the same 3 issue levels; the planner's milestones field is deliberately unused by the cascade)
   - `in-repo-markdown` — status tracked in `docs/cbk/README.md` only; no external board
 - **Axis 2 — Knowledge backend**: durable longer-lived reference library.
   - `notion` — with the hub-as-DB-row pattern from `.claude/rules/knowledge-backend.md`
@@ -75,7 +75,7 @@ If the user picks `github-issues`, surface the three-level constraint **before p
 
 **Default phrasing (full)**:
 
-> *"Quick heads up before I move on. GitHub Issues supports three planning levels: project boards, sub-issues, sub-sub-issues. The cascade has four logical levels — initiatives, projects, milestones, issues. So in this configuration, blueprint (phase 3) will produce an `initiative.md` markdown document but won't create a corresponding GitHub entity for it. Framing maps to sub-issues, rough-in to sub-sub-issues, finish to PRs. If you ever need cross-project initiative coordination later, you'd want to switch to Linear. Sound okay?"*
+> *"Quick heads up before I move on. GitHub Issues supports three planning levels: project boards, sub-issues, sub-sub-issues. The cascade has four logical levels — initiatives, projects, milestones, issues. So in this configuration, blueprint (phase 3) will record the initiative content in `docs/cbk/blueprint.md` but won't create a corresponding GitHub entity for it. Framing maps to sub-issues, rough-in to sub-sub-issues, finish to PRs. If you ever need cross-project initiative coordination later, you'd want to switch to Linear. Sound okay?"*
 
 **Minimum-mode phrasing (one sentence)**:
 
@@ -152,6 +152,6 @@ If the user already has an existing setup (a repo, a Linear workspace, an existi
 
 Once both axes are chosen, the resulting combination is recorded in `.cascade/backends.toml` (see `backends.md` § Configuration). Run the three-state detection matrix from SKILL.md to figure out what's actually possible in this chat session for the planning backend, then proceed to discovery (the working-style step) before stage 1.
 
-## A note on the old "opinionated profile" framing
+## A note on the old bundled-profile framing
 
-Prior versions of this kit bundled `linear` planning and `notion` knowledge into a single "opinionated" profile. The constant + two axes refactor removed that bundling because it forced operators into either Linear+Notion together or neither — with no clean home for the most common mismatch (`github-issues` + `notion`, the "I have Notion context but no Linear" shape). Operators who arrive expecting "the opinionated profile" should be guided to picking `linear` for planning and `notion` for knowledge in sequence; the resulting combination is functionally identical to the old preset.
+Prior versions of this kit bundled `linear` planning and `notion` knowledge into a single named preset. The constant + two axes refactor removed that bundling because it forced operators into either Linear+Notion together or neither — with no clean home for the most common mismatch (`github-issues` + `notion`, the "I have Notion context but no Linear" shape). Operators who arrive expecting the old preset name should be guided to picking `linear` for planning and `notion` for knowledge in sequence; the resulting combination is functionally identical to the old bundle.

@@ -135,7 +135,12 @@ from the IC row and from the ledger row that produced it.]
 [Each milestone follows the structure from `references/templates/milestone-template.md`.
 The narrative arc below the milestones is required.]
 
-### M1: <name>
+### F1 — M1: <name>
+
+[Heading form per cbk-conventions § Title-prefix scheme: `F<#>` is the framing
+capability issue's number, **continuing the workstream's F-sequence across
+frames** (a second frame for this workstream starts at the next unused F);
+`M<#>` is this frame's local milestone position.]
 
 **Capability**: After this, [concrete verb phrase — what the system can now do].
 
@@ -154,7 +159,7 @@ The narrative arc below the milestones is required.]
 
 **Issue notes**: [Anything rough-in needs to know about these issues — Claude-Code-implementable vs. user-managed flags, dependencies between issues, "done" signals at the milestone level.]
 
-### M2: <name>
+### F2 — M2: <name>
 
 [same structure]
 
@@ -193,10 +198,12 @@ milestone sequence. The cascade tracks them as first-class artifacts because
 they're inevitable — every framing surfaces some — and because rough-in MUST
 check this table before decomposing any milestone.
 
-Each meta-issue gets a corresponding GitHub issue created during framing's
-planning-backend commit (parented under the workstream parent Issue with
-label `cascade-depth:framed`, same as framing capability sub-issues, but
-distinguished by the `meta` label).]
+Each meta-issue gets a corresponding planning-backend issue created during
+framing's planning-backend commit (parented under the workstream parent
+issue with label `cascade-depth:framed`, same as framing capability
+sub-issues, but distinguished by the `meta` label). On in-repo-markdown
+planning no backend issue exists — the Issue # column holds "n/a" and this
+table row is itself the record.]
 
 | Issue # | Subject | Depends on | Blocks | Type |
 |---|---|---|---|---|
@@ -256,7 +263,7 @@ Row schema:
 
 ## Handoff context
 
-[A ~150-word compressed summary of this framing for downstream skills (rough-in, future framings). Compress ruthlessly. Include: the project's purpose, the chosen approach, the milestone arc, any active interface commitments, **and an explicit parent-pointer sentence naming how rough-in should find the framing capability sub-issues created by this framing's planning-backend commit** (typically "rough-in operates against `[<slug>:F<#>]` sub-issues parented under issue #<workstream-parent-number>, with F-numbers mapping 1:1 to milestone numbers"). This is what rough-in reads first when picking up frame-NN.md.
+[A ~150-word compressed summary of this framing for downstream skills (rough-in, future framings). Compress ruthlessly. Include: the project's purpose, the chosen approach, the milestone arc, any active interface commitments, **and an explicit parent-pointer sentence naming how rough-in should find the framing capability sub-issues created by this framing's planning-backend commit** (typically "rough-in operates against `[<slug>:F<#>]` sub-issues parented under issue #<workstream-parent-number>; the F↔M pairing is in each milestone heading, with F continuing the workstream sequence across frames"). This is what rough-in reads first when picking up frame-NN.md.
 
 The parent-pointer sentence is load-bearing: without it, rough-in has to reconstruct the F-number-to-M-number mapping and the parent linkage from cascade conventions alone. Framing already knows these values at commit time (it just created the sub-issues), so writing them into the handoff context is cheap and removes ambiguity for every downstream rough-in run.
 
@@ -272,9 +279,10 @@ The parent-pointer sentence is load-bearing: without it, rough-in has to reconst
 > M5 (full pack with 25 lessons and CI integration). Interface commitment:
 > the `Verifier` trait stabilizes by M2 — frame-02 (tmux pack) consumes
 > it starting from its M1. Rough-in operates against `[regex-pack:F<#>]`
-> framing capability sub-issues parented under #12, with F-numbers
-> mapping 1:1 to milestone numbers (F1↔M1, F2↔M2, ..., F5↔M5). For the
-> first rough-in run, that means #37 (F1/M1) as the parent. STANDARDS.md
+> framing capability sub-issues parented under #12; the F↔M pairing is in
+> each milestone heading (this first frame: F1—M1 … F5—M5; a later frame
+> continues at F6). For the first rough-in run, that means #37 (F1 — M1)
+> as the parent. STANDARDS.md
 > testing philosophy applies throughout.]
 ```
 
