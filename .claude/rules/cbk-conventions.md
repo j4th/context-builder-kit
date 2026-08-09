@@ -92,6 +92,8 @@ Title prefixes are the structural identifier across the cascade. They survive an
 
 Slug stability is load-bearing: branches reference it (`<type>/<TEAM>-<N>-<slug>...`), labels reference it (`workstream:<slug>`), commit messages reference it. A workstream that needs renaming triggers a re-blueprint, not in-place mutation.
 
+**Letters reflect skills; M is frame-local, F continues per workstream.** `M<#>` labels a milestone *inside its frame* (frame-local; a re-cut milestone may sub-letter, e.g. M6a / M6b when one milestone is replaced by two). `F<#>` numbers the framing capability issue and **continues across frames within a workstream** — never restarting per frame — so `[F<N>.AC<M>]` trace IDs stay unique across the workstream's whole cascade history (a superseded milestone's F-number retires with it, un-executed; its replacements take fresh F-numbers). Milestone headings in `frame-NN.md` carry both: `### F<#> — M<#>: <name>`. `R<#>` numbers rough-in's issues under their F.
+
 A deferred meta-issue (`[<slug>:meta]`) can itself be roughed-in into R sub-sub-issues when a setup/decision meta is too large for one `/finish`. Its children take `[<slug>:<meta-tag>:R<#>]`, where `<meta-tag>` is a **short descriptive slug for that specific meta** (not the literal `meta`) — a workstream routinely carries several `[<slug>:meta]` issues, so `[<slug>:meta:R<#>]` would collide across them. The `<meta-tag>` is chosen at the meta's rough-in (a meta has no F-number — it is not a framing milestone) and stays stable across its children, keeping the hierarchy grep-able.
 
 ## Contribution intake — bug lane + enhancement lane
@@ -189,14 +191,14 @@ If `/intake` classifies a report as a *large* net-new capability (multi-R, sub-d
 Acceptance criteria in framing F-issues carry inline IDs of the form `[F<N>.AC<M>]`:
 
 ```markdown
-### M3 acceptance criteria
+### F3 — M3: <name>
 
 - [F3.AC1] <Boundary or behavioural criterion> ...
 - [F3.AC2] <Test-runnable criterion> ...
 - [F3.AC3] <Demonstrable-capability criterion> ...
 ```
 
-Rough-in R-issues then reference these IDs in their own `## Acceptance criteria` and `## Test plan` sections:
+`F<N>` is workstream-unique and continues across frames (§ Title-prefix scheme), so a trace ID never collides with an earlier frame's. Nested criteria (`[F3.AC2.1]`) are permitted when a criterion decomposes. Rough-in R-issues then reference these IDs in their own `## Acceptance criteria` and `## Test plan` sections:
 
 ```markdown
 ## Acceptance criteria
