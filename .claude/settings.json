@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "_comment_hooks": "PreToolUse guards (non-negotiable enforcement): protect-immutable-adrs.sh blocks Edit/Write/MultiEdit on existing docs/adr/NNNN-*.md; protect-lock-files.sh blocks edits to lock files (change them via the package manager instead). Both fail open (exit 0 + stderr warning) on environment defects, so a missing jq or unset CLAUDE_PROJECT_DIR can't turn a targeted guard into a universal edit block. A project may add a PostToolUse advisory formatter — see .claude/hooks/format-on-edit.sh (exemplar; wire its case arms to your stack and register it here).",
+  "_comment_hooks": "PreToolUse guards in two tiers. HARD-DENY (exit 2) for actions never legitimate for the agent: protect-immutable-adrs.sh blocks Edit/Write/MultiEdit on existing docs/adr/NNNN-*.md; protect-lock-files.sh blocks edits to lock files (change them via the package manager); protect-main-branch.sh blocks `git commit` on main/master (branch-first per cbk-conventions.md § Branch naming). ASK-GATE (permissionDecision \"ask\") for one-way doors legitimate only when operator-instructed — the permission prompt IS the per-action HITL approval, and it fires even when a broad allowlist entry would otherwise auto-approve: guard-pr-state.sh intercepts gh pr ready/merge/close/reopen; require-knowledge-backend-ok.sh intercepts knowledge-backend MCP writes (Notion matcher shipped as the v1 reference — adjust the regex to your MCP's tool names). All guards fail open (exit 0 + stderr warning naming the surviving backstop) on environment defects, so a missing jq can't turn a targeted guard into a universal block. A project may add a PostToolUse advisory formatter — see .claude/hooks/format-on-edit.sh (exemplar; wire its case arms to your stack and register it here).",
   "hooks": {
     "PreToolUse": [
       {
@@ -13,6 +13,28 @@
           {
             "type": "command",
             "command": ".claude/hooks/protect-lock-files.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/protect-main-branch.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/guard-pr-state.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__(plugin_Notion_)?notion__notion-(create|update|move|duplicate|convert|delete).*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/require-knowledge-backend-ok.sh"
           }
         ]
       }

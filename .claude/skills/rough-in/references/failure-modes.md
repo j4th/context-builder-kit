@@ -124,6 +124,16 @@ Failure modes are presented in rough order of frequency — the most common ones
 
 **Recovery**: during the Step 4 HITL gate, scan for adjacent issues that each plan-mode into a small number of steps and ask whether the split is adding bureaucracy. Merge the pair, let the merged issue plan-mode into ~5-10 internal steps during `/finish`, and preserve the "R1 before R2" reasoning as internal step ordering in the merged Implementation section. The milestone's total issue count may drop from 5 to 3 — that's typical, not a signal of under-planning.
 
+## 13. Narrow-scope existence grepping during spec drafting
+
+**Signal**: a draft spec instructs the executor to *create* a helper, table, test fixture, or utility, and the supporting evidence is a grep scoped to a single package or directory ("no such helper in `<the milestone's package>`"). Or: two research/grounding documents in the same run contradict each other about whether something exists or is wired, citing the same file or line.
+
+**Why it's a failure mode**: absence claims and existence claims have asymmetric costs. A wrong positive anchor (a stale line number) is cosmetic — the executor finds the symbol anyway. A wrong absence claim ships an instruction to build machinery that already exists; the duplicate lands, passes review (each looks fine in isolation), and survives as drift until someone reconciles them. Helpers routinely live where their *consumers* live — a notebook, test, or sibling-package tree the milestone's package-scoped grep never touches. The observed real-world shape is worse than "nobody checked": a drafter re-derives, from a fresh narrow grep, a fact that an earlier grounding document in the same run already had right — and a verifier pass that samples positive anchors sails past the wrong absence claim.
+
+**Defense**: the three rules in `references/research-phase.md` § "Grounding existence claims — repo-wide or not at all": (1) existence/absence conclusions only from repo-root-wide search covering every package, notebook, test, and docs tree; (2) fan-out drafter prompts embed that rule verbatim, and the harmonizer/verifier pass preferentially spot-checks **negative** claims; (3) drafts cite the run's grounding corpus for facts it already covers instead of re-deriving them.
+
+**Recovery**: when a wrong absence claim is caught before the spec commits, correct the draft to "extend in place, don't re-author" and record the catch in the cascade event log. When it's caught after code landed, treat the duplicate as a reconciliation task (merge into the pre-existing implementation, migrate consumers) — not a delete-the-new-one reflex, since the new copy may have consumers of its own by then.
+
 ## Cross-failure-mode patterns
 
 A few patterns recur across multiple failure modes:

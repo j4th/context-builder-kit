@@ -9,6 +9,7 @@ The principle:
 - **Skills stay portable; project specifics live here.** The cascade skills can be installed in any project; they describe choice spaces and patterns generically. The project's specific instantiation — flat layout vs nested, branch-naming pattern, label scheme, operational evidence — lives in this file.
 - **Two-way reference.** Skills cite this file as the project-level override surface. This file cites skills as the upstream pattern source. No project-specific identifiers (issue keys, framing numbers, slug names) should leak into skill content.
 - **Exercised, not provisional.** Sections in a project's filled-in copy of this file should record choices the project has actually exercised, not guesses. As the project runs cascade cycles, update this file with what proved out.
+- **Empirical rails are dated measurements, not standing rules.** When operational evidence produces a constraint (a throughput cap, a workaround, a "don't exceed N"), record it with its date, the failure signature that motivated it, and an explicit re-check trigger — and when it lifts, note the retirement inline so it isn't reinstated from memory. A workaround written as a standing rule outlives its evidence. (Contractual limits read from a platform's live interface are the opposite case: re-verify against the source, don't re-measure.)
 
 ## Surface inventory
 
@@ -19,7 +20,7 @@ A single glanceable manifest of where every surface for this project actually li
 - **Knowledge backend (`<Notion | none>`):** `<hub URL + MCP server, if configured>`
 - **Upstream / pre-cascade docs:** `<path to any frozen reference material, or "none">`
 - **Problem brief / scaffold output:** `docs/cbk/problem_brief.md` · `docs/cbk/scaffold.md`
-- **Tooling conventions:** `<record any project-specific tool / MCP-selection conventions here — e.g. which code-intelligence or live-docs MCP to prefer over the built-ins — or "defaults">`
+- **Tooling conventions:** `<record any project-specific tool / MCP-selection conventions here — e.g. which code-intelligence or live-docs MCP to prefer over the built-ins, or the project's model/effort orchestration conventions for dispatched agents — or "defaults">`
 
 ## Cascade artifact layout — flat (default) or nested
 
@@ -197,6 +198,8 @@ Rough-in R-issues then reference these IDs in their own `## Acceptance criteria`
 
 **Backfill on existing artifacts is optional**: framings produced before adopting this convention shouldn't be retroactively edited (per ADR-pattern append-only discipline applied to cascade events). Adopt forward from whichever frame-NN this convention starts in.
 
+**Two-level anchor in practice.** Rough-in R-issues routinely author their own numbered `## Acceptance criteria` list — derived from, but not identical to, the parent F-issue's ACs — and the R-issue is the unit `/finish` executes against, so **tests trace to the R-issue's own AC numbering** (e.g. a test docstring tagging `[<ISSUE-KEY> AC2]`) while the R-issue's AC list is what cites the parent's `[F<N>.AC<M>]` IDs. Both levels are trace anchors: the F-level IDs close the framing → rough-in loop; the R-level tags close the rough-in → test loop. Record the project's chosen test-side tag form here so conformance reviewers don't flag the R-level form as trace-ID drift.
+
 ## Branch naming
 
 Pattern: `<type>/<TEAM>-<N>-<short-slug>`
@@ -270,6 +273,10 @@ How to avoid:
 - When `/finish` (or any branch-prep flow) ends with marker-carrying docs commits, **end the branch on a non-marker commit** before flipping to ready. An empty commit (`git commit --allow-empty -m "ci: trigger auto-review workflow"`) is the cleanest fix when no other change is queued.
 - Order commits so the last one is a code/test commit (which can't carry the marker per the rules above) — when feasible, it removes the foot-gun automatically.
 
+**Deliverable trap — an unattended CI agent's deliverable is the posted artifact, not its exit code.** An auto-review workflow that runs green but posts no comment has failed silently: the run's success condition is its side-effect (the posted review), so the workflow should assert the artifact actually landed — and a green-run-no-comment symptom is investigated as a failure, not shrugged off.
+
+**Exclusion is not exemption — linter-excluded surfaces get their own CI gate.** When a surface is deliberately excluded from the generic linter (a dialect the linter can't parse, generated-but-checked files, a DSL), it still gets a dedicated CI check of its own; otherwise the exclusion quietly becomes a standing exemption from all verification.
+
 **Substring trap — quoting the literal marker token in a commit-message body re-triggers the matcher.** GitHub's match is a substring scan across the entire message, not anchored to the subject line or the end. A commit whose body explains *why* it's a fix for this trap, but quotes the literal token while explaining, is itself skipped. Use a paraphrase (e.g., "the CI-skip marker", "the conventional skip-tag") in prose; reserve the literal `[skip ci]` for the actual flag at the end of the subject line where you intend it to fire.
 
 **Required-checks-block-merge trap — a skip-marked HEAD commit can't merge under strict branch protection.** When `main` requires status-check contexts with "require branches to be up to date" (strict), the CI-skip marker suppresses the CI workflow entirely, so those required contexts **never report** — the platform parks them as "Expected — Waiting for status to be reported" and the merge stays blocked indefinitely. (A separate always-on workflow can still run, making the PR *look* green while it stays unmergeable.) Net: `[skip ci]` saves nothing for a PR that has to merge through branch protection. For a docs-only PR bound for `main`, either (a) skip the marker on the final commit so CI runs and reports, or (b) keep the marker on the content commits but end the branch on a non-marker commit (`git commit --allow-empty -m "ci: run gates to satisfy required checks"`) before requesting merge. Same root cause and fix as the auto-review trap; the marker still earns its keep on intermediate WIP commits that don't open a PR to `main`.
@@ -290,6 +297,8 @@ Two invariants keep the window honest; violate either and the policy inverts fro
 - **Adding a new ecosystem to the update bot** (a new package-ecosystem entry, uncommenting a stub): it MUST carry the release-age floor. A bare ecosystem with no floor should fail the CI guard rather than merge.
 - **Scaffolding a new lockfile-managed surface** (e.g. a second language, or a frontend workstream landing): apply that ecosystem's release-age analogue in the *same* change that introduces the lockfile — don't defer it to a follow-up.
 - **Lockfiles are tool-managed, not hand-edited.** Version changes flow through the package manager's lock / sync commands, never a manual edit to the lockfile. Where a project enforces this with a PreToolUse hook, note the hook path here.
+
+**CI workflow actions are dependencies too.** A tag reference (`uses: vendor/action@vN`) is mutable and open to tag-retag compromise: pin every `uses:` to a full commit SHA with a trailing version comment (`@<sha> # vN.N.N`), resolve initial pins to the newest release in the current major that satisfies the settle window, and let the update bot's CI-actions ecosystem entry maintain the pins routinely (it carries the release-age floor like every other ecosystem).
 
 Dependency-update-bot PRs are triaged by `pr-review.md`'s four-class rubric; this section states the adoption policy those PRs are gated by.
 
@@ -312,7 +321,7 @@ The portable framing skill trusts documentation. A project can add a heavier dis
 - **Prove-it spike** — a throwaway run against the real stack for a single load-bearing recipe (does this library API / this catalog / this data shape actually behave as the docs claim?), discarded once it answers the question. Distinct from a *shippable* spike milestone.
 - **Rigor pass** — for a high-stakes frame, a short pre-commit pass that live-probes tooling currency and key data/interface assumptions, optionally with a multi-lens adversarial review of the draft frame before it's locked.
 
-If a project adopts either, record its trigger here (e.g. "rigor pass on any frame that introduces a new external dependency"). Large research/rigor outputs can be committed as a companion file (`frame-NN-<slug>.md`) the frame links and rough-in inherits, rather than inlined or discarded.
+If a project adopts either, record its trigger here (e.g. "rigor pass on any frame that introduces a new external dependency"). Large research/rigor outputs can be committed as a companion file (`frame-NN-<slug>.md`) the frame links and rough-in inherits, rather than inlined or discarded. The same companion shape works at **event grain**: a dated design/research distillation linked from the ledger row that produced it, opening with a short provenance header (builds-on / grounded-by / what it produced), with the raw research corpus archived outside the repo. When a companion is research-backed, **verify every quotation against the fetched source before committing and record the tally** ("N/N citations verbatim-verified"); a citation that can't be re-verified is dropped, not kept on faith.
 
 ## ADR index sync
 
@@ -353,6 +362,7 @@ Use this mapping when explaining the cascade to someone familiar with Spec Kit o
 | `docs/cbk/blueprint.md` | **Append-only for new ADRs** (the Stack decisions table); otherwise immutable to preserve cascade history | Re-blueprint creates new file | Blueprint is a cascade event; mutation breaks the audit trail |
 | `docs/cbk/frame-NN.md` | **Append-only for `## Rough-in events` table**; otherwise immutable post-commit | Re-framing creates `frame-MM.md` with `Supersedes: frame-NN` field; old frame's status → "Superseded" | Frames are cascade events; rough-in events are the timeline log |
 | `docs/cbk/frame-MM.md` (additive increment) | **New file** (next sequential number); the prior frame is not mutated and stays `Active` | *No* supersession — an additive increment carries a `Builds on: frame-NN` header (not `Supersedes`); both frames stay `Active` and their open milestones coexist | Not every new framing replaces: an increment extends a workstream whose prior milestones are still valid and open, so the prior frame must not flip to `Superseded` (see framing SKILL.md Step 2 pattern D) |
+| `docs/cbk/frame-MM.md` (milestone-scoped re-frame) | **New file** (next sequential number); the prior frame is not mutated | Header states `Supersedes only milestone M<N> of frame-NN`; the prior frame's index status is annotated `Active (M<N> superseded by frame-MM)` via the permitted status-column mutation; the retired milestone's acceptance-criteria set is recorded as retired-un-executed in the new frame | One milestone's shape can fail while its siblings are built and Done; whole-frame supersession would falsify the siblings' history (see framing SKILL.md Step 2 pattern E) |
 | `docs/cbk/README.md` | **Append-only for new entries**; status column updates allowed | Status updates are mutations to single column, not whole-file rewrites | Status changes (Active → Superseded → Completed) need to flow |
 | `docs/STANDARDS.md`, `docs/ARCHITECTURE.md`, `CLAUDE.md` | **Freely mutable** | n/a — living docs | Project-context docs evolve with the project; git history is the version archive |
 | `.claude/rules/*.md` | **Freely mutable** | n/a | Operational rules; mutations are routine |
@@ -390,6 +400,10 @@ When deciding whether a HITL gate in a cascade skill's standard mode should rema
 - It has empirically never produced a "no/edit" response across N cascade runs
 
 **Standard-mode target**: 3 gates per cascade phase, with trip-wires filling the rest of the safety surface. Per the [Verschlimmbesserung](https://martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html) / [Scott Logic "3.5 hours reviewing markdown"](https://blog.scottlogic.com/2025/) / [Digital Applied gate framework](https://www.digitalapplied.com/blog/agentic-workflow-approval-gate-framework-governance) consensus: 4+ gates per phase trains rubber-stamp culture, which silently degrades the load-bearing gates.
+
+**Mechanize the gates that must survive session drift.** A gate whose rule is absolute (no judgment call) can be enforced by a PreToolUse hook instead of prose, in two tiers: **hard-deny** for actions never legitimate for the agent (editing immutable ADRs, hand-editing lock files, committing on main), **ask-gate** for one-way doors legitimate only when operator-instructed (PR-state changes, knowledge-backend writes) — where the forced permission prompt *is* the per-action HITL approval and fires even when a broad allowlist would otherwise auto-approve. See the hook registry in `.claude/settings.json`. When a safety rule stays instruction-enforced instead, record a **deferred-hardening note** — why structural enforcement was shelved, the residual-gap severity, and the revisit trigger — so the gap stays visible instead of forgotten.
+
+**Standing authorizations are scoped and recorded.** A session- or plan-scoped "blanket OK for the actions in this plan" is legitimate HITL calibration only when it names the exact pre-approved action set, is recorded in the governing artifact, and states that anything outside the set stays gated. Designated one-way actions are excluded from standing authorization entirely — they always take a fresh per-action approval, even mid-session, even when everything else is pre-approved.
 
 ## Trip-wire / phase-exit checklist pattern
 

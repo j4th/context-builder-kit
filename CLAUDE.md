@@ -36,9 +36,10 @@ The cascade is top-down, but a **bottom-up contribution lane** complements it fo
 │   ├── intake.md                  ← bottom-up entry: externally-sourced report → /finish-able issue
 │   ├── enrich.md                  ← rough-in for one small capability (enhancement lane, skips framing)
 │   └── pr-respond.md              ← the PR feedback-loop executor (inverse of /finish)
-├── agents/                        ← project-local PR reviewers (adr-conformance, logging-discipline, cascade-rule)
-├── hooks/                         ← PreToolUse guards (protect-immutable-adrs, protect-lock-files) + format-on-edit exemplar
-├── rules/                         ← operational contracts (cbk-conventions template, pr-review, testing, logging, simplification, knowledge-backend)
+├── agents/                        ← project-local PR reviewers (adr-conformance, logging-discipline, cascade-rule; memory-enabled) + Explore (cheap-tier search exemplar)
+├── hooks/                         ← PreToolUse guards, two-tiered: hard-deny (protect-immutable-adrs, protect-lock-files, protect-main-branch) + ask-gate (guard-pr-state, require-knowledge-backend-ok) + format-on-edit exemplar
+├── rules/                         ← operational contracts (cbk-conventions template, pr-review, testing, logging, simplification, knowledge-backend) + rule templates (workflows, tooling, orchestration)
+├── workflows/                     ← saved orchestrations (review-sweep: find-then-adversarially-verify review pass)
 └── skills/
     ├── consultation/SKILL.md      + references/   ← phase 1
     ├── scaffold/SKILL.md          + references/   ← phase 2
@@ -88,7 +89,8 @@ Kit-wide operational contracts (`.claude/rules/`):
 - `cbk-conventions.md` — project-level conventions template (target projects copy + fill in)
 - `pr-review.md`, `simplification.md`, `testing.md`, `logging.md` — operational discipline for the named tooling concern
 - `knowledge-backend.md` — the operational contract for the knowledge-backend axis (read patterns, write tiering, HITL discipline, brownfield detection, lazy provisioning)
+- `workflows.md`, `tooling.md`, `orchestration.md` — **templates** (like `cbk-conventions.md`): agent workflow patterns, tool-selection skeleton, and model/effort tiering. Target projects copy and fill the bracketed sections; fast-aging platform claims inside them are dated observations to re-verify, per the conventions' dated-empirical-rails principle
 
 ## When the user invokes a skill
 
-The skills are user-invocable via the Skill tool by the names declared in their frontmatter (`consultation`, `scaffold`, `blueprint`, `framing`, `rough-in`, `adr-new`). `/finish` is invoked as a slash command with one argument: the issue number. The skill descriptions (in each `SKILL.md` frontmatter) include the trigger phrasings — read those before responding to a request that might activate one. The triggers are deliberately tied to the *shape* of the conversation, not the vocabulary, because most users at any given phase don't yet know the cascade exists by name.
+The skills are user-invocable via the Skill tool by the names declared in their frontmatter (`consultation`, `scaffold`, `blueprint`, `framing`, `rough-in`, `adr-new`). `/finish` is invoked as a slash command with one argument: the issue number. **Invocation posture is split by phase.** `consultation` — the funnel entry, where users don't yet know the cascade vocabulary — stays model-invocable, with triggers deliberately tied to the *shape* of the conversation rather than the vocabulary. The downstream phase skills (`scaffold`, `blueprint`, `framing`, `rough-in`) carry `disable-model-invocation: true` and never auto-trigger: each is an expensive, HITL-heavy workflow with one-way-door writes (repo creation, planning-backend commits), so an unwanted auto-trigger mid-conversation costs more than a missed one. Invoke them deliberately — each description names the moment it's for, and once inside the cascade the operator knows the phase names (`adr-new` follows the same deliberate posture).

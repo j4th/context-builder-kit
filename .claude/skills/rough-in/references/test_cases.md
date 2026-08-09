@@ -1,8 +1,8 @@
 # Rough-in test cases
 
-This file contains five realistic test prompts for verifying that rough-in still works after revisions. Each test names the setup conditions, the user prompt, the expected behaviors at each step, and the success criteria.
+This file contains eight realistic test prompts for verifying that rough-in still works after revisions. Each test names the setup conditions, the user prompt, the expected behaviors at each step, and the success criteria.
 
-These tests are not exhaustive — they cover the canonical happy path and four important edge cases. Add new tests when revisions introduce new behavior or fix bugs that should be regression-tested.
+These tests are not exhaustive — they cover the canonical happy path and the important edge cases. Add new tests when revisions introduce new behavior or fix bugs that should be regression-tested.
 
 ## Test 1 — Canonical first rough-in (regex-pack M1)
 
@@ -169,9 +169,51 @@ These tests are not exhaustive — they cover the canonical happy path and four 
 - Rough-in waits for explicit user confirmation before any further action
 - Whichever option the user picks, rough-in executes it correctly without trying to be clever
 
+## Test 6 — Additive completeness pass on a roughed-in milestone
+
+**Prompt**: *"I think M2's rough-in under-covers the space — run a completeness pass."*
+
+**Success criteria**:
+- The milestone's space is mapped against a completeness taxonomy; every instinct classified **present** (with citation) / **genuine gap** / **deferred** (meta-issue) / **category error** (with the reason why not)
+- Genuine gaps land as **new** R-issues with the next R-numbers, wired into the existing dependency DAG; existing open R-issues are untouched
+- The frame's `## Rough-in events` ledger gains an append-only row recording the pass, its taxonomy verdicts, and any expected-count deviation with operator approval
+- Nothing is closed or superseded (the pass is additive by construction)
+
+**Failure signals**:
+- Existing R-issues edited or closed as part of the pass (that's re-rough-in, a different grain)
+- Gaps added without ledger recording, or category-error verdicts dropped without the recorded why-not
+
+## Test 7 — In-place body refresh boundaries
+
+**Prompt**: *"Issue #N's body claims a mechanism that later work falsified — refresh it."*
+
+**Success criteria**:
+- If #N is **un-executed**: one operator-gated in-place body refresh, plus a provenance comment on the issue recording what changed and why, plus a ledger row
+- If #N is **executed** (has a merged PR): refuse the retro-edit and say why
+- If the correction is a **shape change** (different decomposition, not just stale facts): route to close-and-recreate re-rough-in instead
+
+**Failure signals**:
+- A body refresh applied without the operator gate, the provenance comment, or the ledger row
+- An executed issue's body retro-edited
+- A decomposition change smuggled through as a "refresh"
+
+## Test 8 — Grounding existence claims in fanned-out research
+
+**Prompt**: any full-mode research phase that fans out drafters/researchers over a codebase.
+
+**Success criteria**:
+- Every drafter/researcher prompt embeds the repo-wide-verification rule verbatim (no single-package existence greps)
+- Any verifier/harmonizer pass preferentially spot-checks **negative** claims ("X does not exist") over positive anchors
+- Drafts cite the run's existing grounding output for facts it already covers instead of re-deriving them
+
+**Failure signals**:
+- A spec instructs the executor to *create* something whose absence evidence is a single-directory grep
+- Two grounding documents in the same run contradict each other about whether something exists
+- A verifier samples only positive anchors (see `references/failure-modes.md` § 13)
+
 ## Cross-test invariants
 
-A few things should be true across all five tests:
+A few things should be true across all eight tests:
 
 - **The pre-flight checks runs in every test**, even Test 3 (markdown-only) where the planning backend doesn't exist
 - **No HITL gate is skipped silently** — if a gate is collapsed (in light mode), the user explicitly chose light mode
