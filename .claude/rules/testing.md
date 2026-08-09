@@ -140,6 +140,16 @@ The mapping is:
 
 Tests should run in parallel by default unless they mutate shared global state (env vars, named processes, the database without a per-test sandbox, file-system fixtures that aren't isolated). Sequential-only tests are a tax on the suite — pay it deliberately, not by default. Most modern test runners offer per-test isolation primitives (sandboxed DB connections, per-test temp dirs, mock context isolation); use them.
 
+## Integration cadence
+
+When the CI gate runs an offline-only subset (external-boundary suites excluded via markers/tags), the excluded suites exercise live state **only when someone runs them** — and the observed failure mode is state-pinning tests going silently stale against legitimately-moving live state, erupting weeks later in a suite unrelated to the change that moved the state. Exclusion from the CI gate is not an exemption from running; it needs an explicit **cadence contract**:
+
+- **Event-triggered, plus periodic.** Run the live-integration sweep after the event classes that actually cause staleness — above all, any merge that **re-points a live surface** (changes which live entity a consumer reads, supersedes a record other suites pin, migrates a schema another suite queries) — and periodically between events.
+- **Run the sweep alone.** Never concurrently with other load against a shared backing service — a concurrent sweep can resource-exhaust the service and take unrelated tests down as connection-failure fallout, burying the real signal under hundreds of misleading failures.
+- **The sweep task is self-contained.** If excluded suites need optional dependency groups, the sweep's task definition carries them (or the suites skip cleanly) — a routine environment sync must not turn the sweep red.
+
+Record the project's concrete cadence — the trigger event classes, the periodic interval, and the task that runs the sweep — in the project's filled-in conventions so the contract is operable, not aspirational.
+
 ## Coverage — measured, not gated
 
 Track coverage in CI and surface deltas in PR review, but do not gate on a percentage threshold. Coverage *delta* is a review concern when a logic module drops without explicit reason — surfaced by your PR-review tooling in the pre-PR sweep.
@@ -185,6 +195,16 @@ The view doesn't exist; the test fails for "module not loaded" reasons; you buil
 ### ❌ Per-tick assertions on high-frequency loops
 
 If your project has a high-frequency loop (60Hz body loop, audio buffer pump, render tick), asserting on per-tick state in a test introduces flakiness (timing-dependent) and noise (assertion churn on every tick refactor). Test the *decision* function directly with synthetic state input; assert telemetry events for whole-loop behavior.
+
+### ❌ Frozen-state pins over append-only stores
+
+```python
+rows = fetch("SELECT ... FROM registry WHERE version = 'v1'")
+assert len(rows) == 1        # "no superseding append happened"
+assert rows[0].is_current    # "still the active record"
+```
+
+Over an append-only surface, both assertions freeze a moment in history: a legitimate later append (a supersession, a consumer re-point, a coexisting grain) breaks the pin weeks later in a suite unrelated to the change that appended — misdirecting the debugging — or worse, the un-ordered query reads a row non-deterministically. The repair shape: `ORDER BY` the append timestamp and pin the **earliest** row byte-exactly (the fact this suite actually owns); constrain any **later** rows to same-grain *content copies* (same identity inputs, same contract fields) rather than asserting their absence; and stay **direction-agnostic** — never hard-pin a lifecycle flag the suite doesn't own (`is_current is False`), because a legitimate future flip breaks it with a misdirecting message. Pin what the test owns; leave lifecycle claims to lifecycle tests.
 
 ### ❌ Snapshot tests as acceptance
 
