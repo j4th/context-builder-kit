@@ -79,6 +79,12 @@ A new ADR connects to an existing one through one of two relationships. Both are
 
 **Clause-scoped supersession.** Supersession can also target a single clause rather than a whole ADR: `Supersedes: ADR-NNNN Dn` reverses only decision `Dn` of the parent while the parent's other clauses stand. The parent's status stays `Accepted` (it is not wholly superseded); the child's index row names the specific clause it replaces.
 
+**Header narrative.** A `Refines:` header carries more than the pointer: for each named parent clause, one or two sentences stating what is narrowed or additionally sanctioned and what stays binding, ending with an explicit "all parents stay Accepted and immutable" line. A bare `Refines: ADR-NNNN (D2)` forces every future reader to re-derive the delta; the clause-level narrative is what makes the chain readable at conformance-check speed.
+
+**Refines may target non-decision clauses.** The over-general text isn't always a `Dn` decision — a refine can scope a parent's `§ Consequences` (or another named section) when that's where the statement being narrowed lives: `Refines: ADR-NNNN (§ Consequences — <what>)`. The same rules apply: parent untouched, both consulted.
+
+**Honest-disclosure refines.** When execution falsifies a rule an earlier ADR pre-committed to (a threshold, a protocol, an expected outcome), the deviation lands as a refining ADR whose body discloses all three parts — what was pre-committed, what reality showed, and what changes — never as a silent re-interpretation. The disclosure is the point: a pre-commitment only disciplines future decisions if deviations from it are visibly recorded.
+
 **How the skill handles each:**
 
 - Add a **Refines?** input alongside the Supersedes? input (Inputs, above) — if yes, capture the parent number and the specific decision clauses in `ADR-NNNN (Dn, …)` form.

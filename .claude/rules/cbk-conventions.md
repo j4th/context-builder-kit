@@ -314,7 +314,7 @@ The portable framing skill trusts documentation. A project can add a heavier dis
 - **Prove-it spike** — a throwaway run against the real stack for a single load-bearing recipe (does this library API / this catalog / this data shape actually behave as the docs claim?), discarded once it answers the question. Distinct from a *shippable* spike milestone.
 - **Rigor pass** — for a high-stakes frame, a short pre-commit pass that live-probes tooling currency and key data/interface assumptions, optionally with a multi-lens adversarial review of the draft frame before it's locked.
 
-If a project adopts either, record its trigger here (e.g. "rigor pass on any frame that introduces a new external dependency"). Large research/rigor outputs can be committed as a companion file (`frame-NN-<slug>.md`) the frame links and rough-in inherits, rather than inlined or discarded.
+If a project adopts either, record its trigger here (e.g. "rigor pass on any frame that introduces a new external dependency"). Large research/rigor outputs can be committed as a companion file (`frame-NN-<slug>.md`) the frame links and rough-in inherits, rather than inlined or discarded. The same companion shape works at **event grain**: a dated design/research distillation linked from the ledger row that produced it, opening with a short provenance header (builds-on / grounded-by / what it produced), with the raw research corpus archived outside the repo. When a companion is research-backed, **verify every quotation against the fetched source before committing and record the tally** ("N/N citations verbatim-verified"); a citation that can't be re-verified is dropped, not kept on faith.
 
 ## ADR index sync
 
@@ -393,6 +393,10 @@ When deciding whether a HITL gate in a cascade skill's standard mode should rema
 - It has empirically never produced a "no/edit" response across N cascade runs
 
 **Standard-mode target**: 3 gates per cascade phase, with trip-wires filling the rest of the safety surface. Per the [Verschlimmbesserung](https://martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html) / [Scott Logic "3.5 hours reviewing markdown"](https://blog.scottlogic.com/2025/) / [Digital Applied gate framework](https://www.digitalapplied.com/blog/agentic-workflow-approval-gate-framework-governance) consensus: 4+ gates per phase trains rubber-stamp culture, which silently degrades the load-bearing gates.
+
+**Mechanize the gates that must survive session drift.** A gate whose rule is absolute (no judgment call) can be enforced by a PreToolUse hook instead of prose, in two tiers: **hard-deny** for actions never legitimate for the agent (editing immutable ADRs, hand-editing lock files, committing on main), **ask-gate** for one-way doors legitimate only when operator-instructed (PR-state changes, knowledge-backend writes) — where the forced permission prompt *is* the per-action HITL approval and fires even when a broad allowlist would otherwise auto-approve. See the hook registry in `.claude/settings.json`. When a safety rule stays instruction-enforced instead, record a **deferred-hardening note** — why structural enforcement was shelved, the residual-gap severity, and the revisit trigger — so the gap stays visible instead of forgotten.
+
+**Standing authorizations are scoped and recorded.** A session- or plan-scoped "blanket OK for the actions in this plan" is legitimate HITL calibration only when it names the exact pre-approved action set, is recorded in the governing artifact, and states that anything outside the set stays gated. Designated one-way actions are excluded from standing authorization entirely — they always take a fresh per-action approval, even mid-session, even when everything else is pre-approved.
 
 ## Trip-wire / phase-exit checklist pattern
 

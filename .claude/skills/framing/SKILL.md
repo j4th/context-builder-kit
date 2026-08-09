@@ -222,6 +222,14 @@ The highest-leverage Pre-flight meta-issue is the **charter**. Emit one when a w
 
 **Charter output is inherited verbatim, never re-derived.** Once it resolves, its ADR(s) and reference doc are the source of truth; every downstream R-issue treats the pattern as a fixed constraint and does not re-litigate it. The charter simply concentrates the workstream's one-time decisions into a single gated artifact, so the milestones after it stay purely about demonstrable capability.
 
+**The pre-registration flavor.** When a milestone runs a wide comparison or selection (many candidates × many metrics) that feeds a gated one-way decision, the charter pre-registers the rules in an immutable decision record **before any candidate runs**: the closed candidate set (adding one later costs a refining record), the named success targets and thresholds, the evaluation protocol, expected-outcome pre-commitments — **including likely-null expectations**, so a null result reads as confirmation rather than spin — and named known limitations that every downstream output inherits. Three companions keep the frozen rules honest:
+
+- **Post-freeze arrivals join an exploratory tier.** A candidate that appears after rule-freeze runs surface-only at the gate — visible and compared, but ineligible for the gated decision unless a refining record admits it.
+- **Deviations are refining records with honest disclosure** — what was pre-committed, what reality showed, and what changes (see the adr-new skill § Refines vs Supersedes) — never a silent re-interpretation.
+- **A standing gate's no-change verdict is recorded.** When the gate runs and decides *no change*, that re-affirmation is a first-class event with rationale on the standing artifact — so absence-of-change stays distinguishable from gate-never-ran.
+
+**Spikes pre-declare three outcomes.** A charter (or milestone) spike gating a risky adoption — a niche dependency, a native-build toolchain, an unproven approach — pre-declares **promote / named fallback / documented drop** as first-class outcomes, so a drop is a recorded verdict rather than a quiet abandonment, and the next risky adoption can cite the precedent instead of re-arguing the shape.
+
 **When *not* to emit a charter**: if a decision is local to one milestone, fold it into that milestone — don't manufacture a Pre-flight meta-issue for it. If both the concept *and* the buildable spec are already settled upstream, skip straight to M1; a charter with nothing to ratify is ceremony. And if the *concept itself* is still unfrozen (you're choosing the approach, not just its buildable form), that belongs to blueprint or a spike milestone, not a charter.
 
 ### Example excerpt (what one milestone looks like in practice)

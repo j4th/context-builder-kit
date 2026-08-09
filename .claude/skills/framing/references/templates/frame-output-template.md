@@ -112,7 +112,15 @@ we already discussed, are there any vocabulary, naming, schema, or pattern
 decisions in this framing that future framings should inherit verbatim rather
 than re-decide?"* If yes, add them as rows with the appropriate Shape value.
 If no, note it explicitly in the section so future readers know the question
-was asked, not skipped.]
+was asked, not skipped.
+
+**Discharging a commitment as an authored hand-off spec**: an interface
+commitment can be satisfied by a committed spec document that opens with a
+provenance block (which IC row it discharges, authored by which issue, sources
+consulted) and an **audience assumption** line stating what the consuming
+implementer does and does not already know — with every term defined on first
+use and every schema claim verified against the actual built artifact. Link it
+from the IC row and from the ledger row that produced it.]
 
 ## Key Constraints
 
