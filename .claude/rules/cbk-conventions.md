@@ -450,7 +450,7 @@ Beyond what the cascade skills auto-configure, projects using a planning backend
 4. **Workflow > Sub-issue rollup display**: ON (renders the cascade-tree view in project tables)
 5. **Branch name template** (in `Settings > Workspace > Branch names`): `{type}/{teamPrefix}-{issueIdNumber}-{title}` matches the `<type>/<TEAM>-N-<slug>` convention
 
-**GitHub Projects v2 (when planning backend = GitHub Issues)** — *designed-unexercised as of 2026-08-09 (no real cascade run has exercised this board contract yet; the canonical spec is `backends.md` § the Projects v2 board — expect calibration on first real use)*:
+**GitHub Projects v2 (when planning backend = GitHub Issues)** — *designed-unexercised as of 2026-08-09 (no real cascade run has exercised this board contract yet; the canonical spec is `backends.md` § Lifecycle stages and kanban mapping (the board contract) — expect calibration on first real use)*:
 1. Create a Projects v2 board with sub-issue rendering enabled
 2. Configure swimlanes grouped by parent issue
 3. One Status field with the seven canonical values (Triage / Refinement / Ready / In Progress / In Review / Done / Archived) per `backends.md` — not a reduced set
@@ -557,7 +557,7 @@ grep -rn "F<#> — M<#>" .claude/skills/framing/references/templates/
 
 # Pre-refactor vocabulary must NOT appear anywhere in kit content — widened
 # beyond .claude/skills/ (the narrow greps missed producer + config surfaces)
-! grep -rn "github-only | opinionate[d]" .claude/
+! grep -rnE "github-only \| opinionate[d]|Profile.*github-onl[y]" .claude/
 ! grep -rn "initiative\.md" .claude/ README.md
 ! grep -rn -i "opinionated profile" .claude/commands/ .claude/rules/pr-review.md .claude/rules/knowledge-backend.md README.md .mcp.json.example
 ```
