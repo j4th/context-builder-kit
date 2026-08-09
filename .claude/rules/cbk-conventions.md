@@ -9,6 +9,7 @@ The principle:
 - **Skills stay portable; project specifics live here.** The cascade skills can be installed in any project; they describe choice spaces and patterns generically. The project's specific instantiation — flat layout vs nested, branch-naming pattern, label scheme, operational evidence — lives in this file.
 - **Two-way reference.** Skills cite this file as the project-level override surface. This file cites skills as the upstream pattern source. No project-specific identifiers (issue keys, framing numbers, slug names) should leak into skill content.
 - **Exercised, not provisional.** Sections in a project's filled-in copy of this file should record choices the project has actually exercised, not guesses. As the project runs cascade cycles, update this file with what proved out.
+- **Empirical rails are dated measurements, not standing rules.** When operational evidence produces a constraint (a throughput cap, a workaround, a "don't exceed N"), record it with its date, the failure signature that motivated it, and an explicit re-check trigger — and when it lifts, note the retirement inline so it isn't reinstated from memory. A workaround written as a standing rule outlives its evidence. (Contractual limits read from a platform's live interface are the opposite case: re-verify against the source, don't re-measure.)
 
 ## Surface inventory
 
@@ -19,7 +20,7 @@ A single glanceable manifest of where every surface for this project actually li
 - **Knowledge backend (`<Notion | none>`):** `<hub URL + MCP server, if configured>`
 - **Upstream / pre-cascade docs:** `<path to any frozen reference material, or "none">`
 - **Problem brief / scaffold output:** `docs/cbk/problem_brief.md` · `docs/cbk/scaffold.md`
-- **Tooling conventions:** `<record any project-specific tool / MCP-selection conventions here — e.g. which code-intelligence or live-docs MCP to prefer over the built-ins — or "defaults">`
+- **Tooling conventions:** `<record any project-specific tool / MCP-selection conventions here — e.g. which code-intelligence or live-docs MCP to prefer over the built-ins, or the project's model/effort orchestration conventions for dispatched agents — or "defaults">`
 
 ## Cascade artifact layout — flat (default) or nested
 
