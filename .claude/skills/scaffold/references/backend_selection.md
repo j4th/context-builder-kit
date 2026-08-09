@@ -75,7 +75,7 @@ If the user picks `github-issues`, surface the three-level constraint **before p
 
 **Default phrasing (full)**:
 
-> *"Quick heads up before I move on. GitHub Issues supports three planning levels: project boards, sub-issues, sub-sub-issues. The cascade has four logical levels — initiatives, projects, milestones, issues. So in this configuration, blueprint (phase 3) will produce an `initiative.md` markdown document but won't create a corresponding GitHub entity for it. Framing maps to sub-issues, rough-in to sub-sub-issues, finish to PRs. If you ever need cross-project initiative coordination later, you'd want to switch to Linear. Sound okay?"*
+> *"Quick heads up before I move on. GitHub Issues supports three planning levels: project boards, sub-issues, sub-sub-issues. The cascade has four logical levels — initiatives, projects, milestones, issues. So in this configuration, blueprint (phase 3) will record the initiative content in `docs/cbk/blueprint.md` but won't create a corresponding GitHub entity for it. Framing maps to sub-issues, rough-in to sub-sub-issues, finish to PRs. If you ever need cross-project initiative coordination later, you'd want to switch to Linear. Sound okay?"*
 
 **Minimum-mode phrasing (one sentence)**:
 

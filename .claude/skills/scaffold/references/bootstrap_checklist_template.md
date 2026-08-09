@@ -64,7 +64,7 @@ Walk through each row. If anything fails, retry or fall back to manual instructi
 | Issue templates work | Click "New issue" in the repo | Bug and feature templates appear in dropdown | ☐ |
 | Labels exist | Visit <repo URL>/labels | All cascade labels present, GitHub defaults cleaned up | ☐ |
 | Project board exists | Visit <project URL> | Board loads with Board template, repo is linked | ☐ |
-| Scaffold output readable | View <repo URL>/blob/main/docs/cbk/scaffold.md | File renders, contains `Profile: github-only` | ☐ |
+| Scaffold output readable | View <repo URL>/blob/main/docs/cbk/scaffold.md | File renders, Cascade metadata reads `Planning backend: github-issues` | ☐ |
 | Problem brief committed | View <repo URL>/blob/main/docs/cbk/problem_brief.md | File renders, contains problem statement and appetite | ☐ |
 | Branch protection (if configured) | Try to push directly to main from a clone | Push is rejected | ☐ |
 ```

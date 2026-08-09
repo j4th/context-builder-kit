@@ -65,7 +65,7 @@ When walking the user through the verification matrix in stage 2, use these test
 | Issue templates work | Click "New issue" in the repo | Templates appear in a dropdown |
 | Label taxonomy applied | Visit `/labels` in the repo | All cascade labels present, GitHub defaults cleaned up |
 | Project board exists | Visit the project URL | Board loads with "Board" template, repo is linked |
-| Scaffold output committed | View `docs/cbk/scaffold.md` in the repo | File exists, contains `Profile: github-only` |
+| Scaffold output committed | View `docs/cbk/scaffold.md` in the repo | File exists, Cascade metadata reads `Planning backend: github-issues` |
 | Problem brief committed | View `docs/cbk/problem_brief.md` in the repo | File exists, contains problem statement and appetite |
 
 If any row fails, surface it and offer to retry (for MCP operations) or re-walk the manual instructions for that specific row. Don't restart the whole stage.

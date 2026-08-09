@@ -109,7 +109,7 @@ Six realistic prompts for verifying the framing skill works correctly after any 
 ## Test 4 — planning-backend commit (Issue creation per framing capability, atomic transition)
 
 **Prompt (what the user says)**:
-> Framing the regex-pack workstream. Profile is github-only. Blueprint already created the `regex-pack` Milestone. The framing produces 4 capabilities. Run the planning-backend commit alongside the markdown commit.
+> Framing the regex-pack workstream. Planning backend is github-issues. Blueprint already created the `regex-pack` workstream parent Issue. The framing produces 4 capabilities. Run the planning-backend commit alongside the markdown commit.
 
 **What framing should do**:
 

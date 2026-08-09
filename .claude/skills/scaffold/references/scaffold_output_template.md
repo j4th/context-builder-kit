@@ -14,15 +14,30 @@ the developer-facing parts into standards.md and contributing.md.*
 
 ## Cascade metadata
 
-**Profile**: <github-only | opinionated>
-**Hierarchy levels**: <3 | 4>
-**Knowledge surface**: docs/cbk/
-**Repo**: <URL>
-**Project board**: <URL or "not yet created">
-**Provisioned**: <date>
+| Field | Value |
+|---|---|
+| **Planning backend** | <github-issues \| linear \| in-repo-markdown> |
+| **Knowledge backend** | <notion \| none> |
+| **Hierarchy levels** | 3 issue levels (workstream → framing → rough-in)<, under the planner's initiative/project shell when planning = linear> |
+| **Cascade artifact layout** | <Flat (kit default) \| Nested> under `docs/cbk/` |
+| **Repo** | <URL> |
+| **Provisioned** | <date> |
 
-<For github-only: "Three-level mode. Blueprint will produce
-docs/cbk/initiative.md as a markdown document, not a GitHub planning entity.">
+<Axis-conditional rows — include the ones the chosen axes need, delete the rest:>
+| **Project board** | <Projects v2 board URL — github-issues planning> |
+| **Planner workspace** | <workspace URL — linear planning> |
+| **Planner initiative** | <initiative URL + created date — linear planning> |
+| **Planner team** | <team name + issue-key prefix, e.g. `<TEAM>` — linear planning> |
+| **Planner project shell** | <project URL + status — linear planning> |
+| **Knowledge hub** | <hub URL — notion knowledge> |
+
+<Scaffold also writes the machine-readable mirror of the two axis rows to
+`.cascade/backends.toml`. This table is the canonical record; the toml is
+the fallback consumers read when the table is absent.>
+
+<For in-repo-markdown planning: "Design-doc mode. Planning state lives in
+docs/cbk/ markdown only; there is no /finish executor on this axis — rough-in
+specs are executed by running Claude Code against them manually.">
 
 ## Team shape
 
@@ -35,7 +50,8 @@ this and how do they coordinate?">
 
 **Team identifier**: <SHORT_UPPERCASE>
 
-**Branch naming**: `<team-id>-<issue-number>-<short-description>`
+**Branch naming**: `<type>/<team-id>-<issue-number>-<short-description>`
+(per `cbk-conventions.md` § Branch naming; `<type>` is the Conventional Commits type)
 Examples:
 - `<example-1>`
 - `<example-2>`
@@ -84,7 +100,7 @@ comfortable, veteran>
 
 ## Per-section guidance
 
-**Cascade metadata**: the most-read section by Claude in future sessions. The `Profile` and `Hierarchy levels` lines must be unambiguous — later phases branch on them. Keep the three-level note for GitHub-only mode as a one-liner.
+**Cascade metadata**: the most-read section by Claude in future sessions. The `Planning backend` and `Knowledge backend` rows must be unambiguous and use the exact axis values (`github-issues | linear | in-repo-markdown`; `notion | none`) — later phases branch on them, and an unrecognized value reads as scaffold drift. Include only the axis-conditional rows the chosen axes need. Keep the design-doc-mode note for in-repo-markdown planning as a one-liner.
 
 **Team shape**: answers "who is working on this and how." Solo is one sentence. Team needs enough detail that blueprint can decide whether to recommend pair programming, what review process to propose, and whether async coordination needs tooling support.
 
@@ -101,15 +117,19 @@ comfortable, veteran>
 
 ## Cascade metadata
 
-**Profile**: github-only
-**Hierarchy levels**: 3
-**Knowledge surface**: docs/cbk/
-**Repo**: https://github.com/jforth/notes-cli
-**Project board**: https://github.com/users/jforth/projects/4
-**Provisioned**: 2026-04-11
+| Field | Value |
+|---|---|
+| **Planning backend** | github-issues |
+| **Knowledge backend** | none |
+| **Hierarchy levels** | 3 issue levels (workstream → framing → rough-in) |
+| **Cascade artifact layout** | Flat (kit default) under `docs/cbk/` |
+| **Repo** | https://github.com/jforth/notes-cli |
+| **Project board** | https://github.com/users/jforth/projects/4 |
+| **Provisioned** | 2026-04-11 |
 
-Three-level mode. Blueprint will produce docs/cbk/initiative.md as a
-markdown document, not a GitHub planning entity.
+Knowledge backend is none: the repo's core markdown (docs/cbk/, ADRs,
+foundation docs) is the knowledge surface. Axis record mirrored to
+`.cascade/backends.toml`.
 
 ## Team shape
 
@@ -119,10 +139,10 @@ Solo developer, evenings and weekends. No coordination overhead.
 
 **Team identifier**: NOTES
 
-**Branch naming**: `notes-<issue-number>-<short-description>`
+**Branch naming**: `<type>/notes-<issue-number>-<short-description>`
 Examples:
-- `notes-1-capture-prototype`
-- `notes-2-search-interface`
+- `feat/notes-1-capture-prototype`
+- `feat/notes-2-search-interface`
 
 **Commit format**: Conventional Commits. Scopes: capture, search, storage.
 
@@ -165,13 +185,13 @@ If the user invoked light mode, the scaffold output doc collapses to essentials:
 ```markdown
 # Scaffold: <project name>
 
-**Profile**: github-only | **Levels**: 3 | **Knowledge**: docs/cbk/
-**Repo**: <URL> | **Board**: <URL>
+**Planning**: <github-issues | linear | in-repo-markdown> | **Knowledge**: <notion | none> | **Levels**: 3
+**Repo**: <URL> | **Board/workspace**: <URL or "n/a">
 
 **Team**: <solo | team of N>
 **Quality bar**: <one sentence>
-**Branches**: `<team>-<issue>-<desc>`
+**Branches**: `<type>/<team>-<issue>-<desc>`
 **Labels**: bug, feature, improvement, tech-debt, documentation
 ```
 
-Eight lines. Captures the minimum blueprint needs to operate: profile, hierarchy levels, team shape, quality bar, and branch/label conventions. Everything else gets re-derived in blueprint if needed.
+Eight lines. Captures the minimum blueprint needs to operate: both axis values, hierarchy levels, team shape, quality bar, and branch/label conventions. Everything else gets re-derived in blueprint if needed. The `.cascade/backends.toml` mirror is still written even in light mode — it's two lines and downstream toml-gated behavior depends on it.

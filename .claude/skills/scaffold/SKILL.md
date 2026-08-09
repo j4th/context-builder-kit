@@ -202,7 +202,7 @@ docs/
 └── cbk/
     ├── problem_brief.md    ← consultation output, committed by scaffold
     ├── scaffold.md          ← scaffold output (this stage)
-    └── initiative.md        ← blueprint output (phase 3, later)
+    └── blueprint.md         ← blueprint output (phase 3, later)
 ```
 
 **The scaffold output doc: `docs/cbk/scaffold.md`.** Template in `references/scaffold_output_template.md`. Five sections:
