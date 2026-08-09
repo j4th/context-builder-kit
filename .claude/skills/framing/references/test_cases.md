@@ -139,6 +139,36 @@ Three realistic prompts for verifying the framing skill works correctly after an
 - Rollback skipped on transition failure
 - Re-framing rollback leaves partial state without the manual recovery checklist
 
+## Test 5 — Additive increment to a still-Active framing (pattern D)
+
+**Prompt**: *"Add the completion milestone to this workstream — the prior frame's milestones are still open, this doesn't replace them."*
+
+**Success criteria**:
+- New frame takes the next sequential number with a **"Builds on: frame-NN"** header — no `Supersedes` field anywhere
+- The prior frame's index status stays `Active`; both frames' open milestones coexist in the index
+- Charter and interface commitments inherited verbatim from the prior frame
+- A single-milestone increment is accepted without the "fold into a sibling" push-back (the Step 5 heuristic applies to fresh framings, not increments), and the frame header states the shape
+
+**Failure signals**:
+- The prior frame flips to `Superseded` (pattern C applied where D was asked for)
+- The increment's milestone gets folded into a sibling on count grounds alone
+- Interface commitments re-derived instead of inherited
+
+## Test 6 — Milestone-scoped re-frame (pattern E)
+
+**Prompt**: *"M4's shape didn't survive contact with the code, but M1–M3 are built and Done — re-frame just M4."*
+
+**Success criteria**:
+- New frame's header states the scope: supersedes **only** M4 of the prior frame
+- The prior frame file is untouched; its index status is annotated `Active (M4 superseded by frame-MM)` via the status-column mutation only
+- The retired M4's acceptance-criteria set is recorded in the new frame as retired-un-executed
+- Milestone acceptance criteria in the new frame carry inline `[F<N>.AC<M>]` trace IDs per the template
+
+**Failure signals**:
+- The whole prior frame flips to `Superseded` (falsifying M1–M3's history)
+- The prior frame file is edited beyond the index status column
+- The retired milestone's ACs silently disappear from the cascade record
+
 ## How to run these test cases
 
 For each test case: clear any existing framing state, seed the repo with the inheritance docs (or stub them for the test), run the prompt verbatim, and verify the success criteria. If any failure signal appears, the skill has regressed and needs a fix.
