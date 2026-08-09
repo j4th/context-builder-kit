@@ -1,1 +1,8 @@
 reference/
+
+# Reviewer precedent memory stays session-local in THIS repo: pr-review.md
+# ships the memory mechanism empty, so kit-session calibration must not ride
+# along when a target project copies .claude/. Target projects default the
+# other way — commit the directory — per pr-review.md § Reviewer precedent
+# memory.
+.claude/agent-memory/
