@@ -12,6 +12,10 @@ Operational rules for the `pr-review-toolkit:review-pr` invocation in the cascad
 
 `/finish`'s review pass dispatches `pr-review-toolkit:review-pr` against the local branch before opening the draft PR. Invoke with no args for the default full sweep — do **not** pass the PR number as an argument (that's not the skill's interface; the skill auto-discovers via `git diff` + `gh pr view`, falling back to `git diff main...HEAD` pre-PR).
 
+**Orchestrated sweep (optional).** Where a multi-agent orchestration surface is available, the project may run the review pass as a find-then-verify orchestration instead of a single direct dispatch: the toolkit's review dimensions and the intersecting project-local reviewers run as parallel finders, and every finding passes a refute-by-default **adversarial verification stage** before triage — a finding the independent verifiers refute is dropped and needs no triage at all. The kit ships `.claude/workflows/review-sweep.js` as this orchestration (it consumes § Project-local agents as its dispatch roster). Direct dispatch remains the documented baseline and the fallback when the orchestration surface is unavailable or the run fails — and the hand-off records **which path ran**. Hard-fail rules ("a missing toolkit blocks `/finish`") apply only after both the primary and the recorded fallback path have failed.
+
+**Two invariants either way.** (1) **Triage judgment stays with the caller.** Dispatched review and verify agents report findings and verdicts; the executor holding this file's rubric classifies them — triage is never delegated downstream. (2) **A failed review agent is dropped coverage, not zero findings.** An agent that fails, times out, or returns nothing must be tracked as an uncovered dimension and retried — and a finding whose verification step failed is surfaced as unverified, not silently dropped — before the review pass is treated as complete.
+
 If the toolkit isn't installed or fails to invoke, **stop and surface** — do not silently skip. The "does not skip" rule in `/finish` makes a missing toolkit blocking.
 
 ## Project-local agents to dispatch alongside
@@ -23,6 +27,8 @@ When the diff touches code under their topics, dispatch project-local reviewers 
 - **`cascade-rule-reviewer`** (`.claude/agents/cascade-rule-reviewer.md`) — runs when the diff touches code or commits governed by any `.claude/rules/*.md` other than `logging.md` (testing regimes, `cbk-conventions.md` branch/commit/label/skip-ci/mutation discipline, `simplification.md`, `knowledge-backend.md`). Applies this file's rubric to classify what it finds; it does not check the diff for whether *this* file is being followed.
 
 If your project authors additional reviewer agents (e.g., for a dependency-injection contract, a security-boundary policy, an i18n discipline), list them here so the dispatch list stays in this file rather than scattered across `/finish`.
+
+**Dispatch conditions live here, once.** This section is the single authoritative statement of when each reviewer runs — duplicated rosters (in `/finish`, in reviewer bodies, in a workflow script) rot out of sync, so anything else that needs the roster consults or mechanically mirrors this section. The default split: **cross-cutting reviewers run unconditionally** and return a cheap clean verdict when nothing is in scope — in particular the `cascade-rule-reviewer`, whose scope is a catch-all over the rule files (path-gating it recreates the exact gap it exists to close) — while **domain reviewers are path-matched** against the changed files.
 
 **Authoring a project-local reviewer.** The reviewers above share a portable shape worth reusing: frontmatter (`tools: Read, Glob, Grep, Bash` [+ `Skill` if it invokes one], `model: sonnet`); a **Scope** section stating what it does and doesn't review, with explicit hand-offs to the other reviewers; a **Contract-surface** section naming the frozen sources it checks against (a rule file, an ADR, a reconciliation doc) with a stated precedence; a numbered checklist of concrete checks; and an output shape that emits `file:line` + the violated contract + this file's rubric class. One cardinal rule for any reviewer covering a **fast-moving or niche stack dependency**: *never answer from memory* — invoke a docs-expert skill (or read the installed source) first and ground every API claim in a citation; an ungrounded assertion about the library is itself a defect. Distinguish idiom *correctness* (flag) from idiom *preference* (Surface at most).
 
@@ -37,6 +43,8 @@ Before any review work runs, exclude these from the diff. Cheaper than triaging 
 - **Snapshot test fixtures** larger than ~200 lines unless the test itself is on the diff
 
 The toolkit's specialized subagents may already strip some of these; configure pre-filters at the workflow level when in doubt.
+
+Compute the pre-filtered changed-path list **once**, before any dispatch, and hand the same list to every reviewer (and to any orchestrated sweep's trigger matching) — per-agent re-derivation wastes tokens and risks inconsistent scopes across reviewers.
 
 ## Triage rubric — the four-class shape
 
