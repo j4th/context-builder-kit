@@ -242,7 +242,7 @@ To make the output shape concrete: here's what one milestone spec looks like, ta
 
 **Output fragment** (resulting frame-01.md milestone excerpt):
 ```markdown
-### M1: Pure-function verifier proves the trait
+### F1 — M1: Pure-function verifier proves the trait
 
 **Capability**: After this, the system can run one TOML-defined regex lesson, verify the user's input against the lesson's expected matches, and report pass/fail with a hint on failure.
 

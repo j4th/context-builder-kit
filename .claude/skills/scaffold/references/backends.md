@@ -115,11 +115,11 @@ The cascade never leaves the system in a half-done state (e.g., markdown committ
 
 This pattern means **failures and corrections never cause overwrites, only new cascade events**. The cascade is append-only at the event-log level; correction happens by adding newer events that supersede older ones.
 
-## Deferred meta-issues
+## Pre-flight checks
 
 Framing surfaces concerns that don't decompose cleanly into any specific milestone's rough issues but DO need tracking because they gate transitions between milestones, gate the start of rough-in, or need to land independently of the milestone sequence. The cascade tracks these as **deferred meta-issues** — a first-class artifact alongside the milestone tree, not a footnote.
 
-Every framing's `frame-NN.md` includes a required `## Deferred meta-issues` section, even if empty. Each row in the table has: issue number (the GitHub issue created during framing's planning-backend commit), one-line subject, depends-on (what has to happen before this can start), blocks (what this gates — typically a milestone start or rough-in start), and type (`gate` / `decision` / `infrastructure`).
+Every framing's `frame-NN.md` includes a required `## Pre-flight checks` section, even if empty. Each row in the table has: issue number (the GitHub issue created during framing's planning-backend commit), one-line subject, depends-on (what has to happen before this can start), blocks (what this gates — typically a milestone start or rough-in start), and type (`gate` / `decision` / `infrastructure`).
 
 The corresponding GitHub issues are created during framing's planning-backend commit, parented under the workstream parent Issue with the `meta` label distinguishing them from framing capability sub-issues. Rough-in's mandatory inheritance step includes verifying that any meta-issue blocking the milestone it's about to decompose has been resolved or explicitly cleared — see the framing skill's handoff contract for the obligation language. Empty meta-issue tables explicitly say "No deferred meta-issues from this framing" so rough-in knows the table was considered, not skipped.
 
