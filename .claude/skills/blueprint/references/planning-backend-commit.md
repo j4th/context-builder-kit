@@ -85,7 +85,7 @@ Blueprint's existing final commit gate now mentions both halves of the transitio
 
 **`github-issues` planning** (default): parent Issues are created via `issue_write`, the sub-issue tree is built via `sub_issue_write` in subsequent phases. Atomic with the markdown commit.
 
-**`linear` planning**: per `backends.md`, Linear's hierarchy is Project → Milestone → Issue. Workstreams map to Linear Projects, framing capabilities to Linear Milestones, rough-in items to Linear Issues. The sub-issue collapse is `github-issues`-specific.
+**`linear` planning**: workstream parent issues are created via `mcp__linear__save_issue` in the scaffold-provisioned project shell — workstreams are parent issues, never planner Projects, and the planner's Project-milestones field is deliberately unused (framing's F and rough-in's R land as sub-issues via `parentId`). See `planning-backend-matrix.md` § `linear` planning behavior for the exercised hierarchy.
 
 **`in-repo-markdown` planning**: this entire step is **skipped**. No parent Issues get created because there is no external planning backend. The atomic transition collapses to a single half — just the markdown commit (`blueprint.md` + foundation docs). There is no rollback to perform on the planning side because no planning ops ran. The cascade still uses the same naming conventions inside `blueprint.md` § Workstreams (`[<workstream-slug>] <name>` headings, slug-derivation rule, etc.) so the hierarchy is grep-able and the `in-repo-markdown` output remains structurally identical to the `github-issues` output minus the GitHub Issue tree.
 

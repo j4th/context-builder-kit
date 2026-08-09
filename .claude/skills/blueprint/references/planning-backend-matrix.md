@@ -90,7 +90,7 @@ The `linear` structural model above is **one-run-exercised** (a full real cascad
 
 Planning-axis detection and routing is non-negotiable in light mode. The light-mode collapses apply to *what blueprint produces* (fewer foundation docs, batched HITL gates, etc.), not to which planning backend the operations target.
 
-For `linear` planning + light mode: still disclose the documentation gaps. *"Linear planning, light mode. I'll produce the docs you asked for, commit them via GitHub MCP, and commit blueprint.md to `docs/cbk/`. Linear initiative creation isn't fully documented — I'll generate manual instructions for you to run after we finish. Sound okay?"*
+For `linear` planning + light mode: still verify the scaffold-provisioned shell and still flag any individually-unexercised call before attempting it. *"Linear planning, light mode. I'll produce the docs you asked for, commit them via GitHub MCP, commit blueprint.md to `docs/cbk/`, then verify the planner shell and create the workstream parent issues. If a specific planner call misbehaves I'll hand you the one-step manual fallback rather than improvising. Sound okay?"*
 
 ## Knowledge backend interactions
 

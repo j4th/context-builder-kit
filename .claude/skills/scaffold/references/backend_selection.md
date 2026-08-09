@@ -7,7 +7,7 @@ The kit composes three surfaces:
 - **Constant**: a GitHub repo (or other git host) containing core markdown docs (`CLAUDE.md`, `ARCHITECTURE.md`, `STANDARDS.md`, `CONTRIBUTING.md`, `docs/adr/*`, `docs/cbk/*`). Always present, always the immediate AI/dev context — not a choice.
 - **Axis 1 — Planning backend**: where live work-tracking happens.
   - `github-issues` — GitHub Issues (sub-issues + Projects v2 board); 3 planning levels
-  - `linear` — Linear (initiatives + projects + milestones + issues); 4 planning levels
+  - `linear` — Linear (initiative + project shell above the same 3 issue levels; the planner's milestones field is deliberately unused by the cascade)
   - `in-repo-markdown` — status tracked in `docs/cbk/README.md` only; no external board
 - **Axis 2 — Knowledge backend**: durable longer-lived reference library.
   - `notion` — with the hub-as-DB-row pattern from `.claude/rules/knowledge-backend.md`
