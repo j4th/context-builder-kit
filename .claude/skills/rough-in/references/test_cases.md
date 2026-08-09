@@ -1,8 +1,8 @@
 # Rough-in test cases
 
-This file contains five realistic test prompts for verifying that rough-in still works after revisions. Each test names the setup conditions, the user prompt, the expected behaviors at each step, and the success criteria.
+This file contains eight realistic test prompts for verifying that rough-in still works after revisions. Each test names the setup conditions, the user prompt, the expected behaviors at each step, and the success criteria.
 
-These tests are not exhaustive — they cover the canonical happy path and four important edge cases. Add new tests when revisions introduce new behavior or fix bugs that should be regression-tested.
+These tests are not exhaustive — they cover the canonical happy path and the important edge cases. Add new tests when revisions introduce new behavior or fix bugs that should be regression-tested.
 
 ## Test 1 — Canonical first rough-in (regex-pack M1)
 
@@ -213,7 +213,7 @@ These tests are not exhaustive — they cover the canonical happy path and four 
 
 ## Cross-test invariants
 
-A few things should be true across all five tests:
+A few things should be true across all eight tests:
 
 - **The pre-flight checks runs in every test**, even Test 3 (markdown-only) where the planning backend doesn't exist
 - **No HITL gate is skipped silently** — if a gate is collapsed (in light mode), the user explicitly chose light mode

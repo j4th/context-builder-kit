@@ -1,6 +1,6 @@
 # Framing test cases
 
-Three realistic prompts for verifying the framing skill works correctly after any revision pass. Each test case represents a structurally distinct scenario — first framing of the cascade, subsequent framing that exercises the "Builds on" inheritance pattern, and re-framing that exercises the cascade-event-not-overwrite pattern. Run all three after any revision to confirm nothing regressed.
+Six realistic prompts for verifying the framing skill works correctly after any revision pass. Each test case represents a structurally distinct scenario — first framing of the cascade, subsequent framing exercising the "Builds on" inheritance pattern, re-framing exercising the cascade-event-not-overwrite pattern, the planning-backend commit, the additive increment, and the milestone-scoped re-frame. Run all six after any revision to confirm nothing regressed.
 
 ## Test case 1 — Canonical first framing (frame-01)
 
