@@ -22,6 +22,8 @@ The kit is the operational surface of an AI-assisted development cascade: a sequ
 
 The cascade is **a funnel, not a waterfall**: framing and rough-in run **one workstream / one milestone at a time, just-in-time**. Frame the next thing, build it, then frame the thing after — that's how each phase gets to learn from the previous.
 
+> **Planning-axis note**: `/finish` (and the `/intake` → `/enrich` hand-offs into it) run on the backend planning axes (`github-issues` / `linear`). `in-repo-markdown` planning is **design-doc mode** — no executor; rough-in specs are executed by running Claude Code against the markdown directly (scaffold's confirmation gate discloses this before the choice is made).
+
 ## Quick start
 
 The kit assumes [Claude Code](https://claude.com/claude-code), `git`, and ideally [`mise`](https://mise.jdx.dev/) installed.
@@ -62,7 +64,7 @@ The full cascade is the rigorous path. Most adopters skip in. Match your situati
 | **Existing repo, ready to set up workspace + architecture** | `blueprint` | Skip consultation + scaffold; commit a brief manually if you don't have one |
 | **Architecture decided, ready to plan a specific workstream** | `framing` | Skip everything above; **needs `blueprint.md` § Workstreams** |
 | **Small project — milestones obvious, just want issues** | `rough-in` ⚠️ *experimental* | Skip framing too; **brittle without a `frame-NN.md`** |
-| **One concrete issue ready to implement** | `/finish <N>` | Issue must already have rough-in's seven-section body shape |
+| **One concrete issue ready to implement** | `/finish <N>` | Issue must already have rough-in's eight-section body shape; backend planning axes only |
 
 **Most users start at `blueprint`.** Consultation is HITL-heavy and works fine in plain Claude.ai chat; scaffold is mostly provisioning that's faster to do in a browser tab. The cascade's value compounds from `blueprint` forward, where the artifacts start versioning into your repo and the next phase actually inherits from disk.
 
@@ -112,7 +114,9 @@ These compose into 3 × 2 = 6 configurations. See `.claude/rules/knowledge-backe
 - `GitHub Issues + none` — solo / small team, default starting point
 - `GitHub Issues + Notion` — solo / small team with existing Notion reference content
 - `Linear + Notion` — larger team with planning-tool standardization and durable knowledge curation
-- `In-repo markdown + none` — design-doc mode; audience for the cascade is non-technical, or the project is small enough that markdown alone suffices
+- `In-repo markdown + none` — design-doc mode (no `/finish` executor); audience for the cascade is non-technical, or the project is small enough that markdown alone suffices
+
+**Exercised vs designed** (recorded 2026-08-09 — the honest status per configuration, per the kit's exercised-not-provisional principle): `Linear` planning is the **exercised reference configuration** — a full real cascade ran on it end-to-end. `GitHub Issues` planning has the kit's deepest documentation and is designed first-class, but no real cascade run has exercised it yet (its Projects v2 board contract is marked designed-unexercised inline). `In-repo markdown` is design-doc mode by design. On the knowledge axis, `none` is effectively exercised daily; `Notion` is a complete contract, configured in the reference run and lightly exercised.
 
 **Abbreviated example** of what scaffold produces (`docs/cbk/scaffold.md`):
 
@@ -316,7 +320,7 @@ CLAUDE.md                              ← kit-level instructions for Claude Cod
 .mcp.json.example                      ← MCP server config template
 ```
 
-Each skill follows the same pattern: a `SKILL.md` entrypoint plus a `references/` directory with templates and operational reference docs (failure modes, question banks, profile-specific behavior, inheritance discipline). Skills load `references/*.md` lazily on demand.
+Each skill follows the same pattern: a `SKILL.md` entrypoint plus a `references/` directory with templates and operational reference docs (failure modes, question banks, axis-specific behavior, inheritance discipline). Skills load `references/*.md` lazily on demand.
 
 ## Required dependencies
 
@@ -363,7 +367,7 @@ Three files reliably need editing per project:
 
 2. **`.claude/commands/finish.md`** — bakes in the project's `check` task, `docs/STANDARDS.md § Step 4`, `.claude/rules/testing.md`, `.claude/rules/logging.md`, `pr-review-toolkit:review-pr`, `/simplify`. If your stack doesn't have one of these, edit the file. The eight-section spec contract that `/finish` reads from issue bodies is the stable interface; the tooling assumptions are the swap-out point.
 
-3. **`.claude/settings.json`** — adjust `enabledPlugins` if your installed identifiers differ; adjust `enabledMcpjsonServers` if you don't use one of the four defaults or want to add others.
+3. **`.claude/settings.json`** — adjust `enabledPlugins` if your installed identifiers differ; adjust `enabledMcpjsonServers` if you don't use one of the five defaults or want to add others.
 
 Optional further customization:
 - Add project-local reviewer agents under `.claude/agents/` (the kit ships `adr-conformance-reviewer` and `logging-discipline-reviewer`; add your own for project-specific concerns).
