@@ -6,13 +6,13 @@ If you are loading this reference as part of a rough-in skill session: do not ex
 
 ## What the template does
 
-`/finish {issue_number}` is the slash command future Claude Code sessions will invoke to execute a rough-in sub-sub-issue. It reads the issue body and comments, validates the title and labels match cascade conventions, verifies all dependencies are closed, runs plan mode against the Implementation section, executes the plan on a fresh branch after user approval, gates on the test suite, runs `/simplify` and `pr-review-toolkit:review-pr` against the local pre-PR branch with a four-class auto-triage, and opens a draft PR with `closes #<N>` in the description and a `## Triage` audit section in the body. The user flips draft → ready (which triggers any auto-review GitHub Action) and merges. The board automation handles everything downstream (issue close, parent rollup, status transitions).
+`/finish {issue_number}` is the slash command future Claude Code sessions will invoke to execute a rough-in sub-sub-issue. It reads the issue body and comments, validates the title and labels match cascade conventions, verifies all dependencies are closed, researches the Implementation section executably (in the operator's current permission mode — read-only probes plus scratchpad-scoped spikes; no repo edits) then enters plan mode as the gate on the plan, executes the plan on a fresh branch after user approval, gates on the test suite, runs `/simplify` and `pr-review-toolkit:review-pr` against the local pre-PR branch with a four-class auto-triage, and opens a draft PR with `closes #<N>` in the description and a `## Triage` audit section in the body. The user flips draft → ready (which triggers any auto-review GitHub Action) and merges. The board automation handles everything downstream (issue close, parent rollup, status transitions).
 
 See `references/handoff-to-finish.md` for the full contract `/finish` follows and the rationale behind each step. See `references/plan-mode-prompts.md` for the discipline that shapes the Implementation section of every rough-in spec (the section `/finish` anchors on).
 
 ## Provenance and revision path
 
-This version of the template reflects the iteration the executor went through during real cascade execution. The major properties are: (1) the branch is created **before** any code lands, (2) execution is gated behind a comprehensive test gate before simplify/review, (3) `/simplify` and `pr-review-toolkit:review-pr` both run pre-PR with the same four-class auto-triage (Apply / Apply with care / Surface / Defer / Reject, with Apply reserved for correctness/validity/defensive findings and small low-risk improvements, and Surface for genuine taste calls), (4) atomic-commits-not-squash discipline on the branch (the squash happens at merge-time on `main`, not pre-PR), (5) the PR opens as draft with a SHA-anchored triage audit in the body, and (6) the hand-off carries a roll-forward offer for deferred context. The user flips to ready (the slash command never does).
+This version of the template reflects the iteration the executor went through during real cascade execution. The major properties are: (1) research runs **executably before plan mode** (read-only probes + scratchpad-scoped spikes, no repo edits; plan mode is entered afterward as the self-disarm that gates the plan), (2) the branch is created **before** any code lands, (3) execution is gated behind a comprehensive test gate before simplify/review, (4) `/simplify` and `pr-review-toolkit:review-pr` both run pre-PR with the same four-class auto-triage (Apply / Apply with care / Surface / Defer / Reject, with Apply reserved for correctness/validity/defensive findings and small low-risk improvements, and Surface for genuine taste calls), (5) atomic-commits-not-squash discipline on the branch (the squash happens at merge-time on `main`, not pre-PR), (6) the PR opens as draft with a SHA-anchored triage audit in the body, and (7) the hand-off carries a roll-forward offer for deferred context. The user flips to ready (the slash command never does).
 
 Future revisions land here first; existing repos can either manually update their `.claude/commands/finish.md` or wait for the next rough-in-step-5.5 run to detect drift and propose an update (see Step 5.5's drift handling in rough-in's SKILL.md).
 
@@ -79,7 +79,7 @@ Everything below the next marker is the content that gets committed to `.claude/
 
 --- BEGIN TEMPLATE ---
 ---
-description: Pick up a rough-in sub-sub-issue, verify dependencies, plan-mode against the Implementation section, execute on a fresh branch, then run `/simplify` and `pr-review-toolkit:review-pr` with four-class auto-triage of findings (Apply correctness/validity/defensive items as their own atomic commits; Surface taste/style items in the PR body for the user to decide). Opens a draft PR with a triage audit; the user marks ready. Expects one positional argument — the issue number.
+description: Pick up a rough-in sub-sub-issue, verify dependencies, research the Implementation section executably (current permission mode) then plan-mode the plan for approval, execute on a fresh branch, then run `/simplify` and `pr-review-toolkit:review-pr` with four-class auto-triage of findings (Apply correctness/validity/defensive items as their own atomic commits; Surface taste/style items in the PR body for the user to decide). Opens a draft PR with a triage audit; the user marks ready. Expects one positional argument — the issue number.
 argument-hint: <issue-number>
 ---
 
@@ -87,7 +87,7 @@ You are being asked to execute the rough-in sub-sub-issue **#$1** in this reposi
 
 This `/finish` executor is a living document — revised as real executions surface gaps. If the instructions below don't match what's in the issue body, or if you hit friction this document doesn't anticipate, **surface the gap to the user** rather than improvising past it. Improvisation is what causes the cascade specs and the executor to drift apart over time.
 
-The shape of a run: read and validate the issue (Steps 1–4), plan against it (Step 5), execute on a fresh branch (Step 6), gate on the tests (Step 7), simplify and review with triage (Steps 8–9), open the draft PR (Step 10), and hand off (Step 11).
+The shape of a run: read and validate the issue (Steps 1–4), research it executably then plan against it (Step 5), execute on a fresh branch (Step 6), gate on the tests (Step 7), simplify and review with triage (Steps 8–9), open the draft PR (Step 10), and hand off (Step 11).
 
 ## Step 1: Read the issue
 
@@ -138,34 +138,47 @@ Before starting work, check for existing state that suggests this issue is alrea
 
 This isn't comprehensive — Claude Code can't detect every in-progress state. But the common cases (open PR, existing branch) are cheap to check and save the user from duplicate work.
 
-## Step 5: Hand the body to plan mode
+## Step 5: Research the issue (executable), then plan-mode the plan
 
-Construct a plan-mode prompt using the issue body. The primary anchor is the `## Implementation` section. The other sections are supporting context:
+This step is two phases: **5a research** (executable, in your current permission mode) and **5b plan + gate** (read-only, in plan mode). The split is deliberate — plan mode's read-only is the right gate for the *plan*, but the wrong constraint for *research that needs to run something* (a feasibility spike, the test suite, a throwaway probe script). Research done *inside* plan mode can only read, which forces guess-from-reading on exactly the work where executing the probe is the point. So: research first, executably; then plan mode gates the plan.
 
-- `## Context` tells plan mode why this issue exists and where it sits in the cascade
-- `## Assumptions` lists `[ASSUMPTION:]`-tagged calibration points the rough-in author surfaced. Plan mode **must enumerate each tagged item** in the plan output as a "Confirm or correct" line so the user can revise during plan iteration. **Do not silently resolve assumptions at plan time** — even when plan mode has a strong default, surface it so the user can push back. Resolved assumptions (those the user confirms or corrects) inline into the plan's relevant Implementation step rather than persisting as a separate "Resolved" subsection. If the section says `- None — ...` or contains no `[ASSUMPTION:]` lines, proceed silently.
-- `## Acceptance criteria` become the contract the plan must satisfy
-- `## Test plan` names the tests the plan must scaffold red-first (Step 6) before implementing — these are the executable form of the acceptance criteria
-- `## Done signal` is the verification command the plan must produce as its final step
-- `## Dependencies` are already verified, but useful context for plan mode if it wants to reference prior work
-- `## PR contract` tells plan mode how to finish (open draft PR with `closes #$1`, Conventional Commits title)
-- **Issue comments** (read in Step 1) are supporting context, not contract — provenance, prior-run hand-offs, and roll-forward notes that can sharpen the plan. Fold what's relevant into the plan; the body still governs.
+**Permission mode.** The flow expects a mode where research probes can execute without a per-action prompt (an auto-approval mode with background safety oversight). In stricter modes 5a still works but degrades — read-only, or a prompt per action. `/finish` cannot set the mode for you — permission mode is operator-controlled; note the degradation and continue rather than blocking.
 
-In addition, the plan must respect:
+### 5a — Research (executable; your current mode; NOT plan mode)
 
-- **`docs/adr/` Decisions Log**, indexed in `docs/ARCHITECTURE.md` § Decisions log. Any code introduced must conform to the relevant ADRs. If the spec asks for something that conflicts with an ADR, surface that conflict before executing.
-- **`docs/STANDARDS.md` quality bar** — testing philosophy, coverage policy, AI-collaborator workflow.
-- **`.claude/rules/testing.md`** — three regimes (test-first, conformance-first, tests-as-shape-of-done). The `## Test plan` named tests are the input to Step 6's red-first scaffolding for logic-regime modules.
-- **`.claude/rules/logging.md`** — structured `Logger` calls, correlation ID propagation, telemetry vs Logger boundary.
-- Any other `.claude/rules/<topic>.md` files load-bearing for the diff at hand.
+Research against the `## Implementation` anchor (primary) and the supporting sections:
 
-**Run plan mode explicitly** — do not start writing code in this turn. Produce a plan, present it to the user, wait for explicit approval before executing. Non-negotiable even for small-looking issues, because the user's review is the last HITL gate before code lands.
+- `## Context` — why this issue exists and where it sits in the cascade
+- `## Assumptions` — `[ASSUMPTION:]`-tagged calibration points the rough-in author surfaced; carry each into the 5b plan as a "Confirm or correct" line (see 5b)
+- `## Acceptance criteria` — the contract the plan must satisfy
+- `## Test plan` — the tests the plan scaffolds red-first in Step 6 (the executable form of the acceptance criteria)
+- `## Done signal` — the verification command the plan ends on
+- `## Dependencies` — already verified; context if the plan references prior work
+- `## PR contract` — how the plan finishes (open draft PR with `closes #$1`, Conventional Commits title)
+- **Issue comments** (read in Step 1) — supporting context, not contract: provenance, prior-run hand-offs, and roll-forward notes that can sharpen the plan. Fold what's relevant; the body still governs.
 
-**Scale the research to the work.** When the investigation spans many files, multiple subsystems, or competing hypotheses, fan out `Explore` / general-purpose subagents (one per area) and synthesize their findings yourself — gather with subagents, never delegate the synthesis. When a workflow/orchestration tool is available, orchestrate the research: parallel readers over the relevant subsystems, an adversarial verifier for any load-bearing assumption, then synthesize. Match the effort to the issue — a single-file change needs none of this; a cross-layer or multi-subsystem issue is where the fan-out earns its cost. This is plan-mode *research*, not a license to start writing code — the explicit plan-mode gate still holds.
+Research is **not** read-only here — execute what informs the plan:
 
-You are allowed to fetch additional context during plan mode if the spec genuinely needs it — read cited docs (`docs/ARCHITECTURE.md`, individual ADR files in `docs/adr/`, `docs/STANDARDS.md`, `CLAUDE.md`, `docs/cbk/frame-NN.md` for the parent framing), look at sibling files in the affected module, query the parent framing sub-issue for background. But don't fetch context speculatively; only fetch what the current step actually needs.
+- **Read-only probes** — read cited docs (`docs/ARCHITECTURE.md`, individual ADR files in `docs/adr/`, `docs/STANDARDS.md`, `CLAUDE.md`, `docs/cbk/frame-NN.md` for the parent framing), look at sibling files in the affected module, query the parent framing sub-issue for background. If the issue body cites knowledge-backend (e.g. Notion) URLs as reference material, resolve them via the configured MCP per `.claude/rules/knowledge-backend.md` § "HITL announcement discipline" — announce each fetch (*"About to fetch `<page title>`. OK?"*; operator can decline per-page); if the MCP isn't configured, surface and proceed without. Don't fetch speculatively; only what the step needs.
+- **Step-0 probes for probe-pending assumptions.** If an `[ASSUMPTION:]` entry was written probe-pending — the rough-in author couldn't verify a fact at spec time and named the read-only probe that would settle it — run that probe now and carry the measured answer into the plan. Measured numbers belong to execution-time probes, not spec-time guesses.
+- **Executable spikes — scratchpad-scoped ONLY.** Write throwaway probe scripts, run feasibility checks, run the existing suite to learn current behavior. Keep only the *findings* — a spike is throwaway; the real work is built fresh from the approved plan in Step 6.
 
-**Resolving Notion URLs cited in the spec**: if the issue body (Context, Implementation, or any section) cites Notion page URLs as reference material, you may resolve those URLs via the Notion MCP if it's configured. Per `.claude/rules/knowledge-backend.md` § "HITL announcement discipline," announce each fetch before running: *"About to fetch `<page title>` from Notion. OK?"* Operator can decline per-page. If Notion MCP is not configured, surface and proceed without the Notion content (the URLs remain in the issue body as informational references).
+**The one hard rule for 5a: do not edit repo files.** No `Write`/`Edit` under the repo's source, test, or docs trees — all spike output goes to the scratchpad directory. Research produces *understanding + a plan*, not code; the repo stays untouched until the plan is approved in 5b. (Instruction-enforced — see the deferred-hardening note at the end of this step.)
+
+**Scale the research to the work.** When the investigation spans many files, multiple subsystems, or competing hypotheses, fan out `Explore` / general-purpose subagents (one per area) and synthesize their findings yourself — gather with subagents, never delegate the synthesis. When a workflow/orchestration tool is available, orchestrate the research: parallel readers over the relevant subsystems, an adversarial verifier for any load-bearing assumption, then synthesize. Ground the fan-out: existence/absence claims are verified **repo-wide** (never from a single-directory grep), verifiers preferentially attack **negative** claims, and researchers cite the run's existing findings before re-deriving them — see the rough-in skill's `references/research-phase.md` § Grounding existence claims for the full discipline. Match the effort to the issue — a single-file change needs none of this; a cross-layer or multi-subsystem issue is where the fan-out earns its cost.
+
+### 5b — Plan + gate (entering plan mode is the self-disarm)
+
+Once research is done, **enter plan mode** and write the formal plan. Entering plan mode is the disarm: it makes you read-only, so no code can land until the user approves — the harness tracks this; no marker or state file needed.
+
+The plan must:
+
+- **Enumerate each `[ASSUMPTION:]` item** as a "Confirm or correct" line so the user can revise during plan iteration. **Do not silently resolve assumptions** — even when you have a strong default, surface it so the user can push back. Resolved assumptions (those the user confirms or corrects) inline into the plan's relevant Implementation step rather than persisting as a separate "Resolved" subsection. If the section says `- None — ...` or contains no `[ASSUMPTION:]` lines, proceed silently.
+- **Respect the guardrails**: the **`docs/adr/` Decisions Log** (indexed in `docs/ARCHITECTURE.md` § Decisions log — any code introduced must conform; surface any spec↔ADR conflict before executing); **`docs/STANDARDS.md` quality bar** (testing philosophy, coverage policy, AI-collaborator workflow); **`.claude/rules/testing.md`** (three regimes; the `## Test plan` named tests feed Step 6's red-first scaffolding for logic-regime modules); **`.claude/rules/logging.md`** (structured `Logger` calls, correlation ID propagation, telemetry vs Logger boundary); and any other `.claude/rules/<topic>.md` files load-bearing for the diff at hand.
+
+**Present the plan and wait for explicit approval before executing.** Non-negotiable even for small-looking issues, because the user's review is the last HITL gate before code lands. On approval, plan mode restores your prior permission mode, so Step 6 executes under the same oversight regime as the research did.
+
+> **Deferred hardening (not built).** A `PreToolUse` hook could *structurally* block repo `Write`/`Edit` during 5a (allowing the scratchpad + Bash), making the "no repo edits during research" rule enforced rather than instructed. It's shelved: distinguishing research-phase writes from implement-phase writes needs an un-fakeable "plan approved" signal the hook can read, and no documented primitive provides one. The residual gap is low-severity — premature edits are *uncommitted*, caught at the 5b gate and reverted with `git checkout`; nothing branches, commits, or pushes before approval. Revisit only if research-window repo edits are observed in practice.
 
 ## Step 6: Create the branch, then execute the plan
 
