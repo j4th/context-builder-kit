@@ -193,10 +193,12 @@ milestone sequence. The cascade tracks them as first-class artifacts because
 they're inevitable — every framing surfaces some — and because rough-in MUST
 check this table before decomposing any milestone.
 
-Each meta-issue gets a corresponding GitHub issue created during framing's
-planning-backend commit (parented under the workstream parent Issue with
-label `cascade-depth:framed`, same as framing capability sub-issues, but
-distinguished by the `meta` label).]
+Each meta-issue gets a corresponding planning-backend issue created during
+framing's planning-backend commit (parented under the workstream parent
+issue with label `cascade-depth:framed`, same as framing capability
+sub-issues, but distinguished by the `meta` label). On in-repo-markdown
+planning no backend issue exists — the Issue # column holds "n/a" and this
+table row is itself the record.]
 
 | Issue # | Subject | Depends on | Blocks | Type |
 |---|---|---|---|---|

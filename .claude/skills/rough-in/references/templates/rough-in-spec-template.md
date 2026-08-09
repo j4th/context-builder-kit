@@ -239,8 +239,12 @@ with expected output, or a "the smoke test in CI passes" statement.
 
 <!--
 Other rough-in issues that must be closed before this one can start.
-List them by issue number only so /finish can verify them via the
-GitHub API before handing the body to plan mode.
+List them by issue identifier only so /finish can verify them via the
+planning backend (GitHub issue number on github-issues; planner ID like
+TEAM-N on linear) before handing the body to plan mode. On
+in-repo-markdown planning, reference the sibling R-heading
+([<slug>:F<#>:R<#>]) instead — dependency state is read from the
+records' status tokens.
 
 IMPORTANT: reference dependencies by issue number ONLY (e.g., `#42`), not
 by number + title. Issue titles can drift during later cascade revisions
@@ -264,4 +268,4 @@ How to close this issue when implementation is complete. Standard text
 across all rough-in issues so the pattern is uniform on the board.
 -->
 
-When all acceptance criteria are met, open a PR with `closes #<this_issue_number>` in the description. PR title follows Conventional Commits (e.g., `feat(<scope>): <subject>`). The board automation moves this issue to Done on PR merge and ticks the parent's sub-issue progress field forward.
+When all acceptance criteria are met, open a PR with the planning axis's close marker in the description — `closes #<this_issue_number>` (github-issues) or `Closes <TEAM>-<N>` (linear); on in-repo-markdown planning there is no close marker — flip the record's `status:` token by hand post-merge. PR title follows Conventional Commits (e.g., `feat(<scope>): <subject>`). On backend axes the board/rollup automation moves this issue to Done on PR merge and ticks the parent's progress forward.

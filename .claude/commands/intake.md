@@ -84,7 +84,7 @@ End the turn with:
 1. The created / updated issue — `<KEY>-N` (URL) or `#N`.
 2. The classification + route — bug lane / enhancement-lane candidate / framing candidate / cascade-tooling.
 3. The verified reproduction — the failing test name + one-line failure.
-4. The next action — for a bug-lane issue: *"`/finish <KEY>-N` when ready."* For a **small capability** (enhancement lane): *"run `/enrich <KEY>-N`, then `/finish`."* For a **large capability**: *"this needs `framing` → `rough-in` before `/finish` — return to chat for the framing skill."*
+4. The next action — for a bug-lane issue: *"`/finish <KEY>-N` when ready."* For a **small capability** (enhancement lane): *"run `/enrich <KEY>-N`, then `/finish`."* For a **large capability**: *"this needs `framing` → `rough-in` before `/finish` — return to chat for the framing skill."* On **`in-repo-markdown` planning** there is no `/finish`: the next action is opening a Claude Code session against the shaped markdown issue record (see `cbk-conventions.md` § Contribution intake, the markdown issue record) — say that instead.
 5. Provenance — source (`#N` / reporter), label applied.
 
 ## What `/intake` does NOT do

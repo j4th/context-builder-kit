@@ -113,8 +113,19 @@ Once `/intake` shapes a report it **leaves the holding surface** carrying its ca
 Every externally-sourced issue carries a provenance label; cascade-native issues carry none. This is the queryable external-vs-native distinction:
 
 - **`source:<origin>`** — e.g. `source:github` (originated as a GitHub issue; also created in the repo so issue forms auto-apply it), `source:linear` (filed directly by a collaborator), or a generic `source:external`. "All external" is the union of the `source:*` labels.
+- **Markdown-only** — a `labels:` line inside the issue record (below) carrying the same tokens (`source:github`, `cascade-depth:roughed-in`, `enhancement`, the type), greppable exactly like the backend labels. Graduation = editing that line.
 
 The reporter and the origin URL also go in the issue body.
+
+### The markdown issue record (in-repo-markdown planning)
+
+On the markdown planning axis the lane's "issue entity" is a file: `docs/cbk/issues/<slug>-<lane>-<NN>.md` (lane = `bug` | `enh`; `NN` sequential per slug+lane), listed in the cascade-events index. Its shape:
+
+- **H1** = the would-be issue title (`[<slug>:bug] <intent>` / `[<slug>:enh] <intent>`) — this heading (or the file path) is what `/enrich` takes as its argument.
+- **A `labels:` line** directly under the H1 carrying the token set the backend lanes would use (provenance, cascade-depth, type, transient `enhancement`) plus a `status:` token (`open` | `done` | `superseded`) — the per-record analog of backend state, flipped by hand post-merge.
+- **The eight-section body** (`## Context` … `## PR contract`), identical to the backend lanes; `/enrich`'s provenance note appends as a `## Provenance` section rather than a comment.
+
+There is no `/finish` on this axis — the record is executed by opening a Claude Code session against it directly; the hand-off from `/intake`/`/enrich` says so.
 
 ### The discriminator — four routes
 
