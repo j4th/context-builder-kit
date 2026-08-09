@@ -127,6 +127,8 @@ On the markdown planning axis the lane's "issue entity" is a file: `docs/cbk/iss
 - **A `labels:` line** directly under the H1 carrying the token set the backend lanes would use (provenance, cascade-depth, type, transient `enhancement`) plus a `status:` token (`open` | `done` | `superseded`) — the per-record analog of backend state, flipped by hand post-merge.
 - **The eight-section body** (`## Context` … `## PR contract`), identical to the backend lanes; `/enrich`'s provenance note appends as a `## Provenance` section rather than a comment.
 
+The same `labels:` / `status:` line convention applies to the **R-spec sections rough-in emits on this axis** (whether appended to `frame-NN.md` or in a per-milestone rough-in file): each `[<slug>:F<#>:R<#>]` heading carries its own `status:` token, which is what a dependent spec's `## Dependencies` check reads and what the operator flips post-merge.
+
 There is no `/finish` on this axis — the record is executed by opening a Claude Code session against it directly; the hand-off from `/intake`/`/enrich` says so.
 
 ### The discriminator — four routes

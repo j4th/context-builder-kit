@@ -244,15 +244,18 @@ planning backend (GitHub issue number on github-issues; planner ID like
 TEAM-N on linear) before handing the body to plan mode. On
 in-repo-markdown planning, reference the sibling R-heading
 ([<slug>:F<#>:R<#>]) instead — dependency state is read from the
-records' status tokens.
+`status:` line each R-heading carries per `cbk-conventions.md` § The
+markdown issue record.
 
-IMPORTANT: reference dependencies by issue number ONLY (e.g., `#42`), not
-by number + title. Issue titles can drift during later cascade revisions
-(e.g., a slug prefix gets added during a cleanup pass), and a body that
-reproduces a stale title becomes misleading even though the number still
-resolves correctly. GitHub renders the current title dynamically via
-hover cards, so number-only references stay fresh without needing body
-edits. If a dependency's context needs more than the hover card shows,
+IMPORTANT: reference dependencies by identifier ONLY (`#42` on
+github-issues, `TEAM-42` on linear, the `[<slug>:F<#>:R<#>]` heading on
+in-repo-markdown), not by identifier + title. Issue titles can drift
+during later cascade revisions (e.g., a slug prefix gets added during a
+cleanup pass), and a body that reproduces a stale title becomes
+misleading even though the identifier still resolves correctly. Backend
+UIs render the current title dynamically (GitHub hover cards, the
+planner's inline previews), so identifier-only references stay fresh
+without needing body edits. If a dependency's context needs more than the hover card shows,
 add a one-line note about what the dependency is FOR (what it enables
 for this issue), not what it is CALLED.
 
