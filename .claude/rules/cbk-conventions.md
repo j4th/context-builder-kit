@@ -197,6 +197,8 @@ Rough-in R-issues then reference these IDs in their own `## Acceptance criteria`
 
 **Backfill on existing artifacts is optional**: framings produced before adopting this convention shouldn't be retroactively edited (per ADR-pattern append-only discipline applied to cascade events). Adopt forward from whichever frame-NN this convention starts in.
 
+**Two-level anchor in practice.** Rough-in R-issues routinely author their own numbered `## Acceptance criteria` list — derived from, but not identical to, the parent F-issue's ACs — and the R-issue is the unit `/finish` executes against, so **tests trace to the R-issue's own AC numbering** (e.g. a test docstring tagging `[<ISSUE-KEY> AC2]`) while the R-issue's AC list is what cites the parent's `[F<N>.AC<M>]` IDs. Both levels are trace anchors: the F-level IDs close the framing → rough-in loop; the R-level tags close the rough-in → test loop. Record the project's chosen test-side tag form here so conformance reviewers don't flag the R-level form as trace-ID drift.
+
 ## Branch naming
 
 Pattern: `<type>/<TEAM>-<N>-<short-slug>`
@@ -353,6 +355,7 @@ Use this mapping when explaining the cascade to someone familiar with Spec Kit o
 | `docs/cbk/blueprint.md` | **Append-only for new ADRs** (the Stack decisions table); otherwise immutable to preserve cascade history | Re-blueprint creates new file | Blueprint is a cascade event; mutation breaks the audit trail |
 | `docs/cbk/frame-NN.md` | **Append-only for `## Rough-in events` table**; otherwise immutable post-commit | Re-framing creates `frame-MM.md` with `Supersedes: frame-NN` field; old frame's status → "Superseded" | Frames are cascade events; rough-in events are the timeline log |
 | `docs/cbk/frame-MM.md` (additive increment) | **New file** (next sequential number); the prior frame is not mutated and stays `Active` | *No* supersession — an additive increment carries a `Builds on: frame-NN` header (not `Supersedes`); both frames stay `Active` and their open milestones coexist | Not every new framing replaces: an increment extends a workstream whose prior milestones are still valid and open, so the prior frame must not flip to `Superseded` (see framing SKILL.md Step 2 pattern D) |
+| `docs/cbk/frame-MM.md` (milestone-scoped re-frame) | **New file** (next sequential number); the prior frame is not mutated | Header states `Supersedes only milestone M<N> of frame-NN`; the prior frame's index status is annotated `Active (M<N> superseded by frame-MM)` via the permitted status-column mutation; the retired milestone's acceptance-criteria set is recorded as retired-un-executed in the new frame | One milestone's shape can fail while its siblings are built and Done; whole-frame supersession would falsify the siblings' history (see framing SKILL.md Step 2 pattern E) |
 | `docs/cbk/README.md` | **Append-only for new entries**; status column updates allowed | Status updates are mutations to single column, not whole-file rewrites | Status changes (Active → Superseded → Completed) need to flow |
 | `docs/STANDARDS.md`, `docs/ARCHITECTURE.md`, `CLAUDE.md` | **Freely mutable** | n/a — living docs | Project-context docs evolve with the project; git history is the version archive |
 | `.claude/rules/*.md` | **Freely mutable** | n/a | Operational rules; mutations are routine |

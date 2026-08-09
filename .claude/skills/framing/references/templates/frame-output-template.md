@@ -133,6 +133,12 @@ The narrative arc below the milestones is required.]
 
 **Depends on**: Nothing — first milestone *(or: "M0 — must be completed first")*
 
+**Acceptance criteria** (inline trace IDs per the project's `cbk-conventions.md` § Trace ID convention — rough-in R-issues and their tests cite these back):
+
+- [F1.AC1] [Boundary or behavioural criterion]
+- [F1.AC2] [Test-runnable criterion]
+- [F1.AC3] [Demonstrable-capability criterion]
+
 **Rough issues** (<count> total, <N> user-managed):
 1. <Issue title> — [one-sentence intent]
 2. <Issue title> — [one-sentence intent]
@@ -203,6 +209,19 @@ explicit "none" tells rough-in the table was considered, not skipped.]
 ## Rough-in events
 
 > Per event, a short structured note beats a bare status row: record any frame-vs-reality drift correction, open-question resolution, and research provenance (agent counts / live probes) alongside the milestone + date + capstone PR. The immutable frame body never changes; this ledger is where corrections and provenance live.
+
+> The ledger is a **milestone-lifecycle event log**, not just a record of initial
+> rough-ins. Event types that earn a row: the initial rough-in; an **additive
+> completeness pass** (new R-issues appended to an already-roughed-in milestone);
+> an operator-approved **in-place body refresh** of an un-executed issue; a
+> **capstone execution/close** row recording the milestone's verdict, its
+> demonstrable outputs, and the downstream consumer that picks them up; and a
+> standing gate's **re-affirmation** (a no-change verdict recorded with rationale,
+> so absence-of-change stays distinguishable from gate-never-ran). Useful row
+> elements observed in practice: deviation from the frame's expected issue count
+> with explicit operator approval ("~N expected, +2 — operator-approved"), gate
+> decisions made at the event with their date, as-built discoveries that shrank
+> or grew the scope, and probe-pending assumption counts.
 
 [Required section. Append-only log of rough-in cascade events that decomposed
 this framing's milestones into Claude-Code-ready sub-sub-issues. Rough-in's
