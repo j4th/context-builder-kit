@@ -146,7 +146,7 @@ The mapping is:
 - The rough-in `## Test plan` section names them; the implementer writes them as failing tests on day one
 - A reviewer reading the test runner's trace output sees the contract in the same words the issue body uses
 
-The test-side trace tag (the R-issue's own criterion numbering that a test docstring cites) is recorded in `cbk-conventions-reference.md` § Trace ID convention; it is restated here because a test-writing session loads this rule and may never open a cascade file.
+The test-side trace tag, restated here because a test-writing session loads this rule and may never open a cascade file: a test's name or docstring tags the **R-issue's own** criterion number (e.g. `[<ISSUE-KEY> AC2]`), while the R-issue's acceptance-criteria list is what cites the parent framing's `[F<N>.AC<M>]` IDs — two anchors, one per loop. The convention, and the project's chosen tag form, live in `cbk-conventions-reference.md` § Trace ID convention.
 
 ## Async tests are the default
 

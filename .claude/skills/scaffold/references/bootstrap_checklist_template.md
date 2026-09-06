@@ -93,7 +93,7 @@ Always-loaded rules as of this checklist:
 
 One-time choices settled here (each has a kit default; a choice with no forcing surface is a choice the kit made for you):
 - **Reviewer agent-memory**: `memory: project` (committed under `.claude/agent-memory/`, precedents survive clones and get PR-reviewed) or `memory: local` (`.claude/agent-memory-local/`, never committed). Decision: <project | local>. Recorded in `cbk-conventions.md` § Surface inventory.
-- **Licence**: <SPDX id | none yet — all rights reserved>. Recorded in `docs/cbk/scaffold.md` § Cascade metadata.
+- **Licence**: <SPDX id | none yet — all rights reserved>. Lives in the repo's `LICENSE` file and README § License (scaffold seeds both; the Repository line above names the choice) — it is not a row of `docs/cbk/scaffold.md`'s Cascade metadata table.
 ```
 
 The dispositions and what each means: **filled** — the bracketed sections carry this project's values, and the file opens with a one-line provenance note (the date, that it was filled from the kit's template, where it deviates); choices are appended under the template prose, not written over it. **path-scoped** — the file gains a `paths:` block so it loads only when a matching file is read. **deleted** — the file governs a surface this project does not have, and boilerplate would only tax every session; delete every index that lists it in the same change (`CLAUDE.md`, `README.md`, the reviewer that enumerates it) and note the restore condition. **kept** is valid only for a rule with no placeholders. **stamped** is the path-scoped rules' equivalent of filled.
