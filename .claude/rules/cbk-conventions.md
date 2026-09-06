@@ -448,6 +448,8 @@ Example shape (rough-in's checklist):
 
 The checklist runs auto-checkable; surfacing only failures. Per [GitHub Spec Kit's `⚠️ CRITICAL: No user story work can begin until this phase is complete` pattern](https://github.com/github/spec-kit/blob/main/spec-driven.md), modified for the cascade's gate-trim posture.
 
+Every phase's checklist carries one standing item: **if this run exercised a call that a reference file flags as individually unexercised, restamp it in the same commit** — drop the flag, date the run generically ("a second real run, <date>"), and update the file's § Exercise status. A flag with a re-check trigger nobody fires is a rail that outlives its evidence.
+
 ## Recommended planning-backend settings
 
 Beyond what the cascade skills auto-configure, projects using a planning backend require these settings (one-time setup per project):

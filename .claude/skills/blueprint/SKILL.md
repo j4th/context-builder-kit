@@ -308,6 +308,16 @@ Detailed in `references/failure-modes.md`. Highlights:
 
 **Team (2–10)**: foundation docs become real coordination artifacts. CONTRIBUTING.md is read by every new team member. STANDARDS.md is the team's quality agreement. Methodology selection should be a team decision — if the user is the lead but the team hasn't agreed, surface that as an open question for the team to discuss before framing.
 
+## Phase exit checklist
+
+Auto-checkable, fires after the final gate and before blueprint declares itself complete. Not a gate; a safety surface — stop and surface if any item fails. Per `cbk-conventions.md` § Trip-wire / phase-exit checklist pattern.
+
+- [ ] The six docs exist at their paths (`CLAUDE.md`, `docs/ARCHITECTURE.md`, `docs/STANDARDS.md`, `CONTRIBUTING.md`, `README.md`, `docs/cbk/blueprint.md`), and `docs/cbk/blueprint.md` carries its Cascade metadata, Stack decisions, Methodology and Core Projects sections
+- [ ] `CLAUDE.md` mentions the other docs as backticked paths: `grep -n "^- @\|@docs/" CLAUDE.md` prints nothing
+- [ ] Every ADR blueprint wrote is indexed in `docs/adr/README.md` and in `docs/ARCHITECTURE.md` § Decisions Log, and `docs/cbk/blueprint.md` § Stack decisions lists it
+- [ ] The handoff issue (or its in-repo-markdown equivalent) exists, and the workstream parent entities blueprint.md names exist on the planning backend
+- [ ] Every call this run exercised that `references/planning-backend-matrix.md` flags as individually unexercised has been restamped in the same commit
+
 ## Reference files
 
 - `references/planning-backend-commit.md` — the Milestone-per-workstream creation step, atomic transition pattern with the markdown commit, slug collision handling, profile-aware behavior (read this in tandem with `backends.md` from the cascade meta-doc set)

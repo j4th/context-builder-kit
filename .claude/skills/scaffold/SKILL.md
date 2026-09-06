@@ -253,7 +253,7 @@ The full template with worked examples for every section lives in `references/sc
 
 Alongside the scaffold output doc (which is persistent), scaffold produces a **bootstrap checklist** for the current session only. It tells the user what was done, what they still need to do manually, and how to verify integrations.
 
-Three sections: completed items (with links), manual instructions (with URLs and expected outcomes), verification matrix (with test actions). Template in `references/bootstrap_checklist_template.md`.
+Four sections: completed items (with links), manual instructions (with URLs and expected outcomes), verification matrix (with test actions), and the rule-file disposition table (one row per shipped template or path-scoped rule, plus the one-time choices — reviewer memory scope, licence). Template in `references/bootstrap_checklist_template.md`.
 
 Present inline + downloadable artifact. Do not commit to repo (session-scoped).
 
@@ -264,7 +264,7 @@ Six gates in the full flow. In light mode, they collapse to 1–2 — that's a l
 1. **Backend selection + detection** — user confirms planning axis and knowledge axis per `references/backend_selection.md`, acknowledges three-level constraint if planning = `github-issues`, runs the in-repo-markdown confirmation gate if planning = `in-repo-markdown`, runs the brownfield Notion detection if knowledge = `notion`
 2. **Discovery** — user confirms team shape and working preferences
 3. **Account/audit** — user confirms account state and audit findings (axis-aware reads)
-4. **Provisioning** — user confirms what was created, walks verification matrix
+4. **Provisioning** — user confirms what was created, walks the verification matrix, and settles the rule-file disposition table (checklist section 4)
 5. **Cascade issue templates** — user approves the four templates (or the subset that needs committing after the idempotency check) before they land in `.github/ISSUE_TEMPLATE/`
 6. **Scaffold output** — user approves `docs/cbk/scaffold.md` and confirms problem brief committed
 
@@ -293,11 +293,23 @@ Blueprint reads scaffold's outputs at session start via GitHub MCP, or the user 
 - **Over-provisioning** — elaborate setup before needs are understood. Default is minimal; accommodate the user if they have clear reasons for more.
 - **Premature AI configuration** — CLAUDE.md, AGENTS.md, `.claude/` belong in blueprint, not scaffold. Stack decisions don't exist yet.
 - **Skipping discovery** — scaffold without discovery produces a scaffold output doc with empty preferences, forcing blueprint to re-derive everything. Even at light mode, capture team shape and quality bar.
+- **Template rule files left unfilled and undeleted** — a target project reaches dozens of merged PRs with `[Record the project's posture here]` still in an always-loaded rule, paying its token cost every session and getting none of its guidance. Defense: the bootstrap checklist's rule-file disposition section requires a per-file decision (filled / path-scoped / deleted) before gate 4 closes.
 - **Skipping the three-level constraint** — surface before the planning-axis commitment when planning = `github-issues`.
 - **Eager Notion sub-page provisioning** — scaffold creates only the hub row when knowledge = `notion`. Provisioning the eight recommended sub-pages at scaffold clutters the workspace with empty containers. Defense: `notion_knowledge.md` + `.claude/rules/knowledge-backend.md` § "Lazy provisioning at write-back" make sub-pages lazy.
 - **Committing before presenting** — the MCP commit is one tool call away. Always present inline and get approval first.
 - **Skipping the issue templates step** — without `.github/ISSUE_TEMPLATE/cascade-*.md` in the repo, downstream skills fall back to bundle-internal templates and lose the inherit-from-disk discipline. Defense: Stage 2.5 is mandatory in every rigor mode; light mode collapses other gates but not this one.
 - **Overwriting hand-curated existing templates** — if a user's repo has a hand-curated `feature_request.md` or `bug_report.md`, the cascade templates land alongside (not on top of) them. Defense: idempotency check distinguishes "already cascade-provisioned" from "exists but is not a cascade template" and never touches the latter.
+
+## Phase exit checklist
+
+Auto-checkable, fires after gate 6 and before scaffold declares itself complete. Not a gate (no approval); a safety surface — stop and surface if any item fails. Per `cbk-conventions.md` § Trip-wire / phase-exit checklist pattern.
+
+- [ ] `docs/cbk/scaffold.md` and `docs/cbk/problem_brief.md` are committed
+- [ ] The Cascade metadata rows in `docs/cbk/scaffold.md` agree with `.cascade/backends.toml` (the verification block's axis-mirror check passes)
+- [ ] `docs/adr/` exists with the three starters and ADR-0000's header is filled: `grep -n "YYYY-MM-DD\|<project owner" docs/adr/0000-*.md` prints nothing
+- [ ] On the github-issues and linear axes, the four cascade issue templates are on disk under `.github/ISSUE_TEMPLATE/`, and `cascade-rough-in.md` carries the eight headings including `## Assumptions`
+- [ ] The bootstrap checklist's rule-file disposition table has a disposition for every shipped template and path-scoped rule; `logging.md` and `testing.md` carry stamped globs (no `<ext>` left)
+- [ ] Every call this run exercised that a reference file flags as individually unexercised has been restamped in the same commit (`references/linear_planning.md` § Exercise status names the flags)
 
 ## Reference files
 

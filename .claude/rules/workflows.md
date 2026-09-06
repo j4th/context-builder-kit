@@ -1,6 +1,6 @@
 # Workflows — agent workflow patterns
 
-> **This file is a template.** Copy it into a target project's `.claude/rules/workflows.md` and adapt the bracketed placeholders. It guides which workflow pattern to apply when working in the project. Pairs with [`tooling.md`](tooling.md) (which tool) and [`orchestration.md`](orchestration.md) (which model/effort per dispatched agent) — together they answer "which pattern, which tool, which tier."
+> **This file is a portable rule.** It applies as shipped. Its one bracketed section (§ Cost+scope-explicit) is optional — fill it if the project tracks paid resources or agent-run quota, delete it otherwise. It guides which workflow pattern to apply when working in the project. Pairs with [`tooling.md`](tooling.md) (which tool) and [`orchestration.md`](orchestration.md) (which model/effort per dispatched agent) — together they answer "which pattern, which tool, which tier."
 >
 > Synthesized from Anthropic's [Claude Code best practices](https://www.anthropic.com/engineering/claude-code-best-practices), the [Humanlayer CLAUDE.md guide](https://www.humanlayer.dev/blog/writing-a-good-claude-md), the [Steve Kinney TDD-with-Claude course](https://stevekinney.com/courses/ai-development/test-driven-development-with-claude), and the Kiro / Spec-Kit / Martin-Fowler SDD comparison.
 >
