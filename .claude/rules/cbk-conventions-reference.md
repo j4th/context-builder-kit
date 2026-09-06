@@ -456,6 +456,15 @@ absent grep -n "^description:.*\bLinear\b" .claude/skills/framing/SKILL.md .clau
 absent grep -rnE "^(Three|Four|Five|Six|Seven|Eight) realistic" .claude/skills/*/references/test_cases.md
 absent grep -rnE "test_cases\.md\` — (three|four|five|six|seven|eight) realistic" .claude/skills/*/SKILL.md
 
+# The sweep: bounded (3 per dimension, 8 verified), roster read at runtime (no mirror), the
+# planned count logged before the find stage, its own gate line returned — it parses (a workflow
+# body carries a top-level return, so node --check runs on the body wrapped in a function) and
+# its accounting holds under the stub harness (no agent is dispatched).
+{ grep -q 'maxPerDimension ?? 3' .claude/workflows/review-sweep.js && grep -q 'maxVerify ?? 8' .claude/workflows/review-sweep.js && grep -q 'planned agents' .claude/workflows/review-sweep.js && grep -q 'gateLine' .claude/workflows/review-sweep.js; } || { echo "review-sweep.js lost a bound, the planned-count log, or its gate line"; exit 1; }
+absent grep -n 'REVIEWER_TRIGGERS' .claude/workflows/review-sweep.js
+{ awk '/^};$/ && !done {print; print "async function __workflow_body() {"; done=1; next} {print} END {print "}"}' .claude/workflows/review-sweep.js > "${TMPDIR:-/tmp}/review-sweep-check.mjs" && node --check "${TMPDIR:-/tmp}/review-sweep-check.mjs"; } || { echo "review-sweep.js does not parse (or node is missing — install it; do not soften this check)"; exit 1; }
+node .claude/workflows/tests/review-sweep-accounting.mjs || { echo "review-sweep.js accounting regressed"; exit 1; }
+
 # Context budget: every `.claude/rules/*.md` WITHOUT `paths:` frontmatter loads at launch,
 # every session, and every non-fork subagent loads the set again. Print the always-loaded
 # set and its size so the standing cost is a number, not a discovery.
