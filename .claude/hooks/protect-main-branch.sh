@@ -15,7 +15,8 @@
 # Timing:   the guard reads the branch BEFORE the command runs, so a compound
 #           command that creates a branch and commits in one call is judged on
 #           main and blocked. Create the branch and make the first commit in
-#           separate tool calls.
+#           separate tool calls (stated for agents in cbk-conventions.md
+#           § Branch naming — keep the two in step).
 #
 # Hook receives JSON on stdin with the tool input. Exit 2 + stderr blocks.
 # Fail-open on environment defects (missing jq, non-repo cwd): exit 0 with a

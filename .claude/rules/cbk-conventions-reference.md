@@ -323,7 +323,7 @@ Example shape (rough-in's checklist):
 
 The checklist runs auto-checkable; surfacing only failures. Per [GitHub Spec Kit's `⚠️ CRITICAL: No user story work can begin until this phase is complete` pattern](https://github.com/github/spec-kit/blob/main/spec-driven.md), modified for the cascade's gate-trim posture.
 
-Every phase's checklist carries one standing item: **if this run exercised a call that a reference file flags as individually unexercised, restamp it in the same commit** — drop the flag, date the run generically ("a second real run, <date>"), and update the file's § Exercise status. A flag with a re-check trigger nobody fires is a rail that outlives its evidence.
+Every phase-exit checklist the kit ships (scaffold, blueprint, framing) carries one standing item: **if this run exercised a call that a reference file flags as individually unexercised, restamp it in the same commit** — drop the flag, date the run generically ("a second real run, <date>"), and update the file's § Exercise status. A flag with a re-check trigger nobody fires is a rail that outlives its evidence.
 
 ## Recommended planning-backend settings
 
@@ -403,9 +403,10 @@ grep -rn "\[F[0-9]\.AC[0-9]\]" .claude/skills/*/references/templates/
 # (signup links, `my-integrations` and `<workspace>` placeholders are fine — this matches ids only).
 ! grep -rnE "notion\.(so|site)/[0-9a-f]{16,}" .claude/skills/
 
-# Old "opinionated profile" vocabulary must not appear in skill content
-# (the constant + two axes refactor removed the concept).
-! grep -rn -i "opinionated profile\|opinionated_profile" .claude/skills/
+# Pre-refactor "opinionated-profile" vocabulary must not appear anywhere in kit content (the
+# constant + two axes refactor removed the concept); the pattern splits its literal so this
+# line never matches itself.
+! grep -rn -i "opinionate[d] profile\|opinionated_profil[e]" .claude/ README.md .mcp.json.example
 
 # CLAUDE.md points at this file as a backticked mention — deliberately NOT an `@` import,
 # which would expand this whole file into every session at launch (memory docs).
@@ -420,7 +421,6 @@ grep -rn "F<#> — M<#>" .claude/skills/framing/references/templates/
 # The regex splits its own literal so this line never matches itself or the reference half.
 ! grep -rnE "github-only \| opinionate[d]|Profile.*github-onl[y]" .claude/
 ! grep -rn "initiative\.md" .claude/ README.md
-! grep -rn -i "opinionated profile" .claude/commands/ .claude/rules/pr-review.md .claude/rules/knowledge-backend.md README.md .mcp.json.example
 
 # Citations a skill makes to a section another template emits are pinned as pairs: the
 # consumer keeps citing a heading only while the producer keeps emitting it.
@@ -437,8 +437,10 @@ grep -q "^## Assumptions" .claude/skills/rough-in/references/templates/rough-in-
 # executor's parser agree on the heading list (the executor is the authority; the others are copies).
 diff <(grep '^## ' .claude/skills/scaffold/references/issue-templates/cascade-rough-in.md) <(grep '^## ' .claude/skills/rough-in/references/templates/rough-in-spec-template.md)
 for h in Context Assumptions Implementation "Acceptance criteria" "Test plan" "Done signal" Dependencies "PR contract"; do grep -q "\`## $h\`" .claude/commands/finish.md || { echo "finish.md does not name ## $h"; exit 1; }; done
-# No reference doc restates a shorter list than the executor's (the pre-#45 drift was "six sections").
-! grep -rn "standard six sections\|the six sections" .claude/skills/ .claude/commands/
+# The prose restatements carry the executor's list verbatim, derived from the template (a renamed
+# or added section fails here — not only the one stale phrase a prior drift left behind).
+L=$(grep '^## ' .claude/skills/scaffold/references/issue-templates/cascade-rough-in.md | sed 's/^## //' | paste -sd '|' | sed 's/|/ \/ /g')
+for f in .claude/skills/rough-in/references/handoff-to-finish.md .claude/skills/rough-in/references/plan-mode-prompts.md; do grep -qF "($L)" "$f" || { echo "$f does not carry the executor's section list ($L)"; exit 1; }; done
 
 # Skill and command descriptions name cascade objects, never one backend's entity type
 # (the phase skills below run on every planning axis).

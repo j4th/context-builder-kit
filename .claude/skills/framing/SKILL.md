@@ -288,6 +288,7 @@ Auto-checkable list that fires after the final HITL gate, before declaring frami
 - [ ] Markdown commit and (on backend planning axes) F-issue creation atomic transition succeeded, or partial state surfaced cleanly
 - [ ] `docs/cbk/README.md` updated with new entry + status `Active`
 - [ ] If the project runs a contribution-intake lane (cbk-conventions): no candidate it filed under this workstream remains un-reconciled — each was promoted to an F-issue or closed as superseded
+- [ ] Every call this run exercised that `references/planning-backend-matrix.md` flags as individually unexercised has been restamped in the same commit
 
 ## Backend-axis-aware behavior
 
