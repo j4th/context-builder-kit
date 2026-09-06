@@ -29,6 +29,7 @@ Realistic prompts for verifying the framing skill works correctly after any revi
 - Every milestone has a verb-phrase capability statement
 - `README.md` index is created alongside `frame-01.md` in the same commit
 - Exactly three HITL gates (standard mode)
+- Full mode offered no MCP or plugin research track (framing does not research tooling); the frame's Pre-flight checks table carries the exact empty-state string `No deferred meta-issues from this framing` when empty.
 
 **Failure signals**:
 - Framing produces milestones without reading all three inheritance docs in full

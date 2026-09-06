@@ -20,6 +20,7 @@ For Claude.ai's qualitative test loop (no subagents, no benchmarking): a real hu
 - Tooling configs are produced: every command in CLAUDE.md maps to an actual task in the task runner config; every CI gate in STANDARDS.md maps to an actual job in the workflow file
 - A handoff issue gets created with the version-pin inventory, the toolchain bootstrap command, and the bootstrap-exemption-end statement
 - Standard mode runs four HITL gates total (post-stack, post-methodology, post-foundation-docs-batch, post-handoff-issue)
+- The phase exit checklist ran: `CLAUDE.md` mentions the other docs as backticked paths (no `@docs/` line), and every ADR written is indexed in both indexes.
 
 **What failure looks like:**
 - Skill skips reading the inheritance files in full and produces generic foundation docs

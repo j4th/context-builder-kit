@@ -37,8 +37,8 @@ curl -L https://github.com/<your-fork>/context-builder-kit/archive/main.tar.gz \
 
 # 2. Customize the conventions file with your project's specifics
 $EDITOR .claude/rules/cbk-conventions.md
-# Fill in <TEAM>, <workstream-slug> placeholders and delete the
-# "This file is a template" callout at the top once you're done.
+# Fill in <TEAM>, <workstream-slug> placeholders; stamp the paths: globs in
+# logging.md and testing.md; delete the template callouts once you're done.
 
 # 3. Configure MCP servers (cascade reads from .mcp.json)
 cp .mcp.json.example .mcp.json
@@ -286,32 +286,50 @@ The user then reviews the draft and flips it to ready when satisfied — that tr
 ```
 .claude/
 ├── commands/
-│   └── finish.md                      ← Phase 6 slash command
+│   ├── finish.md                      ← Phase 6 executor slash command
+│   ├── intake.md                      ← bottom-up entry: external report → /finish-able issue
+│   ├── enrich.md                      ← rough-in for one small capability
+│   └── pr-respond.md                  ← the PR feedback-loop executor
 ├── skills/
 │   ├── consultation/                  ← Phase 1
-│   ├── scaffold/                      ← Phase 2
+│   ├── scaffold/                      ← Phase 2 (+ references/adr-starters/, references/issue-templates/)
 │   ├── blueprint/                     ← Phase 3
 │   ├── framing/                       ← Phase 4
-│   ├── rough-in/                      ← Phase 5
+│   ├── rough-in/                      ← Phase 5 (+ references/finish-command.md, the bundled executor)
 │   └── adr-new/                       ← ADR scaffolder (used by blueprint and onward)
 ├── agents/
-│   ├── adr-conformance-reviewer.md    ← /finish dispatches alongside review-toolkit
-│   └── logging-discipline-reviewer.md ← same
-├── rules/
-│   ├── cbk-conventions.md             ← project-level overrides template (you edit this)
-│   ├── testing.md                     ← three-regime test classification
-│   ├── logging.md                     ← correlation IDs, level taxonomy, sensitive data
-│   ├── simplification.md              ← /simplify pass contract
-│   ├── pr-review.md                   ← review-toolkit triage rubric (Apply/Surface calibration)
-│   └── knowledge-backend.md           ← Notion-axis operational contract (read patterns, write tiering, HITL, brownfield)
+│   ├── adr-conformance-reviewer.md    ← dispatched on every review pass
+│   ├── logging-discipline-reviewer.md ← same
+│   ├── cascade-rule-reviewer.md       ← same
+│   └── Explore.md                     ← cheap-tier search exemplar
 ├── hooks/
-│   └── protect-immutable-adrs.sh      ← PreToolUse hook blocking ADR edits
+│   ├── protect-immutable-adrs.sh      ← hard-deny: edits to existing ADRs
+│   ├── protect-lock-files.sh          ← hard-deny: hand edits to lock files
+│   ├── protect-main-branch.sh         ← hard-deny: git commit on main
+│   ├── guard-pr-state.sh              ← ask-gate: gh pr ready/merge/close/reopen
+│   ├── require-knowledge-backend-ok.sh ← ask-gate: knowledge-backend MCP writes
+│   └── format-on-edit.sh              ← exemplar (unregistered; stanza in settings.json)
+├── rules/
+│   ├── cbk-conventions.md             ← project conventions — contract half (template; you fill this)
+│   ├── cbk-conventions-reference.md   ← its path-scoped reference half
+│   ├── orchestration.md               ← model × effort tiering — contract half (template)
+│   ├── orchestration-reference.md     ← its path-scoped reference half
+│   ├── pr-review.md                   ← review floor, roster, rubric — contract half
+│   ├── pr-review-reference.md         ← its path-scoped reference half (calibration tables)
+│   ├── testing.md                     ← three-regime testing (path-scoped; stamp the globs)
+│   ├── logging.md                     ← structured logging (path-scoped; stamp the glob)
+│   ├── simplification.md              ← /simplify contract
+│   ├── workflows.md                   ← agent workflow patterns (portable)
+│   ├── tooling.md                     ← tool-selection skeleton (template)
+│   └── knowledge-backend.md           ← Notion-axis contract (delete with its hook when the axis is none)
+├── workflows/
+│   └── review-sweep.js                ← find-then-verify review orchestration
 └── settings.json                      ← hook registration + plugin/MCP manifest
 
 docs/adr/
 ├── README.md                          ← ADR index (starter — just ADR-0000)
 ├── template.md                        ← ADR template
-└── 0000-record-architecture-decisions.md  ← meta-ADR establishing immutability
+└── 0000-record-architecture-decisions.md  ← meta-ADR establishing immutability (scaffold fills its header)
 
 .github/workflows/
 └── adr-immutability-check.yml         ← CI gate enforcing ADR-0000 at raw-git level
@@ -354,14 +372,14 @@ The kit's load-bearing assumption is that your project has — or will have, aft
 
 - A task runner (`mise.toml` is what `/finish` references in `mise run check`; if you use `Makefile` or `justfile`, edit `/finish` to match)
 - `docs/STANDARDS.md` with a quality bar and CI Pipeline table
-- The four rules files we ship (testing, logging, simplification, pr-review) — these are referenced by `/finish` and the reviewer agents
+- The twelve files under `.claude/rules/`: the contract + reference pairs for conventions, orchestration and review; `testing.md` and `logging.md` (path-scoped — stamp their globs); `simplification.md`; `workflows.md` (portable); `tooling.md` (a template); and `knowledge-backend.md` for the Notion axis. `/finish` and the reviewer agents reference them by name.
 - ADR scaffolding under `docs/adr/` (we ship the starter; `adr-new` skill maintains it)
 
 If your project uses a different layout, the kit still works but `/finish` becomes the friction point — edit it after dropping the kit in. See "Customization" below.
 
 ## Customization
 
-Three files reliably need editing per project:
+Four files reliably need editing per project, and scaffold's bootstrap checklist walks the decisions:
 
 1. **`.claude/rules/cbk-conventions.md`** — fill in `<TEAM>`, workstream slugs, branch-naming patterns, methodology choices. Delete the "this file is a template" callout at the top once you're done.
 
@@ -369,8 +387,10 @@ Three files reliably need editing per project:
 
 3. **`.claude/settings.json`** — adjust `enabledPlugins` if your installed identifiers differ; adjust `enabledMcpjsonServers` if you don't use one of the five defaults or want to add others.
 
+4. **`.claude/rules/logging.md` and `.claude/rules/testing.md`** — stamp the `paths:` globs at the top with your project's real extensions; they ship as placeholders and a placeholder glob loads nothing. Then settle a disposition for each template rule (`orchestration.md`, `tooling.md`, and the bracketed entry in `cbk-conventions-reference.md`'s `paths:`): fill, path-scope, or delete — see `cbk-conventions.md` § Rule loading and the instruction budget.
+
 Optional further customization:
-- Add project-local reviewer agents under `.claude/agents/` (the kit ships `adr-conformance-reviewer` and `logging-discipline-reviewer`; add your own for project-specific concerns).
+- Add project-local reviewer agents under `.claude/agents/` (the kit ships `adr-conformance-reviewer`, `logging-discipline-reviewer` and `cascade-rule-reviewer`; add your own for project-specific concerns).
 - Tune `pr-review.md`'s Apply/Surface calibration as you learn what's noisy in your project's PRs.
 - If you don't use ADRs, delete `docs/adr/` and remove the hook registration from `settings.json`.
 
