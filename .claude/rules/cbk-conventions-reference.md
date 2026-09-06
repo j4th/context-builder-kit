@@ -487,6 +487,9 @@ rc=0; printf '{"tool_name":"Agent","tool_input":{},"cwd":"%s/docs"}' "$PWD" | .c
 printf '{"tool_name":"Agent","tool_input":{},"cwd":"%s"}' "$PWD" | .claude/hooks/require-repo-root-for-agents.sh >/dev/null 2>&1 || { echo "launch-root guard blocked a root dispatch"; exit 1; }
 # No reviewer-memory tree outside the root (the outcome the Stop hook repairs; the gate's own check).
 absent sh -c "find . \( -path './.claude/agent-memory' -o -path './.claude/worktrees' -o -name .git -o -name node_modules -o -name target -o -name build -o -name _build -o -name dist -o -name .venv \) -prune -o -type d -name agent-memory -print 2>/dev/null | grep ."
+# Every shipped reviewer carries the same `## Writing memory` section (its one text); the copies are diffed.
+for a in logging-discipline-reviewer cascade-rule-reviewer; do diff <(awk '/^## Writing memory/{p=1} p' .claude/agents/adr-conformance-reviewer.md) <(awk '/^## Writing memory/{p=1} p' .claude/agents/$a.md) || { echo "## Writing memory drifted in $a"; exit 1; }; done
+
 
 
 # Context budget: every `.claude/rules/*.md` WITHOUT `paths:` frontmatter loads at launch,
