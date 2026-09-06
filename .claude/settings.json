@@ -40,10 +40,19 @@
       }
     ]
   },
-  "_comment_enabledPlugins": "Plugins the cascade kit expects. Install each via Claude Code's plugin system before running /finish. The plugin names below match what /finish's simplify and review passes invoke; rename to match installed plugin IDs if your install uses different identifiers.",
+  "_example_PostToolUse_formatter": {
+    "_comment": "Copy this object into hooks.PostToolUse after wiring .claude/hooks/format-on-edit.sh's case arms to your stack. Advisory tier: exit 0 always.",
+    "matcher": "Edit|Write|MultiEdit",
+    "hooks": [
+      {
+        "type": "command",
+        "command": ".claude/hooks/format-on-edit.sh"
+      }
+    ]
+  },
+  "_comment_enabledPlugins": "Plugins the cascade kit expects. Install each via Claude Code's plugin system before running /finish: pr-review-toolkit (the review pass dispatches pr-review-toolkit:review-pr) and commit-commands (staging/commit wrappers used by the kit's examples). `/simplify` — /finish's simplify pass — is built into Claude Code as a bundled skill (verified against the installed CLI bundle, Claude Code 2.1.263, 2026-09-06; re-verify after harness upgrades) and is deliberately NOT listed here: add \"simplify\": true only if your install ships it as a plugin. Rename entries to match installed plugin IDs if yours differ.",
   "enabledPlugins": {
     "pr-review-toolkit": true,
-    "simplify": true,
     "commit-commands": true
   },
   "_comment_enabledMcpjsonServers": "MCP servers the cascade reads from .mcp.json. Copy .mcp.json.example to .mcp.json and configure the credentials/endpoints for each server you want enabled. Comment out any server you don't use.",

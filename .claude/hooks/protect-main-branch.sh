@@ -12,6 +12,10 @@
 #           while the call's working directory is on main or master.
 # Allowed:  everything else — commits on feature branches, and all
 #           non-commit git commands on main.
+# Timing:   the guard reads the branch BEFORE the command runs, so a compound
+#           command that creates a branch and commits in one call is judged on
+#           main and blocked. Create the branch and make the first commit in
+#           separate tool calls.
 #
 # Hook receives JSON on stdin with the tool input. Exit 2 + stderr blocks.
 # Fail-open on environment defects (missing jq, non-repo cwd): exit 0 with a

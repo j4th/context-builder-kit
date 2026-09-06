@@ -1,12 +1,12 @@
 # Simplification Rules
 
-Operational rules for the `/simplify` Claude Code plugin invocation in the cascade workflow. `docs/STANDARDS.md § Step 4` (or wherever your project documents the equivalent gate) establishes that simplification is non-optional before a PR moves draft → ready; this file is the practical detail.
+Operational rules for the `/simplify` Claude Code skill invocation in the cascade workflow. `docs/STANDARDS.md § Step 4` (or wherever your project documents the equivalent gate) establishes that simplification is non-optional before a PR moves draft → ready; this file is the practical detail.
 
 ## Plugin
 
-`/simplify` is a Claude Code plugin/skill installed by the user into Claude Code, not a project dependency. The plugin owns the actual simplification logic; this file documents how the project uses it.
+`/simplify` is a Claude Code skill, not a project dependency — bundled with Claude Code as of 2.1.263 (2026-09-06, verified against the installed CLI bundle; re-verify after harness upgrades), or plugin-installed if your harness ships it that way. The skill owns the actual simplification logic; this file documents how the project uses it.
 
-**Install / update**: per Claude Code plugin documentation. The plugin name and source repo are at the user's discretion; this rules file exists so the project doesn't lose track of the dependency.
+**Install / update**: nothing to install when it ships bundled; otherwise per Claude Code plugin documentation, with the plugin ID recorded in `.claude/settings.json` `enabledPlugins`. This rules file exists so the project doesn't lose track of the dependency either way.
 
 ## When to invoke
 
@@ -16,7 +16,7 @@ Optionally: after any large refactor, after a long implementation session, when 
 
 ## What the simplification pass does
 
-The `/simplify` plugin runs against the current branch and identifies:
+The `/simplify` pass runs against the current branch and identifies:
 
 - **Compressible code** — multiple sequential statements that could be one expression, redundant intermediate variables, repeated patterns that could be functions
 - **Dead code** — commented-out blocks, unreachable branches, unused imports, unused parameters

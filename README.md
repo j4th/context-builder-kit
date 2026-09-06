@@ -301,7 +301,7 @@ The user then reviews the draft and flips it to ready when satisfied — that tr
 │   ├── cbk-conventions.md             ← project-level overrides template (you edit this)
 │   ├── testing.md                     ← three-regime test classification
 │   ├── logging.md                     ← correlation IDs, level taxonomy, sensitive data
-│   ├── simplification.md              ← /simplify plugin contract
+│   ├── simplification.md              ← /simplify pass contract
 │   ├── pr-review.md                   ← review-toolkit triage rubric (Apply/Surface calibration)
 │   └── knowledge-backend.md           ← Notion-axis operational contract (read patterns, write tiering, HITL, brownfield)
 ├── hooks/
@@ -331,7 +331,7 @@ The kit assumes a few things about the host project. None are kit-shipped becaus
 Listed declaratively in `.claude/settings.json` under `enabledPlugins`. Install each via Claude Code's plugin system before running `/finish`:
 
 - **`pr-review-toolkit`** — `/finish`'s review pass dispatches `pr-review-toolkit:review-pr` for the auto-triage sweep
-- **`simplify`** — `/finish`'s simplify pass invokes `/simplify` before the review pass
+- **`/simplify`** — `/finish`'s simplify pass invokes it before the review pass. It is a **bundled Claude Code skill**, not a plugin (verified against the installed CLI bundle, Claude Code 2.1.263, 2026-09-06 — re-verify after harness upgrades), so it is deliberately absent from `enabledPlugins`; add `"simplify": true` there only if your install ships it as a plugin
 - **`commit-commands`** — convenient wrappers for staging + committing (used by examples in this kit's docs)
 
 The slash commands and skills these provide are referenced by name in `/finish` and the rules files; if your install uses different identifiers, edit the references.
