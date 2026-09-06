@@ -37,7 +37,7 @@ The cascade is top-down, but a **bottom-up contribution lane** complements it fo
 │   ├── enrich.md                  ← rough-in for one small capability (enhancement lane, skips framing)
 │   └── pr-respond.md              ← the PR feedback-loop executor (inverse of /finish)
 ├── agents/                        ← project-local PR reviewers (adr-conformance, logging-discipline, cascade-rule; memory-enabled) + Explore (cheap-tier search exemplar)
-├── hooks/                         ← PreToolUse guards, two-tiered: hard-deny (protect-immutable-adrs, protect-lock-files, protect-main-branch) + ask-gate (guard-pr-state, require-knowledge-backend-ok) + format-on-edit exemplar
+├── hooks/                         ← guards in four tiers: hard-deny (protect-immutable-adrs, protect-lock-files, protect-main-branch, require-repo-root-for-agents) + ask-gate (guard-pr-state, require-knowledge-backend-ok) + advisory exemplar, unregistered (format-on-edit) + stop (detect-forked-agent-memory)
 ├── rules/                         ← operational contracts (cbk-conventions, pr-review — each split into an always-loaded contract and a path-scoped `-reference.md` half — plus testing, logging, simplification, knowledge-backend) and rule templates (tooling; orchestration, itself also split); workflows.md is portable
 ├── workflows/                     ← saved orchestrations (review-sweep: find-then-adversarially-verify review pass)
 └── skills/
