@@ -456,6 +456,15 @@ absent grep -n "^description:.*\bLinear\b" .claude/skills/framing/SKILL.md .clau
 absent grep -rnE "^(Three|Four|Five|Six|Seven|Eight) realistic" .claude/skills/*/references/test_cases.md
 absent grep -rnE "test_cases\.md\` — (three|four|five|six|seven|eight) realistic" .claude/skills/*/SKILL.md
 
+# The review floor: no surface frames the sweep as a substitute for the two skills (the pattern
+# also catches the paraphrase the sweep's meta once carried); the `## Review gate` block has one
+# home (pr-review.md § The floor) that the executor and its bundled template cite; the executor and
+# the template body stay byte-parallel (the anchored awk is the extraction the template documents).
+# The pattern splits its literals so this line never matches itself.
+absent grep -rn "instead of a single direct dispatc[h]\|direct dispatch[^.]*is the fallbac[k]\|apply only after both the primary and the recorded fallbac[k]" .claude/
+{ grep -q '^## Review gate' .claude/rules/pr-review.md && grep -q 'Review gate' .claude/commands/finish.md && grep -q 'Review gate' .claude/skills/rough-in/references/finish-command.md; } || { echo "the ## Review gate block is missing from its home, the executor, or the bundled template"; exit 1; }
+diff <(awk '/^--- BEGIN TEMPLATE ---/{flag=1; next} flag' .claude/skills/rough-in/references/finish-command.md) .claude/commands/finish.md >/dev/null || { echo "commands/finish.md and the bundled template body have drifted"; exit 1; }
+
 # The sweep: bounded (3 per dimension, 8 verified), roster read at runtime (no mirror), the
 # planned count logged before the find stage, its own gate line returned — it parses (a workflow
 # body carries a top-level return, so node --check runs on the body wrapped in a function) and

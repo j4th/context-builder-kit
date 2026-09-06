@@ -92,6 +92,14 @@ If the diff is entirely under `docs/` or matches `*.md`, the toolkit's specializ
 
 The hand-off is the audit surface. List counts per class plus the concrete actioned items and the verbatim Surface entries. If everything classified as Reject, say so in one line — don't pad.
 
+### ❌ Describing a review instead of running one
+
+"The diff was reviewed for X, Y and Z" by an agent that read the diff is not `/simplify` or `pr-review-toolkit:review-pr` having run. The floor is two skill invocations; a description of what they would have found is the failure mode the `## Review gate` block exists to catch (`pr-review.md` § The floor).
+
+### ❌ A PR body without a `## Review gate` block
+
+A body that carries `## Triage` but no `## Review gate` is treated as un-reviewed whatever the hand-off says — the block is the only auditable record that the two skills ran, and a waived skill is recorded on its line, never omitted.
+
 ## When to update this file
 
 This rules file is load-bearing the moment `/finish`'s review pass dispatches `pr-review-toolkit`. Update it when:
@@ -102,5 +110,6 @@ This rules file is load-bearing the moment `/finish`'s review pass dispatches `p
 - A rule clause any rules file states is changed or retired — sweep the reviewer agents that restate it as an enforcement target and update them **in the same change**; reviewer scope lists cache rule content and rot silently when the rule moves without them.
 - A path-conditional pattern emerges (e.g., a project-specific directory that needs its own aggressiveness setting) — add a row to § Path-conditional aggressiveness.
 - The break-glass mechanism gets used more than ~5% of the time — that's a signal the rubric is mis-calibrated, not the override mechanism. Investigate.
+- The `## Review gate` block's shape changes — edit its one home (`pr-review.md` § The floor) and check that `/finish` Step 10 still cites it rather than carrying a copy.
 
 The corresponding entry in `docs/STANDARDS.md` § PR review process points here for the operational detail; that file states the principle, this file states the contract.

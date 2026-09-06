@@ -12,9 +12,39 @@ Operational rules for the `pr-review-toolkit:review-pr` invocation in the cascad
 
 `/finish`'s review pass dispatches `pr-review-toolkit:review-pr` against the local branch before opening the draft PR. Invoke with no args for the default full sweep — do **not** pass the PR number as an argument (that's not the skill's interface; the skill auto-discovers via `git diff` + `gh pr view`, falling back to `git diff main...HEAD` pre-PR).
 
-**Orchestrated sweep (optional).** Where a multi-agent orchestration surface is available, the project may run the review pass as a find-then-verify orchestration instead of a single direct dispatch: the toolkit's review dimensions and the intersecting project-local reviewers run as parallel finders, and every finding passes a refute-by-default **adversarial verification stage** before triage — a finding the independent verifiers refute is dropped and needs no triage at all. The kit ships `.claude/workflows/review-sweep.js` as this orchestration (it consumes § Project-local agents as its dispatch roster). Direct dispatch remains the documented baseline and the fallback when the orchestration surface is unavailable or the run fails — and the hand-off records **which path ran**. Hard-fail rules ("a missing toolkit blocks `/finish`") apply only after both the primary and the recorded fallback path have failed.
+### The floor — two skills, actually invoked
 
-**Two invariants either way.** (1) **Triage judgment stays with the caller.** Dispatched review and verify agents report findings and verdicts; the executor holding this file's rubric classifies them — triage is never delegated downstream. (2) **A failed review agent is dropped coverage, not zero findings.** An agent that fails, times out, or returns nothing must be tracked as an uncovered dimension and retried — and a finding whose verification step failed is surfaced as unverified, not silently dropped — before the review pass is treated as complete.
+**A review pass is unsatisfied until both of these have actually run, as skills, in this session:**
+
+1. **`/simplify`** — the real skill, per [`simplification.md`](simplification.md).
+2. **`pr-review-toolkit:review-pr`** — the real skill, no args.
+
+This is a floor, not a menu. Neither is satisfied by an agent that read the diff and reported what those skills *would* have found, by a workflow that dispatched agents "covering the same dimensions," or by a summary asserting the pass was clean. **Reasoning about a gate is not passing it.** If either skill is uninstalled or errors, the pass **fails** — stop and surface; `/finish`'s "does not skip" rule makes it blocking. A skill that runs without its own agent fan-out because the Agent tool is unavailable in the calling context counts as **invoked, not covered** — a subagent at the spawn-depth limit has no Agent tool (three layers below the main conversation by default; `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` — `https://code.claude.com/docs/en/sub-agents`, verified 2026-09-06) — and its dropped dimensions are recorded as dropped coverage on the gate line, never described as equivalent.
+
+**Once.** The floor runs once, when the known work is complete and just before the draft PR. It is not run again on a delta that lands after the draft — an operator's runs forcing fixes, a follow-up — and it is not a tool for checking a specific change: the reviewer round on the flip covers the delta, `/pr-respond` answers it, and a further floor pass happens only when the operator asks. *(A real run, 2026-09-04, saw the floor twice and four verification workflows on one drafted artifact; the operator's rule is once.)*
+
+**Record the invocation — the `## Review gate` block.** The PR body carries a `## Review gate` block, written before `## Triage`, with one line each for `/simplify`, `pr-review-toolkit:review-pr` and the orchestrated sweep, each stating run-or-not with counts and any dropped coverage. This is the block's one home; `/finish` Step 10 cites it rather than restating it:
+
+```markdown
+## Review gate
+- `/simplify` — ran: <N> cleanup agents, <N> findings, <N> applied · or: invoked, not covered — <dropped dimensions> · or: waived — <break-glass reason>
+- `pr-review-toolkit:review-pr` — ran: <N> agents, <N> findings, triaged <A/AwC/S/D/R> · or: invoked, not covered — <dropped dimensions> · or: waived — <break-glass reason>
+- `review-sweep` — ran: <N> finders + <N> verifiers, <N> confirmed / <N> refuted / <N> unverified, dropped coverage: <reviewers or dimensions, or none>, bounds <per-dimension>/<verified> · or: skipped — <reason>
+```
+
+A waived skill is recorded on its line with the break-glass reason, never omitted. **A PR body without this block is treated as un-reviewed, whatever the hand-off claims.** This is what makes the gate auditable rather than assertable — the failure mode it exists to stop is a confident hand-off summary describing a review that never happened.
+
+### The orchestrated sweep supplements; it never substitutes
+
+Where a multi-agent orchestration surface is available, `.claude/workflows/review-sweep.js` runs **beside** `pr-review-toolkit:review-pr`, after `/simplify`, and carries any focused or specific review the two skills do not cover, or do not cover enough, for the diff at hand — the project-local reviewers below always ride in it (the workflow reads § Project-local agents at dispatch time, never a copy kept in the script), and beyond them the caller names the finders this diff needs (a dimension the toolkit lacks; a targeted concern such as a schema change, a timing invariant, a boundary contract) — every finding through a refute-by-default **adversarial verification stage** before triage. Triage waits for the skill and the workflow both. The workflow widens coverage and pre-filters false positives. It is **never** an alternative to invoking the two skills, and a workflow that ran does not discharge either of them.
+
+If the sweep is unavailable, its roster read fails, or its run fails, that is not a fallback event — the floor was always the requirement, and the sweep's absence costs only the extra coverage. Record that it was skipped, or what it dropped, on its gate line.
+
+**Proportionality — size the sweep to the diff.** The floor is constant; the sweep's size is not. The project-local reviewers always run and cost nothing when nothing is in scope; the finders beyond them are chosen for this diff — none on a small single-surface change the two skills already cover, several on a broad or cross-cutting one (the vocabulary `/finish` Step 5a uses for research: a single-file change needs none of this; a cross-layer or multi-subsystem diff is where the fan-out earns its cost). **A session-level effort setting does not override this** — running an expensive orchestration because the session is set to a high tier is exactly the mis-sizing this clause exists to prevent. When in doubt, run the floor with the project-local reviewers and add no finder.
+
+**Fan-outs are bounded — at dedup and verify, never in the finder prompt.** The finder prompt keeps asking for every finding the reviewer would defend (that is the docs' own review guidance); the sweep then deduplicates across dimensions and carries a bounded, severity-ranked set into verification — by default **3 per dimension and 8 verified** — logging the planned agent count before the find stage and returning anything a bound drops as unverified, never silently. Unbounded per-finding fan-out is forbidden: it makes cost a function of how noisy the finders were, which inverts the incentive the find stage should have.
+
+**Three invariants, floor and supplement alike.** (1) **Triage judgment stays with the caller.** Dispatched review and verify agents report findings and verdicts; the executor holding this file's rubric classifies them — triage is never delegated downstream. (2) **A failed review agent is dropped coverage, not zero findings.** An agent that fails, times out, or returns nothing must be tracked as an uncovered dimension and retried — and a finding whose verification step failed is surfaced as unverified, not silently dropped — before the review pass is treated as complete. (3) **Every finding is deduplicated before it is verified**, keyed on file, line and normalized title, keeping the strongest severity reported and carrying the dimensions that independently converged — convergence is signal for triage, not a duplicate to pay for twice.
 
 If the toolkit isn't installed or fails to invoke, **stop and surface** — do not silently skip. The "does not skip" rule in `/finish` makes a missing toolkit blocking.
 
@@ -108,10 +138,10 @@ The "I disagree with the bot, ship anyway" escape hatch. Practitioners report it
 
 Two mechanisms:
 
-1. **Issue-body / operator-instruction marker**: include `<!-- skip-review-toolkit -->` (or a similar agreed marker) in the issue body, or pass it in the operator's instructions to `/finish`. `/finish` reads it in its issue-read step — a surface that exists *before* the review pass runs — and skips the review pass's review-toolkit invocation. (The marker can't live in the PR body: the review pass runs before the draft PR is created, so a PR-body marker would never gate the review it's meant to skip.) Document the rationale so the hand-off and the PR body carry it ("review-toolkit was wrong about X; addressing in follow-up Y").
+1. **Issue-body / operator-instruction marker**: include `<!-- skip-review-toolkit -->` (or a similar agreed marker) in the issue body, or pass it in the operator's instructions to `/finish`. `/finish` reads it in its issue-read step — a surface that exists *before* the review pass runs — and waives **exactly one named half** of the floor — the `pr-review-toolkit:review-pr` invocation — for this run; `/simplify` is never waived, and the sweep needs no marker (its absence is recorded, not waived). (The marker can't live in the PR body: the review pass runs before the draft PR is created, so a PR-body marker would never gate the review it's meant to skip.) Document the rationale so the hand-off and the PR body carry it ("review-toolkit was wrong about X; addressing in follow-up Y").
 2. **`/finish` flag** (if the user invoked manually with extra args): `--skip-review` on the slash command. Same effect.
 
-Either path produces the same hand-off summary line: "Review-toolkit explicitly skipped per <reason>." Don't silently skip; the audit trail is in the PR body.
+Either path produces the same record: the skill's line in the PR body's `## Review gate` block reads `waived — <reason>` (§ The floor), and the hand-off repeats it. Don't silently skip; the audit trail is the gate line, never an omitted one.
 
 ## Anti-patterns
 

@@ -679,7 +679,8 @@ p.write_text(t.replace(old, "(6) the PR opens as draft with a `## Review gate` b
 # also catches the paraphrase the sweep's meta once carried); the `## Review gate` block has one
 # home (pr-review.md § The floor) that the executor and its bundled template cite; the executor and
 # the template body stay byte-parallel (the anchored awk is the extraction the template documents).
-absent grep -rn "instead of a single direct dispatch\|direct dispatch[^.]*is the fallback\|apply only after both the primary and the recorded fallback" .claude/
+# The pattern splits its literals so this line never matches itself.
+absent grep -rn "instead of a single direct dispatc[h]\|direct dispatch[^.]*is the fallbac[k]\|apply only after both the primary and the recorded fallbac[k]" .claude/
 { grep -q '^## Review gate' .claude/rules/pr-review.md && grep -q 'Review gate' .claude/commands/finish.md && grep -q 'Review gate' .claude/skills/rough-in/references/finish-command.md; } || { echo "the ## Review gate block is missing from its home, the executor, or the bundled template"; exit 1; }
 diff <(awk '/^--- BEGIN TEMPLATE ---/{flag=1; next} flag' .claude/skills/rough-in/references/finish-command.md) .claude/commands/finish.md >/dev/null || { echo "commands/finish.md and the bundled template body have drifted"; exit 1; }
 
