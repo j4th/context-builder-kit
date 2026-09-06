@@ -198,6 +198,8 @@ Goal: write the scaffold output doc, commit it alongside the problem brief to `d
 
 **The optional knowledge backend** (`notion` if picked at Stage 2 of backend selection) is a *separate* surface for durable reference content that sits *alongside* `docs/cbk/`, not in place of it. See `.claude/rules/knowledge-backend.md` for the operational distinction.
 
+**Instantiate the ADR starters.** If the repo has no `docs/adr/`, copy the three starters from `references/adr-starters/` (`README.md`, `template.md`, `0000-record-architecture-decisions.md`) into `docs/adr/`. Whether they were just copied or arrived with the kit, fill ADR-0000's header before it lands: `Date:` = today's ISO-8601 date, `Deciders:` = the operator or team from discovery. Write the filled file through the same commit path as the other scaffold artifacts (the GitHub MCP commit, or the local fallback) — the ADR-immutability hook guards tool-mediated edits to existing decision records, and provisioning a starter is not an edit to an accepted decision. Then check: `grep -n "YYYY-MM-DD\|<project owner" docs/adr/0000-*.md` must print nothing. Record the copy in the bootstrap checklist's completed items. The bundled starters are byte-identical to the kit's root `docs/adr/`; the conventions' verification block pins the pair.
+
 ```
 docs/
 └── cbk/
@@ -322,6 +324,7 @@ Auto-checkable, fires after gate 6 and before scaffold declares itself complete.
 - `references/bootstrap_checklist_template.md` — template for the session checklist
 - `references/manual_steps.md` — canonical list of always-manual operations
 - `references/issue-templates/` — the four cascade GitHub issue templates that Stage 2.5 commits to `.github/ISSUE_TEMPLATE/`. Each is a standalone markdown file with YAML frontmatter (`cascade-workstream.md`, `cascade-framing.md`, `cascade-rough-in.md`, `cascade-meta.md`). Source of truth for the cascade Issue body shapes — downstream skills read the committed copies from the repo, not the bundled copies here.
+- `references/adr-starters/` — the three `docs/adr/` starters scaffold instantiates (README, template, ADR-0000). Byte-identical to the kit's root `docs/adr/`; the verification block pins the pair.
 - `references/test_cases.md` — realistic test prompts with success criteria for verifying the skill still works after revisions
 
 Kit-wide operational contracts (`.claude/rules/`):

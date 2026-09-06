@@ -571,6 +571,9 @@ grep -q "^## Assumptions" .claude/skills/rough-in/references/templates/rough-in-
 # Deferred pair (known red until #37 lands): adr-new cites `docs/ARCHITECTURE.md § Configurability summary`
 # and `§ Open questions`, which the architecture template does not emit. Do not add the pin before #37.
 
+# Bundled starters stay byte-identical to their originals (the kit's root docs/adr/ is the source of truth).
+[ -d docs/adr ] && diff -rq docs/adr .claude/skills/scaffold/references/adr-starters
+
 # Context budget: every `.claude/rules/*.md` WITHOUT `paths:` frontmatter loads at launch,
 # every session, and every non-fork subagent loads the set again. Print the always-loaded
 # set and its size so the standing cost is a number, not a discovery.
