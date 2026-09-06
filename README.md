@@ -310,7 +310,8 @@ The user then reviews the draft and flips it to ready when satisfied — that tr
 │   ├── guard-pr-state.sh              ← ask-gate: gh pr ready/merge/close/reopen
 │   ├── require-knowledge-backend-ok.sh ← ask-gate: knowledge-backend MCP writes
 │   ├── detect-forked-agent-memory.sh  ← stop: a reviewer-memory tree outside the root blocks the hand-off
-│   └── format-on-edit.sh              ← advisory exemplar (unregistered; stanza in settings.json)
+│   ├── format-on-edit.sh              ← advisory exemplar (unregistered; stanza in settings.json)
+│   └── analyze-on-edit.sh             ← advisory exemplar (unregistered; stanza in settings.json)
 ├── rules/
 │   ├── cbk-conventions.md             ← project conventions — contract half (template; you fill this)
 │   ├── cbk-conventions-reference.md   ← its path-scoped reference half
