@@ -100,6 +100,20 @@ The hand-off is the audit surface. List counts per class plus the concrete actio
 
 A body that carries `## Triage` but no `## Review gate` is treated as un-reviewed whatever the hand-off says — the block is the only auditable record that the two skills ran, and a waived skill is recorded on its line, never omitted.
 
+## Authoring a project-local reviewer
+
+The contract's paragraph (`pr-review.md` § Project-local agents › Authoring) gives the shape; this is the craft that real runs settled on.
+
+- **Two archetypes.** A **decision-text reviewer** checks a diff against clauses in frozen decision records (ADRs, a design-decisions file): it follows `Refines:` chains, quotes the clause, and reports the violated clause with the rubric class. Beneath it sits the **laws reviewer**: a domain contract stated as a table of *laws* (invariants a subsystem must hold — a clock discipline, a purity boundary, a schema's byte-identity), each law one checklist item. The laws reviewer is the semantic complement of a CI grep — where `ci/check-<thing>.sh` greps tokens at fixed paths, the reviewer judges what the tokens mean, and its report says which of the two caught each finding.
+- **The section skeleton** (the exercised laws reviewer's, generalized): `## Inputs` · `## Contract surface (frozen sources, in precedence order)` · `## Checklist (grep-first, then read context)` · `## Do-not-flag guard list` (each entry with its eviction condition) · `## Not covered` · `## Report` · `## Hand-offs` · `## Writing memory` (the kit's shared section, last). A checklist item reads: the law's name and its source clause; the grep that finds candidates; the sanctioned sites the grep will also hit; what a hit means.
+- **Grep-first checklist items.** Every item begins with the grep that finds candidates (`rg -n '<pattern>' <paths>`), then the semantic check on what the grep returned. A checklist item without a grep is a reviewer reading the whole diff on every run.
+- **Standing refusals with their sanctioned alternative.** State what this reviewer never does — never proposes a new ADR (`/adr-new` is the route), never edits the diff (report, never propose a patch), never re-litigates a memory-recorded disposition — each with the route the work takes instead.
+- **Stated coverage gaps.** A `## Not covered` list: the surfaces adjacent to this reviewer's contract that it does not check and who does. A reviewer without one is assumed to cover what it does not.
+- **Report, never propose.** Findings are `file:line` + the violated clause + the rubric class + a one-sentence fix direction. Patches, rewrites and "here is the corrected block" are the executor's job after triage.
+- **Two drift tripwires, in the body.** (1) *Roster:* "my entry in `pr-review.md` § Project-local agents must exist with my dispatch condition; if it does not, report myself as unregistered before reviewing" — the sweep reads that roster at runtime, so an unregistered reviewer never runs in it. (2) *Memory:* the memory-directory tripwire in `## Writing memory`.
+- **Eviction conditions for guard lists.** Every do-not-flag entry carries the condition under which it is removed ("until the conventions formalize X"; "while `<file>` still carries `<token>`"). A guard list without eviction conditions only ever grows, and the reviewer's silence stops meaning anything.
+- **Path-matched triggers come from usage, and are written for the roster reader.** The scope this section lists for a domain reviewer is the set of directories where the governed API is *used* (grep the tree for its calls and types), written as bare path prefixes on the reviewer's own entry line — the sweep's roster agent parses this section into `pathHints`, matches changed paths by prefix, and reports a glob or prose hint as dropped coverage.
+
 ## When to update this file
 
 This rules file is load-bearing the moment `/finish`'s review pass dispatches `pr-review-toolkit`. Update it when:
