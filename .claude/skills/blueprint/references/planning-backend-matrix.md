@@ -38,7 +38,7 @@ Concretely:
 
 ## `linear` planning behavior
 
-*One-run-exercised (verified against a full real cascade run; recorded 2026-08-09 — per the dated-empirical-rails principle, re-verify the MCP tool surface before re-citing).* The structural model below is the exercised one; the individually-unexercised call shapes are flagged inline.
+*Exercised by two real cascade runs (a full cascade, recorded 2026-08-09; a second run that provisioned the initiative and project shell over the planner MCP, 2026-08-12/13 — per the dated-empirical-rails principle, re-verify the MCP tool surface before re-citing).* The structural model below is the exercised one; the one call shape still individually unexercised is flagged inline.
 
 **The exercised hierarchy** — the planner's entities map to the cascade like this, and the exercised run proved the shape:
 
@@ -77,7 +77,7 @@ The foundation doc production and stack decisions are unchanged — those still 
 
 ## Exercise status
 
-The `linear` structural model above is **one-run-exercised** (a full real cascade ran on it; recorded 2026-08-09). Individually-unexercised call shapes are flagged inline where they appear — disclose and fall back per operation, never per axis. When a second real run exercises a flagged call, drop its flag and restamp the date.
+The `linear` structural model above is **two-run-exercised** (a full real cascade ran on it, recorded 2026-08-09; a second real run created the initiative and project shell over the planner MCP, 2026-08-12/13). One call shape stays flagged: writing initiative content into an already-created initiative (step 3) — no run has exercised that update call yet. Disclose and fall back per operation, never per axis. When a later real run exercises it, drop the flag and restamp the date in the same commit.
 
 ## Planning-axis detection failure modes
 
