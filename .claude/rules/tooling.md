@@ -70,8 +70,8 @@
 
 | Plugin / skill | When | Cite |
 |---|---|---|
-| `pr-review-toolkit:review-pr` | Invoked by `/finish`'s review pass (directly or via the `review-sweep` workflow); **non-skippable** | [`pr-review.md`](pr-review.md) |
-| `/simplify` | Invoked by `/finish`'s simplify pass; **non-skippable** | [`simplification.md`](simplification.md) |
+| `pr-review-toolkit:review-pr` | Invoked **as a skill** by `/finish`'s review pass — one half of the floor; the `review-sweep` workflow runs beside it and never substitutes; **non-skippable** | [`pr-review.md`](pr-review.md) |
+| `/simplify` | Invoked **as a skill** by `/finish`'s simplify pass — the other half of the floor; **non-skippable** | [`simplification.md`](simplification.md) |
 | [other installed plugins] | [per their own descriptions] | |
 
 **Decision rule**: don't invoke `pr-review-toolkit` or `/simplify` outside `/finish` unless the operator explicitly asks — they're calibrated for that flow. Domain plugins are reached per their own descriptions; they are not cascade-mandatory.

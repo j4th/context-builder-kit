@@ -35,6 +35,7 @@ These tests are not exhaustive — they cover the canonical happy path and the i
 - The board automation moves each R-issue to Status = Ready (verified after a brief delay)
 - No HITL gate was skipped, no step was conflated, no MCP call failed
 - The total turn count is reasonable (4-8 turns for standard mode, 1-2 turns for light mode)
+- The bundled `/finish` that Step 5.5 provisions carries the `## Review gate` bullet in its Step 10 body spec and the "invoke as a skill" wording in Steps 8–9; the repo copy is byte-parallel to the template body.
 
 ## Test 2 — Subsequent rough-in (regex-pack M2 after M1 is done)
 

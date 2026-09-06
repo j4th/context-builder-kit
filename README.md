@@ -17,7 +17,7 @@ The kit is the operational surface of an AI-assisted development cascade: a sequ
        ↓
    rough-in       →   ready-to-implement sub-sub-issues   (each with plan-mode prompt)
        ↓
-   /finish <N>    →   draft PR                            (code, tests, simplify, review-toolkit triage)
+   /finish <N>    →   draft PR                            (code, tests, the review floor + bounded sweep, triage)
 ```
 
 The cascade is **a funnel, not a waterfall**: framing and rough-in run **one workstream / one milestone at a time, just-in-time**. Frame the next thing, build it, then frame the thing after — that's how each phase gets to learn from the previous.
