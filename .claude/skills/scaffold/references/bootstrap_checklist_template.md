@@ -74,7 +74,7 @@ Only include rows that are actually applicable. State 2 (no projects toolset) om
 
 ### 4. Rule-file disposition
 
-The kit's `.claude/rules/` ships three template rules that carry bracketed placeholders (`cbk-conventions.md`, `orchestration.md`, `tooling.md`) and two path-scoped rules whose `paths:` globs are placeholders (`logging.md`, `testing.md`). Nothing else in the cascade ever asks about them, so this section does: print the always-loaded set with its size first (the loop in `cbk-conventions.md` § Verification), then require an explicit disposition per file. A row with no disposition is a defect, not a default — a real run reached dozens of merged PRs with `[Record the project's posture here]` still in an always-loaded rule.
+The kit's `.claude/rules/` ships three template rules that carry bracketed placeholders (`cbk-conventions.md`, `orchestration.md`, `tooling.md`) and two path-scoped rules whose `paths:` globs are placeholders (`logging.md`, `testing.md`). Nothing else in the cascade ever asks about them, so this section does: print the always-loaded set with its size first (the loop in `cbk-conventions-reference.md` § Verification), then require an explicit disposition per file. A row with no disposition is a defect, not a default — a real run reached dozens of merged PRs with `[Record the project's posture here]` still in an always-loaded rule.
 
 ```markdown
 ## 📐 Rule-file disposition

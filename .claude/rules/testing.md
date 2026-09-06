@@ -146,6 +146,8 @@ The mapping is:
 - The rough-in `## Test plan` section names them; the implementer writes them as failing tests on day one
 - A reviewer reading the test runner's trace output sees the contract in the same words the issue body uses
 
+The test-side trace tag (the R-issue's own criterion numbering that a test docstring cites) is recorded in `cbk-conventions-reference.md` § Trace ID convention; it is restated here because a test-writing session loads this rule and may never open a cascade file.
+
 ## Async tests are the default
 
 Tests should run in parallel by default unless they mutate shared global state (env vars, named processes, the database without a per-test sandbox, file-system fixtures that aren't isolated). Sequential-only tests are a tax on the suite — pay it deliberately, not by default. Most modern test runners offer per-test isolation primitives (sandboxed DB connections, per-test temp dirs, mock context isolation); use them.

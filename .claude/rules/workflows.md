@@ -177,6 +177,7 @@ Workflow-level anti-patterns are inline here; domain-specific anti-patterns (tes
 | [`logging.md`](logging.md) | Adding structured-log calls or telemetry | Structured-only; correlation-ID propagation; telemetry-vs-Logger boundary |
 | [`tooling.md`](tooling.md) | Picking a tool | Built-ins first-line; MCPs second-line for capability gaps; per-tool decision rules |
 | [`orchestration.md`](orchestration.md) | Dispatching any agent, subagent, or workflow stage | Model×effort tiering under the ceiling rule; dispatch-mechanism decision; fan-out discipline |
+| `*-reference.md` | Only when a matching file is read | The path-scoped halves of the conventions, orchestration and review rules; every section has a pointer heading in its contract |
 
 ## See also
 
