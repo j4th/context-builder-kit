@@ -1,4 +1,14 @@
+---
+paths:
+  - "**/*_test.<ext>"
+  - "**/*.test.<ext>"
+  - "**/test/**"
+  - "**/tests/**"
+---
+
 # Testing Rules
+
+> **Path-scoped — stamp the globs at install.** This rule loads only when a test file or a test directory is read (`https://code.claude.com/docs/en/memory`). Replace `<ext>` with the project's test-file extension(s) and drop the directory patterns the project does not use. A placeholder glob matches nothing; the conventions' verification block flags it. Anything a test-writing session needs *before* it opens a test file — the project's test-side trace-tag form, for one — is restated here rather than left in a rule this session never loads.
 
 Operational rules for tests. The principle (logic modules get real tests; boundary impls get conformance + mocks; tests are part of done) lives in your `docs/STANDARDS.md`; this file is the implementation contract — when, in what order, and to what shape.
 
