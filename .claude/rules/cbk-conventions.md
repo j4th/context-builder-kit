@@ -21,6 +21,7 @@ A single glanceable manifest of where every surface for this project actually li
 - **Upstream / pre-cascade docs:** `<path to any frozen reference material, or "none">`
 - **Problem brief / scaffold output:** `docs/cbk/problem_brief.md` · `docs/cbk/scaffold.md`
 - **Tooling conventions:** `<record any project-specific tool / MCP-selection conventions here — e.g. which code-intelligence or live-docs MCP to prefer over the built-ins, or the project's model/effort orchestration conventions for dispatched agents — or "defaults">`
+- **Reviewer agent-memory (`<project | local>`):** `<".claude/agent-memory/ — committed; the kit's .gitignore line deleted" | ".claude/agent-memory-local/ — never committed">` — settled at scaffold's rule-file disposition pass (`pr-review.md` § Reviewer precedent memory)
 
 ## Rule loading and the instruction budget
 

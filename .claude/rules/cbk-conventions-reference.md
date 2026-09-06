@@ -489,6 +489,8 @@ printf '{"tool_name":"Agent","tool_input":{},"cwd":"%s"}' "$PWD" | .claude/hooks
 absent sh -c "find . \( -path './.claude/agent-memory' -o -path './.claude/worktrees' -o -name .git -o -name node_modules -o -name target -o -name build -o -name _build -o -name dist -o -name .venv \) -prune -o -type d -name agent-memory -print 2>/dev/null | grep ."
 # Every shipped reviewer carries the same `## Writing memory` section (its one text); the copies are diffed.
 for a in logging-discipline-reviewer cascade-rule-reviewer; do diff <(awk '/^## Writing memory/{p=1} p' .claude/agents/adr-conformance-reviewer.md) <(awk '/^## Writing memory/{p=1} p' .claude/agents/$a.md) || { echo "## Writing memory drifted in $a"; exit 1; }; done
+# The commit-versus-local memory choice has a Surface inventory row for the bootstrap prompt to fill.
+{ grep -q 'Reviewer agent-memory' .claude/rules/cbk-conventions.md && grep -q 'Reviewer agent-memory' .claude/skills/scaffold/references/bootstrap_checklist_template.md; } || { echo "the Reviewer agent-memory row or its bootstrap prompt is missing"; exit 1; }
 
 
 
