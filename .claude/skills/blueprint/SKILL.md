@@ -1,7 +1,7 @@
 ---
 name: blueprint
 disable-model-invocation: true
-description: Make stack and methodology decisions, produce the foundation doc set, and define the initiative for an AI-assisted development project. Use this skill whenever the user has a problem brief and scaffold output and is ready to make strategic technical decisions. Triggers include "let's blueprint this", "time for stack decisions", "set up CLAUDE.md and standards", "what stack should I use", "I need a CLAUDE.md", "how should I architect this", "I have my repo set up, what's next", "define the initiative", or any reference to the cascade at the blueprint level. Also use when a user skipped earlier phases — the skill will note missing inputs and offer to run them. **Invoke deliberately — `disable-model-invocation` means this skill never auto-triggers; the moment for it is "I have a workspace and need to decide how to actually build this", even when the word "blueprint" never comes up.** Phase 3 of the cascade. Produces six prose docs plus tooling configs and a handoff issue, and either creates a Linear initiative or commits blueprint.md to the repo.
+description: Make stack and methodology decisions, produce the foundation doc set, and define the initiative for an AI-assisted development project. Use this skill whenever the user has a problem brief and scaffold output and is ready to make strategic technical decisions. Triggers include "let's blueprint this", "time for stack decisions", "set up CLAUDE.md and standards", "what stack should I use", "I need a CLAUDE.md", "how should I architect this", "I have my repo set up, what's next", "define the initiative", or any reference to the cascade at the blueprint level. Also use when a user skipped earlier phases — the skill will note missing inputs and offer to run them. **Invoke deliberately — `disable-model-invocation` means this skill never auto-triggers; the moment for it is "I have a workspace and need to decide how to actually build this", even when the word "blueprint" never comes up.** Phase 3 of the cascade. Produces six prose docs plus tooling configs and a handoff issue, and commits blueprint.md to the repo alongside the planning-backend entities the project's axis calls for.
 ---
 
 # Blueprint
@@ -336,7 +336,7 @@ Auto-checkable, fires after the final gate and before blueprint declares itself 
 - `references/hitl-question-bank.md` — clarifying questions for inheritance, stack, methodology, and project-grouping rounds
 - `references/planning-backend-matrix.md` — planning-axis behavior differences (`github-issues` / `linear` / `in-repo-markdown`)
 - `references/failure-modes.md` — blueprint-specific failure modes with examples
-- `references/test_cases.md` — three realistic test prompts (canonical run / unusual stack / conflicting constraints) with success criteria for verifying the skill still works after revisions
+- `references/test_cases.md` — realistic test prompts (canonical run, unusual stack, conflicting constraints, and later additions) with success criteria for verifying the skill still works after revisions
 
 Kit-wide operational contracts (`.claude/rules/`):
 - `knowledge-backend.md` — knowledge-axis behavior (read patterns, write tiering, HITL discipline). Loaded when scaffold.md records knowledge backend = `notion`.

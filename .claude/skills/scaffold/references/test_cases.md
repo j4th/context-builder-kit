@@ -1,6 +1,6 @@
 # Test cases for the scaffold skill
 
-Three realistic test prompts that exercise scaffold's profile selection, discovery step, and provisioning flow. These are the contract for "scaffold works": when run on these prompts, the output should produce a faithful `docs/cbk/scaffold.md` and the conversation should hit the expected gates without skipping the safety floors. Use them when revising the skill to verify nothing regressed.
+The realistic test prompts below exercise scaffold's profile selection, discovery step, and provisioning flow. These are the contract for "scaffold works": when run on these prompts, the output should produce a faithful `docs/cbk/scaffold.md` and the conversation should hit the expected gates without skipping the safety floors. Use them when revising the skill to verify nothing regressed.
 
 For Claude.ai's qualitative test loop (no subagents, no benchmarking): a real human runs the skill on each prompt as if they were the user, then judges the output against the success criteria below.
 

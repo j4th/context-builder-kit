@@ -1,6 +1,6 @@
 # Rough-in test cases
 
-This file contains eight realistic test prompts for verifying that rough-in still works after revisions. Each test names the setup conditions, the user prompt, the expected behaviors at each step, and the success criteria.
+This file contains realistic test prompts for verifying that rough-in still works after revisions. Each test names the setup conditions, the user prompt, the expected behaviors at each step, and the success criteria.
 
 These tests are not exhaustive — they cover the canonical happy path and the important edge cases. Add new tests when revisions introduce new behavior or fix bugs that should be regression-tested.
 

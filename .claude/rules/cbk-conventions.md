@@ -581,6 +581,13 @@ for h in Context Assumptions Implementation "Acceptance criteria" "Test plan" "D
 # No reference doc restates a shorter list than the executor's (the pre-#45 drift was "six sections").
 ! grep -rn "standard six sections\|the six sections" .claude/skills/ .claude/commands/
 
+# Skill and command descriptions name cascade objects, never one backend's entity type
+# (the phase skills below run on every planning axis).
+! grep -n "^description:.*\bLinear\b" .claude/skills/framing/SKILL.md .claude/skills/blueprint/SKILL.md
+# Counts embedded in prose rot: test-case preambles and their index lines state no count.
+! grep -rnE "^(Three|Four|Five|Six|Seven|Eight) realistic" .claude/skills/*/references/test_cases.md
+! grep -rnE "test_cases\.md\` — (three|four|five|six|seven|eight) realistic" .claude/skills/*/SKILL.md
+
 # Context budget: every `.claude/rules/*.md` WITHOUT `paths:` frontmatter loads at launch,
 # every session, and every non-fork subagent loads the set again. Print the always-loaded
 # set and its size so the standing cost is a number, not a discovery.

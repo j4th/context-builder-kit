@@ -1,6 +1,6 @@
 # Test cases for the blueprint skill
 
-Three realistic test prompts that exercise blueprint's inheritance discipline, stack decisions step, methodology selection, foundation doc production, and the handoff issue creation. These are the contract for "blueprint works": when run on these prompts, the output should produce a faithful set of foundation docs plus `docs/cbk/blueprint.md` plus a handoff issue, and the conversation should hit the expected gates without skipping inheritance reads or producing generic / hallucinated content.
+The realistic test prompts below exercise blueprint's inheritance discipline, stack decisions step, methodology selection, foundation doc production, and the handoff issue creation. These are the contract for "blueprint works": when run on these prompts, the output should produce a faithful set of foundation docs plus `docs/cbk/blueprint.md` plus a handoff issue, and the conversation should hit the expected gates without skipping inheritance reads or producing generic / hallucinated content.
 
 For Claude.ai's qualitative test loop (no subagents, no benchmarking): a real human runs the skill on each prompt as if they were the user, then judges the output against the success criteria below. Blueprint is the most complex skill in the cascade, so the test cases also exercise its specific failure modes — premature stack lock-in, methodology dogmatism, ephemeral steps in blueprint.md, and missing handoff issue.
 

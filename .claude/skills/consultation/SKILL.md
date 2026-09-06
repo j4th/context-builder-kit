@@ -175,7 +175,7 @@ The scaffold phase consumes the approved brief and extracts: project name (for n
 - `references/methodology_register_excerpt.md` — Shape Up, spikes, YAGNI entries plus pointers to the full register
 - `references/brownfield_addendum.md` — current-state-assessment step and brownfield-specific brief additions
 - `references/notion_ingestion.md` — operational reference for the Notion-as-input flow at § Incoming context: four access modes, MCP fetch dialogue, per-search HITL announcements, what to record in `## Pre-cascade sources`
-- `references/test_cases.md` — three realistic test prompts (greenfield / brownfield / partial-context) with success criteria for verifying the skill still works after revisions
+- `references/test_cases.md` — realistic test prompts (greenfield, brownfield, partial-context) with success criteria for verifying the skill still works after revisions
 
 Kit-wide operational contracts (`.claude/rules/`):
 - `knowledge-backend.md` — read patterns, write tiering, HITL discipline. Loaded when consultation actually consults Notion (Modes A/B/C) or considers the optional companion-page write at the closing HITL gate.
