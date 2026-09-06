@@ -574,6 +574,13 @@ grep -q "^## Assumptions" .claude/skills/rough-in/references/templates/rough-in-
 # Bundled starters stay byte-identical to their originals (the kit's root docs/adr/ is the source of truth).
 [ -d docs/adr ] && diff -rq docs/adr .claude/skills/scaffold/references/adr-starters
 
+# The eight-section contract: the scaffold-shipped issue template, the spec template and the
+# executor's parser agree on the heading list (the executor is the authority; the others are copies).
+diff <(grep '^## ' .claude/skills/scaffold/references/issue-templates/cascade-rough-in.md) <(grep '^## ' .claude/skills/rough-in/references/templates/rough-in-spec-template.md)
+for h in Context Assumptions Implementation "Acceptance criteria" "Test plan" "Done signal" Dependencies "PR contract"; do grep -q "\`## $h\`" .claude/commands/finish.md || { echo "finish.md does not name ## $h"; exit 1; }; done
+# No reference doc restates a shorter list than the executor's (the pre-#45 drift was "six sections").
+! grep -rn "standard six sections\|the six sections" .claude/skills/ .claude/commands/
+
 # Context budget: every `.claude/rules/*.md` WITHOUT `paths:` frontmatter loads at launch,
 # every session, and every non-fork subagent loads the set again. Print the always-loaded
 # set and its size so the standing cost is a number, not a discovery.
