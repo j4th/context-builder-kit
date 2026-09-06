@@ -518,48 +518,79 @@ The kit's brownfield detection (run by scaffold's Stage 2 when knowledge backend
 
 ## Verification
 
-After major edits to cascade skills or to a project's filled-in copy of this file, run these greps to confirm alignment. Adapt the patterns to the project's actual identifiers (issue-key prefix, framing-number range, project-specific names).
+Two audiences share one block. **Kit-repo checks** hold on the kit's own tree and on any target project's copy of `.claude/`; **project checks** hold only in a filled-in target project and skip themselves when `docs/cbk/scaffold.md` is absent. A red check is a defect in the check until proven otherwise: a suite with a permanently red line is a suite nobody runs, which is worse than no suite. Every check says what it catches. Run the block after major edits to cascade skills, to the rules, or to a project's filled-in copy of this file.
 
 ```bash
-# Path drift: skills should not reference nested layout if the project picked flat (or vice versa)
-! grep -rn "framings/\|framing\.md\b" .claude/skills/
+# ═══ KIT-REPO CHECKS — must be green on the kit tree and in every target project ═══
 
-# Stub language: no stubs should remain in the project's instantiation
-! grep -rni "v1 stub\|stub status\|fall back to manual" .claude/skills/
-
-# Section-name renames: ensure deprecated names don't reappear in skill content
+# Section-name renames: the "Movement" vocabulary was retired; it must not reappear in skill content.
 ! grep -rn "Movement [0-9]\|## Movement" .claude/skills/
-! grep -rn "Deferred meta-issues" .claude/skills/
 
-# Trace ID convention present in templates
+# Trace ID convention present in the producing templates (positive check).
 grep -rn "\[F[0-9]\.AC[0-9]\]" .claude/skills/*/references/templates/
 
-# Portability: project-specific identifiers must NOT appear in skill content.
-# Replace <TEAM> with the project's actual issue-key prefix (e.g. ABC, FOO, BAR).
-# Replace <project-name> with the project's name.
-! grep -rn "<TEAM>-[0-9]\|<project-name>" .claude/skills/
+# Knowledge-backend portability: a real Notion page id must not appear in skill content
+# (signup links, `my-integrations` and `<workspace>` placeholders are fine — this matches ids only).
+! grep -rnE "notion\.(so|site)/[0-9a-f]{16,}" .claude/skills/
 
-# Knowledge-backend portability: project-specific Notion identifiers must
-# NOT appear in skill content (only in this file or in `.cascade/backends.toml`).
-! grep -rn "notion\.so/\|notion\.site/" .claude/skills/
-
-# Old "opinionated profile" terminology must NOT appear in skill content
-# (the constant + two axes refactor removed this concept).
+# Old "opinionated profile" vocabulary must not appear in skill content
+# (the constant + two axes refactor removed the concept).
 ! grep -rn -i "opinionated profile\|opinionated_profile" .claude/skills/
 
-# This file is referenced from CLAUDE.md (or wherever the project's project-instructions live)
-grep "@.claude/rules/cbk-conventions.md" CLAUDE.md
+# CLAUDE.md points at this file as a backticked mention — deliberately NOT an `@` import,
+# which would expand this whole file into every session at launch (memory docs).
+grep -q "cbk-conventions" CLAUDE.md
 
-# Producer templates emit the two-axis vocabulary (positive checks — must match)
+# Producer templates emit the two-axis vocabulary (positive checks).
 grep -n "Planning backend" .claude/skills/scaffold/references/scaffold_output_template.md
 grep -n "Knowledge backend" .claude/skills/scaffold/references/scaffold_output_template.md
 grep -rn "F<#> — M<#>" .claude/skills/framing/references/templates/
 
-# Pre-refactor vocabulary must NOT appear anywhere in kit content — widened
-# beyond .claude/skills/ (the narrow greps missed producer + config surfaces)
+# Pre-refactor vocabulary must not appear anywhere in kit content (widened beyond skills).
+# The regex splits its own literal so this line never matches itself or the reference half.
 ! grep -rnE "github-only \| opinionate[d]|Profile.*github-onl[y]" .claude/
 ! grep -rn "initiative\.md" .claude/ README.md
 ! grep -rn -i "opinionated profile" .claude/commands/ .claude/rules/pr-review.md .claude/rules/knowledge-backend.md README.md .mcp.json.example
+
+# Citations a skill makes to a section another template emits are pinned as pairs: the
+# consumer keeps citing a heading only while the producer keeps emitting it.
+grep -q "^## Rough-in events" .claude/skills/framing/references/templates/frame-output-template.md
+grep -q "^## Pre-flight checks" .claude/skills/framing/references/templates/frame-output-template.md
+grep -q "^## Assumptions" .claude/skills/rough-in/references/templates/rough-in-spec-template.md
+# Deferred pair (known red until #37 lands): adr-new cites `docs/ARCHITECTURE.md § Configurability summary`
+# and `§ Open questions`, which the architecture template does not emit. Do not add the pin before #37.
+
+# Context budget: every `.claude/rules/*.md` WITHOUT `paths:` frontmatter loads at launch,
+# every session, and every non-fork subagent loads the set again. Print the always-loaded
+# set and its size so the standing cost is a number, not a discovery.
+total=0; for f in .claude/rules/*.md; do head -1 "$f" | grep -q '^---$' || { s=$(wc -c < "$f"); total=$((total+s)); echo "always-loaded: $f ($s bytes)"; }; done; echo "always-loaded total: $total bytes"
+
+# ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
+if [ -f docs/cbk/scaffold.md ]; then
+
+  # Layout: the project's own artifacts follow the layout it chose. Flat is the default;
+  # a project that chose the nested layout inverts this line.
+  ! test -d docs/cbk/framings
+
+  # Stub language: no stubs remain in the project's own artifacts ("fall back to manual"
+  # is the kit's partial-failure doctrine and is allowed in skill content).
+  ! grep -rni "v1 stub\|stub status" docs/
+
+  # Portability: the project's REAL identifiers must not have leaked into portable skill content.
+  # TEMPLATE LINE — substitute the two bracketed values with the project's issue-key prefix and
+  # repo name before running; as shipped it is documentation, not a runnable check. Project-scoped
+  # plugin directories under .claude/skills/ may legitimately name project paths — exclude them.
+  # ! grep -rn "<TEAM-PREFIX>-[0-9]\|<repo-name>" .claude/skills/ --exclude-dir=<plugin-dir>
+
+  # Axis record mirror: scaffold.md's Cascade metadata table is canonical and
+  # .cascade/backends.toml is its machine-readable mirror; every value in the toml must appear in the table.
+  if [ -f .cascade/backends.toml ]; then grep -oE '"[a-z-]+"' .cascade/backends.toml | tr -d '"' | while read -r v; do grep -q "$v" docs/cbk/scaffold.md || { echo "axis mismatch: $v is in backends.toml but not scaffold.md"; exit 1; }; done; fi
+
+  # Path-scoped rules must carry stamped globs: a bracketed placeholder matches nothing,
+  # so the rule would silently never load.
+  for f in $(grep -l '^paths:' .claude/rules/*.md); do awk '/^---$/{c++; next} c==1' "$f" | grep -n '<' && { echo "unfilled paths placeholder in $f"; exit 1; }; done
+
+fi
 ```
 
 ## References
