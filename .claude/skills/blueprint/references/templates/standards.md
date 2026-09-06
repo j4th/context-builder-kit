@@ -26,7 +26,7 @@ STANDARDS.md is the foundation doc most heavily shaped by scaffold's discovery o
 ```markdown
 # [Project Name] — Standards
 
-> Load via `@docs/STANDARDS.md` for PRs and quality checks.
+> Read `docs/STANDARDS.md` for PRs and quality checks.
 > Quality bar: [verbatim from scaffold.md quality bar field — keep this at the top so every reader knows the posture]
 
 ## Development Setup

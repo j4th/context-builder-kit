@@ -8,7 +8,7 @@ Blueprint produces six prose foundation documents plus tooling configs. This fil
 |---|---|---|---|---|
 | 1 | CLAUDE.md | repo root | Claude Code in every session | Always-loaded; must be lean (<300 lines, <150 better) |
 | 2 | docs/ARCHITECTURE.md | `docs/` | Humans + Claude on demand | On-demand reference; can be comprehensive |
-| 3 | docs/STANDARDS.md | `docs/` | Humans + Claude during PRs/quality checks | On-demand reference; load via `@docs/STANDARDS.md` |
+| 3 | docs/STANDARDS.md | `docs/` | Humans + Claude during PRs/quality checks | On-demand reference; read when doing PRs or quality checks |
 | 4 | CONTRIBUTING.md | repo root | New human contributors | Read once per contributor |
 | 5 | README.md (update) | repo root | Anyone landing on the repo | Public-facing first impression |
 | 6 | docs/cbk/blueprint.md | `docs/cbk/` | Cascade phases (framing → finish), future Claude sessions | Cascade artifact, mirrors scaffold.md shape |
@@ -51,7 +51,7 @@ If the user has a strong preference (e.g., "I want STANDARDS.md at root"), honor
 
 ## Cross-reference convention
 
-Cascade docs reference other docs frequently (CLAUDE.md @-references ARCHITECTURE.md, blueprint.md points to ARCHITECTURE.md DECISION-NNN entries, README's Documentation table lists every foundation doc). Pick one convention and stick to it across all produced docs.
+Cascade docs reference other docs frequently (CLAUDE.md mentions ARCHITECTURE.md as a backticked path, blueprint.md points to ARCHITECTURE.md DECISION-NNN entries, README's Documentation table lists every foundation doc). Pick one convention and stick to it across all produced docs.
 
 **Default convention: inline code paths.**
 
@@ -63,7 +63,7 @@ The conventions live in `CONTRIBUTING.md` at the repo root.
 
 **Why inline code over markdown links**: paths in inline code are *location-stable* — they read correctly even if the link breaks, even outside a markdown renderer, even when copy-pasted into a terminal or another document. Markdown links are navigable in rendered markdown but break silently when files move and look like junk in plain text. Cascade docs get read in many contexts (rendered on GitHub, raw in editors, in Claude Code's terminal, copy-pasted into chat) and inline code is the most robust across all of them.
 
-**Exception**: README.md's Documentation table uses markdown links because the README's audience is GitHub's rendered view and the links are the whole point of the table. CLAUDE.md's @-references use the `@docs/file.md` syntax because Claude Code parses that specifically for context loading. Both exceptions are about target audience, not preference — only override the inline-code default when there's a real audience reason.
+**Exception**: README.md's Documentation table uses markdown links because the README's audience is GitHub's rendered view and the links are the whole point of the table. That is the only exception. CLAUDE.md does **not** get one: its references to the other docs are backticked paths, never `@docs/file.md` — Claude Code treats `@path` as an import and expands the file into context at launch (`https://code.claude.com/docs/en/memory`), so an `@`-reference in an always-loaded file loads its target every session. Exceptions are about target audience, not preference — only override the inline-code default when there's a real audience reason.
 
 ## Templates as checklists when conversation has shaped the doc
 
