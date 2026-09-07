@@ -55,7 +55,8 @@ const rosterOK = { crossCutting: ["adr-conformance-reviewer"], domain: [{ name: 
 const real = () => ({ real: true, reasoning: "r" });
 let n = 0;
 
-// 1 — convergence keeps the strongest severity and is charged to the least-loaded reporter.
+// 1 — convergence keeps the strongest severity; on tied loads the shared finding is charged to the
+//     idle co-reporter, so the original reporter's unique finding survives its own bound.
 {
   const { out } = await scenario("convergence", {
     args: { files: ["src/schema/a.ts"], maxPerDimension: 1, maxVerify: 8 },
@@ -68,10 +69,9 @@ let n = 0;
   });
   const shared = [...out.confirmed, ...out.unverified].find((f) => f.line === 9);
   assert.equal(shared.severity, "high", "dedup must keep the strongest severity");
-  assert.ok(out.confirmed.some((f) => f.line === 9), "the converged finding is charged to the idle reporter and verified, not dropped by the first reporter's bound");
-  const overflowed = out.unverified.find((f) => f.title === "unique cr");
-  assert.ok(overflowed && /per-dimension bound/.test(overflowed.reason), "the solo finding beyond code-review's bound overflows with its reason");
-  assert.equal(out.confirmed.length + out.unverified.length, 2);
+  assert.ok(out.confirmed.some((f) => f.line === 9), "the converged finding is verified");
+  assert.ok(out.confirmed.some((f) => f.title === "unique cr"), "the shared finding was charged to the idle co-reporter, so code-review's own unique finding kept its slot");
+  assert.equal(out.unverified.length, 0, "nothing overflowed: two reporters, two slots, two findings");
   n++;
 }
 

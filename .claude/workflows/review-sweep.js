@@ -212,15 +212,16 @@ const deduped = [...seen.values()].sort(
 if (raw.length !== deduped.length) log(`review-sweep: deduplicated ${raw.length} findings to ${deduped.length} (convergence carried as alsoFoundBy; the strongest severity kept)`);
 
 // Per-dimension bound first — a converged finding is charged to the LEAST-LOADED
-// dimension that reported it, so convergence never starves the reviewer that
-// raised it — then the overall verification bound. Anything a bound drops is
+// dimension that reported it, and on a tie to a CO-reporter rather than the
+// original (a shared finding should not consume the slot the original needs for
+// what only it found) — then the overall verification bound. Anything a bound drops is
 // returned as unverified with its reason — no silent caps (orchestration.md).
 const perDim = new Map();
 const kept = [];
 const overflow = [];
 for (const f of deduped) {
   const reporters = [f.dimension, ...f.alsoFoundBy];
-  const owner = reporters.reduce((a, b) => ((perDim.get(a) ?? 0) <= (perDim.get(b) ?? 0) ? a : b));
+  const owner = reporters.reduce((a, b) => ((perDim.get(b) ?? 0) <= (perDim.get(a) ?? 0) ? b : a));
   const n = perDim.get(owner) ?? 0;
   if (n < MAX_PER_DIMENSION) { kept.push(f); perDim.set(owner, n + 1); }
   else overflow.push({ ...f, reason: `over the ${MAX_PER_DIMENSION}-per-dimension bound (${reporters.join(" + ")})` });
