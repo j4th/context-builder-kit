@@ -495,7 +495,8 @@ absent grep -n "Configurability summar[y]\|§ Open question[s]" .claude/skills/a
 grep -q '^## Multi-surface facts' .claude/rules/cbk-conventions.md || { echo "cbk-conventions.md lacks § Multi-surface facts"; exit 1; }
 for f in .claude/rules/cbk-conventions.md .claude/skills/adr-new/SKILL.md .claude/agents/adr-conformance-reviewer.md .claude/skills/scaffold/references/adr-starters/template.md; do grep -q 'Extends:' "$f" || { echo "$f does not name the Extends: grain"; exit 1; }; done
 for f in .claude/hooks/protect-immutable-adrs.sh .claude/skills/scaffold/references/adr-starters/README.md; do grep -q 'corrections.md' "$f" || { echo "$f does not name docs/adr/corrections.md"; exit 1; }; done
-{ [ -f .claude/skills/consultation/references/frozen_corpus_ingestion.md ] && grep -q 'frozen_corpus_ingestion.md' .claude/skills/consultation/SKILL.md; } || { echo "frozen_corpus_ingestion.md is missing or unrouted from consultation/SKILL.md"; exit 1; }
+[ -f .claude/skills/consultation/references/frozen_corpus_ingestion.md ] || { echo "consultation lacks references/frozen_corpus_ingestion.md"; exit 1; }
+grep -q 'frozen_corpus_ingestion.md' .claude/skills/consultation/SKILL.md || { echo "consultation/SKILL.md does not route to frozen_corpus_ingestion.md"; exit 1; }
 
 # Bundled starters stay byte-identical to their originals (the kit's root docs/adr/ is the source of
 # truth) — kit tree only: a target project fills ADR-0000's header and adds ADRs, so its docs/adr
@@ -593,11 +594,20 @@ for a in logging-discipline-reviewer cascade-rule-reviewer; do diff <(printf '%s
 
 # Conventions (P4): the Licensing section, .gitignore anchoring, the issue-less branch form on the contract and in the
 # guard's remediation, and the lockfile counter-line rule with its citation.
-{ grep -q '^## Licensing' .claude/rules/cbk-conventions-reference.md && grep -q '^## .gitignore anchoring' .claude/rules/cbk-conventions-reference.md && grep -q 'short-slug>` with' .claude/rules/cbk-conventions.md && grep -q 'short-slug' .claude/hooks/protect-main-branch.sh && grep -q 'linguist-generated=false' .claude/rules/cbk-conventions-reference.md; } || { echo "a P4 conventions section (Licensing, .gitignore anchoring, the issue-less branch, the lockfile counter-line) is missing"; exit 1; }
+grep -q '^## Licensing' .claude/rules/cbk-conventions-reference.md || { echo "the reference half lacks § Licensing"; exit 1; }
+grep -q '^## Licensing' .claude/rules/cbk-conventions.md || { echo "the contract lacks the § Licensing pointer heading"; exit 1; }
+grep -q '^## .gitignore anchoring' .claude/rules/cbk-conventions-reference.md || { echo "the reference half lacks § .gitignore anchoring"; exit 1; }
+grep -q 'short-slug>` with' .claude/rules/cbk-conventions.md || { echo "§ Branch naming lacks the issue-less form and its PR-body statement"; exit 1; }
+grep -q 'short-slug' .claude/hooks/protect-main-branch.sh || { echo "protect-main-branch.sh's remediation does not name both branch forms"; exit 1; }
+grep -q 'linguist-generated=false' .claude/rules/cbk-conventions-reference.md || { echo "§ Dependency settle-window lacks the lockfile counter-line"; exit 1; }
 
 # Phases (P4): the cascade-events index template exists and scaffold cites it; nothing in rough-in misnames the index;
 # blueprint's template carries its append-only Amendments section; the tooling rule names the built-in LSP tool.
-{ [ -f .claude/skills/scaffold/references/templates/cascade-events-index-template.md ] && grep -q 'cascade-events-index-template.md' .claude/skills/scaffold/SKILL.md && grep -q 'Amendments' .claude/skills/blueprint/references/blueprint-output-template.md && grep -q 'LSP' .claude/rules/tooling.md; } || { echo "a P4 phase surface (the index template, its scaffold cite, blueprint's Amendments, LSP in tooling) is missing"; exit 1; }
+[ -f .claude/skills/scaffold/references/templates/cascade-events-index-template.md ] || { echo "scaffold lacks references/templates/cascade-events-index-template.md"; exit 1; }
+grep -q 'cascade-events-index-template.md' .claude/skills/scaffold/SKILL.md || { echo "scaffold/SKILL.md does not cite the cascade-events index template"; exit 1; }
+# The blueprint's append-only sections are named on both surfaces: the template emits them, the mutation row carves them out.
+for sec in Amendments 'Retired justifications'; do grep -q "^## $sec" .claude/skills/blueprint/references/blueprint-output-template.md || { echo "blueprint-output-template.md does not emit ## $sec"; exit 1; }; grep -q "\`## $sec\`" .claude/rules/cbk-conventions.md || { echo "the blueprint mutation row does not carve out ## $sec"; exit 1; }; done
+grep -q '`LSP` tool' .claude/rules/tooling.md || { echo "tooling.md § Code intelligence does not name the built-in LSP tool"; exit 1; }
 absent grep -rn "framing\.md inde[x]\|framing\.md even[t]" .claude/skills/rough-in/
 
 # Context budget: every `.claude/rules/*.md` WITHOUT `paths:` frontmatter loads at launch,
