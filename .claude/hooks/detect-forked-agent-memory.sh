@@ -38,7 +38,15 @@
 
 set -uo pipefail
 
-PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$PWD}"
+# The scan runs from the checkout's git top-level. CLAUDE_PROJECT_DIR is exported to the hook
+# process (https://code.claude.com/docs/en/hooks — the same page documents the placeholder);
+# when it is absent the process's own $PWD may be a subdirectory — the drift case — and a scan
+# rooted there would treat <subdir>/.claude/agent-memory as the canonical tree and miss the fork.
+PROJECT_DIR="$(git -C "${CLAUDE_PROJECT_DIR:-$PWD}" rev-parse --show-toplevel 2>/dev/null)" || {
+  echo "detect-forked-agent-memory: WARNING — ${CLAUDE_PROJECT_DIR:-$PWD} is not inside a git checkout; fork detection inactive for this stop." >&2
+  echo "                            Backstop: the verification block's Stop-hook check (cbk-conventions-reference.md § Verification)." >&2
+  exit 0
+}
 
 if ! command -v jq &>/dev/null; then
   echo "detect-forked-agent-memory: WARNING — jq not installed; fork detection DISABLED (advisory)." >&2
