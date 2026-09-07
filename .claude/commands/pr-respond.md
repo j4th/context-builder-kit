@@ -70,7 +70,7 @@ For each finding classified **Apply** or **Apply with care**:
 
 **One commit per Apply**, not bundled. The atomic-commit history is what the reviewer reads to verify each action; bundling defeats that audit surface.
 
-**Tooling note.** If a comment asks for a local-symbol rename or a cross-file refactor, prefer a semantic code-navigation tool (find-references / safe-rename) if your setup provides one, over hand-editing call sites. Before making a defensive change the reviewer flagged against a library's behavior, verify that behavior against current documentation rather than from memory.
+**Tooling note.** If a comment asks for a local-symbol rename or a cross-file refactor, prefer find-references / safe-rename tooling (which tool: `tooling.md` § Code intelligence) over hand-editing call sites. Before making a defensive change the reviewer flagged against a library's behavior, verify that behavior against current documentation rather than from memory.
 
 ## Step 5: Reply to every thread
 
@@ -98,9 +98,11 @@ git push origin <branch>
 
 If the push fails (auth, network, branch protection that requires being up-to-date with base), stop and surface per § Partial failure handling. Local commits with no remote means the reviewer sees replies citing commit SHAs that aren't visible — confusing.
 
-## Step 7: Top-level summary comment
+## Step 7: Top-level summary comment — and the body's round block
 
-Post one top-level comment on the PR (an issue comment, not a review) summarizing the response cycle:
+**Append the round to the PR body first.** The PR body is the audit surface for the PR's whole life (`finish.md` item 8): append a `## Triage — round N` block — N the count of feedback rounds so far — listing every thread of this round under its class in the same `SHA: fix` / verbatim-rationale / one-line-dismissal shape as the original `## Triage`, via `gh pr edit $1 --body-file` on the fetched body (append, never rewrite; the original `## Review gate` and `## Triage` blocks stay as they were). A comment alone scrolls away; the body is what a reader of the merged PR opens.
+
+Then post one top-level comment on the PR (an issue comment, not a review) summarizing the response cycle:
 
 ```markdown
 ## /pr-respond summary

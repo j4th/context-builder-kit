@@ -36,7 +36,7 @@ A waived skill is recorded on its line with the break-glass reason, never omitte
 
 ### The orchestrated sweep supplements; it never substitutes
 
-Where a multi-agent orchestration surface is available, `.claude/workflows/review-sweep.js` runs **beside** `pr-review-toolkit:review-pr`, after `/simplify`, and carries any focused or specific review the two skills do not cover, or do not cover enough, for the diff at hand — the project-local reviewers below always ride in it (the workflow reads § Project-local agents at dispatch time, never a copy kept in the script), and beyond them the caller names the finders this diff needs (a dimension the toolkit lacks; a targeted concern such as a schema change, a timing invariant, a boundary contract) — every finding through a refute-by-default **adversarial verification stage** before triage. Triage waits for the skill and the workflow both. The workflow widens coverage and pre-filters false positives. It is **never** an alternative to invoking the two skills, and a workflow that ran does not discharge either of them.
+Where a multi-agent orchestration surface is available, `.claude/workflows/review-sweep.js` runs **beside** `pr-review-toolkit:review-pr`, after `/simplify`, and carries any focused or specific review the two skills do not cover, or do not cover enough, for the diff at hand — the project-local reviewers below always ride in it (the workflow reads § Project-local agents at dispatch time, never a copy kept in the script — `cbk-conventions.md` § Multi-surface facts), and beyond them the caller names the finders this diff needs (a dimension the toolkit lacks; a targeted concern such as a schema change, a timing invariant, a boundary contract) — every finding through a refute-by-default **adversarial verification stage** before triage. Triage waits for the skill and the workflow both. The workflow widens coverage and pre-filters false positives. It is **never** an alternative to invoking the two skills, and a workflow that ran does not discharge either of them.
 
 If the sweep is unavailable, its roster read fails, or its run fails, that is not a fallback event — the floor was always the requirement, and the sweep's absence costs only the extra coverage. Record that it was skipped, or what it dropped, on its gate line.
 
@@ -80,7 +80,7 @@ If your project authors additional reviewer agents (e.g., for a dependency-injec
 Before any review work runs, exclude these from the diff. Cheaper than triaging them out post-hoc, and the agent's signal-to-noise improves as the input narrows.
 
 - **Generated files** — `*.generated.*`, codegen output directories, protobuf-emitted types, OpenAPI client stubs
-- **Lock files** — `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `Cargo.lock`, `mix.lock`, `uv.lock`, `Gemfile.lock`, `poetry.lock`
+- **Lock files** — `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `Cargo.lock`, `mix.lock`, `uv.lock`, `Gemfile.lock`, `poetry.lock` (excluded from the *agents'* read; the exclusion presumes a human can still see the diff, which `cbk-conventions-reference.md` § Dependency settle-window › Keep the lockfile diff visible keeps true against the host's collapse)
 - **Vendored dependencies** — `vendor/`, `third_party/`, `node_modules/` (shouldn't be tracked, but defensive)
 - **Build artifacts** — `dist/`, `build/`, `target/`, `_build/`, `.next/`, etc.
 - **Snapshot test fixtures** larger than ~200 lines unless the test itself is on the diff
@@ -129,7 +129,7 @@ The highest-leverage tuning surface for AI code review (per Cloudflare's evidenc
 **Project may exclude additionally** (configure as the `pr-review-toolkit` configuration permits):
 
 - **Bot-author or dependabot PRs** — reviewing automated dependency bumps line-by-line is rarely worth the tokens.
-- **Docs-only PRs** — if the diff is entirely under `docs/` or `*.md`, skip the heavy review sweep; the simplify pass is enough.
+- **Docs-only PRs** — if the diff is entirely under `docs/` or `*.md`, skip the heavy review sweep; the simplify pass is enough. **Not automatically light where the docs are one-way doors** — a cascade artifact, an ADR, the conventions, a rule file: those are reviewed by a human and by the project-local reviewers, and the floor still runs.
 - **Project-specific noise patterns** that emerge from the first month of running the toolkit. Add them here as you find them.
 
 ## Path-conditional aggressiveness

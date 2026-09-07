@@ -40,7 +40,7 @@ The set depends on stack decisions. Default set:
    - Skip entirely if the project has no env config
 
 4. **Optional**: review automation
-   - `claude-code-action` workflow if scaffold.md's PR/review process said to use it (e.g., a "CI must trigger Claude code review on PRs" preference)
+   - the review workflows from `templates/claude-review.yml` and `templates/claude.yml` if scaffold.md's PR/review process said to use them (*reviewed* or *solo-merge with automated review*); otherwise surface the skip as a one-line notice
    - Skip if scaffold didn't ask for it
 
 ## Rules
@@ -89,6 +89,7 @@ The sanity pass asks eight questions. Each is **stack-agnostic**; the user bring
 4. **License / advisory checker** — Will the license allowlist and advisory rules match what gets pulled transitively once dependencies are installed? Do you want to run the checker once now against a populated dependency tree and amend the allowlist, or ship defaults and fix at first CI run?
 5. **Stack-decision contradictions** — Any tooling config rules we wrote that contradict stack decisions from earlier in this session? (Example: a ban on a system library that a storage decision requires.) This is a cross-check: read the bans / denies / allow-lists in the tooling configs and verify none contradict the stack decisions list.
 6. **Automated review bot workflows** — **If we're committing an automated review bot as a merge gate** (claude-code-action, CodeRabbit, Copilot review, or equivalent): the out-of-the-box workflows these tools ship are usually wrong for any specific project. They over-review, under-review, comment on the wrong things, or apply generic rules that don't match your standards. Retuning them is a real authoring task — see the "Automated review bot prompt construction" section below for the full treatment. Sanity-pass-level decisions to make right now: (a) do you want the review bot to skip docs-only and template-only PRs to save tokens? (b) do you want concurrency cancellation so a burst of pushes only pays for the final review? (c) what wall-clock cap on the review job? (d) read-only tool permissions, or can the bot commit/push? (e) which PR authors should be skipped (drafts, dependabot, renovate, etc.)? **Also**: how will you verify the review bot actually ran and commented on your first post-blueprint PR? A bot gate that's silently broken is worse than no gate.
+6b. **Toolchain pins the bot does not cover** — the toolchain manager's pins (`mise.toml` `[tools]`, `.tool-versions`, `rust-toolchain.toml`, `.nvmrc`) and container base-image tags are outside every dependabot ecosystem: the settle window applies by hand (`cbk-conventions-reference.md` § Dependency settle-window). Decide now how the project records the settled age at pin time and what tracks the next bump — an open question in the frame, or a project automation.
 7. **Coupled dependency pairs** — Are there dependency pairs in your stack that are coupled upstream (library A caps library B's version, or they need to be bumped together)? If yes, your automated dependency bump config should group them so a single coordinated PR lands instead of two conflicting ones that can't both merge.
 8. **Temporary workarounds and trip-wires** — Any workarounds we're shipping from questions 1–7 just to get CI green on empty scaffolding? For each, we'll capture it in a **Cleanup tracking** section in `blueprint.md` with an explicit trip-wire condition for removal. Example trip-wires: *"remove when the first real test binary lands"*, *"remove when each ignored dep gets actually wired up"*, *"remove when upstream library X drops dependency Y"*.
 
@@ -210,6 +211,6 @@ If the user invoked light mode:
 - **Task runner config has the minimum set**: setup, check, test. Skip lint/typecheck/dev/fix/etc. unless they were explicitly chosen during stack decisions.
 - **CI workflow has 1–3 jobs** instead of 5+
 - **Skip env template** unless the project clearly has env vars
-- **Skip review automation** unless explicitly requested
+- **Surface a skipped review automation as a one-line notice**, never a silent omission
 
 Even in light mode, the "every CLAUDE.md command = actual task" rule still applies. Non-negotiable.

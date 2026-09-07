@@ -1,6 +1,6 @@
 # Manual steps reference
 
-The canonical list of operations that scaffold **never automates**, regardless of detection state, MCP availability, or user preference. These are operations that either cannot be automated technically (UI-only, OAuth browser flows, billing) or that scaffold deliberately keeps in human hands for safety reasons (admin permissions, security tokens, irreversible workflow customization).
+The canonical list of operations that scaffold does not automate. The list is scoped against **tool availability and the operator's preference** — never against detection state: where a tool the session has (a `repo`-scoped `gh` token, a connected MCP) can do the operation and the operator has not asked to keep it in hand, scaffold does it and discloses the result, and the entry below says what it tries first and what the fallback is. The rest are operations that cannot be automated technically (UI-only, OAuth browser flows, billing) or that scaffold deliberately keeps in human hands for safety (admin permissions, security tokens, irreversible workflow customization).
 
 When generating manual instructions in the bootstrap checklist's section 2, use this file as the source. Do not invent new manual steps. If the project genuinely needs something not listed here, surface it as an exception and flag the gap.
 
@@ -22,7 +22,7 @@ When generating manual instructions in the bootstrap checklist's section 2, use 
 
 ### Repository administration
 
-- **Branch protection rules**: Visit `<repo URL>/settings/branches` → "Add branch protection rule" → pattern `main` → enable "Require a pull request before merging" and "Require status checks to pass before merging". For team profiles, also enable "Require approvals" with at least 1 reviewer. Expected outcome: direct pushes to main are rejected.
+- **Branch protection (a ruleset)**: **try first** — when a `gh` token with `repo` scope exists, create a ruleset with `gh api repos/{owner}/{repo}/rulesets --method POST` (target `branch`, includes `refs/heads/main`; rules: `pull_request` with the approving reviews the team shape needs — 0 for solo — and `required_status_checks` naming the check-run context **read off a real run** (`gh run view --json jobs` on the stub CI's first run; never guessed from the workflow file), with `strict_required_status_checks_policy` set deliberately — `true` blocks a stale branch and interacts with the CI-skip marker per `cbk-conventions-reference.md` § Required-checks trap). Disclose the created ruleset (`gh api repos/{owner}/{repo}/rulesets`). **Fallback** — only when the call fails or no token exists: `<repo URL>/settings/rules` → "New branch ruleset" → target `main` → require a pull request and the status checks by their context names; for team profiles, at least one approving review. Expected outcome: direct pushes to `main` rejected; a PR whose required contexts have not reported cannot merge.
 - **Reviewer agent-memory**: decided in the bootstrap checklist § Rule-file disposition (`project` = committed, `local` = never committed) and recorded in `cbk-conventions.md` § Surface inventory; with `project`, delete the kit's `.claude/agent-memory/` line from `.gitignore`.
 - **Repository secrets**: Visit `<repo URL>/settings/secrets/actions` → "New repository secret" for any deployment tokens, API keys, or credentials. Scaffold never handles secret values directly.
 - **Repository visibility changes**: visibility set at create time. Changing later is at `<repo URL>/settings` → "Danger Zone". Scaffold never changes visibility after creation.
@@ -33,7 +33,7 @@ When generating manual instructions in the bootstrap checklist's section 2, use 
 
 - **Linear workflow state customization** (when planning = `linear`): Visit `https://linear.app/<workspace>/settings/teams/<team>/workflow` → customize states. Linear ships with sensible defaults (Backlog → Todo → In Progress → In Review → Done) which scaffold recommends keeping unchanged for the first few cycles.
 - **GitHub Projects custom fields**: Visit the project board → "..." → "Settings" → "Custom fields". Scaffold creates the board with default fields only; custom fields are user-added later if needed.
-- **GitHub Actions workflows beyond the stub**: scaffold creates an empty CI workflow file as a structural placeholder. Real CI configuration depends on stack decisions that happen in blueprint, so it's deliberately deferred.
+- **GitHub Actions workflows beyond the stub**: scaffold creates the CI stub as a structural placeholder and, with the operator's PR/review answer allowing it, blueprint emits the review workflows (`blueprint/references/templates/claude-review.yml`, `claude.yml`); the ADR-immutability lint ships with the ADR starters. Real CI gates depend on stack decisions that happen in blueprint, so they are deferred there — not to the operator.
 
 ### Enterprise-only operations
 

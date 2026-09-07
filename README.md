@@ -9,9 +9,9 @@ The kit is the operational surface of an AI-assisted development cascade: a sequ
        ↓
    consultation   →   docs/cbk/problem_brief.md          (chat-only, no repo yet)
        ↓
-   scaffold       →   repo + docs/cbk/scaffold.md         (planning surface, conventions)
+   scaffold       →   repo + docs/cbk/scaffold.md         (planning surface, conventions, the events index, the .github starters)
        ↓
-   blueprint      →   docs/cbk/blueprint.md + foundation docs (stack, ADRs, workstreams)
+   blueprint      →   docs/cbk/blueprint.md + foundation docs (stack, ADRs, workstreams, the roadmap, the review workflows)
        ↓
    framing        →   docs/cbk/frame-NN.md                (one workstream, sequenced milestones)
        ↓
@@ -292,8 +292,8 @@ The user then reviews the draft and flips it to ready when satisfied — that tr
 │   └── pr-respond.md                  ← the PR feedback-loop executor
 ├── skills/
 │   ├── consultation/                  ← Phase 1
-│   ├── scaffold/                      ← Phase 2 (+ references/adr-starters/, references/issue-templates/)
-│   ├── blueprint/                     ← Phase 3
+│   ├── scaffold/                      ← Phase 2 (+ references/adr-starters/ incl. corrections.md, references/issue-templates/, the .github starter bodies, the cascade-events index template)
+│   ├── blueprint/                     ← Phase 3 (+ references/templates/: the foundation docs, roadmap.md, the review workflows claude-review.yml + claude.yml)
 │   ├── framing/                       ← Phase 4 (+ references/contract.md, references/procedure.md)
 │   ├── rough-in/                      ← Phase 5 (+ references/contract.md, references/procedure.md; references/finish-command.md + finish-procedure.md, the bundled executor pair)
 │   └── adr-new/                       ← ADR scaffolder (used by blueprint and onward)

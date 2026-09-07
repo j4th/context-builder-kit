@@ -81,7 +81,7 @@ This gate runs in **every rigor mode**, not just full mode. It cannot be skipped
 
 ## The detection matrix (planning = `github-issues`)
 
-Before provisioning, detect what's possible in this session for the GitHub planning surface. As of early 2026, the GitHub MCP server can create repositories and push files, but **cannot** create labels, milestones, or project boards — regardless of PAT scopes. There is no "full automation" state. Every run involves MCP operations + manual instructions.
+Before provisioning, detect what's possible in this session for the GitHub planning surface. What the GitHub MCP server can do in this session is read off its **tool list**, never assumed (an observed gap, 2026-09-06: no label, milestone or project-board tools in the server's list; re-read the list at every scaffold, because it changes with the server's version). `gh` is the default interface on this axis (`tooling.md` § Planning backend): `gh label create` and `gh api` cover labels and milestones, and the project board stays a manual step (`references/manual_steps.md`).
 
 | State | GitHub MCP? | What MCP can do | What's manual | Behavior |
 |---|---|---|---|---|
@@ -101,7 +101,7 @@ This is where scaffold captures the team shape and working preferences that blue
 
 1. *"Is this solo or team? If team — how many people, what roles, and who makes the call when there's a disagreement?"*
 2. *"What's your quality bar for this project — move fast and iterate, or get it right from the start?"* (Single highest-value question scaffold can ask. Shapes testing, review, and CI decisions downstream.)
-3. *"How do you want PRs to work? Reviewed by someone else, self-reviewed, or straight-to-main?"*
+3. *"How do you want PRs to work? Reviewed by someone else, self-reviewed, solo-merge **with automated review**, or straight-to-main?"* — the answer gates blueprint: only *reviewed* and *solo-merge with automated review* let blueprint emit the review workflows (the blueprint skill's `references/templates/claude-review.yml` and `claude.yml`); on *self-reviewed* and *straight-to-main* blueprint surfaces the skip as a one-line notice and the handoff issue's `/install-github-app` step is omitted. Say so when asking.
 4. *"How comfortable are you with the tools we're setting up? First time with GitHub Actions / project boards, or veteran?"*
 5. *"What pace are you working at — full-time, part-time, evenings-and-weekends?"* (Appetite was captured in consultation, but confirming here is cheap and the answer may have changed.)
 
@@ -143,7 +143,7 @@ What gets provisioned depends on the operator's two-axis choice and detection st
 
 - **Branch naming**: propose a format based on team identifier from discovery, e.g. `{team-id}-{issue-number}-{short-description}`. Confirm with user.
 - **Commit format**: propose Conventional Commits as default unless the user has a preference. Confirm.
-- **Label taxonomy**: propose the cascade standard set (bug, feature, improvement, tech-debt, documentation) plus area labels derived from the problem brief. Confirm, then walk the user through manual creation.
+- **Label taxonomy**: propose the full set as an axis structure — cascade depth, awaiting-cascade-work, provenance, type, workstream, meta, review control, and the optional labour lane (`references/github_only_profile.md` § State 1 step 3 lists every label). Confirm, then create them (`gh label create` when a token exists, otherwise walk the user through the labels page).
 
 **HITL gate**: user confirms what was created, walks verification matrix.
 
@@ -246,7 +246,7 @@ Examples:
 The full template with worked examples for every section lives in `references/scaffold_output_template.md`. Load it when drafting; the example above just shows what one section feels like.
 
 **Commit order** — try in this order:
-1. **GitHub MCP**: create `docs/cbk/` directory, commit `problem_brief.md` and `scaffold.md` to it.
+1. **GitHub MCP**: create `docs/cbk/` directory, commit `problem_brief.md`, `scaffold.md` **and `README.md`** — the cascade-events index, instantiated from `references/templates/cascade-events-index-template.md` with the consultation and scaffold rows and their phase notes — to it in one commit.
 2. **Fallback**: produce both as downloadable artifacts. Tell the user where each goes and that blueprint will need them.
 
 **HITL gate (final)**: user approves the scaffold output doc and confirms the problem brief is committed. Scaffold marks itself complete.
@@ -279,6 +279,7 @@ When scaffold is complete, blueprint inherits:
 - **A verified set of integrations** with known states
 - **The four cascade issue templates** at `.github/ISSUE_TEMPLATE/cascade-{workstream,framing,rough-in,meta}.md` — blueprint reads `cascade-workstream.md` from the repo when constructing parent Issue bodies, framing reads `cascade-framing.md` and `cascade-meta.md`, rough-in reads `cascade-rough-in.md`. Repo files are the source of truth; the bundled copies in each skill are fallbacks for brownfield repos that lack them.
 - **The scaffold output doc** at `docs/cbk/scaffold.md` — containing team shape, working conventions, development preferences, and cascade metadata
+- **The cascade-events index** at `docs/cbk/README.md` — created here, appended by every later phase
 - **The problem brief** at `docs/cbk/problem_brief.md`
 - **The knowledge surface** at `docs/cbk/` — where blueprint will commit `blueprint.md`
 
@@ -306,7 +307,8 @@ Blueprint reads scaffold's outputs at session start via GitHub MCP, or the user 
 
 Auto-checkable, fires after gate 6 and before scaffold declares itself complete. Not a gate (no approval); a safety surface — stop and surface if any item fails. Per `cbk-conventions.md` § Trip-wire / phase-exit checklist pattern.
 
-- [ ] `docs/cbk/scaffold.md` and `docs/cbk/problem_brief.md` are committed
+- [ ] `docs/cbk/scaffold.md`, `docs/cbk/problem_brief.md` and `docs/cbk/README.md` (from the index template, two rows and two notes) are committed
+- [ ] The licence was confirmed and recorded (`LICENSE` seeded or README § License says "none yet"); the label set is the full axis structure (`cascade-depth:*`, `source:*`, the type set, `workstream:<slug>` per workstream, `meta`, the review-control labels); on the github-issues axis the `.github/` starters are on disk (the issue forms, `config.yml`, the PR template with both gate blocks, `CODEOWNERS`, the CI stub, `dependabot.yml` with the floor)
 - [ ] The Cascade metadata rows in `docs/cbk/scaffold.md` agree with `.cascade/backends.toml` (the verification block's axis-mirror check passes)
 - [ ] `docs/adr/` exists with the three starters and ADR-0000's header is filled: `grep -n "YYYY-MM-DD\|<project owner" docs/adr/0000-*.md` prints nothing
 - [ ] On the github-issues and linear axes, the four cascade issue templates are on disk under `.github/ISSUE_TEMPLATE/`, and `cascade-rough-in.md` carries the eight headings including `## Assumptions`
@@ -320,7 +322,10 @@ Auto-checkable, fires after gate 6 and before scaffold declares itself complete.
 - `references/linear_planning.md` — provisioning when planning = `linear`
 - `references/notion_knowledge.md` — provisioning when knowledge = `notion` (hub-row creation, brownfield detection, lazy sub-pages)
 - `references/brownfield_audit.md` — workspace audit for operators with existing repos / workspaces / Notion structures
+- `references/github-starter-templates.md` — the literal `.github/` starter bodies pushed on the github-issues axis (issue forms, `config.yml`, the PR template with the gate blocks, `CODEOWNERS`, the CI stub with its traps, `dependabot.yml` with the floor, the `.gitattributes` counter-line)
+- `references/backends.md` — the backend interface mapping for the phase (both axes)
 - `references/scaffold_output_template.md` — template and worked example for `docs/cbk/scaffold.md`
+- `references/templates/cascade-events-index-template.md` — the `docs/cbk/README.md` scaffold creates beside the brief and the scaffold doc; blueprint, framing and rough-in append a row and a phase note each
 - `references/bootstrap_checklist_template.md` — template for the session checklist
 - `references/manual_steps.md` — canonical list of always-manual operations
 - `references/issue-templates/` — the four cascade GitHub issue templates that Stage 2.5 commits to `.github/ISSUE_TEMPLATE/`. Each is a standalone markdown file with YAML frontmatter (`cascade-workstream.md`, `cascade-framing.md`, `cascade-rough-in.md`, `cascade-meta.md`). Source of truth for the cascade Issue body shapes — downstream skills read the committed copies from the repo, not the bundled copies here.

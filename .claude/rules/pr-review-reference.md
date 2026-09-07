@@ -86,7 +86,7 @@ If the human reviewed the draft PR, decided to leave a Surface item alone, and t
 
 ### ❌ Running review-toolkit on a docs-only PR
 
-If the diff is entirely under `docs/` or matches `*.md`, the toolkit's specialized agents have nothing to chew on. Skip the sweep; the simplify pass is sufficient.
+If the diff is entirely under `docs/` or matches `*.md`, the toolkit's specialized agents have nothing to chew on. Skip the sweep; the simplify pass is sufficient. The exception — docs that are one-way doors — is stated once, in `pr-review.md` § What NOT to flag, and not restated here.
 
 ### ❌ Padding the hand-off summary with "looks good" prose
 

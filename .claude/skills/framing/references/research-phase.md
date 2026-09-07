@@ -74,6 +74,10 @@ At non-trivial depth, research is a parallel activity, not a single-threaded rea
 
 When research asserts a codebase fact into a framing artifact — "helper X already exists," "there is no Y, a milestone must create one" — the claim must be **verified with a search rooted at the repository root covering every source tree** (all packages, notebook/script directories, test trees, docs), never a single-package grep: helpers routinely live where their *consumers* live, not where the milestone's package does. The cost asymmetry drives the discipline: a stale positive anchor is cosmetic, but a wrong *absence* claim ships an instruction to duplicate machinery that already exists. When research or drafting is fanned out to parallel agents, embed this rule verbatim in each agent's prompt, have any verifier/harmonizer pass preferentially spot-check the **negative** claims, and have drafts **cite the run's existing grounding output** for facts it already covers instead of re-deriving them from fresh narrow greps. (The rough-in skill's `references/research-phase.md` carries the full three-rule statement; the discipline is identical at both phases.)
 
+## The verdict-first committed corpus
+
+The rough-in skill's `references/research-phase.md` § The verdict-first committed corpus carries the full statement — three verdicts with unverifiable kept and labelled, usable-versus-raw counts, the gaps block, the attempted-URL log, reproduction over interface over prose; the discipline is identical at both phases and is not restated here.
+
 ## What framing does NOT research
 
 Some things look like they belong in framing's research phase but actually belong elsewhere in the cascade. **Cross-reference `backends.md` for the interface contract between phases — framing operates at the project level, blueprint operates at the workspace level, and the boundary matters.**

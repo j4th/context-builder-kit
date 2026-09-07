@@ -32,6 +32,7 @@ After the answers, run a **non-mutating MCP read pass** to verify what the user 
 
 **Knowledge backend axis**:
 - `notion`: run the brownfield Notion detection from `.claude/rules/knowledge-backend.md` § "Brownfield detection at scaffold" — detect Engineering teamspace, Projects DB, Engineering Wiki, existing project hub. Read-only; no writes. If the operator already designated a Notion scope during consultation (Mode A/B from `consultation/references/notion_ingestion.md`), the scope is in `problem_brief.md` § Pre-cascade sources — read that first and let it inform the detection.
+- **A designated frozen corpus** (a `Frozen corpus` line in `problem_brief.md` § Pre-cascade sources, per the consultation skill's `references/frozen_corpus_ingestion.md`): land the source files in the repo at the recorded path (or record their external location), land the `<slug>-errata.md` companion if consultation created one, and register the enforcement set in the same commit — the immutability hook and CI job extended to the corpus pattern with a block message naming the errata, the `.gitattributes` `linguist-documentation=false` line, the editor trim/newline unsets, the formatter skip entry. The brief's `## Handoff notes for later phases` says what else scaffold must land.
 - `none`: skip the knowledge-backend half entirely.
 
 **Surface any discrepancies** between what the user said and what actually exists — this catches "I forgot we set that up" moments before they cause provisioning failures.

@@ -59,6 +59,22 @@ For Claude.ai's qualitative test loop (no subagents, no benchmarking): a real hu
 - Skill skips problem discovery because the user "already knows what they want"
 - MVP scope is unbounded or matches the user's most ambitious description without trade-off discussion
 
+## Test 4 — a frozen corpus on disk
+
+**Prompt** (the operator points at a directory of prior planning material):
+> "Everything under `planning/` is what the last team wrote — decisions, research, a half-finished design. Use it as the starting material; I don't want it rewritten."
+
+**What success looks like:**
+- The incoming-context step takes the directory branch (`references/frozen_corpus_ingestion.md`), not the Notion modes: every file is read in full, and the brief's `## Pre-cascade sources` names the corpus path with one bullet per file consulted and the passages quoted where wording is inherited
+- Nothing under `planning/` is edited; a defect found while reading goes to a lazily created `planning/<slug>-errata.md` entry (dated, "amends; never edits"), and the brief cites the entry
+- The brief's `## Handoff notes for later phases` addresses scaffold by name (land the corpus at the recorded path, register the enforcement set) and blueprint by name (which decisions may be promoted, with the `Promotes:` form)
+- The four-step interview still runs, informed by the corpus, not replaced by it
+
+**What failure looks like:**
+- The corpus is summarized from a sample rather than read in full, or its wording is paraphrased into the brief
+- A file under `planning/` is corrected in place
+- The handoff notes are omitted, leaving scaffold to rediscover the corpus
+
 ## How to use these tests when revising the skill
 
 1. Pick one or more tests to run

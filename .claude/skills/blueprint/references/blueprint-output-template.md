@@ -193,6 +193,73 @@ stays in this doc, one-time setup commands move to the issue tracker.]
 **Why this is in blueprint.md and not the handoff issue**: credential models don't go stale the way setup commands do. The user comes back to this section months later when they need to rotate the PAT or understand why a permission failed; it's a reference, not a checklist. The handoff issue is one-time work that closes; the credential model is forever.
 ```
 
+## Amendments *(append-only)*
+
+[Blueprint is a cascade event — immutable after commit except this section, § Retired
+justifications and the Stack decisions table (`cbk-conventions.md` § Mutation discipline). A later phase that learns this blueprint was wrong in a way
+that does not warrant a re-blueprint appends one dated row: what was stated, what
+is true, which phase found it, where the correction landed (an ADR, a frame, a
+rule). Never edit the section it amends; the row points at it.]
+
+| Date | Amends (§) | Was | Is | Found by | Landed in |
+|---|---|---|---|---|---|
+
+## Retired justifications
+
+[Decisions in this blueprint whose original justification was later retired — a
+constraint that lifted, a dependency that changed, a measurement that aged out.
+The decision may still stand; the row records that its original reason no longer
+does, so nobody re-derives the decision from a dead premise. Dated; append-only.]
+
+| Decision | Original justification | Retired on | Because | The decision now rests on |
+|---|---|---|---|---|
+
+## PR lifecycle
+
+[Numbered, so every later phase and command cites a step number rather than a
+paraphrase. The default; edit to what this project actually does:]
+
+1. Branch per `cbk-conventions.md` § Branch naming (the issue-less form for maintenance)
+2. Red tests, then the implementation — atomic commits
+3. The `check` task green
+4. `/simplify`, then `pr-review-toolkit:review-pr` with the sweep beside it — the floor, once
+5. Draft PR carrying `## Review gate` and `## Triage`
+6. The operator flips to ready; automated review runs where it is wired
+7. `/pr-respond` per feedback round; `## Triage — round N` appended to the body
+8. Merge (squash); the post-merge checklist from the `/finish` hand-off
+
+## Newcomer traps *(gated on the operator's tool comfort)*
+
+[Include only when scaffold's discovery recorded the operator as new to a tool in
+this stack; omit for an experienced operator. One bullet per trap actually
+expected here — the command that looks right and is not, the setting that
+silently defaults, the file that must never be hand-edited — each naming the
+reference doc that explains it.]
+
+## Source precedence over non-cascade documents
+
+[When a non-cascade document — a vendor README, an inherited design doc, a wiki
+page, the frozen corpus — disagrees with a cascade artifact, which wins, in
+order. The default: ADRs › this blueprint › the active frame › the `docs/`
+foundation docs › the frozen corpus (through its errata) › external documents.
+A document not on this list is context, not authority.]
+
+## Operator runbooks *(the fifth foundation surface)*
+
+[`docs/runbooks/` — one file per recurring operator task the code does not
+automate: a deploy, a key rotation, a data migration, the measurement procedure.
+Blueprint creates the directory with an index and the first runbook the stack
+already needs; later phases add files there, never sections here. Each runbook:
+preconditions, the commands verbatim, the verification, the rollback.]
+
+## Domain label *(with its body contract)*
+
+[The one label that marks an issue or PR as touching this project's guarded
+domain surface — a schema, a protocol, a safety boundary — as `domain:<name>`,
+and the block its PR body must carry: the heading, what it states (the invariant
+touched, the check that proves it holds), and that a PR carrying the label
+without the block is REQUEST CHANGES. The auto-review prompt reads this section.]
+
 ## What used to be here and isn't anymore
 
 Earlier versions of this template had a "Manual setup runlist" section with the full first-build command sequence (run mise install, create the PAT with these scopes, run setup-claude.sh, install the GitHub App, etc). That content has moved to the handoff issue per the seventh-step pattern. Keeping it in blueprint.md was the failure mode of "doc section that goes stale the moment the user completes it" — the handoff issue closes naturally when the work is done, the doc would have to be edited.
@@ -200,6 +267,8 @@ Earlier versions of this template had a "Manual setup runlist" section with the 
 **Rule**: if you're drafting blueprint.md content that reads like "do these steps once," stop — that content goes in the handoff issue. blueprint.md is for evergreen reference only.
 
 ## Planning-axis-aware behavior
+
+On the `github-issues` and `in-repo-markdown` axes blueprint also writes `docs/cbk/ROADMAP.md` from `templates/roadmap.md`, seeded from § Core Projects: one *planned* row per project, the bootstrap row pointing at the handoff issue, `## Now` naming the first runnable command. It is a status surface, freely mutable, never the audit trail.
 
 **`github-issues` planning**: this file is the *only* place the initiative content lives. There's no Linear initiative entity. Framing will read this file, decompose the workstreams into proper project specs, and create the GitHub workstream parent Issues + framing sub-issues from there.
 

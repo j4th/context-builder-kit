@@ -52,6 +52,8 @@ A time-boxed research milestone aimed at reducing uncertainty before committing 
 
 **Fails when**: overused as a crutch that delays delivery, not properly time-boxed, or when the question isn't clearly defined upfront.
 
+**Four outcomes**, named in the frame before the spike runs: *confirmed* (the question answered as hoped), *refuted* (answered the other way — the frame's dependent milestones re-plan), *inconclusive, extended* (a bounded second time-box with a stated reason), and **retired as unsatisfiable** (the question cannot be answered with the means available — recorded as a verdict that binds later frames, never left open). A spike with no fourth outcome named is one that will be extended forever.
+
 **Example**: M0 (or M1) of a project where the choice of vector database determines the rest of the architecture — "After this, we have benchmarks comparing pgvector, Qdrant, and Pinecone on our actual workload and a recommendation with rationale. No production code from this milestone — just a `docs/spikes/vector-db.md` and a decision."
 
 ### 5. Infrastructure (project-level)

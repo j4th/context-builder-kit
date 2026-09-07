@@ -6,14 +6,19 @@ name: ADR immutability check
 # `docs/adr/[0-9]{4}-*.md` file has been modified (additions of new ADR
 # files are allowed; deletions and modifications are not).
 
+# No `paths:` filter, on purpose: a required check that is skipped by a path
+# filter never reports and parks the PR forever (cbk-conventions-reference.md
+# § Required-checks trap, cause 2). The job exits 0 in seconds when no
+# ADR changed, so always-run costs nothing.
 on:
   pull_request:
     branches: [main]
-    paths:
-      - 'docs/adr/**'
 
 jobs:
   immutability:
+    # The check-run context a ruleset requires. Pinned before promotion and never
+    # renamed afterwards — matching is by name (the trap's cause 3).
+    name: ADR immutability
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR branch

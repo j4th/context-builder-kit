@@ -141,7 +141,7 @@ Tiered by phase, default by HITL:
 
 Every write requires explicit HITL approval. No cascade phase writes to the knowledge backend as a side effect of its primary work.
 
-When writing, write **companion** material that *adds to* the repo artifact, not a copy of it:
+When writing, write **companion** material that *adds to* the repo artifact, not a copy of it — the companion vocabulary of `cbk-conventions.md` § Multi-surface facts: the repo artifact is the immutable source, the page its append-only companion, pointing back and never pointed at:
 - Repo holds the structured cascade artifact (immediate context)
 - Notion holds longer-form supporting material, decision threads, cross-project links, durable runbooks
 

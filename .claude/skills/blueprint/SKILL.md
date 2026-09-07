@@ -185,13 +185,19 @@ Blueprint produces six prose foundation docs plus tooling configs. The order is 
 | 4 | CONTRIBUTING.md | root | Branch/commit/PR norms — mostly inherits from scaffold.md, lighter lift |
 | 5 | README.md update | root | Updates the existing README with stack info; do not rewrite from scratch |
 | 6 | docs/cbk/blueprint.md | docs/cbk/ | The cascade artifact — written last so it can reference all the others |
+| 7 | docs/cbk/ROADMAP.md | docs/cbk/ | On the `github-issues` and `in-repo-markdown` axes only: the freely mutable status surface (`references/templates/roadmap.md`) — where we are and what is next; seeded from § Core Projects with every row *planned* and the bootstrap row pointing at the handoff issue |
 
 **Plus tooling configs** (not prose docs, real config files):
 - CI workflow files in `.github/workflows/`
+- The review workflows from `references/templates/claude-review.yml` and `references/templates/claude.yml`, **only when scaffold's PR/review answer allows review automation** (`scaffold.md` § Working conventions: *reviewed* or *solo-merge with automated review*); otherwise a one-line HITL notice — *"no review automation — scaffold said self-reviewed; say the word to add it"* — never a silent omission
 - Task runner config (mise.toml, Makefile, justfile, package.json scripts — depends on stack)
 - `.env.example` if applicable
 
 Each doc has its own template in `references/templates/`. Each template starts with a "what to inherit from scaffold.md and problem_brief.md" section so the doc-production process is grounded in the prior phases, not invented fresh.
+
+**Canonical homes before drafting.** Every artifact more than one foundation doc will state — the data schema, a module interface, the check-task names, the version pins, the domain vocabulary — gets **one canonical home** named before any drafting starts: the schema lives in the data-model ADR, the interface in the seam ADR, the check names in `STANDARDS.md`, the pins in the tooling config, the terms in `ARCHITECTURE.md` § Glossary. Every other drafter *references or splices* the home; none restates it (`cbk-conventions.md` § Multi-surface facts).
+
+**The cross-document critic.** When the drafting fanned out — more than one context wrote the docs — a critic pass is **required** before the HITL review: one agent reads every produced doc and checks five axes across them — schema, interface, check names, versions, terminology — reporting each disagreement as `doc A says X · doc B says Y · home is Z`. When one context drafted every doc the critic is skipped and the skip is recorded in the phase note; the drift it hunts is a fan-out artefact.
 
 **For each doc, the production pattern is**:
 1. Read the template
@@ -233,7 +239,7 @@ Detailed templates and production guidance:
 Blueprint's behavior differs along **two independent axes** set by scaffold: the planning backend (`github-issues` / `linear` / `in-repo-markdown`) and the knowledge backend (`notion` / `none`). The per-axis differences are documented in `references/planning-backend-matrix.md` (planning axis) and `.claude/rules/knowledge-backend.md` (knowledge axis). Short version:
 
 **Planning axis** (read `references/planning-backend-matrix.md` for full detail):
-- `github-issues`: all foundation docs + `blueprint.md` commit to the GitHub repo via MCP; workstream parent Issues created via GitHub MCP; no Linear initiative entity. Methodology selection is informational only.
+- `github-issues`: all foundation docs + `blueprint.md` + `ROADMAP.md` commit to the GitHub repo (`gh` or the git-host MCP — `references/planning-backend-commit.md`); workstream parent Issues created with their `workstream:<slug>` labels; no Linear initiative entity. Methodology selection is informational only.
 - `linear`: foundation docs + `blueprint.md` still commit to GitHub; `blueprint.md` also mirrors as a Linear initiative; Linear Projects created per workstream via Linear MCP. Methodology selection may inform Linear cycle length.
 - `in-repo-markdown`: only the markdown commits happen; no external planning entities are created. Setup steps that would be a GitHub handoff issue (or Linear initiative description) move into `blueprint.md` § Manual setup.
 
@@ -283,6 +289,7 @@ When blueprint is complete, framing inherits:
 - **Six foundation docs** at known locations, all reviewed and committed
 - **Tooling configs** in `.github/workflows/` and the appropriate task runner location
 - **`docs/cbk/blueprint.md`** containing stack decisions, methodology selection, success criteria, workstreams, dependencies, not-in-scope, and open questions
+- **`docs/cbk/ROADMAP.md`** on the `github-issues` and `in-repo-markdown` axes — framing reads it as an input and appends its rows in the same atomic commit as the frame
 - **All prior cascade artifacts** still readable: `problem_brief.md`, `scaffold.md`
 
 **What blueprint must not pass to framing**: actual project plans (that's framing), milestones (rough-in), issues (finish), or implementation code. Blueprint stops at "workstreams with one-sentence purpose each" — turning workstreams into project plans is framing's job.
@@ -313,12 +320,15 @@ Detailed in `references/failure-modes.md`. Highlights:
 Auto-checkable, fires after the final gate and before blueprint declares itself complete. Not a gate; a safety surface — stop and surface if any item fails. Per `cbk-conventions.md` § Trip-wire / phase-exit checklist pattern.
 
 - [ ] The six docs exist at their paths (`CLAUDE.md`, `docs/ARCHITECTURE.md`, `docs/STANDARDS.md`, `CONTRIBUTING.md`, `README.md`, `docs/cbk/blueprint.md`), and `docs/cbk/blueprint.md` carries its Cascade metadata, Stack decisions, Methodology and Core Projects sections
+- [ ] On the github-issues and in-repo-markdown axes `docs/cbk/ROADMAP.md` exists with its `## Now` paragraph; the review workflows are on disk when scaffold's PR answer allowed them, or the one-line skip notice was given; the cross-document critic ran when the drafting fanned out, or its skip is in the phase note; `docs/cbk/README.md` gained the blueprint row and note
 - [ ] `CLAUDE.md` mentions the other docs as backticked paths: `grep -n "^- @\|@docs/" CLAUDE.md` prints nothing
 - [ ] Every ADR blueprint wrote is indexed in `docs/adr/README.md` and in `docs/ARCHITECTURE.md` § Decisions Log, and `docs/cbk/blueprint.md` § Stack decisions lists it
 - [ ] The handoff issue (or its in-repo-markdown equivalent) exists, and the workstream parent entities blueprint.md names exist on the planning backend
 - [ ] Every call this run exercised that `references/planning-backend-matrix.md` flags as individually unexercised has been restamped in the same commit
 
 ## Reference files
+
+- `references/templates/roadmap.md` — the `docs/cbk/ROADMAP.md` template (github-issues and in-repo-markdown axes): the sequence table, the `## Now` paragraph, the status vocabulary, the tracker queries, and who flips what
 
 - `references/planning-backend-commit.md` — the Milestone-per-workstream creation step, atomic transition pattern with the markdown commit, slug collision handling, profile-aware behavior (read this in tandem with `backends.md` from the cascade meta-doc set)
 

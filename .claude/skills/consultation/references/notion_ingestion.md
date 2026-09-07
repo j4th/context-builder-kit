@@ -1,6 +1,6 @@
 # Notion ingestion
 
-Operational reference for consultation's "incoming context" flow when the operator arrives with existing material to ingest. Runs **before** the four-step interview. The cross-cutting operational contract (read patterns, HITL discipline, inheritance discipline) lives at `.claude/rules/knowledge-backend.md` — this file covers the consultation-specific behavior on top of that contract.
+Operational reference for consultation's "incoming context" flow when the operator arrives with **Notion** material (or pasted content) to ingest; a directory of planning files on disk is the sibling flow in `references/frozen_corpus_ingestion.md`. Runs **before** the four-step interview. The cross-cutting operational contract (read patterns, HITL discipline, inheritance discipline) lives at `.claude/rules/knowledge-backend.md` — this file covers the consultation-specific behavior on top of that contract.
 
 ## When to run this
 

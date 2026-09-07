@@ -59,7 +59,7 @@ If the project runs a contribution-intake lane, candidates filed under the works
 
 ## Producing the frame-NN.md file and committing
 
-Write `docs/cbk/frame-NN.md` (path per the project's layout) from the approved draft and append a row to `docs/cbk/README.md` with the framing number, the workstream, the date and status `Active`. On a backend planning axis, create one F-sub-issue per milestone (and one meta-issue per pre-flight row) parented under the workstream's parent issue — the two-step create-then-link pattern, the atomic transition with the markdown commit, the rollback rules and the partial-failure protocol are in `references/planning-backend-commit.md`; the issue bodies come from the repo's `.github/ISSUE_TEMPLATE/cascade-framing.md` and `cascade-meta.md`, disk first. Where the project keeps a roadmap surface, add its rows in the same commit. If no commit path is available, hand the files to the operator as downloadable artifacts rather than leaving the frame in the conversation.
+Write `docs/cbk/frame-NN.md` (path per the project's layout) from the approved draft and append to `docs/cbk/README.md` — which scaffold created — its row (`# | date | framing | frame-NN.md | Active`) and its phase note (the execution facts: issues created by number, departures from the default with the discipline that justified them, research provenance, the next runnable command) in the same commit. Create the file from the scaffold skill's `references/templates/cascade-events-index-template.md` only as a brownfield fallback, when the project predates scaffold's provisioning of it. On a backend planning axis, create one F-sub-issue per milestone (and one meta-issue per pre-flight row) parented under the workstream's parent issue — the two-step create-then-link pattern, the atomic transition with the markdown commit, the rollback rules and the partial-failure protocol are in `references/planning-backend-commit.md`; the issue bodies come from the repo's `.github/ISSUE_TEMPLATE/cascade-framing.md` and `cascade-meta.md`, disk first. Where the project keeps a roadmap surface, add its rows in the same commit. If no commit path is available, hand the files to the operator as downloadable artifacts rather than leaving the frame in the conversation.
 
 **HITL gate (final)**: present the file and the list of issues to be created; get explicit approval before any write. The gate wording is in `references/planning-backend-commit.md` § HITL gate update.
 
@@ -72,7 +72,7 @@ Auto-checkable list that fires after the final gate, before declaring framing co
 - [ ] Workstream parent issue exists (github-issues and linear planning; n/a on in-repo-markdown) and matches the workstream slug
 - [ ] No prior F-issue exists for this milestone (idempotency)
 - [ ] Markdown commit and (on backend planning axes) F-issue creation atomic transition succeeded, or partial state surfaced cleanly
-- [ ] `docs/cbk/README.md` updated with new entry + status `Active`
+- [ ] `docs/cbk/README.md` appended with the frame's row (status `Active`) and its phase note, in the frame's commit
 - [ ] If the project runs a contribution-intake lane (cbk-conventions): no candidate it filed under this workstream remains un-reconciled — each was promoted to an F-issue or closed as superseded
 - [ ] The verification pass ran and its defects were fixed or consciously kept (recorded in the gate)
 

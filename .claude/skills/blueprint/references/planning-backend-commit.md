@@ -46,6 +46,10 @@ Blueprint constructs each parent Issue's body from the **`cascade-workstream.md`
 
 ## Atomic transition pattern
 
+### The `gh` shape (github-issues)
+
+`gh` is the default interface; the five-command shape and its two rough edges live in one home, the rough-in skill's `references/planning-backend-commit.md` § The `gh` shape. Blueprint's delta: the workstream parents have no link target (the link and verify lines are skipped), and the create-then-edit pass resolves cross-references between sibling parents.
+
 The planning-backend commit and the markdown commit must be **atomic** — either both succeed or neither does. Order of operations:
 
 1. **Capture** every operation as a planned transition

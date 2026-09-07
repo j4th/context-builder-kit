@@ -24,8 +24,13 @@
 #           rename degrades to a no-op rather than silence.
 # Timing:   the guard reads the payload's `cwd` (a common field on every hook
 #           event — https://code.claude.com/docs/en/hooks-guide § How hooks
-#           work) BEFORE the tool runs, so a `cd` inside the same call does not
-#           help: return to the root as its own command, then relaunch.
+#           work) BEFORE the tool runs. That field is the SESSION's working
+#           directory — where Claude Code was launched — not the Bash tool's
+#           persisted shell directory: a real dispatch made after `cd docs` in
+#           the shell was allowed, with the payload cwd still at the root (dated
+#           observation, 2026-09-07). The confirmed deny is a session launched
+#           from a subdirectory (the verification block's payload dry-run); the
+#           remedy there is to relaunch the session from the root.
 # Path:     registered as ${CLAUDE_PROJECT_DIR}/.claude/hooks/… — handlers run
 #           in the current directory (https://code.claude.com/docs/en/hooks), so
 #           a bare relative path would not resolve from the very subdirectory

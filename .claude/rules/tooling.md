@@ -15,9 +15,19 @@
 | Find a literal string or regex | `Grep` (built-in) | Fast, ripgrep-backed, no server startup |
 | Find files by path / glob | `Glob` (built-in) | Same — pattern matching, no semantics |
 | Read a known file | `Read` (built-in) | Direct; line-numbered output |
-| Find every reference to a symbol / rename cleanly / get signatures | `<your code-intelligence MCP, if wired>` | LSP-grade operations — handles renames, imports, scope; text search misses cross-file refs through aliases |
+| Find every reference to a symbol / rename cleanly / get signatures | The built-in `LSP` tool — first-line | Enabled by the official per-language plugin plus the language server on `PATH` (`https://code.claude.com/docs/en/discover-plugins`, read 2026-09-06; re-verify after harness upgrades); handles renames, imports, scope. Cloud-session caveat: the server must be on the session's `PATH`, which a cloud sandbox may not provide |
+| The same, for a language with no plugin | `<a code-intelligence MCP for that language>` | Second-line only; wired by the phase that needs it |
+| The same, when neither is available | `Grep` + manual cross-file work — last | Text search misses cross-file refs through aliases; say so in the hand-off |
 
-**Decision rule**: if the operation cares about *symbols* (refs, renames, signatures), use the code-intelligence MCP (when wired). If it cares about *text* (strings, patterns), use built-ins. [If no code-intelligence MCP is wired, note the fallback: `Grep` + manual cross-file work.]
+**Decision rule**: if the operation cares about *symbols* (refs, renames, signatures), the built-in `LSP` tool first; an MCP only for a language without a plugin; `Grep` last. If it cares about *text* (strings, patterns), use built-ins.
+
+**Deferred integrations** — a tool the project decided not to wire yet, with the trigger that wires it and the date the decision expires:
+
+| Integration | Deferred because | Wire when | Re-check by |
+|---|---|---|---|
+| [e.g. the language server for the secondary language] | [no code in that language yet] | [the first module lands] | [date] |
+
+**Read versus write per data integration**: every integration that touches a data store names its boundary here — which tools are read-only and which can mutate — and the mutating ones are ask-gated (`cbk-conventions-reference.md` § Hook authoring); a query tool that can also write is wired as two entries or not at all.
 
 ## Library / framework docs
 
@@ -38,7 +48,8 @@
 |---|---|---|
 | Read a cascade issue | `<planning-backend MCP read call, or gh CLI>` | The planning backend is the source of truth for cascade sub-issues |
 | Create / update an issue or comment | `<planning-backend MCP write call>` | Same |
-| Create / read / comment on a PR | `<github MCP calls>` or `Bash` with `gh` | The git host is the source of truth for PRs, code review, repo state |
+| Create / read / comment on a PR | `Bash` with `gh` (default) or `<github MCP calls>` | The git host is the source of truth for PRs, code review, repo state |
+| Create or link a cascade issue on the github-issues axis | `Bash` with `gh` — five commands as one script (the phase's `references/planning-backend-commit.md` § The `gh` shape) | `gh` is the default interface; a git-host MCP is one connection among several, and the phase reads and writes the working tree by default |
 
 **Decision rule**: cascade issues live on the planning backend; PRs and code review live on the git host. `/finish` reads the planning backend for the spec and writes a PR with the close marker from `cbk-conventions.md` § Closes-keyword conventions.
 
@@ -62,9 +73,32 @@
 
 **Decision rule**: convert any *relative* date in a prompt ("Thursday", "last week") to an *absolute* date before saving it to memory, a cascade artifact, or any persistent surface. Relative dates rot fast.
 
+## MCP configuration
+
+| You want to … | Reach for | Why |
+|---|---|---|
+| Wire a server the project depends on | The committed `.mcp.json`, with credentials as **environment-variable references** (`${GITHUB_TOKEN}`), plus a committed `.env.example` naming every variable | The config is reviewable and shared; the secrets are not. The kit's `.mcp.json.example` is the starting shape |
+| Wire a server only you use | The user-level MCP config, never the project file | A personal server in the committed file is a dependency for everyone |
+| Add a server | The cascade phase that justifies it wires it — the planning MCP at scaffold, a docs MCP at blueprint, a domain MCP when a workstream needs it — and records it in `cbk-conventions.md` § Surface inventory | A server nobody's phase asked for is noise in every session's tool list |
+
+**Decision rule**: list-valued keys (`enabledPlugins`, `allow`, `deny`, hook arrays) are **never repeated** in the local settings file — the local file overrides by key, so a repeated list silently replaces the committed one instead of extending it; add to the committed list or not at all. A linter exclusion for an MCP or settings file is added only where nothing in it could be actioned (a generated file, a secrets template) — an exclusion is not an exemption (`cbk-conventions.md` § `[skip ci]` rule).
+
 ## [Stack surfaces — add a section per wired MCP]
 
 [One section per stack surface the project wires — database client, cloud CLI, observability, domain services — each with the same table shape, a decision rule, and any **gotchas the build has actually proved out** (recorded here so they aren't re-discovered; date them per the conventions' dated-rails principle). Delete this placeholder once real sections exist.]
+
+## Automated review on the git host
+
+*(Delete if scaffold's PR/review answer was self-reviewed or straight-to-main.)*
+
+| You want to … | Reach for | Why |
+|---|---|---|
+| A review on every PR flipped to ready | The auto-review workflow (`.github/workflows/claude-review.yml`, from blueprint's template) | Fires once per readiness cycle; re-trigger with `claude-review-again`; `skip-claude` opts a PR out |
+| A deeper or cheaper review on one PR | The `claude-deep-review` / `claude-fast-review` labels | Label-driven proportionality — the model and effort are explicit per label, never inherited |
+| Ask a question on a PR or issue | `@claude` in a comment (`.github/workflows/claude.yml`) | Interactive; least-privilege tool list |
+| Answer the review's findings | `/pr-respond <N>` | The feedback loop; every finding a SHA and a reply |
+
+**Decision rule**: the posted artifact is the deliverable (`cbk-conventions.md` § Deliverable trap) — a green run with no comment is investigated, a red run whose review posted is a pass. The workflow cannot review the PR that introduces it; verify on the next one. Record here which labels the project actually created.
 
 ## Plugins
 

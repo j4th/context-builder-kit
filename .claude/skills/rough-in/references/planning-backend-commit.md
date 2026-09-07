@@ -39,6 +39,22 @@ Rough-in constructs each sub-sub-issue's body from the **`cascade-rough-in.md`**
 
 ## Atomic transition pattern (two-step per sub-sub-issue)
 
+### The `gh` shape (github-issues)
+
+`gh` is the default interface for this axis; a git-host MCP is one connection among several, used when it is what the session has. Phase skills read and write the working tree by default and push through `gh` or `git`. This section is the one home for the shape; blueprint's and framing's `planning-backend-commit.md` state only their deltas and point here. The five commands, run as **one script** per transition so the placeholders resolve in the same pass — except the verify line, which runs **once after the last create of the run**, never per issue:
+
+```bash
+set -euo pipefail                                                                              # stop at the first failure (§ Partial failure recovery); never run on an empty value
+url=$(gh issue create --title "$title" --body-file "$body" --label "$labels" --repo "$repo")   # returns the URL; the number is its last path segment
+n=${url##*/}; [ -n "$n" ] || { echo "issue create returned no URL" >&2; exit 1; }
+id=$(gh api "repos/$repo/issues/$n" --jq .id); [ -n "$id" ] || { echo "no id for #$n" >&2; exit 1; }                                                   # the numeric id the link needs (not the number): `sub_issue_id` — "The id of the sub-issue" (`https://docs.github.com/en/rest/issues/sub-issues`, read 2026-09-06)
+gh api -X POST "repos/$repo/issues/$parent/sub_issues" -F sub_issue_id="$id" >/dev/null          # link under the parent
+gh api "repos/$repo/issues/$parent/sub_issues" --jq '[.[].number]'                               # verify — once, after the last create
+gh issue edit "$n" --body-file "$body_resolved"                                                  # create-then-edit: resolve the R<#> / F<#> placeholders once the numbers exist
+```
+
+Two rough edges recorded from an exercised run (a dated field observation, 2026-09-06; re-verify against the sub-issues API page above): the link call returns the **parent** issue object, so a status line built from its `.number` prints "#N under #N" — read the child's number from the create step, never from the link response; and a body carrying a literal placeholder cannot be final at creation, because an issue's own number is not known until it exists — the create-then-edit pass is the mechanism, not a workaround.
+
 Rough-in's planning-backend commit uses GitHub's two-step sub-issue creation, same as framing's pattern:
 
 1. Create the sub-sub-issue via `issue_write` (returns issue number + id)
@@ -65,9 +81,9 @@ GitHub Issues cannot be deleted via the standard API — only closed. The cascad
 
 **Why the partial-supersede on re-rough-in**: if R1, R2, and R3 of the prior rough-in were already merged before R4 surfaced as needing rework, R1-R3 represent real work that's already in the codebase. Closing them as superseded would create a misleading historical record. Only R4 (the one that triggered the rework) and R5+ (the queued ones not yet started) get superseded; R1-R3 keep their `state_reason: completed` close.
 
-### The framing.md event entry shape
+### The README.md event entry shape
 
-The entry appended to `docs/cbk/README.md` for each rough-in run records the event in the cascade's append-only log. The entry has a required shape:
+The entry appended to `docs/cbk/README.md` for each rough-in run records the event in the cascade's append-only log, in the shape every appender shares (the scaffold skill's `references/templates/cascade-events-index-template.md`): **a row** in `## Index` — `# | date | rough-in | frame-NN.md § Rough-in events (M<#>) | Completed` — **plus a phase note** carrying the fields below; the compression rationale and the departures go in the note, never in the row. The frame's own `## Rough-in events` table gets its row in the same commit. The note's required fields:
 
 - **Date and milestone identifier**: *"2026-04-14 — regex-pack:F1:M1"*
 - **R-number range created**: *"R1-R2 (2 sub-sub-issues)"*

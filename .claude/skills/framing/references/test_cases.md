@@ -9,7 +9,7 @@ Realistic prompts for verifying the framing skill works correctly after any revi
 
 **What framing should do**:
 
-1. **Step 1 — Inheritance**: read `docs/cbk/problem_brief.md`, `docs/cbk/scaffold.md`, `docs/cbk/blueprint.md` in full via GitHub MCP. Check `docs/cbk/` — empty. Check `docs/cbk/README.md` — doesn't exist yet (this is frame-01). Present verbatim inheritance summary quoting the brief's no-gos, scaffold's quality bar, blueprint's regex pack workstream row, and blueprint's methodology section. HITL gate: user confirms summary.
+1. **Step 1 — Inheritance**: read `docs/cbk/problem_brief.md`, `docs/cbk/scaffold.md`, `docs/cbk/blueprint.md` in full via GitHub MCP. Check `docs/cbk/` — empty. Check `docs/cbk/README.md` — exists with the consultation, scaffold and blueprint rows (scaffold created it; this is frame-01). Present verbatim inheritance summary quoting the brief's no-gos, scaffold's quality bar, blueprint's regex pack workstream row, and blueprint's methodology section. HITL gate: user confirms summary.
 
 2. **Step 2 — Project selection**: confirm "regex pack" against blueprint's workstreams table. Identify framing number as `frame-01`. HITL gate: user confirms.
 
@@ -19,15 +19,15 @@ Realistic prompts for verifying the framing skill works correctly after any revi
 
 5. **Step 5 — Milestones**: 3-5 milestones, default vertical slicing shape. M1 delivers one end-to-end regex lesson. Each milestone has capability verb, depends-on, rough issues, acceptance signal. HITL gate: user reviews narrative arc.
 
-6. **Commit** `frame-01.md` + create `docs/cbk/README.md` with first index row via GitHub MCP.
+6. **Commit** `frame-01.md` + append the frame-01 row and phase note to `docs/cbk/README.md` via GitHub MCP.
 
 **Success criteria**:
 - Inheritance summary quotes verbatim (not paraphrased) from at least problem_brief, scaffold, and blueprint
 - Research depth proposal happens explicitly as a user signal, not a silent default
 - Frame file is named `frame-01.md` (not `frame-regex.md` or `frame-001.md`)
 - Interface Commitments table is present even though the consumer doesn't exist yet
+- `docs/cbk/README.md` was appended (row + phase note), not created — scaffold created it; and the roadmap rows for the new milestones landed in the frame's commit
 - Every milestone has a verb-phrase capability statement
-- `README.md` index is created alongside `frame-01.md` in the same commit
 - Exactly three HITL gates (standard mode)
 - Full mode offered no MCP or plugin research track (framing does not research tooling); the frame's Pre-flight checks table carries the exact empty-state string `No deferred meta-issues from this framing` when empty.
 
@@ -35,7 +35,7 @@ Realistic prompts for verifying the framing skill works correctly after any revi
 - Framing produces milestones without reading all three inheritance docs in full
 - Research happens without asking the user about depth
 - Interface Commitments section absent or written as prose instead of a table
-- `README.md` index not created or created separately
+- `README.md` index row or phase note missing, or appended in a separate commit
 - Framing all three workstreams instead of just the regex pack
 
 ## Test case 2 — Subsequent framing with "Builds on" inheritance

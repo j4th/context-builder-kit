@@ -23,7 +23,7 @@ These tests are not exhaustive — they cover the canonical happy path and the i
 - **Step 3 (Research)**: proposes a research depth based on inheritance signals — likely "shallow" or "standard" since regex-pack is the first cascade workstream and there's no prior cascade work to extend. Presents findings if any sub-tracks ran.
 - **Step 4 (Issue plan)**: produces 3-7 R-issues with titles, intents, dependencies, and a capstone marker if applicable. HITL gate.
 - **Step 5 (Spec drafting)**: drafts each spec individually using `cascade-rough-in.md` (read from disk first), populates the six sections, ensures each Implementation section meets the eight properties.
-- **Step 6 (Commit)**: presents the atomic transition (sub-sub-issues + framing.md index update), HITL gate, executes the two-step `issue_write` + `sub_issue_write` for each spec, commits the framing.md index entry, completes successfully.
+- **Step 6 (Commit)**: presents the atomic transition (sub-sub-issues + README.md index update), HITL gate, executes the two-step `issue_write` + `sub_issue_write` for each spec, commits the README.md index entry, completes successfully.
 
 **Success criteria**:
 
@@ -31,7 +31,7 @@ These tests are not exhaustive — they cover the canonical happy path and the i
 - Each R-issue's body has the six standard sections with heading names preserved verbatim
 - Each Implementation section is in the 300-800 word range, second person, names specific files/signatures, cites cascade docs by section name
 - The slug + F-number in each R-issue title matches the parent framing sub-issue's title
-- The framing.md index has an entry recording the rough-in event with the R-number range
+- The README.md index has an entry recording the rough-in event with the R-number range
 - The board automation moves each R-issue to Status = Ready (verified after a brief delay)
 - No HITL gate was skipped, no step was conflated, no MCP call failed
 - The total turn count is reasonable (4-8 turns for standard mode, 1-2 turns for light mode)
@@ -78,7 +78,7 @@ These tests are not exhaustive — they cover the canonical happy path and the i
 - **Step 1**: reads scaffold.md, detects `profile: markdown-only`, surfaces the markdown-only acknowledgment in the inheritance gate (parallel to blueprint's markdown-only acknowledgment): *"This is markdown-only profile — I'll skip the planning-backend half of every commit. The rough-in specs will land as markdown content rather than as GitHub sub-sub-issues. Sound right?"*
 - **Step 2**: inherits the slug + F-number from the framing's milestone entry in `frame-01.md` directly (not from a parent issue title because there isn't one).
 - **Steps 3-5**: same as Test 1 — research, issue plan, spec drafting all profile-agnostic.
-- **Step 6**: presents the markdown-only commit gate with the file location choice (append to frame-01.md vs new per-milestone rough-in markdown file). User picks. Rough-in commits the markdown content and the framing.md index entry. No planning-backend operations.
+- **Step 6**: presents the markdown-only commit gate with the file location choice (append to frame-01.md vs new per-milestone rough-in markdown file). User picks. Rough-in commits the markdown content and the README.md index entry. No planning-backend operations.
 
 **Success criteria**:
 
@@ -86,7 +86,7 @@ These tests are not exhaustive — they cover the canonical happy path and the i
 - The slug + F-number inheritance works without a parent issue
 - The user is offered the file-location choice and rough-in respects the choice
 - The rough-in spec content lands in the chosen location with the six-section structure preserved
-- The framing.md index has an entry recording the rough-in event
+- The README.md index has an entry recording the rough-in event
 - No planning-backend MCP operations were attempted
 - The pre-flight checks still ran (it's profile-agnostic)
 - No `/finish` references appear in the output without explicit caveats (markdown-only mode has no `/finish` slash command, the user executes manually)
@@ -150,7 +150,7 @@ These tests are not exhaustive — they cover the canonical happy path and the i
   > - R2: `issue_write` returned issue id 12345 successfully, but `sub_issue_write` to link it to the parent never responded. R2 may exist as an orphan issue without a parent link, OR may have actually linked successfully and the response was lost. **Please verify R2's state on GitHub before I do anything else.**
   >
   > **Queued, not attempted**:
-  > - R3, R4, and the framing.md index update
+  > - R3, R4, and the README.md index update
   >
   > Once you've verified R2's state, tell me one of:
   > (a) R2 is correctly linked, proceed with creating R3 and R4 and the markdown commit
@@ -218,6 +218,7 @@ These tests are not exhaustive — they cover the canonical happy path and the i
 
 **Success criteria**:
 - The skill reads the inputs and `references/contract.md`; `references/procedure.md` is not opened (light mode, no unclear step)
+- A measurement-shaped spec in the set carries the template's measurement variant: the verdict rule as the first criterion, the frozen findings table, and a `## Done signal` naming both the run-and-revise loop and the by-hand completeness check (never the CI gate)
 - The whole set is drafted before anything is shown: pre-flight result, issue plan, coverage map (every `[F<#>.AC<n>]` owned by exactly one R-issue), every spec body with numbered `[R<#>.AC<m>]` criteria and test tags keyed to them, the commit-time text
 - One fresh-context verifier at the verify tier attacks citations, repo claims, package-API claims, the coverage map and the test tags, and its defects are fixed before the gate
 - The one gate carries the decision list; the framing-invited judgment call (which R-issue the blocking row becomes a dependency of) is made and its reason recorded

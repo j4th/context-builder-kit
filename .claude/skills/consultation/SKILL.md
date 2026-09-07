@@ -9,9 +9,9 @@ Phase 1 of the six-phase AI-assisted development cascade. Transforms a raw idea 
 
 This skill is deliberately conversational and HITL-heavy. The human is the source of truth about what problem is worth solving; Claude's job is to interview well, reflect back honestly, and refuse to solutionize prematurely.
 
-## Incoming context — Notion or other pre-cascade material (optional, runs first if applicable)
+## Incoming context — Notion, a frozen corpus on disk, or other pre-cascade material (optional, runs first if applicable)
 
-Before the four-step interview, check whether the operator is arriving with existing context worth ingesting as starting material — typically Notion pages they've curated, prior design docs, research from another tool. This is especially common for operators who picked the cascade to organize *existing* thinking, not to start from scratch.
+Before the four-step interview, check whether the operator is arriving with existing context worth ingesting as starting material — typically Notion pages they've curated, prior design docs, research from another tool. **Two branches by where the material lives:** Notion (or pasted content) takes the four access modes below; a **directory of planning files on disk** takes `references/frozen_corpus_ingestion.md` — read in full, cited verbatim in `## Pre-cascade sources`, never edited, with a lazily created `<slug>-errata.md` companion for defects, and the brief's `## Handoff notes for later phases` telling scaffold what to land and register. This is especially common for operators who picked the cascade to organize *existing* thinking, not to start from scratch.
 
 **Opening question** (skip if the user's first message already provided rich context):
 
@@ -175,6 +175,7 @@ The scaffold phase consumes the approved brief and extracts: project name (for n
 - `references/methodology_register_excerpt.md` — Shape Up, spikes, YAGNI entries plus pointers to the full register
 - `references/brownfield_addendum.md` — current-state-assessment step and brownfield-specific brief additions
 - `references/notion_ingestion.md` — operational reference for the Notion-as-input flow at § Incoming context: four access modes, MCP fetch dialogue, per-search HITL announcements, what to record in `## Pre-cascade sources`
+- `references/frozen_corpus_ingestion.md` — the sibling flow for a directory of planning material on disk: the freeze discipline, the errata companion, `Promotes:`, the enforcement set scaffold registers, what to record in the brief
 - `references/test_cases.md` — realistic test prompts (greenfield, brownfield, partial-context) with success criteria for verifying the skill still works after revisions
 
 Kit-wide operational contracts (`.claude/rules/`):

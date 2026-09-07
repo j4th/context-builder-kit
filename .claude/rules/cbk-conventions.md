@@ -18,9 +18,9 @@ A single glanceable manifest of where every surface for this project actually li
 - **Code + cascade artifacts (the constant):** `<repo URL>`
 - **Planning backend (`<GitHub Issues | Linear | in-repo markdown>`):** `<workspace / initiative / team+key / project pointers, as applicable>`
 - **Knowledge backend (`<Notion | none>`):** `<hub URL + MCP server, if configured>`
-- **Upstream / pre-cascade docs:** `<path to any frozen reference material, or "none">`
+- **Upstream / pre-cascade docs:** `<path to any frozen reference material, or "none">` — a designated corpus follows the consultation skill's `references/frozen_corpus_ingestion.md` (read in full, never edited; its `<slug>-errata.md` companion amends)
 - **Problem brief / scaffold output:** `docs/cbk/problem_brief.md` · `docs/cbk/scaffold.md`
-- **Tooling conventions:** `<record any project-specific tool / MCP-selection conventions here — e.g. which code-intelligence or live-docs MCP to prefer over the built-ins, or the project's model/effort orchestration conventions for dispatched agents — or "defaults">`
+- **Tooling conventions:** `<record any project-specific tool / MCP-selection conventions here — the code-intelligence route (the built-in LSP tool via the language plugin, or an MCP for a language without one), which live-docs MCP to prefer, or the project's model/effort orchestration conventions for dispatched agents — or "defaults">`
 - **Reviewer agent-memory (`<project | local>`):** `<".claude/agent-memory/ — committed; the kit's .gitignore line deleted" | ".claude/agent-memory-local/ — never committed">` — settled at scaffold's rule-file disposition pass (`pr-review.md` § Reviewer precedent memory)
 
 ## Rule loading and the instruction budget
@@ -70,6 +70,8 @@ Example shapes:
 
 `/finish` already creates branches in this shape; this convention codifies what was already happening.
 
+**The issue-less branch.** Operator-directed maintenance that no cascade issue tracks — a dependency bump the bot did not open, a docs sweep, a hook fix — takes the form `<type>/<short-slug>` with no issue segment, and its PR body carries the statement **"operator-directed maintenance; no cascade issue"** as its first line. The scope fence is § Contribution intake: anything that adds behaviour, fixes a reported bug, or touches a workstream's code is a cascade issue (`/intake`, `/enrich`, or framing), never an issue-less branch. Such a PR still carries the `## Review gate` block; what stands in for the floor is written as *not run* with the reason ("not run — docs-only sweep, no code changed"), never left blank and never described as run.
+
 Create the branch and make the first commit in **separate tool calls**: the default-branch guard judges a compound command on the branch at entry, so `git switch -c … && git commit …` is blocked even though the commit would have been legal by the time it ran.
 
 ### Linear `{type}` placeholder — set the type label at issue creation (Linear only)
@@ -83,6 +85,10 @@ Create the branch and make the first commit in **separate tool calls**: the defa
 | everything else (`chore`, `docs`, `refactor`, `test`, `perf`, `style`, `build`, `ci`) | Improvement |
 
 The rough-in / `/intake` / `/enrich` flows set this at issue-creation time — see the rough-in skill's planning-backend matrix.
+
+## Licensing
+
+→ *Moved to* `cbk-conventions-reference.md` § Licensing *(path-scoped; see § Rule loading and the instruction budget).*
 
 ## Closes-keyword conventions
 
@@ -123,13 +129,13 @@ How to avoid:
 - When `/finish` (or any branch-prep flow) ends with marker-carrying docs commits, **end the branch on a non-marker commit** before flipping to ready. An empty commit (`git commit --allow-empty -m "ci: trigger auto-review workflow"`) is the cleanest fix when no other change is queued.
 - Order commits so the last one is a code/test commit (which can't carry the marker per the rules above) — when feasible, it removes the foot-gun automatically.
 
-**Deliverable trap — an unattended CI agent's deliverable is the posted artifact, not its exit code.** An auto-review workflow that runs green but posts no comment has failed silently: the run's success condition is its side-effect (the posted review), so the workflow should assert the artifact actually landed — and a green-run-no-comment symptom is investigated as a failure, not shrugged off.
+**Deliverable trap — an unattended CI agent's deliverable is the posted artifact, not its exit code, in both directions.** An auto-review workflow that runs green but posts no comment has failed silently: the run's success condition is its side-effect (the posted review), so the workflow should assert the artifact actually landed — and a green-run-no-comment symptom is investigated as a failure, not shrugged off. The converse holds too: a run that ends red *after* posting its complete review has succeeded — an exercised run did exactly that. The artifact decides; the exit code is evidence, not the verdict.
 
 **Exclusion is not exemption — linter-excluded surfaces get their own CI gate.** When a surface is deliberately excluded from the generic linter (a dialect the linter can't parse, generated-but-checked files, a DSL), it still gets a dedicated CI check of its own; otherwise the exclusion quietly becomes a standing exemption from all verification.
 
 **Substring trap — quoting the literal marker token in a commit-message body re-triggers the matcher.** GitHub's match is a substring scan across the entire message, not anchored to the subject line or the end. A commit whose body explains *why* it's a fix for this trap, but quotes the literal token while explaining, is itself skipped. Use a paraphrase (e.g., "the CI-skip marker", "the conventional skip-tag") in prose; reserve the literal `[skip ci]` for the actual flag at the end of the subject line where you intend it to fire.
 
-**Required-checks-block-merge trap — a skip-marked HEAD commit can't merge under strict branch protection.** When `main` requires status-check contexts with "require branches to be up to date" (strict), the CI-skip marker suppresses the CI workflow entirely, so those required contexts **never report** — the platform parks them as "Expected — Waiting for status to be reported" and the merge stays blocked indefinitely. (A separate always-on workflow can still run, making the PR *look* green while it stays unmergeable.) Net: `[skip ci]` saves nothing for a PR that has to merge through branch protection. For a docs-only PR bound for `main`, either (a) skip the marker on the final commit so CI runs and reports, or (b) keep the marker on the content commits but end the branch on a non-marker commit (`git commit --allow-empty -m "ci: run gates to satisfy required checks"`) before requesting merge. Same root cause and fix as the auto-review trap; the marker still earns its keep on intermediate WIP commits that don't open a PR to `main`.
+**Required-checks-block-merge trap.** Under a ruleset or branch protection that requires status-check contexts, a PR parks on "Expected — Waiting for status to be reported" and stays unmergeable while an always-on workflow still runs green beside it. One symptom, three causes — the CI-skip marker on the HEAD commit, a `paths:`-filtered workflow backing a required check, a promoted check-run whose name changed — with their fixes and sources in `cbk-conventions-reference.md` § Required-checks trap. The rule in one line: a required-check workflow carries no trigger filter and an explicit, stable job `name:`, and a branch bound for the base ends on a non-marker commit.
 
 ## Dependency settle-window — supply-chain discipline
 
@@ -143,6 +149,17 @@ How to avoid:
 
 → *Moved to* `cbk-conventions-reference.md` § Verify-against-reality before a one-way door (optional practice) *(path-scoped; see § Rule loading and the instruction budget).*
 
+## Multi-surface facts
+
+Some facts are stated in more than one place by design — an ADR and its index rows, a rule and the reviewer that enforces it, a template and the executor that parses it, a repo artifact and its knowledge-backend companion. Stated once, the discipline is:
+
+- **Every restatement records where the fact's other statements live**, and an edit sweeps every recorded location in one commit — never "update the index later".
+- **Back-pointers are asymmetric.** The immutable source never points forward — an ADR gains no link to its refiners, its extenders, its corrections or its companion page; the companion points back. Discoverability is the companion's job plus the index row.
+- **A re-check trigger is reachable from the line that fires it** — a dated rail names what re-verifies it *at the rail*, not in a separate list.
+- **Closed sets are machine-maintained where the tree can** — the verification block diffs the copies it can reach (the bundled executor templates, the reviewers' `## Writing memory`, the adr-starters, the price table); a set the tree cannot diff carries its other locations in prose, at each copy.
+
+**The companion vocabulary** — an *immutable source* plus an *append-only companion* — has three instances: `docs/adr/NNNN-*.md` + `docs/adr/corrections.md` (claims that proved wrong); a frozen pre-cascade corpus + its `<slug>-errata.md` (consultation's `references/frozen_corpus_ingestion.md`); a repo artifact + its knowledge-backend companion page (`knowledge-backend.md` § When to write). The four rules apply to each. § ADR index sync below is the first instance of this discipline, and a drift-guard test whose subject is the consistency itself is the fourth test shape (`testing.md` § Quick reference).
+
 ## ADR index sync
 
 Every ADR addition (and every supersession) updates **multiple indexes** in lockstep:
@@ -152,11 +169,11 @@ Every ADR addition (and every supersession) updates **multiple indexes** in lock
 3. **`docs/ARCHITECTURE.md` § Configurability summary** (if the project uses a configurability-first principle)
 4. **`docs/cbk/blueprint.md` § Stack decisions** — also updated for post-blueprint ADRs (since blueprint.md is itself a cascade artifact)
 
-The `adr-new` skill (at `.claude/skills/adr-new/SKILL.md`) automates the cross-index sync. Manual ADR creation works but is error-prone (multiple indexes to keep in sync); use the skill.
+This list is the one home for the sync targets: `adr-new` reads it and states no count of its own; on drift the README index row is canonical and the other surfaces are corrected to it. The blueprint's § Stack decisions table is append-only and gains a one-line bullet only when the ADR changes a *stack* decision — it is a cascade artifact, not an index. The `adr-new` skill (at `.claude/skills/adr-new/SKILL.md`) automates the cross-index sync. Manual ADR creation works but is error-prone (multiple indexes to keep in sync); use the skill.
 
 ADR immutability should be enforced two ways:
 - **A PreToolUse hook** at `.claude/hooks/protect-immutable-adrs.sh` blocks Claude Code edits to existing ADR files
-- **A CI lint** at `.github/workflows/adr-immutability-check.yml` diffs `docs/adr/[0-9]{4}-*.md` files in PRs and fails on changes to existing ADRs (closes the raw-git-access gap that the hook can't catch)
+- **A CI lint** at `.github/workflows/adr-immutability-check.yml` diffs `docs/adr/[0-9]{4}-*.md` files in PRs and fails on changes to existing ADRs (closes the raw-git-access gap that the hook can't catch). It carries no `paths:` filter and a pinned job name, so it can be a required check — `cbk-conventions-reference.md` § Required-checks trap, causes 2 and 3
 
 Both belong in any project that takes ADRs seriously; the kit's `adr-new` skill assumes both exist.
 
@@ -169,25 +186,23 @@ Both belong in any project that takes ADRs seriously; the kit's `adr-new` skill 
 | Artifact | Mutation rule | Supersession pattern | Rationale |
 |---|---|---|---|
 | `docs/adr/[0-9]{4}-*.md` | **Immutable** | New ADR with `Supersedes: ADR-NNNN` field; old ADR's status changes to "Superseded by ADR-MMMM" | ADR-0000 immutability discipline + hook enforcement + CI lint |
-| `docs/cbk/blueprint.md` | **Append-only for new ADRs** (the Stack decisions table); otherwise immutable to preserve cascade history | Re-blueprint creates new file | Blueprint is a cascade event; mutation breaks the audit trail |
+| `docs/adr/corrections.md` | **Append-only**; dated entries never edited — a correction to a correction is a new entry; evidence annotated under the entry when its meaning goes stale | n/a | The claim companion to the immutable ADRs (§ Multi-surface facts); `protect-immutable-adrs.sh` leaves it editable by design |
+| A designated frozen pre-cascade corpus + `<slug>-errata.md` | Corpus **frozen** — read in full, never edited by any phase; the errata companion **append-only** and dated ("amends; never edits") | n/a — a superseded reading is a new errata entry | The reference material the cascade inherits verbatim (consultation's `references/frozen_corpus_ingestion.md`); scaffold registers the hook, CI job, `.gitattributes` and editor entries that keep it byte-stable |
+| `docs/cbk/blueprint.md` | **Append-only in three sections** — the Stack decisions table (new ADRs), `## Amendments`, `## Retired justifications`; otherwise immutable to preserve cascade history | Re-blueprint creates new file | Blueprint is a cascade event; mutation breaks the audit trail |
 | `docs/cbk/frame-NN.md` | **Append-only for `## Rough-in events` table**; otherwise immutable post-commit | Re-framing creates `frame-MM.md` with `Supersedes: frame-NN` field; old frame's status → "Superseded" | Frames are cascade events; rough-in events are the timeline log |
 | `docs/cbk/frame-MM.md` (additive increment) | **New file** (next sequential number); the prior frame is not mutated and stays `Active` | *No* supersession — an additive increment carries a `Builds on: frame-NN` header (not `Supersedes`); both frames stay `Active` and their open milestones coexist | Not every new framing replaces: an increment extends a workstream whose prior milestones are still valid and open, so the prior frame must not flip to `Superseded` (see the framing skill's `references/procedure.md` § Step 2 pattern D) |
 | `docs/cbk/frame-MM.md` (milestone-scoped re-frame) | **New file** (next sequential number); the prior frame is not mutated | Header states `Supersedes only milestone M<N> of frame-NN`; the prior frame's index status is annotated `Active (M<N> superseded by frame-MM)` via the permitted status-column mutation; the retired milestone's acceptance-criteria set is recorded as retired-un-executed in the new frame | One milestone's shape can fail while its siblings are built and Done; whole-frame supersession would falsify the siblings' history (see the framing skill's `references/procedure.md` § Step 2 pattern E) |
-| `docs/cbk/README.md` | **Append-only for new entries**; status column updates allowed | Status updates are mutations to single column, not whole-file rewrites | Status changes (Active → Superseded → Completed) need to flow |
+| `docs/cbk/ROADMAP.md` (github-issues and in-repo-markdown axes) | **Freely mutable** — a status surface, not a cascade event | n/a — a wrong row is fixed in place; a superseded row reads *retired* | Where we are and what is next; blueprint writes it, framing appends rows in the frame's commit, rough-in flips to *roughed-in*, `/finish` flips to *done* on the PR's own branch or the post-merge checklist does (`commands/finish.md` item 8). The audit trail is the index and git history, never this file |
+| `docs/cbk/README.md` | **Append-only for new entries**; status column updates allowed. Scaffold creates it (from its index template); blueprint, framing and rough-in append a row and a phase note each | Status updates are mutations to single column, not whole-file rewrites | Status changes (Active → Superseded → Completed) need to flow |
 | `docs/STANDARDS.md`, `docs/ARCHITECTURE.md`, `CLAUDE.md` | **Freely mutable** | n/a — living docs | Project-context docs evolve with the project; git history is the version archive |
 | `.claude/rules/*.md` | **Freely mutable** | n/a | Operational rules; mutations are routine |
 | `.claude/skills/*` | **Freely mutable** within the local copy | n/a | Tooling content; mutations refine the cascade |
 | Code | **Freely mutable** | n/a | Standard code evolution |
 
-Cascade events being append-only is structurally important: the cascade IS the audit trail of decisions. A new framing supersedes an old one with a new file; the old one stays in `docs/cbk/` for future readers to understand "we used to think X, now we think Y."
+Cascade events being append-only is structurally important: the cascade IS the audit trail of decisions. **Two status surfaces are carved out of the executor's cascade-artifact ban** — the roadmap row and a frame's `## Rough-in events` table — because they record state, not decisions; the row above and `commands/finish.md` item 8 say who flips them and when. A new framing supersedes an old one with a new file; the old one stays in `docs/cbk/` for future readers to understand "we used to think X, now we think Y."
 
 **The table and the hook registry are two views of one list.** A row enforced by a hook names it: ADRs → `protect-immutable-adrs.sh` (plus the CI lint); lock files → `protect-lock-files.sh`. A hook that enforces a rule clause rather than a table row names the clause: `protect-main-branch.sh` → § Branch naming; `require-repo-root-for-agents.sh` and `detect-forked-agent-memory.sh` → `pr-review.md` § Reviewer precedent memory (one home for the memory tree); `guard-pr-state.sh` → the PR-state one-way door in `cbk-conventions-reference.md` § HITL gate load-bearing heuristics; `require-knowledge-backend-ok.sh` → `knowledge-backend.md` § HITL announcement discipline. Rows with no hook (the append-only cascade artifacts, the index's status column) are instruction-enforced and carry a deferred-hardening note per § HITL gate load-bearing heuristics. The registry in `.claude/settings.json` lists the same hooks under their tiers, and the verification block checks the registry against the files. The authoring shape lives in `cbk-conventions-reference.md` § Hook authoring.
-**ADR supersession has more than one grain.** The `docs/adr/*` row above shows whole-ADR supersession; two finer-grained relationships sit alongside it, both preserving the parent's immutability (neither edits the parent file):
-
-- **Refine** — `Refines: ADR-NNNN (Dn, …)` in the child's header narrows or clause-level-clarifies a specific decision `Dn` in the parent **without invalidating it**. The parent stays **Accepted**; both parent and child are consulted for conformance. Use when implementation reveals an accepted clause was written too generally and needs a scoped reading, not a reversal. The parent gains **no back-pointer** (it is immutable) and **no status change** — discoverability comes from the child's `Refines:` field plus the child's ADR-index row.
-- **Clause-scoped supersede** — `Supersedes: ADR-NNNN Dn` reverses only decision `Dn` of the parent while the parent's other clauses stand. The parent stays **Accepted** (it is not wholly superseded); the child's index row names the specific clause it replaces.
-
-**Reviewers that check ADR conformance must follow the `Refines:` chain.** When an ADR intersecting a diff names a refiner (or a clause-scoped superseder), load that child too and apply its scoped clauses — a parent read in isolation yields the pre-narrowing reading. The kit's `adr-conformance-reviewer` agent (see `.claude/rules/pr-review.md` § Project-local agents to dispatch alongside) is where this chain-following lives.
+**ADR supersession has more than one grain** — Refine, clause-scoped supersede, Extend and Promote, with the claim register for what is not a decision at all. The definitions, the disambiguation test (a child that removes a permitted reading is a Refine; one that adds an obligation beside a clause that stays satisfied is an Extend) and the rule that reviewers follow the `Refines:` and `Extends:` chains and consult `docs/adr/corrections.md` before flagging a claim live in `cbk-conventions-reference.md` § ADR relation grains, which loads whenever a decision record is read.
 
 ## HITL gate load-bearing heuristics
 
@@ -210,7 +225,8 @@ Cascade events being append-only is structurally important: the cascade IS the a
 | What you're doing | Where the convention lives |
 |---|---|
 | Naming a cascade event | Flat `docs/cbk/<artifact>.md`, sequential numbering |
-| Updating the cascade-events index | `docs/cbk/README.md` (status column) |
+| Updating the cascade-events index | `docs/cbk/README.md` — see § Mutation discipline (its row names the creator and the appenders) |
+| Flipping the roadmap row | `docs/cbk/ROADMAP.md` — see § Mutation discipline (its row names who flips it and when) |
 | Naming a planning-backend issue | `[<workstream-slug>:F<#>:R<#>] <intent>` |
 | Naming a branch | `<type>/<TEAM>-<N>-<short-slug>` |
 | Closing an issue from a PR | `Closes <TEAM>-N` (Linear) or `Closes #N` (GitHub) in PR body |

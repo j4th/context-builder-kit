@@ -36,7 +36,7 @@ docs/cbk/
 
 **Chronological tracking lives in two places**:
 
-1. **`docs/cbk/README.md`** — across-cascade timeline. Status column tracks Active / Completed / Superseded by frame-NN / Abandoned. Mirrors the shape of `docs/adr/README.md`.
+1. **`docs/cbk/README.md`** — across-cascade timeline. Status column tracks Active / Completed / Superseded by frame-NN / Abandoned. Mirrors the shape of `docs/adr/README.md`. Scaffold creates it from the scaffold skill's `references/templates/cascade-events-index-template.md`; blueprint, framing and rough-in append a row and a phase note each.
 2. **`## Rough-in events` section inside each frame-NN.md** — per-frame timeline of rough-in events that built against that framing. Append-only table within the frame document. Useful for "which milestones from this framing have been roughed-in, on what date, with what capstone PR" lookups without leaving the frame.
 
 Both serve distinct jobs: README is the across-frames table of contents; in-frame events log is the per-frame log. Don't conflate.
@@ -239,7 +239,37 @@ Two invariants keep the window honest; violate either and the policy inverts fro
 
 **CI workflow actions are dependencies too.** A tag reference (`uses: vendor/action@vN`) is mutable and open to tag-retag compromise: pin every `uses:` to a full commit SHA with a trailing version comment (`@<sha> # vN.N.N`), resolve initial pins to the newest release in the current major that satisfies the settle window, and let the update bot's CI-actions ecosystem entry maintain the pins routinely (it carries the release-age floor like every other ecosystem).
 
+**Age is necessary, not sufficient.** A release that has cleared the window can still be the wrong one to adopt: before a bump, check whether the fix the project needs is **merged upstream but not yet released** — adopting the latest release then buys nothing. Two paths exist for that case, and the second is gated: (a) a **git-revision pin** on the upstream commit, carrying in its manifest comment the date, the upstream PR, and a **retire trigger** ("replace with the registry release ≥ vX.Y that contains it"); (b) **promote-at-registry-version** — the pin is swapped for the registry release the moment it exists *and* has itself cleared the window; never a promotion the day it ships. A git-rev pin that outlives its trigger is a rail that outlived its evidence.
+
+**Toolchain and single-binary pins take the floor by hand.** No update bot covers the toolchain manager's pins (`mise.toml` `[tools]`, `.tool-versions`, `rust-toolchain.toml`, `.nvmrc`), a container base-image tag, or a single-binary tool fetched by URL. For each: the commit that sets the pin states the release's **settled age** in its body ("v3.2.1, released 2026-08-20, 17 days old at pin"), and the project names **one tracking mechanism** for the next bump — an open issue with a date, a scheduled check in the task runner, or a project automation — in the filled-in copy of this section. A pin with no named tracker is a pin nobody will bump.
+
+**Inactive ecosystem stubs carry the floor too.** A commented-out or scheduled-off ecosystem entry in the update-bot config ships *with* its cooldown block, so uncommenting it never produces a bare entry (the starter `dependabot.yml` is written this way).
+
+**Metadata-only lockfile diffs are discarded.** A lockfile change whose diff is only registry metadata (integrity re-hashes, resolved-URL churn, a tool's own version stamp) with no version change is not committed — regenerate it from the manifest and keep the tree still; a reviewer reading a lockfile diff should see only versions moving.
+
+**Bot PRs and the self-merge rule.** A dependency-bot PR is triaged by `pr-review.md`'s rubric like any other; on a solo project the operator may self-merge one **only** after CI is green *and* the lockfile diff has been read (which the counter-line below makes possible). A bot PR bundling a **behaviour delta into a security bump** is accommodated narrowly — the smallest code change that keeps the fix, with the delta named in the PR body — never by widening the window to dodge it (the first invariant above).
+
+### Keep the lockfile diff visible
+
+The git host classifies recognised lockfiles as *generated* — linguist's `lib/linguist/generated.rb` lists the predicates by file name (`cargo_lock?`, `npm_shrinkwrap_or_package_lock?`, `pnpm_lock?`, `poetry_lock?`, `uv_lock?`, `composer_lock?`, `go_lock?`, `mise_lock?` among them; `https://github.com/github-linguist/linguist/blob/main/lib/linguist/generated.rb`, read 2026-09-06) — and a generated file is *"excluded from stats, hidden in diffs"* (`docs/overrides.md`, same repository, same date). That collapses exactly the diff the settle-window review depends on. The counter-line is one `.gitattributes` entry per audited lockfile the host would collapse:
+
+```
+<lockfile> linguist-generated=false
+```
+
+`rust-lang/rust` carries `Cargo.lock linguist-generated=false` in its own `.gitattributes` for this reason (read 2026-09-06). The line is harmless where the file name is not on linguist's list; check the list rather than guess. **Pre-check before adding `* text=auto eol=lf` in the same file**: zero CRLF files in the tree, no prior `.gitattributes`, `core.autocrlf` and `core.eol` unset — renormalizing a tree that already holds CRLF content rewrites history-visible bytes; record the pre-check's result and date in the file's comment (the scaffold starter carries the shape). The lock-file entry in `pr-review.md` § Pre-filters presumes a human can still read the diff; this is what keeps that true.
+
 Dependency-update-bot PRs are triaged by `pr-review.md`'s four-class rubric; this section states the adoption policy those PRs are gated by.
+
+## .gitignore anchoring
+
+A `.gitignore` entry is **anchored by default** — `/build/`, `/.env`, `/target/` — so it matches one path at the repository root and nothing else. An unanchored `build/` also ignores `src/lib/build/` and `docs/build/`, and the silent miss shows up months later as a file that never landed. The rules:
+
+- **Any-depth entries are deliberate and marked.** An entry meant to match at every depth (`**/node_modules/`, `*.pyc`, `.DS_Store`) carries a one-line comment saying so; an unmarked unanchored entry is a defect.
+- **Per-language sections are scoped to the language's directory home** once one is declared — a Python section under `/services/api/` writes `/services/api/__pycache__/`, not `__pycache__/`. Before a home is declared, the section says which.
+- **A commit that changes `.gitignore` states its pin assertions in the body**: which path each new entry is meant to match, and one path it must *not* match. `git check-ignore -v <path>` is the test; the assertion is what makes a later reader able to re-run it.
+- **Harness transients are ignored by anchored path** — the agent's scratch and memory-local trees (`/.claude/agent-memory-local/`, the session scratchpad if it is ever placed in-tree), never by a bare name that would also hide a real directory.
+- **No shipped reviewer restates this.** The `cascade-rule-reviewer` names the section in scope; the rule lives here once.
 
 ## Methodology — choice space
 
@@ -252,6 +282,15 @@ Blueprint picks a methodology from the register based on team shape, appetite, a
 - **Flop / kill checkpoint** (optional): a pre-declared point at which the project honestly stops rather than continuing on sunk cost — a Shape-Up-adjacent circuit breaker (e.g. "if the core hypothesis hasn't proven out by milestone N, we end it deliberately"). Record the criterion if the project wants one.
 
 Whichever methodology blueprint picks, this section in the project's filled-in copy of `cbk-conventions.md` should record: cycles on/off, pull-flow style, WIP discipline, appetite-tagging convention. Without this record, the methodology selection from blueprint is hard to operate against.
+
+## Licensing
+
+The repository records a licence choice, and **"none yet — all rights reserved" is a valid, recorded choice** (the `LICENSE` file absent on purpose, the README § License saying so). Scaffold confirms the licence with the operator the way it confirms visibility — one question, at repository creation, with the solo default (MIT) offered and never a copyleft licence without explicit opt-in — and seeds the `LICENSE` file and the README section from the answer. Two constraints the choice carries:
+
+- **Relicensing needs every contributor's consent from the second contributor on.** A project that stays "none yet" through its first outside contribution has made a decision by default; decide before that PR merges.
+- **Third-party asset licences bind independently** of the repository's — a font, an icon set, a dataset or a model weight ships under its own terms, recorded beside the asset (a `LICENSE-<asset>` or a `NOTICE` entry), and a licence the asset forbids for the repository's use is a blocker, not a footnote.
+
+The filled-in copy of this section records the SPDX identifier (or "none yet"), the date, and the asset licences the tree carries.
 
 ## Verify-against-reality before a one-way door (optional practice)
 
@@ -325,11 +364,36 @@ The checklist runs auto-checkable; surfacing only failures. Per [GitHub Spec Kit
 
 Every phase-exit checklist the kit ships (scaffold, blueprint, framing) carries one standing item: **if this run exercised a call that a reference file flags as individually unexercised, restamp it in the same commit** — drop the flag, date the run generically ("a second real run, <date>"), and update the file's § Exercise status. A flag with a re-check trigger nobody fires is a rail that outlives its evidence.
 
+## ADR relation grains
+
+Moved from the contract's § Mutation discipline on 2026-09-07 (the section is consulted when a decision record is read or reviewed; this file loads on `docs/adr/**`). The contract keeps a one-paragraph pointer.
+
+**ADR supersession has more than one grain.** The `docs/adr/*` row above shows whole-ADR supersession; two finer-grained relationships sit alongside it, both preserving the parent's immutability (neither edits the parent file):
+
+- **Refine** — `Refines: ADR-NNNN (Dn, …)` in the child's header narrows or clause-level-clarifies a specific decision `Dn` in the parent **without invalidating it**. The parent stays **Accepted**; both parent and child are consulted for conformance. Use when implementation reveals an accepted clause was written too generally and needs a scoped reading, not a reversal. The parent gains **no back-pointer** (it is immutable) and **no status change** — discoverability comes from the child's `Refines:` field plus the child's ADR-index row.
+- **Clause-scoped supersede** — `Supersedes: ADR-NNNN Dn` reverses only decision `Dn` of the parent while the parent's other clauses stand. The parent stays **Accepted** (it is not wholly superseded); the child's index row names the specific clause it replaces, and the parent's index row is annotated (`Accepted · Dn superseded by ADR-MMMM`) while the parent file stays untouched.
+- **Extend** — `Extends: ADR-NNNN (Dn, …)` adds an obligation beside a parent clause that **stays satisfied as written**. The parent stays **Accepted** and is not narrowed; the child adds a check the parent alone would not raise. **The disambiguation test:** a child that *removes a permitted reading* of the parent clause is a Refine; one that *adds an obligation beside a clause that stays satisfied* is an Extend. Both are asymmetric — the parent gains no back-pointer; the child's header field and its index row carry the relation, and the status cell carries grain and parent inline (`Accepted · Extends ADR-0003 (D1)`).
+- **Promote** — `Promotes: <corpus path> § <heading>` records a decision lifted from a frozen pre-cascade corpus (the consultation skill's `references/frozen_corpus_ingestion.md`); the corpus is the provenance, the ADR the binding form.
+
+A wrong **claim** inside an accepted ADR — a citation, a figure, an attribution, a formula — is none of these grains: it goes to `docs/adr/corrections.md`, the append-only register, and the ADR stays as written.
+
+**Reviewers that check ADR conformance must follow the `Refines:` and `Extends:` chains.** When an ADR intersecting a diff names a refiner (or a clause-scoped superseder), load that child too and apply its scoped clauses — a parent read in isolation yields the pre-narrowing reading. An extender is the asymmetric case: the parent passes unchanged while the child can fail, so a diff clean against the parent is not clean until every extender is checked. A reviewer consults `docs/adr/corrections.md` before flagging a claim, and cites an entry rather than restating it. The kit's `adr-conformance-reviewer` agent (see `.claude/rules/pr-review.md` § Project-local agents to dispatch alongside) is where this chain-following lives.
+
+## Required-checks trap
+
+Moved from the contract's § `[skip ci]` rule on 2026-09-07 (consulted when a `.github/` file is authored or a check parks; this file loads on `.github/**`). The contract keeps the symptom and the one-line fix rule.
+
+**Required-checks-block-merge trap — one symptom, three causes.** Under strict branch protection or a ruleset that requires status-check contexts, a PR parks on "Expected — Waiting for status to be reported" and stays unmergeable indefinitely (a separate always-on workflow can still run, making the PR *look* green). GitHub names the family in its troubleshooting page for required checks — a required check "skipped by path filtering, branch filtering, or a commit message" never reports (`docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks`, read 2026-09-06). The three causes, with the fix at each:
+
+1. **The CI-skip marker on the HEAD commit** suppresses the workflow, so its required contexts never report. For a docs-only PR bound for `main`, either drop the marker on the final commit so CI runs, or end the branch on a non-marker commit (`git commit --allow-empty -m "ci: run gates to satisfy required checks"`). The marker still earns its keep on intermediate commits that open no PR to `main`.
+2. **A `paths:`-filtered workflow backing a required check** does not run on a diff that matches nothing, so its context never reports. A required-check workflow carries **no trigger filter**; any narrowing happens inside the job as a fast no-op exit — § Exclusion is not exemption, applied to trigger filters. The kit's own ADR-immutability lint is written this way for that reason.
+3. **A promoted check-run's name changes.** Matching is by name: a job renamed after promotion, or a job with no explicit `name:` whose default shifts, orphans the required context under its old name (a dated field observation, 2026-09-06, from two exercised runs — not a documented platform claim; re-verify against the page above before relying on the exact wording). A job destined for promotion carries an explicit, stable `name:` set *before* promotion; after it, the name is immutable API — rename the workflow, never the job.
+
 ## Hook authoring
 
 The shape a hook follows, stated once (the registry comment in `.claude/settings.json` and the hook headers cite this section; they do not restate it). The three hooks authored with this section carry every line; the earlier five carry `Blocked:`/`Allowed:` and `Tier:` (the line the verification block asserts) and approximate the rest — bring a hook up to the full shape when you next edit it.
 
-- **Header.** Event and matcher on line 2; *why* in one paragraph with its dated source (a platform page or a dated real-run observation, never memory); `Blocked:` / `Allowed:` lines; a `Timing:` line when the guard reads state before the tool runs (a compound command is judged on the state at entry — create the branch and make the first commit in separate calls; return to the root as its own command before a dispatch); `Path:` naming the placeholder registration; `Tier:` on every hook.
+- **Header.** Event and matcher on line 2; *why* in one paragraph with its dated source (a platform page or a dated real-run observation, never memory); `Blocked:` / `Allowed:` lines; a `Timing:` line when the guard reads state before the tool runs (a compound command is judged on the state at entry — create the branch and make the first commit in separate calls; and the payload `cwd` is the session's launch directory, which a shell `cd` does not move — a real dispatch, 2026-09-07 — so a launch-directory guard is answered by relaunching the session from the root); `Path:` naming the placeholder registration; `Tier:` on every hook.
 - **The stdin / exit contract.** JSON on stdin (`tool_name`, `tool_input`, and the common fields, `cwd` among them — `https://code.claude.com/docs/en/hooks-guide` § How hooks work). Exit 2 + stderr blocks (deny), exit 0 allows; an ask-gate prints `hookSpecificOutput.permissionDecision: "ask"` with a reason and exits 0 (`https://code.claude.com/docs/en/hooks`: allow / deny / ask / defer). Matching hooks in one group run in parallel — never rely on order between two hooks on the same event. `Stop` takes no matcher; `SubagentStop` matches agent types, and a finishing subagent has no hand-off — a repair-before-stop hook belongs on `Stop`. Verified 2026-09-06; re-verify after harness upgrades.
 - **Fail-open, with its backstop named.** On an environment defect (no `jq`, not a git checkout, an unset variable) a guard exits 0 with a stderr warning that names the surviving backstop — the CI lint, the Stop-tier hook, the verification block — never fails closed into a universal block. `set -uo pipefail`, deliberately not `set -e`; no bash-4-only builtins (`mapfile`), because a stock macOS bash is 3.2 and a "command not found" there is a fail-closed.
 - **Project-relative paths, in placeholder form.** The registry names `${CLAUDE_PROJECT_DIR}/.claude/hooks/<name>.sh` — handlers run in the current directory (`https://code.claude.com/docs/en/hooks`), so a bare relative path is not found from a subdirectory, which is where a launch-directory guard must fire. The script derives its root from `CLAUDE_PROJECT_DIR` (falling back to `$PWD`) or, for a file-scoped hook, from the edited file's checkout (`git -C "$(dirname "$file")" rev-parse --show-toplevel`) — inside a worktree the project dir stays where the session started while the file lives in the worktree.
@@ -447,8 +511,19 @@ absent grep -rn "initiative\.md" .claude/ README.md
 grep -q "^## Rough-in events" .claude/skills/framing/references/templates/frame-output-template.md
 grep -q "^## Pre-flight checks" .claude/skills/framing/references/templates/frame-output-template.md
 grep -q "^## Assumptions" .claude/skills/rough-in/references/templates/rough-in-spec-template.md
-# Deferred pair (known red until #37 lands): adr-new cites `docs/ARCHITECTURE.md § Configurability summary`
-# and `§ Open questions`, which the architecture template does not emit. Do not add the pin before #37.
+# Resolved pair (#37): adr-new no longer names index surfaces of its own — the conventions' § ADR index sync is the
+# one home for the sync targets — so the two sections the architecture template does not emit are not cited there.
+absent grep -n "Configurability summar[y]\|§ Open question[s]" .claude/skills/adr-new/SKILL.md
+# Decision records (P4): the Extends grain and the relation slots on every surface that reads them; the corrections
+# register in both homes (the adr-starters diff below keeps them identical), named by the hook and the README;
+# Multi-surface facts stated once; the frozen-corpus reference routed from consultation's SKILL.md.
+grep -q '^## Multi-surface facts' .claude/rules/cbk-conventions.md || { echo "cbk-conventions.md lacks § Multi-surface facts"; exit 1; }
+grep -q '^## ADR relation grains' .claude/rules/cbk-conventions-reference.md || { echo "the reference half lacks § ADR relation grains"; exit 1; }
+grep -q 'ADR relation grains' .claude/rules/cbk-conventions.md || { echo "the contract does not point at § ADR relation grains"; exit 1; }
+for f in .claude/rules/cbk-conventions-reference.md .claude/skills/adr-new/SKILL.md .claude/agents/adr-conformance-reviewer.md .claude/skills/scaffold/references/adr-starters/template.md; do grep -q 'Extends:' "$f" || { echo "$f does not name the Extends: grain"; exit 1; }; done
+for f in .claude/hooks/protect-immutable-adrs.sh .claude/skills/scaffold/references/adr-starters/README.md; do grep -q 'corrections.md' "$f" || { echo "$f does not name docs/adr/corrections.md"; exit 1; }; done
+[ -f .claude/skills/consultation/references/frozen_corpus_ingestion.md ] || { echo "consultation lacks references/frozen_corpus_ingestion.md"; exit 1; }
+grep -q 'frozen_corpus_ingestion.md' .claude/skills/consultation/SKILL.md || { echo "consultation/SKILL.md does not route to frozen_corpus_ingestion.md"; exit 1; }
 
 # Bundled starters stay byte-identical to their originals (the kit's root docs/adr/ is the source of
 # truth) — kit tree only: a target project fills ADR-0000's header and adds ADRs, so its docs/adr
@@ -543,6 +618,46 @@ wm=$(awk '/^## Writing memory/{p=1} p' .claude/agents/adr-conformance-reviewer.m
 for a in logging-discipline-reviewer cascade-rule-reviewer; do diff <(printf '%s\n' "$wm") <(awk '/^## Writing memory/{p=1} p' .claude/agents/$a.md) || { echo "## Writing memory drifted in $a"; exit 1; }; done
 # The commit-versus-local memory choice has a Surface inventory row for the bootstrap prompt to fill.
 { grep -q 'Reviewer agent-memory' .claude/rules/cbk-conventions.md && grep -q 'Reviewer agent-memory' .claude/skills/scaffold/references/bootstrap_checklist_template.md; } || { echo "the Reviewer agent-memory row or its bootstrap prompt is missing"; exit 1; }
+
+# Conventions (P4): the Licensing section, .gitignore anchoring, the issue-less branch form on the contract and in the
+# guard's remediation, and the lockfile counter-line rule with its citation.
+grep -q '^## Licensing' .claude/rules/cbk-conventions-reference.md || { echo "the reference half lacks § Licensing"; exit 1; }
+grep -q '^## Licensing' .claude/rules/cbk-conventions.md || { echo "the contract lacks the § Licensing pointer heading"; exit 1; }
+grep -q '^## .gitignore anchoring' .claude/rules/cbk-conventions-reference.md || { echo "the reference half lacks § .gitignore anchoring"; exit 1; }
+grep -q 'short-slug>` with' .claude/rules/cbk-conventions.md || { echo "§ Branch naming lacks the issue-less form and its PR-body statement"; exit 1; }
+grep -q 'short-slug' .claude/hooks/protect-main-branch.sh || { echo "protect-main-branch.sh's remediation does not name both branch forms"; exit 1; }
+grep -q 'linguist-generated=false' .claude/rules/cbk-conventions-reference.md || { echo "§ Dependency settle-window lacks the lockfile counter-line"; exit 1; }
+
+# Starters and the lint (P4, Tasks 1–2): the .github starter bodies exist and scaffold's profile cites them; the PR
+# template carries both gate blocks; the ADR lint has no trigger filter and a pinned job name; manual_steps no longer
+# scopes its list by detection state. The cascade-depth:rough label is created by scaffold on purpose (a recorded deviation).
+[ -f .claude/skills/scaffold/references/github-starter-templates.md ] || { echo "scaffold lacks references/github-starter-templates.md"; exit 1; }
+grep -q 'github-starter-templates.md' .claude/skills/scaffold/references/github_only_profile.md || { echo "github_only_profile.md does not cite the starter bodies"; exit 1; }
+for h in '## Review gate' '## Triage'; do grep -q "^$h" .claude/skills/scaffold/references/github-starter-templates.md || { echo "the starter PR template lacks $h"; exit 1; }; done
+absent grep -nE "^\s*paths(-ignore)?:" .github/workflows/adr-immutability-check.yml
+grep -q 'name: ADR immutability' .github/workflows/adr-immutability-check.yml || { echo "the ADR lint's job has no pinned name"; exit 1; }
+absent grep -n "regardless of detection stat[e]" .claude/skills/scaffold/references/manual_steps.md
+# The roadmap and the executor (P4, Tasks 3 and 5): the template exists, the conventions carve the surface out, and the
+# executor names the flip, the post-merge checklist, the backward sweep and the measurement issue's verdict rule.
+[ -f .claude/skills/blueprint/references/templates/roadmap.md ] || { echo "blueprint lacks references/templates/roadmap.md"; exit 1; }
+grep -q 'ROADMAP.md' .claude/rules/cbk-conventions.md || { echo "cbk-conventions.md does not carve out docs/cbk/ROADMAP.md"; exit 1; }
+for w in 'ROADMAP.md' 'post-merge checklist' 'backward sweep' 'verdict rule'; do grep -qi "$w" .claude/commands/finish.md || { echo "commands/finish.md does not name: $w"; exit 1; }; done
+grep -qi 'backward sweep' .claude/commands/finish-procedure.md || { echo "finish-procedure.md lacks the backward sweep"; exit 1; }
+grep -q 'verdict rule' .claude/skills/rough-in/references/templates/rough-in-spec-template.md || { echo "the spec template lacks the measurement variant's verdict rule"; exit 1; }
+# Review automation (P4, Task 4): both workflow templates exist with their stated constraints; scaffold's review
+# question names its consequence; rough-in's gh shape carries the create-then-edit pass.
+for t in claude-review.yml claude.yml; do [ -f .claude/skills/blueprint/references/templates/$t ] || { echo "blueprint lacks templates/$t"; exit 1; }; grep -q 'timeout-minutes' .claude/skills/blueprint/references/templates/$t || { echo "templates/$t has no job timeout (constraint 3)"; exit 1; }; done
+for w in 'cannot review the PR that introduces it' -- '--disallowedTools Agent' 'continue-on-error: true' 'Assert the review posted'; do [ "$w" = -- ] && continue; grep -qF -- "$w" .claude/skills/blueprint/references/templates/claude-review.yml || { echo "templates/claude-review.yml lacks: $w"; exit 1; }; done
+grep -q 'solo-merge with automated review' .claude/skills/scaffold/SKILL.md || { echo "scaffold's PR question does not name its consequence"; exit 1; }
+grep -q 'create-then-edit' .claude/skills/rough-in/references/planning-backend-commit.md || { echo "rough-in's gh shape lacks the create-then-edit pass"; exit 1; }
+# Phases (P4): the cascade-events index template exists and scaffold cites it; nothing in rough-in misnames the index;
+# blueprint's template carries its append-only Amendments section; the tooling rule names the built-in LSP tool.
+[ -f .claude/skills/scaffold/references/templates/cascade-events-index-template.md ] || { echo "scaffold lacks references/templates/cascade-events-index-template.md"; exit 1; }
+grep -q 'cascade-events-index-template.md' .claude/skills/scaffold/SKILL.md || { echo "scaffold/SKILL.md does not cite the cascade-events index template"; exit 1; }
+# The blueprint's append-only sections are named on both surfaces: the template emits them, the mutation row carves them out.
+for sec in Amendments 'Retired justifications'; do grep -q "^## $sec" .claude/skills/blueprint/references/blueprint-output-template.md || { echo "blueprint-output-template.md does not emit ## $sec"; exit 1; }; grep -q "\`## $sec\`" .claude/rules/cbk-conventions.md || { echo "the blueprint mutation row does not carve out ## $sec"; exit 1; }; done
+grep -q '`LSP` tool' .claude/rules/tooling.md || { echo "tooling.md § Code intelligence does not name the built-in LSP tool"; exit 1; }
+absent grep -rn "framing\.md inde[x]\|framing\.md even[t]" .claude/skills/rough-in/
 
 # Context budget: every `.claude/rules/*.md` WITHOUT `paths:` frontmatter loads at launch,
 # every session, and every non-fork subagent loads the set again. Print the always-loaded
