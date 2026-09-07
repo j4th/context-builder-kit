@@ -320,6 +320,7 @@ Detailed in `references/failure-modes.md`. Highlights:
 Auto-checkable, fires after the final gate and before blueprint declares itself complete. Not a gate; a safety surface — stop and surface if any item fails. Per `cbk-conventions.md` § Trip-wire / phase-exit checklist pattern.
 
 - [ ] The six docs exist at their paths (`CLAUDE.md`, `docs/ARCHITECTURE.md`, `docs/STANDARDS.md`, `CONTRIBUTING.md`, `README.md`, `docs/cbk/blueprint.md`), and `docs/cbk/blueprint.md` carries its Cascade metadata, Stack decisions, Methodology and Core Projects sections
+- [ ] On the github-issues and in-repo-markdown axes `docs/cbk/ROADMAP.md` exists with its `## Now` paragraph; the review workflows are on disk when scaffold's PR answer allowed them, or the one-line skip notice was given; the cross-document critic ran when the drafting fanned out, or its skip is in the phase note; `docs/cbk/README.md` gained the blueprint row and note
 - [ ] `CLAUDE.md` mentions the other docs as backticked paths: `grep -n "^- @\|@docs/" CLAUDE.md` prints nothing
 - [ ] Every ADR blueprint wrote is indexed in `docs/adr/README.md` and in `docs/ARCHITECTURE.md` § Decisions Log, and `docs/cbk/blueprint.md` § Stack decisions lists it
 - [ ] The handoff issue (or its in-repo-markdown equivalent) exists, and the workstream parent entities blueprint.md names exist on the planning backend

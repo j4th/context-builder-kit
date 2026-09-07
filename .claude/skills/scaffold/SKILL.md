@@ -308,6 +308,7 @@ Blueprint reads scaffold's outputs at session start via GitHub MCP, or the user 
 Auto-checkable, fires after gate 6 and before scaffold declares itself complete. Not a gate (no approval); a safety surface — stop and surface if any item fails. Per `cbk-conventions.md` § Trip-wire / phase-exit checklist pattern.
 
 - [ ] `docs/cbk/scaffold.md`, `docs/cbk/problem_brief.md` and `docs/cbk/README.md` (from the index template, two rows and two notes) are committed
+- [ ] The licence was confirmed and recorded (`LICENSE` seeded or README § License says "none yet"); the label set is the full axis structure (`cascade-depth:*`, `source:*`, the type set, `workstream:<slug>` per workstream, `meta`, the review-control labels); on the github-issues axis the `.github/` starters are on disk (the issue forms, `config.yml`, the PR template with both gate blocks, `CODEOWNERS`, the CI stub, `dependabot.yml` with the floor)
 - [ ] The Cascade metadata rows in `docs/cbk/scaffold.md` agree with `.cascade/backends.toml` (the verification block's axis-mirror check passes)
 - [ ] `docs/adr/` exists with the three starters and ADR-0000's header is filled: `grep -n "YYYY-MM-DD\|<project owner" docs/adr/0000-*.md` prints nothing
 - [ ] On the github-issues and linear axes, the four cascade issue templates are on disk under `.github/ISSUE_TEMPLATE/`, and `cascade-rough-in.md` carries the eight headings including `## Assumptions`

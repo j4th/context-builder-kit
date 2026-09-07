@@ -72,7 +72,7 @@ Auto-checkable list that fires after the final gate, before declaring framing co
 - [ ] Workstream parent issue exists (github-issues and linear planning; n/a on in-repo-markdown) and matches the workstream slug
 - [ ] No prior F-issue exists for this milestone (idempotency)
 - [ ] Markdown commit and (on backend planning axes) F-issue creation atomic transition succeeded, or partial state surfaced cleanly
-- [ ] `docs/cbk/README.md` updated with new entry + status `Active`
+- [ ] `docs/cbk/README.md` appended with the frame's row (status `Active`) and its phase note, in the frame's commit
 - [ ] If the project runs a contribution-intake lane (cbk-conventions): no candidate it filed under this workstream remains un-reconciled — each was promoted to an F-issue or closed as superseded
 - [ ] The verification pass ran and its defects were fixed or consciously kept (recorded in the gate)
 
