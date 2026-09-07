@@ -94,14 +94,15 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -uo pipefail
-          # --repo because this step runs BEFORE checkout.
-          if ! err="$(gh pr edit "$PR_NUMBER" --repo "$REPO" --remove-label claude-review-again 2>&1)"; then
-            if printf '%s' "$err" | grep -qiE 'not found|does not have|does not exist'; then
-              echo "Label already removed (benign concurrent run)."
-            else
-              echo "::error::Failed to remove claude-review-again label: $err"
-              exit 1
-            fi
+          # --repo because this step runs BEFORE checkout. Read the PR's labels first: the one
+          # benign case is the label already gone from this PR (a concurrent run took it);
+          # every other failure — including the label deleted from the repository's taxonomy,
+          # which would break re-triggering for everyone — is an error.
+          if gh pr view "$PR_NUMBER" --repo "$REPO" --json labels --jq '.labels[].name' | grep -qxF 'claude-review-again'; then
+            gh pr edit "$PR_NUMBER" --repo "$REPO" --remove-label claude-review-again \
+              || { echo "::error::Failed to remove the claude-review-again label."; exit 1; }
+          else
+            echo "Label already removed from this PR (benign concurrent run)."
           fi
 
       - name: Checkout PR HEAD
