@@ -1,6 +1,7 @@
 # Claude PR auto-review — blueprint template. Copy to .github/workflows/claude-review.yml
-# and fill every [bracketed] value; the seven authoring constraints below are stated at
-# their sites and survive edits. Emitted only when scaffold's PR/review answer allows
+# and fill every [bracketed] value; the seven authoring constraints are stated below —
+# 3, 5, 6 and 7 at the step they govern, 1, 2 and 4 as file-level properties in this
+# preamble — and survive edits. Emitted only when scaffold's PR/review answer allows
 # review automation (scaffold.md § Working conventions); otherwise blueprint surfaces the
 # skip as a one-line notice and this file is not written.
 #
@@ -22,12 +23,6 @@
 # GOTCHA: the CI-skip marker on the HEAD commit at the draft→ready flip silently blocks
 # this workflow — end the branch on a non-marker commit before flipping
 # (cbk-conventions.md § [skip ci] rule, the auto-review trap).
-#
-# Two things the exercised runs learned: `gh pr checks` is usually NOT readable from the
-# action's token ("Resource not accessible by integration") — the prompt says to say
-# nothing about CI rather than report the permission error as a finding; and
-# `track_progress` is unsupported on `labeled` events (the action fails), hence the
-# expression on that input.
 #
 # Needs the `CLAUDE_CODE_OAUTH_TOKEN` Actions secret (`/install-github-app` in Claude Code).
 #
