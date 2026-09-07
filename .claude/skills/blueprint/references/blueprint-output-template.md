@@ -195,8 +195,8 @@ stays in this doc, one-time setup commands move to the issue tracker.]
 
 ## Amendments *(append-only)*
 
-[Blueprint is a cascade event — immutable after commit except this section and the
-Stack decisions table. A later phase that learns this blueprint was wrong in a way
+[Blueprint is a cascade event — immutable after commit except this section, § Retired
+justifications and the Stack decisions table (`cbk-conventions.md` § Mutation discipline). A later phase that learns this blueprint was wrong in a way
 that does not warrant a re-blueprint appends one dated row: what was stated, what
 is true, which phase found it, where the correction landed (an ADR, a frame, a
 rule). Never edit the section it amends; the row points at it.]
