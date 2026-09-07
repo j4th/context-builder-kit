@@ -26,7 +26,7 @@ For project-specific overrides (workstream slugs, label schemes, Linear team nam
 
 ## `github-issues` planning behavior
 
-**Interface**: `gh` by default (`references/planning-backend-commit.md` § The `gh` shape — five commands as one script, the parent-object return, the create-then-edit placeholder pattern); a git-host MCP is one connection among several. The phase reads and writes the working tree by default.
+**Interface**: `gh` by default — the five-command shape lives in the rough-in skill's `references/planning-backend-commit.md` § The `gh` shape, this phase's delta in its own `references/planning-backend-commit.md`; a git-host MCP is one connection among several, and the phase reads and writes the working tree by default.
 
 The most common case. When scaffold picked `github-issues`, framing reads inputs from the GitHub repo via GitHub MCP, produces `frame-NN.md` + `docs/cbk/README.md` index update, and commits them back via GitHub MCP. No Linear, no cross-tool integration.
 

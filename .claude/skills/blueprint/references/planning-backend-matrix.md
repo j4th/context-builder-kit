@@ -21,7 +21,7 @@ The planning backend is determined by `scaffold.md`'s Cascade metadata section. 
 
 ## `github-issues` planning behavior
 
-**Interface**: `gh` by default (`references/planning-backend-commit.md` § The `gh` shape — five commands as one script, the parent-object return, the create-then-edit placeholder pattern); a git-host MCP is one connection among several. The phase reads and writes the working tree by default.
+**Interface**: `gh` by default — the five-command shape lives in the rough-in skill's `references/planning-backend-commit.md` § The `gh` shape, this phase's delta in its own `references/planning-backend-commit.md`; a git-host MCP is one connection among several, and the phase reads and writes the working tree by default.
 
 **The most common case.** If scaffold picked `github-issues`, blueprint operates entirely against the GitHub repo for planning. There is no Linear, no external project tool.
 

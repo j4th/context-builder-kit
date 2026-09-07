@@ -41,14 +41,14 @@ Rough-in constructs each sub-sub-issue's body from the **`cascade-rough-in.md`**
 
 ### The `gh` shape (github-issues)
 
-`gh` is the default interface for this axis; a git-host MCP is one connection among several, used when it is what the session has. Phase skills read and write the working tree by default and push through `gh` or `git`. The five commands, run as **one script** per transition so the placeholders resolve in the same pass:
+`gh` is the default interface for this axis; a git-host MCP is one connection among several, used when it is what the session has. Phase skills read and write the working tree by default and push through `gh` or `git`. This section is the one home for the shape; blueprint's and framing's `planning-backend-commit.md` state only their deltas and point here. The five commands, run as **one script** per transition so the placeholders resolve in the same pass — except the verify line, which runs **once after the last create of the run**, never per issue:
 
 ```bash
 url=$(gh issue create --title "$title" --body-file "$body" --label "$labels" --repo "$repo")   # returns the URL; the number is its last path segment
 n=${url##*/}
 id=$(gh api "repos/$repo/issues/$n" --jq .id)                                                   # the numeric id the link needs (not the number)
 gh api -X POST "repos/$repo/issues/$parent/sub_issues" -F sub_issue_id="$id" >/dev/null          # link under the parent
-gh api "repos/$repo/issues/$parent/sub_issues" --jq '[.[].number]'                               # verify
+gh api "repos/$repo/issues/$parent/sub_issues" --jq '[.[].number]'                               # verify — once, after the last create
 gh issue edit "$n" --body-file "$body_resolved"                                                  # create-then-edit: resolve the R<#> / F<#> placeholders once the numbers exist
 ```
 

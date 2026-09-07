@@ -49,18 +49,7 @@ Where `docs/cbk/ROADMAP.md` exists, the markdown half of the transition also app
 
 ### The `gh` shape (github-issues)
 
-`gh` is the default interface for this axis; a git-host MCP is one connection among several, used when it is what the session has. Phase skills read and write the working tree by default and push through `gh` or `git`. The five commands, run as **one script** per transition so the placeholders resolve in the same pass:
-
-```bash
-url=$(gh issue create --title "$title" --body-file "$body" --label "$labels" --repo "$repo")   # returns the URL; the number is its last path segment
-n=${url##*/}
-id=$(gh api "repos/$repo/issues/$n" --jq .id)                                                   # the numeric id the link needs (not the number)
-gh api -X POST "repos/$repo/issues/$parent/sub_issues" -F sub_issue_id="$id" >/dev/null          # link under the parent
-gh api "repos/$repo/issues/$parent/sub_issues" --jq '[.[].number]'                               # verify
-gh issue edit "$n" --body-file "$body_resolved"                                                  # create-then-edit: resolve the F<#> placeholders and meta-issue cross-references once the numbers exist
-```
-
-Two rough edges the exercised run recorded: the link call returns the **parent** issue object, so a status line built from its `.number` prints "#N under #N" — read the child's number from the create step, never from the link response; and a body carrying a literal placeholder cannot be final at creation, because an issue's own number is not known until it exists — the create-then-edit pass is the mechanism, not a workaround.
+`gh` is the default interface; the five-command shape — create, read the id, link under the parent, verify once at the end, create-then-edit for placeholders — and its two rough edges live in one home, the rough-in skill's `references/planning-backend-commit.md` § The `gh` shape. Framing's delta: the link target is the workstream parent, and the create-then-edit pass resolves `F<#>` placeholders and meta-issue cross-references.
 
 
 
