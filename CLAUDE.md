@@ -42,9 +42,9 @@ The cascade is top-down, but a **bottom-up contribution lane** complements it fo
 ├── rules/                         ← operational contracts (cbk-conventions, pr-review — each split into an always-loaded contract and a path-scoped `-reference.md` half — plus testing, logging, simplification, knowledge-backend) and rule templates (tooling; orchestration, itself also split); workflows.md is portable
 ├── workflows/                     ← saved orchestrations (review-sweep: find-then-adversarially-verify review pass) and harness exemplars (finish-ab/ two-arm A/B, agent-cost.py) with their stub tests
 └── skills/
-    ├── consultation/SKILL.md      + references/   ← phase 1
-    ├── scaffold/SKILL.md          + references/   ← phase 2
-    ├── blueprint/SKILL.md         + references/   ← phase 3
+    ├── consultation/SKILL.md      + references/ (notion_ingestion, frozen_corpus_ingestion, …)  ← phase 1
+    ├── scaffold/SKILL.md          + references/ (adr-starters/ incl. corrections.md, issue-templates/, github-starter-templates.md, templates/cascade-events-index-template.md, …)  ← phase 2
+    ├── blueprint/SKILL.md         + references/ (templates/ incl. roadmap.md, claude-review.yml, claude.yml, …)  ← phase 3
     ├── framing/SKILL.md           + references/ (contract.md, procedure.md, …)  ← phase 4
     ├── rough-in/SKILL.md          + references/ (contract.md, procedure.md, …)  ← phase 5
     └── adr-new/SKILL.md                           ← ADR scaffolder (used by target projects)
@@ -57,7 +57,7 @@ Each skill follows the same pattern: a top-level `SKILL.md` with frontmatter (`n
 These are load-bearing across the kit. Edits that violate them break the cascade in subtle ways that show up phases later.
 
 - **Skills stay portable; project specifics live in `.claude/rules/cbk-conventions.md` of the *target* project.** No project-specific identifiers (issue keys like `<TEAM>-NN`, project or repo names, specific framing-number pins) should leak into skill content. The skills describe *choice spaces*; the rules file in the target project records *the operational choice*. The `.claude/rules/cbk-conventions.md` in this kit is a template with bracketed placeholders — a target project copies it and fills in its own values.
-- **Cascade events are append-only.** Re-framing produces `frame-02.md` that supersedes `frame-01.md` via a status field; it does not overwrite. ADRs are immutable; superseding writes a new ADR. The cascade IS the audit trail of decisions.
+- **Cascade events are append-only.** Re-framing produces `frame-02.md` that supersedes `frame-01.md` via a status field; it does not overwrite. ADRs are immutable; superseding, refining or extending writes a new ADR, and a wrong *claim* inside one goes to `docs/adr/corrections.md`. The cascade IS the audit trail of decisions. The status surfaces beside it — `docs/cbk/ROADMAP.md`, a frame's `## Rough-in events` table, the events index's status column — are carved out as freely mutable; they are not events.
 - **Each phase has explicit HITL (human-in-the-loop) gates and explicit *rigor modes* (light / standard / full).** Don't collapse gates without considering the one-way-door property of the action they protect. A gate exists where a downstream commit (Linear write, GitHub Issue creation, branch/PR push, ADR commit) would be expensive to unwind.
 - **Inheritance is verbatim, not paraphrased.** Each phase reads prior-phase artifacts in full and quotes the relevant content into its inheritance summary. Paraphrasing is the most common cascade failure mode.
 - **`/finish` is the executor; planning happens upstream.** `/finish` does not modify issue bodies, does not handle re-rough-in, does not bypass dependencies, does not skip `/simplify` or `pr-review-toolkit:review-pr` (the floor — two skills actually invoked, once, recorded in the PR body's `## Review gate` block; the orchestrated sweep supplements and never substitutes). When `/finish` hits something the spec didn't anticipate, it surfaces and aborts rather than improvising — the gap is data for the next revision.

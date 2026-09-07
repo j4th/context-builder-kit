@@ -26,6 +26,7 @@ Realistic prompts for verifying the framing skill works correctly after any revi
 - Research depth proposal happens explicitly as a user signal, not a silent default
 - Frame file is named `frame-01.md` (not `frame-regex.md` or `frame-001.md`)
 - Interface Commitments table is present even though the consumer doesn't exist yet
+- `docs/cbk/README.md` was appended (row + phase note), not created — scaffold created it; and the roadmap rows for the new milestones landed in the frame's commit
 - Every milestone has a verb-phrase capability statement
 - `README.md` index is created alongside `frame-01.md` in the same commit
 - Exactly three HITL gates (standard mode)

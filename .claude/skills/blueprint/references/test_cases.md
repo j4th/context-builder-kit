@@ -19,6 +19,9 @@ For Claude.ai's qualitative test loop (no subagents, no benchmarking): a real hu
 - Working conventions from `scaffold.md` (branch naming, commit format, label taxonomy) appear in CONTRIBUTING.md (or equivalent) verbatim — no re-deriving
 - Tooling configs are produced: every command in CLAUDE.md maps to an actual task in the task runner config; every CI gate in STANDARDS.md maps to an actual job in the workflow file
 - A handoff issue gets created with the version-pin inventory, the toolchain bootstrap command, and the bootstrap-exemption-end statement
+- `docs/cbk/ROADMAP.md` is emitted on this github-issues run (it would be on in-repo-markdown too, and not on linear); `docs/cbk/README.md` gets the blueprint row and phase note appended, never recreated
+- The cross-document critic ran only if the drafting fanned out; with one context drafting every doc, the skip is stated in the phase note, not silent
+- Review automation: the workflows are emitted only because scaffold's PR answer allowed them; on a self-reviewed scaffold the skip is a one-line notice
 - Standard mode runs four HITL gates total (post-stack, post-methodology, post-foundation-docs-batch, post-handoff-issue)
 - The phase exit checklist ran: `CLAUDE.md` mentions the other docs as backticked paths (no `@docs/` line), and every ADR written is indexed in both indexes.
 
