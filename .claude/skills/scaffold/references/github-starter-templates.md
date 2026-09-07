@@ -169,7 +169,7 @@ Closes #
 * @<github-username>
 ```
 
-Solo default; ask before assuming a team. CODEOWNERS is a **routing declaration** — it enforces nothing on its own. Enforcement is a ruleset requiring Code Owner review (`manual_steps.md` § Repository administration).
+Solo default; ask before assuming a team. CODEOWNERS is a **routing declaration** — it enforces nothing on its own. Enforcement is a ruleset (or branch protection) with "Require review from Code Owners" (`https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners`, read 2026-09-06; the ruleset itself: `manual_steps.md` § Repository administration).
 
 ## `.github/workflows/ci.yml`
 
@@ -204,7 +204,7 @@ jobs:
 `cbk-conventions-reference.md` § Dependency settle-window is prose; this file is the mechanism. Three invariants are encoded here and must survive edits:
 
 - **`cooldown` gates version updates only — security advisories still patch immediately.** A platform guarantee, not a convention ("The cooldown option is only available for version updates, not security updates" — `docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference`, read 2026-09-06). Never widen a window to delay a security fix; that is not what the knob does.
-- **`groups` is the anti-spam lever; `schedule.interval` is the volume lever.** Raising a floor does not reduce update volume — an update fires on a new release, not on the floor value.
+- **`groups` is the anti-spam lever; `schedule.interval` is the volume lever.** Raising a floor does not reduce update volume — an update fires on a new release, not on the floor value (the options reference — `https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference` § groups, § schedule.interval, § cooldown, read 2026-09-06: cooldown "allow[s] updates to be delayed for a configurable number of days" and "is only available for version updates, not security updates").
 - **Every ecosystem entry carries the floor — including the inactive stubs.** An entry without `cooldown` is a policy violation, not an oversight; a stub that is later uncommented must not be able to drop the floor by omission.
 
 ```yaml
@@ -212,7 +212,9 @@ version: 2
 updates:
   # ── CI actions ────────────────────────────────────────────────────────────
   # Workflow actions are dependencies too, and a tag ref (`uses: vendor/x@v4`) is
-  # mutable. Every `uses:` is pinned to a full commit SHA with a trailing version
+  # mutable — "a tag can be moved or deleted"; a full-length commit SHA "is currently the only
+  # way to use an action as an immutable release" (docs.github.com, Actions security hardening
+  # § Pin actions to a full-length commit SHA, read 2026-09-06). Every `uses:` is pinned to a full commit SHA with a trailing version
   # comment; this entry maintains those pins under the same floor as everything else.
   - package-ecosystem: "github-actions"
     directory: "/"

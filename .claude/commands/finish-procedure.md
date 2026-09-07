@@ -183,7 +183,7 @@ The principle for Steps 8–9: **the executor handles findings the codebase need
      - **Defer (N)** — `<verbatim rationale> — conflicts with <ADR / scope / framing>`.
      - **Reject (N)** — one-line dismissal.
 
-   **The roadmap row, before `gh pr create`** — where the project keeps `docs/cbk/ROADMAP.md` and the spec names the flip: update the row and `## Now` on this branch as the last commit (`docs(cascade):`, no CI-skip marker — it is HEAD at the flip), with the PR number predicted from the shared issue-and-PR sequence (`gh api 'repos/{owner}/{repo}/issues?state=all&sort=created&direction=desc&per_page=1'` plus one) and checked against the number `gh pr create` returns; one correcting commit on a mismatch; never a separate PR (the contract, item 8).
+   **The roadmap row, before `gh pr create`** — where the project keeps `docs/cbk/ROADMAP.md` and the spec names the flip: update the row and `## Now` on this branch as the last commit (`docs(cascade):`, no CI-skip marker — it is HEAD at the flip), with the PR number predicted from the shared issue-and-PR sequence (GitHub's REST API considers every pull request an issue and its issue endpoints return both — `https://docs.github.com/en/rest/issues/issues`, read 2026-09-06 — so the newest number across both is the last item of an issues listing) (`gh api 'repos/{owner}/{repo}/issues?state=all&sort=created&direction=desc&per_page=1'` plus one) and checked against the number `gh pr create` returns; one correcting commit on a mismatch; never a separate PR (the contract, item 8).
 
    If `gh pr create --draft` fails (auth, missing scope, draft PRs disabled, rate limit, PR already exists for this branch), stop and surface the failure with per-step status.
 

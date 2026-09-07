@@ -8,7 +8,8 @@
 # Three invariants:
 # 1. `cooldown` gates VERSION updates only — never security updates (platform
 #    guarantee: docs.github.com … dependabot-options-reference, read 2026-09-06).
-# 2. `groups` is the anti-spam lever; `schedule.interval` is the volume lever.
+# 2. `groups` is the anti-spam lever; `schedule.interval` is the volume lever (sources: the
+#    scaffold starter's dependabot comment — the options reference, read 2026-09-06).
 # 3. Every ecosystem entry — including an inactive stub — carries the floor.
 #
 # The kit itself has one ecosystem: the actions its workflows use.

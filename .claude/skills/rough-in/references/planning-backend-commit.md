@@ -46,13 +46,13 @@ Rough-in constructs each sub-sub-issue's body from the **`cascade-rough-in.md`**
 ```bash
 url=$(gh issue create --title "$title" --body-file "$body" --label "$labels" --repo "$repo")   # returns the URL; the number is its last path segment
 n=${url##*/}
-id=$(gh api "repos/$repo/issues/$n" --jq .id)                                                   # the numeric id the link needs (not the number)
+id=$(gh api "repos/$repo/issues/$n" --jq .id)                                                   # the numeric id the link needs (not the number): `sub_issue_id` — "The id of the sub-issue" (`https://docs.github.com/en/rest/issues/sub-issues`, read 2026-09-06)
 gh api -X POST "repos/$repo/issues/$parent/sub_issues" -F sub_issue_id="$id" >/dev/null          # link under the parent
 gh api "repos/$repo/issues/$parent/sub_issues" --jq '[.[].number]'                               # verify — once, after the last create
 gh issue edit "$n" --body-file "$body_resolved"                                                  # create-then-edit: resolve the R<#> / F<#> placeholders once the numbers exist
 ```
 
-Two rough edges the exercised run recorded: the link call returns the **parent** issue object, so a status line built from its `.number` prints "#N under #N" — read the child's number from the create step, never from the link response; and a body carrying a literal placeholder cannot be final at creation, because an issue's own number is not known until it exists — the create-then-edit pass is the mechanism, not a workaround.
+Two rough edges recorded from an exercised run (a dated field observation, 2026-09-06; re-verify against the sub-issues API page above): the link call returns the **parent** issue object, so a status line built from its `.number` prints "#N under #N" — read the child's number from the create step, never from the link response; and a body carrying a literal placeholder cannot be final at creation, because an issue's own number is not known until it exists — the create-then-edit pass is the mechanism, not a workaround.
 
 
 
