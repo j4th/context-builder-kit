@@ -32,24 +32,25 @@ The cascade is top-down, but a **bottom-up contribution lane** complements it fo
 ```
 .claude/
 ├── commands/
-│   ├── finish.md                  ← the executor slash-command (phase 6)
+│   ├── finish.md                  ← the executor slash-command (phase 6) — the contract
+│   ├── finish-procedure.md        ← the executor's procedure, read on demand
 │   ├── intake.md                  ← bottom-up entry: externally-sourced report → /finish-able issue
 │   ├── enrich.md                  ← rough-in for one small capability (enhancement lane, skips framing)
 │   └── pr-respond.md              ← the PR feedback-loop executor (inverse of /finish)
 ├── agents/                        ← project-local PR reviewers (adr-conformance, logging-discipline, cascade-rule; memory-enabled) + Explore (cheap-tier search exemplar)
 ├── hooks/                         ← guards in four tiers: hard-deny (protect-immutable-adrs, protect-lock-files, protect-main-branch, require-repo-root-for-agents) + ask-gate (guard-pr-state, require-knowledge-backend-ok) + advisory exemplars, unregistered (format-on-edit, analyze-on-edit) + stop (detect-forked-agent-memory)
 ├── rules/                         ← operational contracts (cbk-conventions, pr-review — each split into an always-loaded contract and a path-scoped `-reference.md` half — plus testing, logging, simplification, knowledge-backend) and rule templates (tooling; orchestration, itself also split); workflows.md is portable
-├── workflows/                     ← saved orchestrations (review-sweep: find-then-adversarially-verify review pass)
+├── workflows/                     ← saved orchestrations (review-sweep: find-then-adversarially-verify review pass) and harness exemplars (finish-ab/ two-arm A/B, agent-cost.py) with their stub tests
 └── skills/
     ├── consultation/SKILL.md      + references/   ← phase 1
     ├── scaffold/SKILL.md          + references/   ← phase 2
     ├── blueprint/SKILL.md         + references/   ← phase 3
-    ├── framing/SKILL.md           + references/   ← phase 4
-    ├── rough-in/SKILL.md          + references/   ← phase 5
+    ├── framing/SKILL.md           + references/ (contract.md, procedure.md, …)  ← phase 4
+    ├── rough-in/SKILL.md          + references/ (contract.md, procedure.md, …)  ← phase 5
     └── adr-new/SKILL.md                           ← ADR scaffolder (used by target projects)
 ```
 
-Each skill follows the same pattern: a top-level `SKILL.md` with frontmatter (`name`, `description`) and a `references/` directory holding **templates** (the artifact templates the skill produces) and **operational reference docs** (failure modes, question banks, profile-specific behavior, inheritance discipline). Skills load their `references/*.md` lazily on demand — `SKILL.md` is the entrypoint and points at references when needed.
+Each skill follows the same pattern: a top-level `SKILL.md` with frontmatter (`name`, `description`) and a `references/` directory holding **templates** (the artifact templates the skill produces) and **operational reference docs** (failure modes, question banks, profile-specific behavior, inheritance discipline). Skills load their `references/*.md` lazily on demand — `SKILL.md` is the entrypoint and points at references when needed. The three producing phases — framing, rough-in and `/finish` — are **contract-first**: `references/contract.md` (for the executor, `commands/finish.md` itself) is the drafting read, stating what the artifact must contain and the tests it must pass; `references/procedure.md` (`commands/finish-procedure.md`) is the step-by-step on demand; `SKILL.md` routes.
 
 ## Architectural principles to preserve when editing
 
@@ -62,6 +63,7 @@ These are load-bearing across the kit. Edits that violate them break the cascade
 - **`/finish` is the executor; planning happens upstream.** `/finish` does not modify issue bodies, does not handle re-rough-in, does not bypass dependencies, does not skip `/simplify` or `pr-review-toolkit:review-pr` (the floor — two skills actually invoked, once, recorded in the PR body's `## Review gate` block; the orchestrated sweep supplements and never substitutes). When `/finish` hits something the spec didn't anticipate, it surfaces and aborts rather than improvising — the gap is data for the next revision.
 - **Issue letters reflect skills; M is frame-local, F continues per workstream.** Frame docs label milestones `### F<#> — M<#>: <name>`: `M` is the frame-local milestone position, `F` numbers the framing issue and continues the workstream's sequence across frames (never restarting), keeping `[F<N>.AC<M>]` trace IDs unique cascade-wide. `R` numbers rough-in's issues. See `cbk-conventions.md` § Title-prefix scheme.
 - **Rough-in's specs target Claude Code plan mode, not a human typing.** The Implementation section states intent and constraints, not implementation sequences (plan mode is a decomposition engine; over-prescribing overrides its priors). Granularity is "coherent review units" (2-6 R-issues per milestone), not atomic work units.
+- **Contract-first for the producing phases.** A drafter reads the contract, drafts the whole artifact, and one fresh-context verifier attacks it before the gate; the gate carries a decision list. The one-way doors stay in the main loop. The evidence is dated in `.claude/rules/orchestration-reference.md` § Applied instances. Edits to a contract change every future artifact — treat them as the contract they are.
 - **Constant + two independent axes** for the backend shape:
   - **Constant**: GitHub repo (or other git host) with core markdown docs (CLAUDE.md, ARCHITECTURE.md, STANDARDS.md, CONTRIBUTING.md, `docs/adr/*`, `docs/cbk/*`). Always present, always the immediate AI/dev context, not negotiable.
   - **Axis 1 — Planning backend**: GitHub Issues / Linear / in-repo markdown. Where live work-tracking with status, parent/child, queryable state happens.
@@ -73,7 +75,7 @@ These are load-bearing across the kit. Edits that violate them break the cascade
 
 Because there is no build/test/lint, the verification surface is editorial:
 
-- **When editing a `SKILL.md`**, also update its `references/test_cases.md` if the change touches behavior the test cases verify, and check that any cited reference file under `references/` still exists and matches.
+- **When editing a `SKILL.md`, a `references/contract.md` or a `references/procedure.md`**, also update its `references/test_cases.md` if the change touches behavior the test cases verify, and check that any cited reference file under `references/` still exists and matches.
 - **When editing the `cbk-conventions.md` rule file**, run the verification block in `cbk-conventions-reference.md` § Verification (the kit sub-block must be green on this tree) to confirm portability invariants — e.g. that no project-specific identifiers leaked into skill content and that path/naming conventions stay consistent.
 - **When adding a new reference doc to a skill**, follow the existing `references/<topic>.md` naming and add a pointer from `SKILL.md` to it. Skills don't auto-discover references; the entrypoint must cite them.
 - **Templates live in `references/templates/`** and are quoted verbatim in skill output. Edits to a template change every future cascade artifact — treat them as the contract.

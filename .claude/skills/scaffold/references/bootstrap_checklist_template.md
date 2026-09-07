@@ -93,6 +93,7 @@ Always-loaded rules as of this checklist:
 
 One-time choices settled here (each has a kit default; a choice with no forcing surface is a choice the kit made for you):
 - **Reviewer agent-memory**: `memory: project` (committed under `.claude/agent-memory/`, precedents survive clones and get PR-reviewed) or `memory: local` (`.claude/agent-memory-local/`, never committed; set the field in each reviewer's frontmatter). Decision: <project | local>. With `project`, delete the kit's `.claude/agent-memory/` line from `.gitignore` — it is a kit-repo-only exception and nothing flips it for you. Recorded in the "Reviewer agent-memory" row of `cbk-conventions.md` § Surface inventory.
+- **Orchestration posture** recorded in `.claude/rules/orchestration.md` § The ceiling rule — which row the main loop runs by default (the exercised default is the workhorse tier) and what a deliberate escalation to the top tier looks like, dated with the reason. Decision: <workhorse | top-tier escalation, dated>.
 - **Licence**: <SPDX id | none yet — all rights reserved>. Lives in the repo's `LICENSE` file and README § License (scaffold seeds both; the Repository line above names the choice) — it is not a row of `docs/cbk/scaffold.md`'s Cascade metadata table.
 ```
 

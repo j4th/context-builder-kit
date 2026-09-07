@@ -479,6 +479,13 @@ absent grep -rnE "test_cases\.md\` — (three|four|five|six|seven|eight) realist
 absent grep -rn "instead of a single direct dispatc[h]\|direct dispatch[^.]*is the fallbac[k]\|apply only after both the primary and the recorded fallbac[k]" .claude/
 { grep -q '^## Review gate' .claude/rules/pr-review.md && grep -q 'Review gate' .claude/commands/finish.md && grep -q 'Review gate' .claude/skills/rough-in/references/finish-command.md; } || { echo "the ## Review gate block is missing from its home, the executor, or the bundled template"; exit 1; }
 diff <(awk '/^--- BEGIN TEMPLATE ---/{flag=1; next} flag' .claude/skills/rough-in/references/finish-command.md) .claude/commands/finish.md >/dev/null || { echo "commands/finish.md and the bundled template body have drifted"; exit 1; }
+# Contract-first phases (P3): the contract and the procedure exist and SKILL.md routes to both; every
+# SKILL.md body stays under 500 lines (agent-skills best-practices § Progressive disclosure, 2026-09-05);
+# the executor's contract names its procedure and the procedure is byte-parallel with its bundled template.
+for s in framing rough-in; do for f in contract procedure; do [ -f .claude/skills/$s/references/$f.md ] || { echo "$s lacks references/$f.md"; exit 1; }; grep -q "references/$f.md" .claude/skills/$s/SKILL.md || { echo "$s/SKILL.md does not route to references/$f.md"; exit 1; }; done; done
+for f in .claude/skills/*/SKILL.md; do n=$(wc -l < "$f"); [ "$n" -lt 500 ] || { echo "$f is $n lines (the 500-line limit)"; exit 1; }; done
+grep -q 'finish-procedure.md' .claude/commands/finish.md || { echo "commands/finish.md does not name its procedure"; exit 1; }
+diff <(awk '/^--- BEGIN TEMPLATE ---/{flag=1; next} flag' .claude/skills/rough-in/references/finish-procedure.md) .claude/commands/finish-procedure.md >/dev/null || { echo "commands/finish-procedure.md and its bundled template have drifted"; exit 1; }
 
 # The sweep: bounded (3 per dimension, 8 verified), roster read at runtime (no mirror), the
 # planned count logged before the find stage, its own gate line returned — and it parses and its
@@ -487,6 +494,22 @@ diff <(awk '/^--- BEGIN TEMPLATE ---/{flag=1; next} flag' .claude/skills/rough-i
 { grep -q 'maxPerDimension ?? 3' .claude/workflows/review-sweep.js && grep -q 'maxVerify ?? 8' .claude/workflows/review-sweep.js && grep -q 'planned agents' .claude/workflows/review-sweep.js && grep -q 'gateLine' .claude/workflows/review-sweep.js; } || { echo "review-sweep.js lost a bound, the planned-count log, or its gate line"; exit 1; }
 absent grep -n 'REVIEWER_TRIGGERS' .claude/workflows/review-sweep.js
 node .claude/workflows/tests/review-sweep-accounting.mjs || { echo "review-sweep.js does not parse or its accounting regressed"; exit 1; }
+# The harness exemplars: the A/B script parses and refuses an unbalanced panel; the cost reader prices per
+# answering model and names an unpriced row instead of zeroing it. Node and python3 are required.
+node .claude/workflows/tests/finish-ab-shape.mjs || { echo "finish-ab.js does not parse or its panel guard regressed"; exit 1; }
+bash .claude/workflows/tests/agent-cost-fixture.sh || { echo "agent-cost.py regressed on the fixture"; exit 1; }
+# Every dispatch names its model and its effort (orchestration.md § The role ladder): agent definitions
+# carry both, except a model without the dial, which carries none; the sweep names both effort constants;
+# the orchestration rule keeps its P3 sections.
+for a in .claude/agents/*.md; do grep -q '^model:' "$a" || { echo "$a names no model"; exit 1; }; if grep -q '^model: haiku' "$a"; then absent grep -n '^effort:' "$a"; else grep -q '^effort:' "$a" || { echo "$a names no effort (orchestration.md § The role ladder)"; exit 1; }; fi; done
+{ grep -q 'FIND_EFFORT' .claude/workflows/review-sweep.js && grep -q 'RETRY_EFFORT' .claude/workflows/review-sweep.js; } || { echo "review-sweep.js does not name its finders' effort"; exit 1; }
+{ grep -q 'The default is the workhorse tier, stated explicitly' .claude/rules/orchestration.md && grep -q '^### Generation notes' .claude/rules/orchestration.md && grep -q '^## Cost terms and run hygiene' .claude/rules/orchestration-reference.md && grep -q 'Never delegate the decision' .claude/rules/workflows.md; } || { echo "the orchestration rule lost a P3 section"; exit 1; }
+# No self-check prose on a prompt surface (rules are excluded: they quote the pattern as a citation) and no
+# blanket tool default in tooling.md (C11). The literals split themselves so this line never matches.
+absent grep -rniE "double-chec[k]|use a subagent to verif[y]|verify your (own )?wor[k]" .claude/skills .claude/commands .claude/agents
+absent grep -niE "(if|when) in doub[t],? (use|reach for)" .claude/rules/tooling.md
+# The bootstrap checklist prompts for the orchestration posture (#34).
+grep -q 'Orchestration posture' .claude/skills/scaffold/references/bootstrap_checklist_template.md || { echo "the bootstrap checklist lacks the orchestration-posture row"; exit 1; }
 # Hook registry ⇔ files ⇔ table: every shipped guard is registered at least once and the advisory
 # exemplars stay unregistered; every command field in settings.json — registered or an exemplar
 # stanza — is in placeholder form, exists and is executable; every hook header carries its Tier:
