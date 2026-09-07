@@ -114,6 +114,19 @@ The contract's paragraph (`pr-review.md` § Project-local agents › Authoring) 
 - **Eviction conditions for guard lists.** Every do-not-flag entry carries the condition under which it is removed ("until the conventions formalize X"; "while `<file>` still carries `<token>`"). A guard list without eviction conditions only ever grows, and the reviewer's silence stops meaning anything.
 - **Path-matched triggers come from usage, and are written for the roster reader.** The scope this section lists for a domain reviewer is the set of directories where the governed API is *used* (grep the tree for its calls and types), written as bare path prefixes on the reviewer's own entry line — the sweep's roster agent parses this section into `pathHints`, matches changed paths by prefix, and reports a glob or prose hint as dropped coverage.
 
+## Reviewer precedent memory — genres and staleness
+
+The depth behind `pr-review.md` § Reviewer precedent memory. Across runs a reviewer accumulates four genres of precedent, and consulting them before flagging is what stops re-litigation of settled calls:
+
+- **Out-of-scope precedents** (`out-of-scope-`) — a token or surface ruled outside this reviewer's contract, recorded with the *surface split*, since the same token can be in-scope on one surface and out on another (a log field vs a persisted column).
+- **Clean-review calibration baselines** (`clean-baseline-`) — a clean review is a calibration asset: record *why* it was clean, what was checked and by what method, so the next run inherits the method, not just the verdict. **One baseline per surface, appended to in place**: a further clean pass on the same surface adds a dated delta line, and a new file is earned only by a new method. A baseline for a tree the project marks throwaway carries the expiry "delete when the tree is deleted".
+- **De-facto-convention prior art** (`convention-`) — an established local pattern that deviates from a documented rule; a deviation worth keeping permanently belongs in the rule, not the memory.
+- **Conforming-pattern records** (`conforming-`) — both-polarity evidence, verified-conformant and verified-violating instances, with dates.
+
+Three further kinds carry their own prefixes: dependency facts (`dependency-`; a pinned library's verified behavior, with its version), findings with their disposition (`finding-`; what was flagged, what the caller decided, why — so a settled call is not re-litigated), and reusable verification techniques (`technique-`; a method worth reusing, with the command that runs it).
+
+**Every genre carries a reconsider trigger.** A baseline scoped to a snapshot of a moving set (an ADR range, a rule section) names the change that invalidates it. A static drop condition is one form; the other is a **living record** appended across passes — a dated `**Update (<date>, <branch>):**` block naming the bar it re-decides against and the verdict held after this pass, which may revert — compacted when it carries more than three updates (fold the older ones into the summary, keep the last two verbatim).
+
 ## When to update this file
 
 This rules file is load-bearing the moment `/finish`'s review pass dispatches `pr-review-toolkit`. Update it when:
