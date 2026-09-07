@@ -42,7 +42,7 @@ Steps the user must complete themselves in browser tabs. Each item has an exact 
 
 These are operations scaffold cannot automate. Do them in browser tabs:
 
-- **Branch protection**: Visit <repo URL>/settings/branches → "Add rule" → branch name pattern `main` → enable "Require pull request before merging" and "Require status checks to pass". Expected outcome: main is protected from direct pushes.
+- **Branch protection** (only when scaffold could not create the ruleset over `gh api`): Visit <repo URL>/settings/rules → "New branch ruleset" → target `main` → require a pull request and the status checks by their check-run names (read them off a real run; a `paths:`-filtered or renamed check never reports — `cbk-conventions.md` § `[skip ci]` rule, the required-checks trap). Expected outcome: main is protected from direct pushes.
 - **Repository secrets** (if needed): Visit <repo URL>/settings/secrets/actions → "New repository secret" for any deployment tokens or API keys. Expected outcome: secrets visible in the secrets list.
 - **Team member invites** (team only): Visit <repo URL>/settings/access → "Invite a collaborator". Expected outcome: invitees receive email.
 - **OAuth integrations** (only when planning = `linear` or knowledge = `notion`): see axis-specific instructions in `manual_steps.md`.

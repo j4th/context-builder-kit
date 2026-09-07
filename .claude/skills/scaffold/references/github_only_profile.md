@@ -48,7 +48,7 @@ Same flow regardless of detection state. Build the scaffold output doc from `sca
 
 ## What this profile does *not* do
 
-- **Does not configure branch protection.** That's an admin operation that requires UI clicks. Add it to the manual instructions section of the bootstrap checklist with a link and recommended settings.
+- **Does not configure branch protection without a token.** With a `repo`-scoped `gh` token it creates the ruleset over `gh api` and discloses it (`manual_steps.md` § Repository administration — the check context read off a real run); without one, the bootstrap checklist carries the ruleset-page fallback with the recommended settings.
 - **Does not set up GitHub Actions beyond a stub workflow file.** Real CI configuration depends on stack decisions that happen in blueprint.
 - **Does not create the org-level project board.** Even when the user is in an org, scaffold creates a repo-scoped project. Org-level projects are an explicit user request, not a default.
 - **Does not create milestones, issues, or any planning content.** Milestones belong in rough-in (phase 5), issues in finish (phase 6). Scaffold provisions the *workspace*; planning artifacts come later.
