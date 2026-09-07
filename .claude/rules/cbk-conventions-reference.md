@@ -364,6 +364,21 @@ The checklist runs auto-checkable; surfacing only failures. Per [GitHub Spec Kit
 
 Every phase-exit checklist the kit ships (scaffold, blueprint, framing) carries one standing item: **if this run exercised a call that a reference file flags as individually unexercised, restamp it in the same commit** — drop the flag, date the run generically ("a second real run, <date>"), and update the file's § Exercise status. A flag with a re-check trigger nobody fires is a rail that outlives its evidence.
 
+## ADR relation grains
+
+Moved from the contract's § Mutation discipline on 2026-09-07 (the section is consulted when a decision record is read or reviewed; this file loads on `docs/adr/**`). The contract keeps a one-paragraph pointer.
+
+**ADR supersession has more than one grain.** The `docs/adr/*` row above shows whole-ADR supersession; two finer-grained relationships sit alongside it, both preserving the parent's immutability (neither edits the parent file):
+
+- **Refine** — `Refines: ADR-NNNN (Dn, …)` in the child's header narrows or clause-level-clarifies a specific decision `Dn` in the parent **without invalidating it**. The parent stays **Accepted**; both parent and child are consulted for conformance. Use when implementation reveals an accepted clause was written too generally and needs a scoped reading, not a reversal. The parent gains **no back-pointer** (it is immutable) and **no status change** — discoverability comes from the child's `Refines:` field plus the child's ADR-index row.
+- **Clause-scoped supersede** — `Supersedes: ADR-NNNN Dn` reverses only decision `Dn` of the parent while the parent's other clauses stand. The parent stays **Accepted** (it is not wholly superseded); the child's index row names the specific clause it replaces, and the parent's index row is annotated (`Accepted · Dn superseded by ADR-MMMM`) while the parent file stays untouched.
+- **Extend** — `Extends: ADR-NNNN (Dn, …)` adds an obligation beside a parent clause that **stays satisfied as written**. The parent stays **Accepted** and is not narrowed; the child adds a check the parent alone would not raise. **The disambiguation test:** a child that *removes a permitted reading* of the parent clause is a Refine; one that *adds an obligation beside a clause that stays satisfied* is an Extend. Both are asymmetric — the parent gains no back-pointer; the child's header field and its index row carry the relation, and the status cell carries grain and parent inline (`Accepted · Extends ADR-0003 (D1)`).
+- **Promote** — `Promotes: <corpus path> § <heading>` records a decision lifted from a frozen pre-cascade corpus (the consultation skill's `references/frozen_corpus_ingestion.md`); the corpus is the provenance, the ADR the binding form.
+
+A wrong **claim** inside an accepted ADR — a citation, a figure, an attribution, a formula — is none of these grains: it goes to `docs/adr/corrections.md`, the append-only register, and the ADR stays as written.
+
+**Reviewers that check ADR conformance must follow the `Refines:` and `Extends:` chains.** When an ADR intersecting a diff names a refiner (or a clause-scoped superseder), load that child too and apply its scoped clauses — a parent read in isolation yields the pre-narrowing reading. An extender is the asymmetric case: the parent passes unchanged while the child can fail, so a diff clean against the parent is not clean until every extender is checked. A reviewer consults `docs/adr/corrections.md` before flagging a claim, and cites an entry rather than restating it. The kit's `adr-conformance-reviewer` agent (see `.claude/rules/pr-review.md` § Project-local agents to dispatch alongside) is where this chain-following lives.
+
 ## Hook authoring
 
 The shape a hook follows, stated once (the registry comment in `.claude/settings.json` and the hook headers cite this section; they do not restate it). The three hooks authored with this section carry every line; the earlier five carry `Blocked:`/`Allowed:` and `Tier:` (the line the verification block asserts) and approximate the rest — bring a hook up to the full shape when you next edit it.
@@ -493,7 +508,9 @@ absent grep -n "Configurability summar[y]\|§ Open question[s]" .claude/skills/a
 # register in both homes (the adr-starters diff below keeps them identical), named by the hook and the README;
 # Multi-surface facts stated once; the frozen-corpus reference routed from consultation's SKILL.md.
 grep -q '^## Multi-surface facts' .claude/rules/cbk-conventions.md || { echo "cbk-conventions.md lacks § Multi-surface facts"; exit 1; }
-for f in .claude/rules/cbk-conventions.md .claude/skills/adr-new/SKILL.md .claude/agents/adr-conformance-reviewer.md .claude/skills/scaffold/references/adr-starters/template.md; do grep -q 'Extends:' "$f" || { echo "$f does not name the Extends: grain"; exit 1; }; done
+grep -q '^## ADR relation grains' .claude/rules/cbk-conventions-reference.md || { echo "the reference half lacks § ADR relation grains"; exit 1; }
+grep -q 'ADR relation grains' .claude/rules/cbk-conventions.md || { echo "the contract does not point at § ADR relation grains"; exit 1; }
+for f in .claude/rules/cbk-conventions-reference.md .claude/skills/adr-new/SKILL.md .claude/agents/adr-conformance-reviewer.md .claude/skills/scaffold/references/adr-starters/template.md; do grep -q 'Extends:' "$f" || { echo "$f does not name the Extends: grain"; exit 1; }; done
 for f in .claude/hooks/protect-immutable-adrs.sh .claude/skills/scaffold/references/adr-starters/README.md; do grep -q 'corrections.md' "$f" || { echo "$f does not name docs/adr/corrections.md"; exit 1; }; done
 [ -f .claude/skills/consultation/references/frozen_corpus_ingestion.md ] || { echo "consultation lacks references/frozen_corpus_ingestion.md"; exit 1; }
 grep -q 'frozen_corpus_ingestion.md' .claude/skills/consultation/SKILL.md || { echo "consultation/SKILL.md does not route to frozen_corpus_ingestion.md"; exit 1; }
