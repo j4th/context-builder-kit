@@ -18,7 +18,11 @@
 # Constraint 4 — the posted artifact is the deliverable, in both directions: a green run
 # with no summary comment is a failure to investigate; a red run whose review posted is a
 # pass (cbk-conventions.md § Deliverable trap). The prompt makes the summary an explicit
-# `gh pr comment` and names it first.
+# `gh pr comment` and names it first, and the last step asserts it landed: the action runs
+# with continue-on-error so the job's verdict is the assertion's — red only when no summary
+# comment from the review app appeared after the job started, with a one-line notice posted
+# to the PR so the failure is visible there. Designed-unexercised as of 2026-09-06: verify on
+# the first PR after this file lands and restamp this line.
 #
 # GOTCHA: the CI-skip marker on the HEAD commit at the draft→ready flip silently blocks
 # this workflow — end the branch on a non-marker commit before flipping
@@ -78,6 +82,10 @@ jobs:
       checks: read
       id-token: write
     steps:
+      - name: Record job start (the assertion below reads comments created after it)
+        id: start
+        run: echo "at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
       - name: Remove claude-review-again label (so it can be re-added next time)
         if: github.event.action == 'labeled' && github.event.label.name == 'claude-review-again'
         env:
@@ -133,6 +141,8 @@ jobs:
           fi
 
       - name: Auto-review
+        # continue-on-error: the assertion step below decides the job's verdict (constraint 4).
+        continue-on-error: true
         uses: anthropics/claude-code-action@[full-commit-sha] # v[version] — [newest release clearing the settle window as of <date>]
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -227,3 +237,24 @@ jobs:
             --max-turns 60
             --allowedTools "Read,Grep,Glob,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh pr checks:*),Bash(gh run view:*),Bash(gh run list:*),mcp__github_inline_comment__create_inline_comment"
             ${{ steps.model.outputs.disallow_arg }}
+
+      - name: Assert the review posted (constraint 4 — the artifact decides)
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          STARTED_AT: ${{ steps.start.outputs.at }}
+          REVIEW_LOGIN: "[<the review app's login, e.g. claude[bot]>]"
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -uo pipefail
+          n="$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
+                --jq "[.[] | select(.user.login == \"$REVIEW_LOGIN\") | select(.created_at >= \"$STARTED_AT\")] | length")" || n=0
+          if [ "${n:-0}" -ge 1 ]; then
+            echo "Review posted ($n comment(s) since $STARTED_AT)."
+          else
+            gh pr comment "$PR_NUMBER" --repo "$REPO" --body "Auto-review did not post a summary — see $RUN_URL. Re-trigger with the \`claude-review-again\` label." || true
+            echo "::error::No review comment from $REVIEW_LOGIN since $STARTED_AT — the deliverable did not land (cbk-conventions.md § Deliverable trap)."
+            exit 1
+          fi
