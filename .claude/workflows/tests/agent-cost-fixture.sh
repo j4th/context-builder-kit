@@ -19,8 +19,7 @@ out=$(python3 "$script" "$d")
 grep -q 'total list-price cost: \$7.50' <<<"$out" || { echo "expected a \$7.50 total (1,000,000 in @ \$5 + 100,000 out @ \$25); got:"; echo "$out"; exit 1; }
 grep -q '1 of 2 agents priced' <<<"$out" || { echo "the priced/unpriced split is not printed"; echo "$out"; exit 1; }
 grep -q 'unpriced.*bbb' <<<"$out" || { echo "the unpriced agent is not named"; echo "$out"; exit 1; }
-rc=0; python3 "$script" >/dev/null 2>&1 || rc=$?
-[ "$rc" -eq 2 ] || { echo "no arguments should exit 2 (got $rc)"; exit 1; }
-rc=0; python3 "$script" "$e" >/dev/null 2>&1 || rc=$?
-[ "$rc" -eq 1 ] || { echo "an empty directory should exit 1 (got $rc)"; exit 1; }
+assert_exit() { local want=$1 desc=$2; shift 2; local rc=0; python3 "$script" "$@" >/dev/null 2>&1 || rc=$?; [ "$rc" -eq "$want" ] || { echo "$desc (got $rc)"; exit 1; }; }
+assert_exit 2 "no arguments should exit 2"
+assert_exit 1 "an empty directory should exit 1" "$e"
 echo "agent-cost-fixture: ok"

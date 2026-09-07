@@ -1,18 +1,10 @@
 #!/usr/bin/env node
-// Stub harness for finish-ab.js. No agent is dispatched: the meta literal and the body are evaluated with
-// stubbed agent()/parallel()/log()/phase(), and the panel guard, the planned-count log, the arm-isolation
+// Stub harness for finish-ab.js. No agent is dispatched: the script is loaded through load-workflow.mjs and run
+// with stubbed agent()/parallel()/log()/phase(); the panel guard, the planned-count log, the arm-isolation
 // instruction and the rank arithmetic are asserted. Run: node .claude/workflows/tests/finish-ab-shape.mjs
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
+import { loadWorkflow } from "./load-workflow.mjs";
 
-const here = path.dirname(fileURLToPath(import.meta.url));
-const src = readFileSync(path.join(here, "..", "finish-ab", "finish-ab.js"), "utf8");
-const metaMatch = src.match(/export const meta = (\{[\s\S]*?\n\})\n/);
-if (!metaMatch) { console.error("finish-ab-shape: meta literal not found"); process.exit(1); }
-const meta = new Function(`return (${metaMatch[1]})`)();
-const body = src.slice(metaMatch.index + metaMatch[0].length);
-const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+const { meta, run: runWorkflow } = loadWorkflow(new URL("../finish-ab/finish-ab.js", import.meta.url));
 
 let failures = 0;
 const check = (cond, msg) => { if (!cond) { failures += 1; console.error(`FAIL: ${msg}`); } };
@@ -25,8 +17,7 @@ async function run(args, { armResult, judgeResult }) {
     return opts.phase === "Execute" ? armResult(opts, prompt) : judgeResult(opts, prompt);
   };
   const parallel = async (thunks) => Promise.all(thunks.map((t) => t().catch(() => null)));
-  const fn = new AsyncFunction("args", "agent", "parallel", "log", "phase", body);
-  const result = await fn(args, agent, parallel, (m) => logs.push(String(m)), () => {});
+  const result = await runWorkflow(args, agent, parallel, (m) => logs.push(String(m)), () => {});
   return { result, logs, calls };
 }
 

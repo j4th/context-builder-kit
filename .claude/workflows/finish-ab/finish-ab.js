@@ -79,7 +79,7 @@ const arms = await parallel(args.arms.map((cell) => () =>
   }).then((r) => ({ ...cell, result: r }))
 ))
 
-const done = arms.filter(Boolean).filter((a) => a.result)
+const done = arms.filter((a) => a && a.result)
 const missing = args.arms.filter((c) => !done.find((d) => d.anon === c.anon))
 if (missing.length) log(`finish-ab: dropped arms (no result): ${missing.map((m) => m.anon).join(", ")}`)
 log(`finish-ab: ${done.length}/${args.arms.length} arms returned: ${done.map((d) => `${d.anon}=${d.result.commits.length} commits, check exit ${d.result.check_exit}, skills [${d.result.skills_invoked.join(" ")}]`).join(" | ")}`)

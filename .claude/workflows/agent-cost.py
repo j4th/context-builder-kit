@@ -77,11 +77,8 @@ def summarise(path):
         t['cw'] += u.get('cache_creation_input_tokens', 0)
         t['cr'] += u.get('cache_read_input_tokens', 0)
     model = ','.join(sorted(per_model)) or '?'
-    turns = sum(t['turns'] for t in per_model.values())
-    inp = sum(t['inp'] for t in per_model.values())
-    out = sum(t['out'] for t in per_model.values())
-    cw = sum(t['cw'] for t in per_model.values())
-    cr = sum(t['cr'] for t in per_model.values())
+    totals = {k: sum(t[k] for t in per_model.values()) for k in ('turns', 'inp', 'out', 'cw', 'cr')}
+    turns, inp, out, cw, cr = (totals[k] for k in ('turns', 'inp', 'out', 'cw', 'cr'))
     cost = 0.0
     for name, t in per_model.items():
         k = tier(name)

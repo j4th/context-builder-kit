@@ -8,22 +8,14 @@
 // the roster reader's dirty output is sanitized; a domain reviewer is dispatched when
 // its prefix matches and is out of scope (not dropped) when it does not; the retry
 // pass escalates effort once; caller-supplied reviewers and finders are honoured.
-import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
+import { loadWorkflow } from "./load-workflow.mjs";
 
-const src = readFileSync(new URL("../review-sweep.js", import.meta.url), "utf8");
-const body = src.replace(/^export const meta = \{[\s\S]*?\n\};\n/, "");
-// The parse check lives here (one extraction, not two): the meta literal is evaluated as an
+// The parse check lives in the loader (one extraction, not two): the meta literal is evaluated as an
 // object and the body as an async function — either failing to parse fails this harness.
-const metaSrc = src.match(/^export const meta = \{[\s\S]*?\n\};\n/)?.[0];
-assert.ok(metaSrc, "review-sweep.js must open with `export const meta = { … };`");
-const meta = new Function(metaSrc.replace(/^export /, "") + "return meta;")();
+const { meta, run } = loadWorkflow(new URL("../review-sweep.js", import.meta.url));
 assert.equal(meta.name, "review-sweep");
 assert.ok(Array.isArray(meta.phases) && meta.phases.length === 3, "meta.phases declares Roster, Find, Verify");
-// The only source evaluated here is the repo's own review-sweep.js (the file under test) —
-// first-party code, never an input; this is the harness's equivalent of importing it.
-const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-const run = new AsyncFunction("args", "agent", "parallel", "log", "phase", body);
 
 // findings[key] may be an object ({findings: […]}), null (the finder fails every time),
 // or a function of the call's opts (vary the response per call — e.g. fail once, then succeed).
