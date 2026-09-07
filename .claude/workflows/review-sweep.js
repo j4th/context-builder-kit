@@ -5,7 +5,7 @@ export const meta = {
     "Runs BESIDE pr-review-toolkit:review-pr, after /simplify, when a multi-agent orchestration surface is available. The governing rule is .claude/rules/pr-review.md § The orchestrated sweep supplements; it never substitutes: the floor is the two skills actually invoked and this workflow discharges neither; it is sized to the diff, never to the session's effort setting; it reads the reviewer roster from pr-review.md at runtime and degrades to the toolkit dimensions when that read fails; it bounds at dedup and verify (3 per dimension, 8 verified by default), logs the planned agent count before the find stage, returns anything a bound drops as unverified, and returns its own gate line. The caller scouts the diff and passes {base, files, reviewers?, finders?, maxPerDimension?, maxVerify?, verifyModel?} — always pass files; verify agents inherit the session model unless verifyModel names a lower tier. Triage stays with the caller: this workflow finds and verifies; it never classifies.",
   phases: [
     { title: "Roster", detail: "read the authoritative reviewer roster from pr-review.md (degrades on failure)", model: "haiku" },
-    { title: "Find", detail: "toolkit dimensions + intersecting project reviewers + caller-named finders", model: "sonnet" },
+    { title: "Find", detail: "toolkit dimensions + intersecting project reviewers + caller-named finders; effort medium, retry high", model: "sonnet" },
     { title: "Verify", detail: "adversarial refute-by-default over the deduplicated, bounded set (session model, effort high)" },
   ],
 };
@@ -86,6 +86,8 @@ const base = params.base ?? "main";
 // have (pr-review.md § Fan-outs are bounded). Defaults per the conventions: 3 / 8.
 const MAX_PER_DIMENSION = params.maxPerDimension ?? 3;
 const MAX_VERIFY = params.maxVerify ?? 8;
+const FIND_EFFORT = params.findEffort ?? "medium"; // finders are verified downstream (orchestration.md § Generation notes)
+const RETRY_EFFORT = params.retryEffort ?? "high";
 const rank = { high: 0, medium: 1, low: 2 };
 const droppedCoverage = [];
 
@@ -110,7 +112,7 @@ if (!reviewers) {
 Split them by the section's own dispatch rule: reviewers it says run UNCONDITIONALLY (cross-cutting) vs reviewers it says are PATH-MATCHED against changed files (domain). For each path-matched reviewer, return the directory prefixes the section names as its scope, as bare paths (e.g. src/schema/) — never globs, never prose.
 
 If the section is ambiguous, missing, or names a reviewer whose agent file does not exist under .claude/agents/, say so in "note" rather than guessing.`,
-    { label: "roster:read-rule-file", phase: "Roster", model: "haiku", schema: ROSTER_SCHEMA },
+    { label: "roster:read-rule-file", phase: "Roster", model: "haiku", schema: ROSTER_SCHEMA }, // haiku: no effort dial — orchestration.md § Generation notes
   );
 
   if (roster === null || !Array.isArray(roster.crossCutting) || !Array.isArray(roster.domain)) {
@@ -164,10 +166,10 @@ const plannedAgents = {
 };
 log(`review-sweep: planned agents — ${plannedAgents.roster} roster + ${plannedAgents.finders} finders + up to ${plannedAgents.retries} retries + up to ${plannedAgents.verifiers} verifiers = at most ${plannedAgents.max} (bounds ${MAX_PER_DIMENSION}/dimension, ${MAX_VERIFY} verified)`);
 
-const findOnce = (dim, effort) =>
+const findOnce = (dim, effort = FIND_EFFORT, retry = false) =>
   agent(
     `Review the branch diff (git diff ${base}...HEAD), restricted to these changed files:\n${fileList}\n\nApply your standard review discipline. Respect the exclusion list in .claude/rules/pr-review.md § "What NOT to flag" — findings only on changed code, no theoretical risks without concrete preconditions. Report every finding you would defend against a reviewer actively trying to refute it, including medium and low confidence — deduplication and a severity-ranked bound happen before verification, and triage happens in the caller: do not classify. Rank most-severe first.`,
-    { label: `find:${dim.key}${effort ? ":retry" : ""}`, phase: "Find", agentType: dim.agentType, model: "sonnet", schema: FINDINGS_SCHEMA, ...(effort ? { effort } : {}) },
+    { label: `find:${dim.key}${retry ? ":retry" : ""}`, phase: "Find", agentType: dim.agentType, model: "sonnet", effort, schema: FINDINGS_SCHEMA },
   );
 
 const firstPass = await parallel(dimensions.map((dim) => () => findOnce(dim)));
@@ -177,8 +179,8 @@ const firstPass = await parallel(dimensions.map((dim) => () => findOnce(dim)));
 // pass escalates effort once — "did it not try hard enough?" is the question
 // effort answers (orchestration.md § The effort axis).
 const failedFirst = dimensions.filter((_d, i) => firstPass[i] === null);
-if (failedFirst.length) log(`review-sweep: ${failedFirst.length} find agent(s) returned nothing — retrying once at effort high: ${failedFirst.map((d) => d.key).join(", ")}`);
-const retried = await parallel(failedFirst.map((dim) => () => findOnce(dim, "high")));
+if (failedFirst.length) log(`review-sweep: ${failedFirst.length} find agent(s) returned nothing — retrying once at effort ${RETRY_EFFORT}: ${failedFirst.map((d) => d.key).join(", ")}`);
+const retried = await parallel(failedFirst.map((dim) => () => findOnce(dim, RETRY_EFFORT, true)));
 const results = dimensions.map((dim, i) => firstPass[i] ?? retried[failedFirst.indexOf(dim)] ?? null);
 
 const failedDimensions = dimensions.filter((_d, i) => results[i] === null).map((d) => d.key);

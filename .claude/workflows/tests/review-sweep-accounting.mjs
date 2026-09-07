@@ -211,7 +211,7 @@ for (const roster of [null, { crossCutting: "not-an-array" }]) {
   n++;
 }
 
-// 14 — the retry pass runs once, labelled :retry, at effort high, and its findings count.
+// 14 — the retry pass runs once, labelled :retry, at the retry effort (first pass at the find effort), and its findings count.
 {
   let attempt = 0;
   const { out, calls } = await scenario("retry succeeds", {
@@ -221,7 +221,7 @@ for (const roster of [null, { crossCutting: "not-an-array" }]) {
   });
   const findCalls = calls.filter((c) => c.label.startsWith("find:code-review"));
   assert.equal(findCalls.length, 2);
-  assert.equal(findCalls[0].opts.effort, undefined);
+  assert.equal(findCalls[0].opts.effort, "medium");
   assert.equal(findCalls[1].label, "find:code-review:retry");
   assert.equal(findCalls[1].opts.effort, "high");
   assert.ok(out.confirmed.some((f) => f.title === "found on retry"));
