@@ -143,7 +143,7 @@ What gets provisioned depends on the operator's two-axis choice and detection st
 
 - **Branch naming**: propose a format based on team identifier from discovery, e.g. `{team-id}-{issue-number}-{short-description}`. Confirm with user.
 - **Commit format**: propose Conventional Commits as default unless the user has a preference. Confirm.
-- **Label taxonomy**: propose the cascade standard set (bug, feature, improvement, tech-debt, documentation) plus area labels derived from the problem brief. Confirm, then walk the user through manual creation.
+- **Label taxonomy**: propose the full set as an axis structure — cascade depth, awaiting-cascade-work, provenance, type, workstream, meta, review control, and the optional labour lane (`references/github_only_profile.md` § State 1 step 3 lists every label). Confirm, then create them (`gh label create` when a token exists, otherwise walk the user through the labels page).
 
 **HITL gate**: user confirms what was created, walks verification matrix.
 
@@ -320,6 +320,8 @@ Auto-checkable, fires after gate 6 and before scaffold declares itself complete.
 - `references/linear_planning.md` — provisioning when planning = `linear`
 - `references/notion_knowledge.md` — provisioning when knowledge = `notion` (hub-row creation, brownfield detection, lazy sub-pages)
 - `references/brownfield_audit.md` — workspace audit for operators with existing repos / workspaces / Notion structures
+- `references/github-starter-templates.md` — the literal `.github/` starter bodies pushed on the github-issues axis (issue forms, `config.yml`, the PR template with the gate blocks, `CODEOWNERS`, the CI stub with its traps, `dependabot.yml` with the floor, the `.gitattributes` counter-line)
+- `references/backends.md` — the backend interface mapping for the phase (both axes)
 - `references/scaffold_output_template.md` — template and worked example for `docs/cbk/scaffold.md`
 - `references/bootstrap_checklist_template.md` — template for the session checklist
 - `references/manual_steps.md` — canonical list of always-manual operations

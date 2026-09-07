@@ -1,0 +1,59 @@
+# Dependency update policy — the kit's own example of the mechanism behind
+# .claude/rules/cbk-conventions-reference.md § Dependency settle-window. Copy to
+# .github/dependabot.yml in a target project and fill the ecosystem blocks; the
+# scaffold starter (.claude/skills/scaffold/references/github-starter-templates.md)
+# carries the same body with its reasons.
+#
+# Three invariants:
+# 1. `cooldown` gates VERSION updates only — never security updates (platform
+#    guarantee: docs.github.com … dependabot-options-reference, read 2026-09-06).
+# 2. `groups` is the anti-spam lever; `schedule.interval` is the volume lever.
+# 3. Every ecosystem entry — including an inactive stub — carries the floor.
+#
+# The kit itself has one ecosystem: the actions its workflows use.
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    cooldown:
+      default-days: 7
+    groups:
+      ci-actions:
+        patterns: ["*"]
+        applies-to: "version-updates"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(deps)"
+
+  # Inactive stubs — uncomment the one the project uses; the floor is already there.
+  # - package-ecosystem: "npm"
+  #   directory: "/"
+  #   schedule: { interval: "monthly" }
+  #   cooldown: { default-days: 7 }
+  # - package-ecosystem: "pip"
+  #   directory: "/"
+  #   schedule: { interval: "monthly" }
+  #   cooldown: { default-days: 7 }
+  # - package-ecosystem: "cargo"
+  #   directory: "/"
+  #   schedule: { interval: "monthly" }
+  #   cooldown: { default-days: 7 }
+  # - package-ecosystem: "pub"
+  #   directory: "/"
+  #   schedule: { interval: "monthly" }
+  #   cooldown: { default-days: 7 }
+  # - package-ecosystem: "gomod"
+  #   directory: "/"
+  #   schedule: { interval: "monthly" }
+  #   cooldown: { default-days: 7 }
+  # - package-ecosystem: "bundler"
+  #   directory: "/"
+  #   schedule: { interval: "monthly" }
+  #   cooldown: { default-days: 7 }
+  # - package-ecosystem: "mix"
+  #   directory: "/"
+  #   schedule: { interval: "monthly" }
+  #   cooldown: { default-days: 7 }
