@@ -218,6 +218,7 @@ These tests are not exhaustive — they cover the canonical happy path and the i
 
 **Success criteria**:
 - The skill reads the inputs and `references/contract.md`; `references/procedure.md` is not opened (light mode, no unclear step)
+- A measurement-shaped spec in the set carries the template's measurement variant: the verdict rule as the first criterion, the frozen findings table, and a `## Done signal` naming both the run-and-revise loop and the by-hand completeness check (never the CI gate)
 - The whole set is drafted before anything is shown: pre-flight result, issue plan, coverage map (every `[F<#>.AC<n>]` owned by exactly one R-issue), every spec body with numbered `[R<#>.AC<m>]` criteria and test tags keyed to them, the commit-time text
 - One fresh-context verifier at the verify tier attacks citations, repo claims, package-API claims, the coverage map and the test tags, and its defects are fixed before the gate
 - The one gate carries the decision list; the framing-invited judgment call (which R-issue the blocking row becomes a dependency of) is made and its reason recorded

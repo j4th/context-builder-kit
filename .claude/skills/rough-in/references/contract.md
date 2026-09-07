@@ -75,7 +75,10 @@ open-questions list is a different list with its own numbering, cited by its own
      parsed value present) and flag the rest as operational, in an explicit list.
    - **Done signal**: one command or observation; an operational signal flagged as such. For a spike-shaped
      R-issue — one whose criteria are the operator's runs — the signal names the run-and-revise loop (the rows
-     filled from the runs, with the harness fixed on the same branch until they are), not the draft PR.
+     filled from the runs, with the harness fixed on the same branch until they are) **and** the record's completeness
+     check (the by-hand checker that confirms every planned row is present, run by hand and never in the CI gate),
+     not the draft PR. A measurement-shaped spec commits its verdict rule before any number exists; the
+     template's measurement variant is the shape.
    - **Dependencies**: identifiers only — `#N` for existing issues, `R<#>` placeholders for sibling R-issues, which the
      commit resolves — with one line on what each is *for*; or `None`. Never name an open issue in prose here unless it
      is a dependency: the executor refuses to proceed on any open issue it finds listed.

@@ -178,6 +178,23 @@ test, command, or observation that proves the criterion.
 - [ ] _Specific outcome 2_
 - [ ] _Specific outcome 3_
 
+<!--
+MEASUREMENT VARIANT — use when the criteria are numbers the run produces (a
+benchmark, a calibration, a field measurement) rather than behaviour a test pins:
+
+- [ ] [R<#>.AC1] The **verdict rule** — what value range means which verdict, and
+      which departures are weighed rather than folded in — is committed to
+      `<path>` BEFORE any number exists; commit order is the evidence.
+- [ ] [R<#>.AC2] The findings table at `<path>` is frozen against the base branch:
+      every row is `<value> / <method> / <date>`, and the capstone PR shows the
+      table unchanged against `main` (a row edited after the verdict is a new row).
+- [ ] [R<#>.AC3] A by-hand completeness checker (`<command>`) confirms every planned
+      row is present and well-formed; it runs at the operator's hand and NEVER in the
+      CI gate — a red row is a finding, not a build failure.
+- [ ] [R<#>.AC4] The row-verification pass is sized to one pass plus a delta: each
+      row verified once, then only rows changed since.
+-->
+
 ## Test plan
 
 <!--
@@ -234,6 +251,16 @@ with expected output, or a "the smoke test in CI passes" statement.
 -->
 
 `<command or observation>`
+
+<!--
+MEASUREMENT / SPIKE VARIANT — the signal names BOTH the run-and-revise loop
+(rows filled from the operator's runs, harness fixes landing on the same branch
+until they are) AND the record's completeness check (the by-hand checker above,
+run after the last row lands); the draft PR is neither:
+
+`<completeness-checker command>` reports every planned row present, after the
+last run's row lands and the verdict is written against the frozen table.
+-->
 
 ## Dependencies
 
