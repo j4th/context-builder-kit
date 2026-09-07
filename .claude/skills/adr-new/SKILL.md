@@ -22,7 +22,7 @@ Create a new ADR. ADRs are **immutable** (ADR-0000) — superseding writes a new
 
 ## Inputs (interactive)
 
-When invoked, ask the user (in this order, one question at a time — don't batch):
+When invoked, **propose** every input below from what the operator already said and the tree (the conversation, the issue, the frame, the existing ADR index), present the filled set in one exchange, and ask only for what cannot be inferred — never one question at a time, and never a bare form. The operator corrects the proposal; the corrected set is the input.
 
 1. **Slug** — kebab-case noun phrase, max 8 words. Used in the filename. Example: `vector-store-as-anubis-tool`.
 2. **Title** — full title for the ADR header, sentence case. Example: `Vector store as an Anubis tool, not an MCP server`.
