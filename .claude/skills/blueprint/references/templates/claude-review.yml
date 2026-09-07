@@ -1,0 +1,233 @@
+# Claude PR auto-review — blueprint template. Copy to .github/workflows/claude-review.yml
+# and fill every [bracketed] value; the seven authoring constraints below are stated at
+# their sites and survive edits. Emitted only when scaffold's PR/review answer allows
+# review automation (scaffold.md § Working conventions); otherwise blueprint surfaces the
+# skip as a one-line notice and this file is not written.
+#
+# Fires ONCE per readiness cycle: opened (non-draft) · ready_for_review (the common
+# trigger — /finish ends at draft, the author flips ready) · reopened · labeled (a manual
+# re-trigger, gated to `claude-review-again`). NOT on `synchronize`: follow-up pushes do
+# not re-fire a review (constraint 5 — label-driven proportionality); re-trigger with
+# the label. Model and effort are explicit, never inherited (orchestration.md).
+#
+# Constraint 1 — the action cannot review the PR that introduces it: the action
+# validates this file against the default branch and exits green without running on
+# any PR that adds or changes it. Verify on the next PR, not this one.
+#
+# Constraint 4 — the posted artifact is the deliverable, in both directions: a green run
+# with no summary comment is a failure to investigate; a red run whose review posted is a
+# pass (cbk-conventions.md § Deliverable trap). The prompt makes the summary an explicit
+# `gh pr comment` and names it first.
+#
+# GOTCHA: the CI-skip marker on the HEAD commit at the draft→ready flip silently blocks
+# this workflow — end the branch on a non-marker commit before flipping
+# (cbk-conventions.md § [skip ci] rule, the auto-review trap).
+#
+# Two things the exercised runs learned: `gh pr checks` is usually NOT readable from the
+# action's token ("Resource not accessible by integration") — the prompt says to say
+# nothing about CI rather than report the permission error as a finding; and
+# `track_progress` is unsupported on `labeled` events (the action fails), hence the
+# expression on that input.
+#
+# Needs the `CLAUDE_CODE_OAUTH_TOKEN` Actions secret (`/install-github-app` in Claude Code).
+#
+# Constraint 2 — SAFETY: no author-controlled input (title, body, commits, branch name,
+# labels) is interpolated into a `run:` command. Labels arrive through `env:` as JSON and
+# are read as quoted shell variables. The action is pinned to a full commit SHA with a
+# version comment (cbk-conventions-reference.md § Dependency settle-window); dependabot's
+# github-actions sweep maintains the pin under the floor.
+# https://github.blog/security/vulnerability-research/how-to-catch-github-actions-workflow-injections-before-attackers-do/
+
+name: Claude PR Auto-Review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened, labeled]
+    # Docs-only and cascade-artifact PRs are not reviewed by the bot. This is NOT a
+    # required check, so a paths filter is safe here (unlike ci.yml — cbk-conventions.md
+    # § [skip ci] rule, the required-checks trap). A docs-only PR whose docs are one-way
+    # doors (ADRs, the conventions) is reviewed by a human, not skipped by everyone.
+    paths-ignore:
+      - 'docs/cbk/**'
+      - '**/*.md'
+      - '.gitignore'
+      - '.gitattributes'
+      - '.editorconfig'
+      - '.github/dependabot.yml'
+      # [add the project's other prose-only paths]
+
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  auto-review:
+    name: Auto-review (inline + summary)
+    if: |
+      (github.event.action != 'labeled' || github.event.label.name == 'claude-review-again') &&
+      !github.event.pull_request.draft &&
+      !contains(github.event.pull_request.labels.*.name, 'skip-claude') &&
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      github.event.pull_request.user.login != 'renovate[bot]' &&
+      github.event.pull_request.user.login != 'claude[bot]'
+    runs-on: ubuntu-latest
+    # Constraint 3 — a job-level timeout: the action has no timeout input of its own.
+    timeout-minutes: 30
+    # Constraint 6 — permissions scoped to the job. `id-token: write` is required by the
+    # action even in OAuth-token mode; `checks: read` for the prompt's `gh pr checks`.
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      actions: read
+      checks: read
+      id-token: write
+    steps:
+      - name: Remove claude-review-again label (so it can be re-added next time)
+        if: github.event.action == 'labeled' && github.event.label.name == 'claude-review-again'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -uo pipefail
+          # --repo because this step runs BEFORE checkout.
+          if ! err="$(gh pr edit "$PR_NUMBER" --repo "$REPO" --remove-label claude-review-again 2>&1)"; then
+            if printf '%s' "$err" | grep -qiE 'not found|does not have|does not exist'; then
+              echo "Label already removed (benign concurrent run)."
+            else
+              echo "::error::Failed to remove claude-review-again label: $err"
+              exit 1
+            fi
+          fi
+
+      - name: Checkout PR HEAD
+        uses: actions/checkout@[full-commit-sha] # v[version] — [newest release clearing the settle window as of <date>]
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Pick model + effort from labels
+        id: model
+        # Constraint 5 — label-driven proportionality. Precedence: claude-deep-review >
+        # claude-fast-review > default. Matches the QUOTED JSON token so a stray
+        # `claude-deep-review-wip` label cannot false-trigger the heavy path.
+        # Constraint 7 — no orphanable sub-dispatch: the default and fast paths keep the
+        # review in one session (`--disallowedTools Agent`); only the deep path fans out.
+        env:
+          LABELS_JSON: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          set -uo pipefail
+          labels="${LABELS_JSON:-[]}"
+          if printf '%s' "$labels" | grep -qF '"claude-deep-review"'; then
+            echo "model=[<top-tier or workhorse model id>]" >> "$GITHUB_OUTPUT"
+            echo "effort=xhigh" >> "$GITHUB_OUTPUT"
+            echo "settings_arg=--settings '{\"ultracode\":true}'" >> "$GITHUB_OUTPUT"
+            echo "disallow_arg=" >> "$GITHUB_OUTPUT"
+          elif printf '%s' "$labels" | grep -qF '"claude-fast-review"'; then
+            echo "model=[<mid-tier model id>]" >> "$GITHUB_OUTPUT"
+            echo "effort=high" >> "$GITHUB_OUTPUT"
+            echo "settings_arg=" >> "$GITHUB_OUTPUT"
+            echo "disallow_arg=--disallowedTools Agent" >> "$GITHUB_OUTPUT"
+          else
+            echo "model=[<workhorse model id>]" >> "$GITHUB_OUTPUT"
+            echo "effort=high" >> "$GITHUB_OUTPUT"
+            echo "settings_arg=" >> "$GITHUB_OUTPUT"
+            echo "disallow_arg=--disallowedTools Agent" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Auto-review
+        uses: anthropics/claude-code-action@[full-commit-sha] # v[version] — [newest release clearing the settle window as of <date>]
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Full SDK output so an auth or stream failure is diagnosable from the run log.
+          show_full_output: true
+          # track_progress is unsupported on `labeled` events (the action fails).
+          track_progress: ${{ github.event.action != 'labeled' && 'true' || 'false' }}
+          additional_permissions: |
+            actions: read
+          prompt: |
+            You are reviewing a pull request against [<project one-liner: what it is, who it is
+            for, the one property a UI-looking edit can break>]. Read `CLAUDE.md` first
+            [<and the nested CLAUDE.md of each tree the diff touches>].
+
+            ## What to do
+
+            Enumerate every changed file (`gh pr diff ${{ github.event.pull_request.number }} --name-only`)
+            and walk each one; read the surrounding file, not only the hunk, when context matters.
+
+            Then post, **in this order**:
+
+            1. **One summary comment** at the top of the PR, with `gh pr comment` — the verdict and the
+               finding counts (format below). Post it FIRST; it is the durable output.
+            2. **Inline comments** for specific code-level findings, via the inline-comment MCP tool
+               (`mcp__github_inline_comment__create_inline_comment`).
+
+            **Your deliverable is the posted comments, not your reply.** A review that never ran
+            `gh pr comment` for its summary produced nothing. If you are low on turns, post the
+            summary before adding more inline comments. Do the review in this one session — do not
+            dispatch subagents and wait on them.
+
+            ## Rubric (from `.claude/rules/pr-review.md`)
+
+            Classify every finding into exactly one class: **Apply** (a behavior-preserving fix with
+            concrete evidence — a reproducible failing path, a factually wrong comment, dead code, a
+            low-risk change under about 15 lines), **Apply with care** (a cross-file refactor or a
+            non-obvious correctness fix), **Surface** (a genuine design or taste call — inline only
+            when tied to a file and line), **Defer** (conflicts with an ADR or is out of scope),
+            **Reject** (a misreading of the codebase or a finding that contradicts the project's
+            rules — one line in the summary, never inline). Tag inline comments with the class.
+
+            ## Project-level rules to check against (read the ones the diff touches)
+
+            - `.claude/rules/testing.md` — [<the regimes per tree>]
+            - `.claude/rules/logging.md` — [<the project's logging and telemetry boundary>]
+            - `.claude/rules/cbk-conventions.md` — branch naming, commit format, the label taxonomy,
+              the CI-skip-marker rule, mutation discipline (ADRs immutable; cascade artifacts append-only)
+            - `.claude/rules/simplification.md` — dead code, unnecessary indirection, over-clever expressions
+            - [<the project's guarded surfaces: the label a PR touching them must carry and the review
+              block its body must contain; a missing block is REQUEST CHANGES>]
+
+            Architectural commitments live in the ADRs (`docs/adr/`, immutable). Read `docs/adr/README.md`
+            — the always-current index — and the ADRs the diff plausibly touches, following each
+            `Refines:` / `Extends:` chain; check the change against their Decision and Consequences.
+            Do not rely on a hard-coded ADR list in this prompt. Known citation defects live in
+            `docs/adr/corrections.md`; do not restate a claim already flagged wrong there.
+
+            Project-local reviewer agents in `.claude/agents/` encode extra checks. Apply them
+            **inline yourself** (one session, no subagents): read the ones whose scope the diff
+            touches, per `.claude/rules/pr-review.md` § Project-local agents.
+
+            ## How to format the summary comment
+
+            One-line verdict: **APPROVE** / **APPROVE WITH NITS** / **REQUEST CHANGES** / **NEEDS DISCUSSION**.
+            Then a counts table (Apply / Apply with care / Surface / Defer / Reject). Then three to
+            seven lines on the most important findings and any cross-cutting concern. CI status is
+            usually NOT readable from your token (`gh pr checks` fails with "Resource not accessible
+            by integration"); if it is, reference a failed check, otherwise say nothing about CI —
+            never report the permission error as a finding. End with one line on what is NOT in
+            scope of this review.
+
+            ## What to skip
+
+            - Docs-only or cascade-artifact PRs (`docs/cbk/`, `*.md` only): post the one-line summary
+              `Docs-only PR — auto-review skipped per rule` and exit — unless the docs are one-way
+              doors (ADRs, the conventions), which a human reviews.
+            - Issues in unchanged code; speculative future-risk warnings with no concrete failing path;
+              restating what a function name already says; library or framework swaps (blueprint's job);
+              stylistic nits without a strong rationale (those are Reject, one line).
+
+            ## Context
+
+            `gh pr view ${{ github.event.pull_request.number }}` for metadata, `gh pr diff` for the diff,
+            and the inline-comment MCP tool for line-specific findings.
+
+            Model in use: ${{ steps.model.outputs.model }} (effort: ${{ steps.model.outputs.effort }})
+          claude_args: |
+            --model ${{ steps.model.outputs.model }}
+            --fallback-model [<mid-tier model id>]
+            --effort ${{ steps.model.outputs.effort }}
+            ${{ steps.model.outputs.settings_arg }}
+            --max-turns 60
+            --allowedTools "Read,Grep,Glob,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh pr checks:*),Bash(gh run view:*),Bash(gh run list:*),mcp__github_inline_comment__create_inline_comment"
+            ${{ steps.model.outputs.disallow_arg }}

@@ -70,7 +70,8 @@ The cascade cannot automate these. See `docs/cbk/blueprint.md` § "Credential
 model" for background on why each is needed.
 
 - [ ] Run `/install-github-app` inside Claude Code (or equivalent for
-      whatever review automation was chosen)
+      whatever review automation was chosen) — this line only when
+      scaffold's PR/review answer allowed review automation; drop it otherwise
 - [ ] Create the local PAT and run `<setup script>` to wire up MCP access
 - [ ] [Any other manual steps from blueprint's stack decisions]
 
@@ -97,7 +98,7 @@ When generating section 2, blueprint walks every config file it just committed a
 
 Files to walk for the inventory:
 - The language-specific manifest (Cargo.toml workspace deps, package.json deps, pyproject.toml deps, etc.)
-- Toolchain pinning (mise.toml, .tool-versions, .nvmrc, rust-toolchain.toml, etc.)
+- Toolchain pinning (mise.toml, .tool-versions, .nvmrc, rust-toolchain.toml, etc.) — settle-window-covered but bot-uncovered: no dependabot ecosystem maintains these, so the auto-update bot's presence does not imply they are handled
 - CI workflow files for action refs (`.github/workflows/*.yml`, `.gitlab-ci.yml`, etc.)
 - Any other config file blueprint committed that contains version strings
 

@@ -189,6 +189,7 @@ Blueprint produces six prose foundation docs plus tooling configs. The order is 
 
 **Plus tooling configs** (not prose docs, real config files):
 - CI workflow files in `.github/workflows/`
+- The review workflows from `references/templates/claude-review.yml` and `references/templates/claude.yml`, **only when scaffold's PR/review answer allows review automation** (`scaffold.md` § Working conventions: *reviewed* or *solo-merge with automated review*); otherwise a one-line HITL notice — *"no review automation — scaffold said self-reviewed; say the word to add it"* — never a silent omission
 - Task runner config (mise.toml, Makefile, justfile, package.json scripts — depends on stack)
 - `.env.example` if applicable
 

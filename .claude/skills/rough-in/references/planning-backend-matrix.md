@@ -6,6 +6,8 @@ The cascade ships three planning axes defined in scaffold and documented in `ref
 
 ## `github-issues` planning axis (default)
 
+**Interface**: `gh` by default (`references/planning-backend-commit.md` § The `gh` shape — five commands as one script, the parent-object return, the create-then-edit placeholder pattern); a git-host MCP is one connection among several. The phase reads and writes the working tree by default.
+
 This is the planning axis rough-in is built to run cleanly against, with full atomic transition, partial failure recovery, and inherit-from-disk discipline.
 
 **Hierarchy**: rough-in creates **sub-sub-issues** parented under the framing capability sub-issue via GitHub's native sub-issue API. The full Issue tree per workstream is three deep:

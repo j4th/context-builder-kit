@@ -21,6 +21,8 @@ The planning backend is determined by `scaffold.md`'s Cascade metadata section. 
 
 ## `github-issues` planning behavior
 
+**Interface**: `gh` by default (`references/planning-backend-commit.md` § The `gh` shape — five commands as one script, the parent-object return, the create-then-edit placeholder pattern); a git-host MCP is one connection among several. The phase reads and writes the working tree by default.
+
 **The most common case.** If scaffold picked `github-issues`, blueprint operates entirely against the GitHub repo for planning. There is no Linear, no external project tool.
 
 The structural fact that shapes everything: **`github-issues` is three-level** (project board → sub-issue → sub-sub-issue, via GitHub's native sub-issue API), with no native concept of "initiative." This was surfaced and explicitly acknowledged in scaffold's backend selection. Blueprint's job under this constraint is to produce the initiative content **as a markdown document at `docs/cbk/blueprint.md`** rather than as a planning entity. Framing then reads that document as context for project decomposition.

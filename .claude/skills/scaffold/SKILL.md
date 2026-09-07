@@ -101,7 +101,7 @@ This is where scaffold captures the team shape and working preferences that blue
 
 1. *"Is this solo or team? If team — how many people, what roles, and who makes the call when there's a disagreement?"*
 2. *"What's your quality bar for this project — move fast and iterate, or get it right from the start?"* (Single highest-value question scaffold can ask. Shapes testing, review, and CI decisions downstream.)
-3. *"How do you want PRs to work? Reviewed by someone else, self-reviewed, or straight-to-main?"*
+3. *"How do you want PRs to work? Reviewed by someone else, self-reviewed, solo-merge **with automated review**, or straight-to-main?"* — the answer gates blueprint: only *reviewed* and *solo-merge with automated review* let blueprint emit the review workflows (the blueprint skill's `references/templates/claude-review.yml` and `claude.yml`); on *self-reviewed* and *straight-to-main* blueprint surfaces the skip as a one-line notice and the handoff issue's `/install-github-app` step is omitted. Say so when asking.
 4. *"How comfortable are you with the tools we're setting up? First time with GitHub Actions / project boards, or veteran?"*
 5. *"What pace are you working at — full-time, part-time, evenings-and-weekends?"* (Appetite was captured in consultation, but confirming here is cheap and the answer may have changed.)
 

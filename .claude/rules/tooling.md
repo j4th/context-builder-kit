@@ -38,7 +38,8 @@
 |---|---|---|
 | Read a cascade issue | `<planning-backend MCP read call, or gh CLI>` | The planning backend is the source of truth for cascade sub-issues |
 | Create / update an issue or comment | `<planning-backend MCP write call>` | Same |
-| Create / read / comment on a PR | `<github MCP calls>` or `Bash` with `gh` | The git host is the source of truth for PRs, code review, repo state |
+| Create / read / comment on a PR | `Bash` with `gh` (default) or `<github MCP calls>` | The git host is the source of truth for PRs, code review, repo state |
+| Create or link a cascade issue on the github-issues axis | `Bash` with `gh` — five commands as one script (the phase's `references/planning-backend-commit.md` § The `gh` shape) | `gh` is the default interface; a git-host MCP is one connection among several, and the phase reads and writes the working tree by default |
 
 **Decision rule**: cascade issues live on the planning backend; PRs and code review live on the git host. `/finish` reads the planning backend for the spec and writes a PR with the close marker from `cbk-conventions.md` § Closes-keyword conventions.
 
@@ -65,6 +66,19 @@
 ## [Stack surfaces — add a section per wired MCP]
 
 [One section per stack surface the project wires — database client, cloud CLI, observability, domain services — each with the same table shape, a decision rule, and any **gotchas the build has actually proved out** (recorded here so they aren't re-discovered; date them per the conventions' dated-rails principle). Delete this placeholder once real sections exist.]
+
+## Automated review on the git host
+
+*(Delete if scaffold's PR/review answer was self-reviewed or straight-to-main.)*
+
+| You want to … | Reach for | Why |
+|---|---|---|
+| A review on every PR flipped to ready | The auto-review workflow (`.github/workflows/claude-review.yml`, from blueprint's template) | Fires once per readiness cycle; re-trigger with `claude-review-again`; `skip-claude` opts a PR out |
+| A deeper or cheaper review on one PR | The `claude-deep-review` / `claude-fast-review` labels | Label-driven proportionality — the model and effort are explicit per label, never inherited |
+| Ask a question on a PR or issue | `@claude` in a comment (`.github/workflows/claude.yml`) | Interactive; least-privilege tool list |
+| Answer the review's findings | `/pr-respond <N>` | The feedback loop; every finding a SHA and a reply |
+
+**Decision rule**: the posted artifact is the deliverable (`cbk-conventions.md` § Deliverable trap) — a green run with no comment is investigated, a red run whose review posted is a pass. The workflow cannot review the PR that introduces it; verify on the next one. Record here which labels the project actually created.
 
 ## Plugins
 
