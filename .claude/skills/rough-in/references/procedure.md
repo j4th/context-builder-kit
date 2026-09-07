@@ -145,15 +145,15 @@ The full spec template lives in `references/templates/rough-in-spec-template.md`
 
 **HITL gate**: present each spec inline for review, or batch them into one presentation for standard/light mode. Iterate until the user approves each spec individually or the full set.
 
-## Step 5.5 — Provision `/finish` slash command (if missing)
+## Step 5.5 — Provision the executor pair (if missing)
 
-**Purpose**: ensure the `.claude/commands/finish.md` Claude Code slash command exists in the user's repo before rough-in commits the first sub-sub-issue. Without it, the user has no tooling to pick up the sub-sub-issues rough-in is about to create — they'd have to hand-write the slash command between the Step 6 commit and their first `/finish` invocation, which is friction at exactly the wrong moment.
+**Purpose**: ensure the executor pair — `.claude/commands/finish.md` (the contract) and `.claude/commands/finish-procedure.md` (the procedure) — exists in the user's repo before rough-in commits the first sub-sub-issue. Without it, the user has no tooling to pick up the sub-sub-issues rough-in is about to create — they'd have to hand-write the slash command between the Step 6 commit and their first `/finish` invocation, which is friction at exactly the wrong moment.
 
-**Idempotent and self-healing**: this step runs on every rough-in run but is a no-op in repos that already have `/finish` provisioned. Only the first rough-in run against a given repo actually commits the slash command file.
+**Idempotent and self-healing**: this step runs on every rough-in run but is a no-op in repos that already have `/finish` provisioned. Only the first rough-in run against a given repo actually commits the executor pair.
 
 ### Step protocol
 
-1. **Query the repo** via `get_file_contents` for `.claude/commands/finish.md`
+1. **Query the repo** via `get_file_contents` for `.claude/commands/finish.md` and `.claude/commands/finish-procedure.md`
 2. **Compare against the bundled templates** at `references/finish-command.md` (the contract — its body below the `--- BEGIN TEMPLATE ---` marker is the canonical `.claude/commands/finish.md`) and `references/finish-procedure.md` (the procedure — its body below the same marker is the canonical `.claude/commands/finish-procedure.md`), judged per file:
 3. **Classify the result**:
    - **A file does not exist**: this is the cold-start case. Proceed to the HITL gate to commit the pair (both files in one atomic transition).
@@ -208,7 +208,7 @@ The user's options at this gate:
 2. **Request full inspection** (`show full`, `let me see it`, `dump it`): rough-in dumps the full contract inline (and the procedure if asked), then re-presents the approval prompt. This preserves the full one-way-door inspection option for users who want it.
 3. **Request adjustments**: surface the proposed changes, discuss, and update the commit plan accordingly. Adjustments at this layer are rare but the path exists.
 
-**Rationale**: the one-way-door property requires the user to have the *opportunity* to inspect what's landing and to *explicitly approve*. It does not require a wall-of-text default presentation. The structured summary is informative enough to support sight-unseen acceptance (seven step descriptions plus scope boundaries plus provenance), and the full template is one request away for anyone who wants deeper inspection. This hits the one-way-door discipline without forcing ~150 lines of markdown through every first rough-in run.
+**Rationale**: the one-way-door property requires the user to have the *opportunity* to inspect what's landing and to *explicitly approve*. It does not require a wall-of-text default presentation. The structured summary is informative enough to support sight-unseen acceptance (the contract's five sections plus scope boundaries plus provenance), and the full template is one request away for anyone who wants deeper inspection. This hits the one-way-door discipline without forcing the 52-line contract (with its 240-line procedure available on request) through every first rough-in run.
 
 **This gate runs in every rigor mode, including light mode.** The one-way-door property is too strong for the gate to collapse. Light mode collapses other gates but not this one — but "doesn't collapse" means "still fires and gets explicit approval", not "still dumps 150 lines."
 
@@ -217,9 +217,9 @@ The user's options at this gate:
 Step 5.5's commit is **its own atomic transition**, not bundled with Step 6's planning-backend commit. The provisioning and the sub-sub-issue creation are logically independent:
 
 - The slash command file doesn't depend on sub-sub-issues existing
-- The sub-sub-issues don't depend on the slash command file existing
+- The sub-sub-issues don't depend on the executor pair existing
 
-Running them in separate transitions is cleaner than bundling: if the slash command commit fails or hangs, rough-in surfaces the Step 5.5 failure and asks the user how to proceed. The user can retry the slash command commit, skip it and proceed to Step 6 anyway (with a note that the first `/finish` invocation will need the file committed by hand), or abort the whole rough-in run. Step 6 can still complete successfully even if Step 5.5 fails, though in that case rough-in's final output will flag the missing slash command.
+Running them in separate transitions is cleaner than bundling: if the pair's commit fails or hangs, rough-in surfaces the Step 5.5 failure and asks the user how to proceed. The user can retry the pair's commit, skip it and proceed to Step 6 anyway (with a note that the first `/finish` invocation will need the file committed by hand), or abort the whole rough-in run. Step 6 can still complete successfully even if Step 5.5 fails, though in that case rough-in's final output will flag the missing slash command.
 
 **Partial failure recovery**: same discipline as the planning-backend commit. Stop immediately, surface state, do not retry blindly, wait for user direction. See `references/planning-backend-commit.md` § Partial failure recovery for the full protocol (Step 5.5 borrows it verbatim).
 
@@ -333,9 +333,9 @@ The capstone is often the last chance to catch "we built the pieces but they don
 
 ## HITL gates summary
 
-- **Full mode — up to nine gates**: one per step step (inheritance + meta-check, milestone selection, research depth, research findings, issue plan, individual specs, batch review, Step 5.5 slash command provisioning [only in cold-start case], final pre-commit)
-- **Standard mode — up to five gates**: inheritance + meta-check combined, research depth + findings combined, issue plan, Step 5.5 slash command provisioning [only in cold-start case], final pre-commit
-- **Light mode — up to two gates**: combined up-front confirmation, Step 5.5 slash command provisioning [only in cold-start case] and final pre-commit combined
+- **Full mode — up to nine gates**: one per step (inheritance + meta-check, milestone selection, research depth, research findings, issue plan, individual specs, batch review, Step 5.5's provisioning gate [only on a cold start or drift], final pre-commit review).
+- **Standard mode — three gates** (`SKILL.md` § Three rigor modes): (1) inheritance + pre-flight; (2) the verified set — issue plan, coverage map and specs together, with the decision list; (3) the final pre-commit review, which carries Step 5.5's provisioning state — on a cold start or drift, Step 5.5's own gate fires inside gate 3, never collapsed.
+- **Light mode — one gate**: the combined up-front confirmation; the verified set is then presented with its decision list and committed on approval, and Step 5.5's cold-start or drift gate still fires when it fires.
 
 The deferred meta-issues pre-flight check and the final pre-commit gate run in every mode. **Step 5.5's provisioning gate also cannot collapse** when it fires (cold-start case), because the one-way-door property of committing a slash command file future Claude Code sessions will invoke is too strong. In the already-provisioned case, Step 5.5 is a silent no-op with no gate.
 

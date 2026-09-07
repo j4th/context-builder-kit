@@ -6,9 +6,9 @@ If you are loading this reference as part of a rough-in skill session: do not ex
 
 ## What the template does
 
-`/finish {issue_number}` is the slash command future Claude Code sessions will invoke to execute a rough-in sub-sub-issue. It reads the issue body and comments, validates the title and labels match cascade conventions, verifies all dependencies are closed, researches the Implementation section executably (in the operator's current permission mode — read-only probes plus scratchpad-scoped spikes; no repo edits) then enters plan mode as the gate on the plan, executes the plan on a fresh branch after user approval, gates on the test suite, runs `/simplify` and `pr-review-toolkit:review-pr` against the local pre-PR branch with a four-class auto-triage, and opens a draft PR with `closes #<N>` in the description and a `## Triage` audit section in the body. The user flips draft → ready (which triggers any auto-review GitHub Action) and merges. The board automation handles everything downstream (issue close, parent rollup, status transitions).
+`/finish {issue_number}` is the slash command future Claude Code sessions will invoke to execute a rough-in sub-sub-issue. It reads the issue body and comments, validates the title and labels match cascade conventions, verifies all dependencies are closed, researches the Implementation section executably (in the operator's current permission mode — read-only probes plus scratchpad-scoped spikes; no repo edits) then enters plan mode as the gate on the plan, executes the plan on a fresh branch after user approval, gates on the test suite, runs `/simplify` and `pr-review-toolkit:review-pr` against the local pre-PR branch with a four-class auto-triage, and opens a draft PR carrying the `## Review gate` block (the floor's two skills and the bounded sweep, recorded) and the `## Triage` audit section in the body. The user flips draft → ready (which triggers any auto-review GitHub Action) and merges. The board automation handles everything downstream (issue close, parent rollup, status transitions).
 
-See `references/handoff-to-finish.md` for the full contract `/finish` follows and the rationale behind each step. See `references/plan-mode-prompts.md` for the discipline that shapes the Implementation section of every rough-in spec (the section `/finish` anchors on).
+See `references/handoff-to-finish.md` for the handoff contract and the executor's revision path; the per-step rationale is `references/finish-procedure.md`. See `references/plan-mode-prompts.md` for the discipline that shapes the Implementation section of every rough-in spec (the section `/finish` anchors on).
 
 ## Provenance and revision path
 
@@ -43,7 +43,7 @@ Then compare each against the repo's `.claude/commands/finish.md` and `.claude/c
 Do **not** dump the full template inline at the HITL gate by default. The one-way-door discipline requires the user to have the opportunity to inspect what's landing and to explicitly approve — it does not require a wall-of-text presentation. The default presentation is a structured summary; the full content is available on demand.
 
 **Present**:
-- **What this is**: one sentence per file (*"`.claude/commands/finish.md` — the contract the `/finish <N>` command runs against: what a finished issue is and the tests the result must pass; `.claude/commands/finish-procedure.md` — the step-by-step procedure it was extracted from, read on demand when a step is unclear"*) (*"… pick up a rough-in sub-sub-issue, verify dependencies, run plan mode, execute on a fresh branch, gate on tests, simplify, run review-toolkit with auto-triage, and open a draft PR"*)
+- **What this is**: one sentence per file (*"`.claude/commands/finish.md` — the contract the `/finish <N>` command runs against: what a finished issue is and the tests the result must pass; `.claude/commands/finish-procedure.md` — the step-by-step procedure it was extracted from, read on demand when a step is unclear"*)
 - **Provenance**: one sentence on where the template came from (*"the kit's current executor, contract-first since 2026-09-06 on a measured A/B — research runs executably, the plan is gated in plan mode, the branch is created before code lands, tests land red-first, `/simplify` and `pr-review-toolkit:review-pr` run once as the floor with the bounded sweep beside them, a draft PR opens carrying the `## Review gate` and `## Triage` blocks"*)
 - **Structure**: the contract's five sections with one line each (*"Read in full before planning / Preconditions — state and shape, dependencies, idempotency, break-glass / What the finished issue is — the gated plan, the branch, red-first tests, the implementation, atomic commits, the green gate, the review floor once, the draft PR, the hand-off / The tests every finish must pass / What this command does not do"*) and one line naming the procedure beside it
 - **Scope boundary**: one sentence on what `/finish` does NOT do (*"does not write specs, modify issue bodies, auto-create dependent issues, bypass dependencies, mark the PR ready, or merge"*)
@@ -74,7 +74,7 @@ Rough-in's spec template (`references/templates/rough-in-spec-template.md`) prod
 - `## Dependencies`
 - `## PR contract`
 
-The template below parses these sections in Step 2. If rough-in's spec format evolves (sections added/removed/renamed), update both the rough-in spec template and the Step 2 list in this template together.
+The template below names these sections in § Preconditions item 1 (the procedure's Step 2 parses them). If rough-in's spec format evolves (sections added/removed/renamed), update the rough-in spec template, the contract's heading list and the procedure's Step 2 together.
 
 ## The template
 

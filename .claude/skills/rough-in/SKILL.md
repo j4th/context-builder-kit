@@ -16,7 +16,7 @@ Rough-in is one-milestone-at-a-time, just-in-time, **by design**. Framing alread
 
 The artifact is defined by **`references/contract.md`** — what one milestone's R-issue set must contain and the tests every spec must pass — together with the spec template and the executor's body parser. That is the whole read for drafting. The step-by-step procedure with its per-step gates (`references/procedure.md`) is on demand: full mode, or when a step is unclear.
 
-Why: the 2026-09-02 A/B recorded in `references/contract.md`'s opening paragraph and, in full, in `.claude/rules/orchestration-reference.md` § Applied instances — the artifact contract held in both arms, and what separated them was run material the procedure invited into the artifact. Nothing was retired — it moved.
+Why: the 2026-09-02 A/B recorded in `references/contract.md`'s second paragraph and, in full, in `.claude/rules/orchestration-reference.md` § Applied instances — the artifact contract held in both arms, and what separated them was run material the procedure invited into the artifact. Nothing was retired — it moved.
 
 ## What rough-in reads and what it produces
 
@@ -124,7 +124,7 @@ When rough-in commits, the handoff to finish (Claude Code's native execution pha
 - **The dependencies** within the milestone are explicit so `/finish` can verify them and pick up issues in the right order
 - **The done signals** are concrete so `/finish` knows when each issue is complete
 
-**What `/finish {issue_number}` does with this** (once Step 5.5 has committed the slash command file): reads the next unblocked rough-in spec from the board, verifies dependencies, runs Claude Code plan mode against the Implementation section, iterates with the user until the plan is approved, executes the plan, opens a PR that closes the issue with `closes #<N>`, the board automation moves the issue to Done on PR merge, and the parent framing sub-issue's sub-issue progress field ticks forward.
+**What `/finish {issue_number}` does with this** (once Step 5.5 has committed the executor pair): reads the next unblocked rough-in spec from the board, verifies dependencies, runs Claude Code plan mode against the Implementation section, iterates with the user until the plan is approved, executes the plan, opens a PR that closes the issue with `closes #<N>`, the board automation moves the issue to Done on PR merge, and the parent framing sub-issue's sub-issue progress field ticks forward.
 
 **What rough-in must not pass to finish**: implementation code (that's finish's job), decisions that finish shouldn't be making (those belong in rough-in's HITL gates), or vague acceptance criteria that force finish to guess at "done."
 

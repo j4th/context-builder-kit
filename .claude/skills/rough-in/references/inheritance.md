@@ -200,7 +200,7 @@ If a foundation doc is missing a section that rough-in expected to inherit from 
 
 ## What rough-in does NOT inherit
 
-- **Rough-in specs from prior rough-in runs of the same milestone** — re-rough-in is a deliberate cascade event that supersedes prior runs (see Step 2 in SKILL.md). Prior specs are historical record, not inheritance input. The new rough-in starts from frame-NN.md, not from the prior rough-in output.
+- **Rough-in specs from prior rough-in runs of the same milestone** — re-rough-in is a deliberate cascade event that supersedes prior runs (see `references/procedure.md` § Step 2). Prior specs are historical record, not inheritance input. The new rough-in starts from frame-NN.md, not from the prior rough-in output.
 - **Implementation code from prior milestones** — rough-in operates at the spec level. Code review and pattern extraction from prior milestones happens during research (Step 3, sub-track 3a), not during inheritance.
 - **PR feedback from prior `/finish` runs** — useful context but not authoritative. If the user wants to incorporate lessons from prior PR feedback, they can mention it during research phase, but rough-in doesn't automatically read closed PRs.
 - **Operations governed by the `linear` planning axis** — rough-in operates against `github-issues` planning primarily; `linear` planning uses the same patterns with Linear MCP and falls back to manual where operations aren't documented. See `planning-backend-matrix.md`.

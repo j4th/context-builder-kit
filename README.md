@@ -227,7 +227,7 @@ The skill produces an Interface Commitments table — what stable interfaces the
 
 **Phase 5.** Takes one milestone from a `frame-NN.md` and produces a set of **sub-sub-issues** under the framing F-issue. Each issue is sized as a **coherent review unit** — typically 2–6 issues per milestone for Claude-Code-executed work.
 
-Each issue body has seven sections: Context, Implementation, Acceptance criteria, Test plan, Done signal, Dependencies, PR contract. The `## Implementation` section is the load-bearing input to Claude Code's plan mode in the next phase.
+Each issue body has eight sections: Context, Assumptions, Implementation, Acceptance criteria, Test plan, Done signal, Dependencies, PR contract. The `## Implementation` section is the load-bearing input to Claude Code's plan mode in the next phase.
 
 **Abbreviated example** of one rough-in issue body:
 

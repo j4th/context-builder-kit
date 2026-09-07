@@ -236,7 +236,7 @@ Also: the test function names (`test_load_csv_valid`, `test_load_csv_empty`, `te
 
 ## Worked example: the regex-pack R1 spec
 
-Here's the full Implementation section for the canonical R1 (Define Verifier trait) of the regex-pack workstream's M1, with all eight properties applied. This is the same example that appears in the rough-in SKILL.md inline and in the cascade-rough-in.md template's HTML comments — it's the canonical reference for what good looks like.
+Here's the full Implementation section for the canonical R1 (Define Verifier trait) of the regex-pack workstream's M1, with all eight properties applied. This is the same example that appears in the rough-in `references/procedure.md` § Example excerpt and in the cascade-rough-in.md template's HTML comments — it's the canonical reference for what good looks like.
 
 This example is a **legitimate exception** to pitfall 6: the trait code block is verbatim from IC-1 in the regex-pack framing, so inlining it is correct. Note the prefatory sentence calling out that the shape is IC-locked — that's the discipline that tells plan mode the code is architectural, not illustrative.
 

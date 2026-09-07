@@ -16,7 +16,7 @@ Framing is one-project-at-a-time, just-in-time, **by design**. The research is u
 
 The artifact is defined by **`references/contract.md`** — what `frame-NN.md` must contain and the tests every milestone must pass — together with the two templates. That is the whole read for drafting. The step-by-step procedure with its per-step gates (`references/procedure.md`) is on demand: full mode, or when a step is unclear.
 
-Why: the 2026-09-01 A/B recorded in `references/contract.md`'s opening paragraph and, in full, in `.claude/rules/orchestration-reference.md` § Applied instances — procedure written for earlier models is prescriptive in ways that now cost quality. Nothing was retired — it moved.
+Why: the 2026-09-01 A/B recorded in `references/contract.md`'s second paragraph and, in full, in `.claude/rules/orchestration-reference.md` § Applied instances — procedure written for earlier models is prescriptive in ways that now cost quality. Nothing was retired — it moved.
 
 ## Cascade events, not project slots
 
