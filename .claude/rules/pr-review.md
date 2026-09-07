@@ -80,7 +80,7 @@ If your project authors additional reviewer agents (e.g., for a dependency-injec
 Before any review work runs, exclude these from the diff. Cheaper than triaging them out post-hoc, and the agent's signal-to-noise improves as the input narrows.
 
 - **Generated files** — `*.generated.*`, codegen output directories, protobuf-emitted types, OpenAPI client stubs
-- **Lock files** — `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `Cargo.lock`, `mix.lock`, `uv.lock`, `Gemfile.lock`, `poetry.lock`
+- **Lock files** — `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `Cargo.lock`, `mix.lock`, `uv.lock`, `Gemfile.lock`, `poetry.lock` (excluded from the *agents'* read; the exclusion presumes a human can still see the diff, which `cbk-conventions-reference.md` § Dependency settle-window › Keep the lockfile diff visible keeps true against the host's collapse)
 - **Vendored dependencies** — `vendor/`, `third_party/`, `node_modules/` (shouldn't be tracked, but defensive)
 - **Build artifacts** — `dist/`, `build/`, `target/`, `_build/`, `.next/`, etc.
 - **Snapshot test fixtures** larger than ~200 lines unless the test itself is on the diff

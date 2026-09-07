@@ -63,6 +63,16 @@
 
 **Decision rule**: convert any *relative* date in a prompt ("Thursday", "last week") to an *absolute* date before saving it to memory, a cascade artifact, or any persistent surface. Relative dates rot fast.
 
+## MCP configuration
+
+| You want to … | Reach for | Why |
+|---|---|---|
+| Wire a server the project depends on | The committed `.mcp.json`, with credentials as **environment-variable references** (`${GITHUB_TOKEN}`), plus a committed `.env.example` naming every variable | The config is reviewable and shared; the secrets are not. The kit's `.mcp.json.example` is the starting shape |
+| Wire a server only you use | The user-level MCP config, never the project file | A personal server in the committed file is a dependency for everyone |
+| Add a server | The cascade phase that justifies it wires it — the planning MCP at scaffold, a docs MCP at blueprint, a domain MCP when a workstream needs it — and records it in `cbk-conventions.md` § Surface inventory | A server nobody's phase asked for is noise in every session's tool list |
+
+**Decision rule**: list-valued keys (`enabledPlugins`, `allow`, `deny`, hook arrays) are **never repeated** in the local settings file — the local file overrides by key, so a repeated list silently replaces the committed one instead of extending it; add to the committed list or not at all. A linter exclusion for an MCP or settings file is added only where nothing in it could be actioned (a generated file, a secrets template) — an exclusion is not an exemption (`cbk-conventions.md` § `[skip ci]` rule).
+
 ## [Stack surfaces — add a section per wired MCP]
 
 [One section per stack surface the project wires — database client, cloud CLI, observability, domain services — each with the same table shape, a decision rule, and any **gotchas the build has actually proved out** (recorded here so they aren't re-discovered; date them per the conventions' dated-rails principle). Delete this placeholder once real sections exist.]

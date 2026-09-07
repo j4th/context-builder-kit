@@ -70,7 +70,8 @@ BLOCKED: git commit on '$branch'.
 Branch-first is the rule (cbk-conventions.md § Branch naming; /finish creates
 the branch before any code lands). Create the feature branch, then re-run the
 commit:
-  git switch -c <type>/<team>-<n>-<short-slug>
+  git switch -c <type>/<team>-<n>-<short-slug>        # cascade issue
+  git switch -c <type>/<short-slug>                   # operator-directed maintenance, no issue
 
 If this block is genuinely wrong (rare), the operator can run the commit
 themselves outside Claude Code.

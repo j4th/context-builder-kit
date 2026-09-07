@@ -90,6 +90,8 @@ Examples:
 - `<example 1 from scaffold.md>`
 - `<example 2 from scaffold.md>`
 
+Operator-directed maintenance with no cascade issue uses `<type>/<short-slug>` and opens its PR with the line "operator-directed maintenance; no cascade issue" (`cbk-conventions.md` § Branch naming).
+
 [Any additional notes about branch lifetimes, when to delete, etc.]
 
 ## Commits

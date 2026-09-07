@@ -51,7 +51,9 @@ this and how do they coordinate?">
 **Team identifier**: <SHORT_UPPERCASE>
 
 **Branch naming**: `<type>/<team-id>-<issue-number>-<short-description>`
-(per `cbk-conventions.md` § Branch naming; `<type>` is the Conventional Commits type)
+(per `cbk-conventions.md` § Branch naming; `<type>` is the Conventional Commits type;
+issue-less maintenance uses `<type>/<short-description>` with the PR-body statement
+"operator-directed maintenance; no cascade issue")
 Examples:
 - `<example-1>`
 - `<example-2>`

@@ -70,6 +70,8 @@ Example shapes:
 
 `/finish` already creates branches in this shape; this convention codifies what was already happening.
 
+**The issue-less branch.** Operator-directed maintenance that no cascade issue tracks — a dependency bump the bot did not open, a docs sweep, a hook fix — takes the form `<type>/<short-slug>` with no issue segment, and its PR body carries the statement **"operator-directed maintenance; no cascade issue"** as its first line. The scope fence is § Contribution intake: anything that adds behaviour, fixes a reported bug, or touches a workstream's code is a cascade issue (`/intake`, `/enrich`, or framing), never an issue-less branch. Such a PR still carries the `## Review gate` block; what stands in for the floor is written as *not run* with the reason ("not run — docs-only sweep, no code changed"), never left blank and never described as run.
+
 Create the branch and make the first commit in **separate tool calls**: the default-branch guard judges a compound command on the branch at entry, so `git switch -c … && git commit …` is blocked even though the commit would have been legal by the time it ran.
 
 ### Linear `{type}` placeholder — set the type label at issue creation (Linear only)
@@ -83,6 +85,15 @@ Create the branch and make the first commit in **separate tool calls**: the defa
 | everything else (`chore`, `docs`, `refactor`, `test`, `perf`, `style`, `build`, `ci`) | Improvement |
 
 The rough-in / `/intake` / `/enrich` flows set this at issue-creation time — see the rough-in skill's planning-backend matrix.
+
+## Licensing
+
+The repository records a licence choice, and **"none yet — all rights reserved" is a valid, recorded choice** (the `LICENSE` file absent on purpose, the README § License saying so). Scaffold confirms the licence with the operator the way it confirms visibility — one question, at repository creation, with the solo default (MIT) offered and never a copyleft licence without explicit opt-in — and seeds the `LICENSE` file and the README section from the answer. Two constraints the choice carries:
+
+- **Relicensing needs every contributor's consent from the second contributor on.** A project that stays "none yet" through its first outside contribution has made a decision by default; decide before that PR merges.
+- **Third-party asset licences bind independently** of the repository's — a font, an icon set, a dataset or a model weight ships under its own terms, recorded beside the asset (a `LICENSE-<asset>` or a `NOTICE` entry), and a licence the asset forbids for the repository's use is a blocker, not a footnote.
+
+The filled-in copy of this section records the SPDX identifier (or "none yet"), the date, and the asset licences the tree carries.
 
 ## Closes-keyword conventions
 

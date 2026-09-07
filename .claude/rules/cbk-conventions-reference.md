@@ -239,7 +239,39 @@ Two invariants keep the window honest; violate either and the policy inverts fro
 
 **CI workflow actions are dependencies too.** A tag reference (`uses: vendor/action@vN`) is mutable and open to tag-retag compromise: pin every `uses:` to a full commit SHA with a trailing version comment (`@<sha> # vN.N.N`), resolve initial pins to the newest release in the current major that satisfies the settle window, and let the update bot's CI-actions ecosystem entry maintain the pins routinely (it carries the release-age floor like every other ecosystem).
 
+**Age is necessary, not sufficient.** A release that has cleared the window can still be the wrong one to adopt: before a bump, check whether the fix the project needs is **merged upstream but not yet released** — adopting the latest release then buys nothing. Two paths exist for that case, and the second is gated: (a) a **git-revision pin** on the upstream commit, carrying in its manifest comment the date, the upstream PR, and a **retire trigger** ("replace with the registry release ≥ vX.Y that contains it"); (b) **promote-at-registry-version** — the pin is swapped for the registry release the moment it exists *and* has itself cleared the window; never a promotion the day it ships. A git-rev pin that outlives its trigger is a rail that outlived its evidence.
+
+**Toolchain and single-binary pins take the floor by hand.** No update bot covers the toolchain manager's pins (`mise.toml` `[tools]`, `.tool-versions`, `rust-toolchain.toml`, `.nvmrc`), a container base-image tag, or a single-binary tool fetched by URL. For each: the commit that sets the pin states the release's **settled age** in its body ("v3.2.1, released 2026-08-20, 17 days old at pin"), and the project names **one tracking mechanism** for the next bump — an open issue with a date, a scheduled check in the task runner, or a project automation — in the filled-in copy of this section. A pin with no named tracker is a pin nobody will bump.
+
+**Inactive ecosystem stubs carry the floor too.** A commented-out or scheduled-off ecosystem entry in the update-bot config ships *with* its cooldown block, so uncommenting it never produces a bare entry (the starter `dependabot.yml` is written this way).
+
+**Metadata-only lockfile diffs are discarded.** A lockfile change whose diff is only registry metadata (integrity re-hashes, resolved-URL churn, a tool's own version stamp) with no version change is not committed — regenerate it from the manifest and keep the tree still; a reviewer reading a lockfile diff should see only versions moving.
+
+**Bot PRs and the self-merge rule.** A dependency-bot PR is triaged by `pr-review.md`'s rubric like any other; on a solo project the operator may self-merge one **only** after CI is green *and* the lockfile diff has been read (which the counter-line below makes possible). A bot PR bundling a **behaviour delta into a security bump** is accommodated narrowly — the smallest code change that keeps the fix, with the delta named in the PR body — never by widening the window to dodge it (the first invariant above).
+
+### Keep the lockfile diff visible
+
+The git host classifies recognised lockfiles as *generated* — linguist's `lib/linguist/generated.rb` lists the predicates by file name (`cargo_lock?`, `npm_shrinkwrap_or_package_lock?`, `pnpm_lock?`, `poetry_lock?`, `uv_lock?`, `composer_lock?`, `go_lock?`, `mise_lock?` among them; `https://github.com/github-linguist/linguist/blob/main/lib/linguist/generated.rb`, read 2026-09-06) — and a generated file is *"excluded from stats, hidden in diffs"* (`docs/overrides.md`, same repository, same date). That collapses exactly the diff the settle-window review depends on. The counter-line is one `.gitattributes` entry per audited lockfile the host would collapse:
+
+```
+<lockfile> linguist-generated=false
+```
+
+`rust-lang/rust` carries `Cargo.lock linguist-generated=false` in its own `.gitattributes` for this reason (read 2026-09-06). The line is harmless where the file name is not on linguist's list; check the list rather than guess. **Pre-check before adding `* text=auto eol=lf` in the same file**: zero CRLF files in the tree, no prior `.gitattributes`, `core.autocrlf` and `core.eol` unset — renormalizing a tree that already holds CRLF content rewrites history-visible bytes; record the pre-check's result and date in the file's comment (the scaffold starter carries the shape). The lock-file entry in `pr-review.md` § Pre-filters presumes a human can still read the diff; this is what keeps that true.
+
 Dependency-update-bot PRs are triaged by `pr-review.md`'s four-class rubric; this section states the adoption policy those PRs are gated by.
+
+## .gitignore anchoring
+
+A `.gitignore` entry is **anchored by default** — `/build/`, `/.env`, `/target/` — so it matches one path at the repository root and nothing else. An unanchored `build/` also ignores `src/lib/build/` and `docs/build/`, and the silent miss shows up months later as a file that never landed. The rules:
+
+- **Any-depth entries are deliberate and marked.** An entry meant to match at every depth (`**/node_modules/`, `*.pyc`, `.DS_Store`) carries a one-line comment saying so; an unmarked unanchored entry is a defect.
+- **Per-language sections are scoped to the language's directory home** once one is declared — a Python section under `/services/api/` writes `/services/api/__pycache__/`, not `__pycache__/`. Before a home is declared, the section says which.
+- **A commit that changes `.gitignore` states its pin assertions in the body**: which path each new entry is meant to match, and one path it must *not* match. `git check-ignore -v <path>` is the test; the assertion is what makes a later reader able to re-run it.
+- **Harness transients are ignored by anchored path** — the agent's scratch and memory-local trees (`/.claude/agent-memory-local/`, the session scratchpad if it is ever placed in-tree), never by a bare name that would also hide a real directory.
+- **No shipped reviewer restates this.** The `cascade-rule-reviewer` names the section in scope; the rule lives here once.
+
+
 
 ## Methodology — choice space
 
@@ -551,6 +583,10 @@ wm=$(awk '/^## Writing memory/{p=1} p' .claude/agents/adr-conformance-reviewer.m
 for a in logging-discipline-reviewer cascade-rule-reviewer; do diff <(printf '%s\n' "$wm") <(awk '/^## Writing memory/{p=1} p' .claude/agents/$a.md) || { echo "## Writing memory drifted in $a"; exit 1; }; done
 # The commit-versus-local memory choice has a Surface inventory row for the bootstrap prompt to fill.
 { grep -q 'Reviewer agent-memory' .claude/rules/cbk-conventions.md && grep -q 'Reviewer agent-memory' .claude/skills/scaffold/references/bootstrap_checklist_template.md; } || { echo "the Reviewer agent-memory row or its bootstrap prompt is missing"; exit 1; }
+
+# Conventions (P4): the Licensing section, .gitignore anchoring, the issue-less branch form on the contract and in the
+# guard's remediation, and the lockfile counter-line rule with its citation.
+{ grep -q '^## Licensing' .claude/rules/cbk-conventions.md && grep -q '^## .gitignore anchoring' .claude/rules/cbk-conventions-reference.md && grep -q 'short-slug>` with' .claude/rules/cbk-conventions.md && grep -q 'short-slug' .claude/hooks/protect-main-branch.sh && grep -q 'linguist-generated=false' .claude/rules/cbk-conventions-reference.md; } || { echo "a P4 conventions section (Licensing, .gitignore anchoring, the issue-less branch, the lockfile counter-line) is missing"; exit 1; }
 
 # Context budget: every `.claude/rules/*.md` WITHOUT `paths:` frontmatter loads at launch,
 # every session, and every non-fork subagent loads the set again. Print the always-loaded
