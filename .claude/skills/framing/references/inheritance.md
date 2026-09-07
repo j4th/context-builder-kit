@@ -14,7 +14,7 @@ Skipping any of these is the failure mode that minimum/light mode is most likely
 1. docs/cbk/problem_brief.md          (consultation output — required)
 2. docs/cbk/scaffold.md                (scaffold output — required)
 3. docs/cbk/blueprint.md               (blueprint output — required, especially § "Workstreams")
-4. docs/cbk/README.md                 (the chronological index — required if it exists, otherwise skip)
+4. docs/cbk/README.md                 (the chronological index — always present, scaffold creates it; its absence is a brownfield signal to create it from scaffold's template, never a reason to skip)
 5. docs/cbk/frame-NN.md       (every prior framing — required if any exist)
 6. docs/ARCHITECTURE.md                (foundation doc — read for the Decisions Log)
 7. docs/STANDARDS.md                   (foundation doc — read for the testing philosophy, PR review checklist, AND § Unenforced invariants)

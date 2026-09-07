@@ -109,6 +109,12 @@ Research findings and the specs drafted from them routinely assert codebase fact
 
 These rules apply to any phase that asserts codebase facts into a spec or an implementation plan (framing research, rough-in research, single-issue enrichment investigations, and the executor's own research fan-outs) — the sub-track structure above governs *what* to research; this section governs *how any claim about the codebase earns its way into a spec*.
 
+## The verdict-first committed corpus
+
+Research that a phase inherits is committed **verdict-first**: each finding carries one of three verdicts — **verified** (reproduced or read at the primary source), **refuted** (with the consequence that refutes it, not a counter-claim), or **unverifiable** (kept and labelled, never dropped — an unverifiable claim silently removed reappears as a confident one). Verification targets the *specifics* a downstream decision rests on (a version, a limit, a signature), not the summary. The corpus states its counts as **usable versus raw** ("14 usable of 22 raw"), carries a **gaps block** (what was looked for and not found) and an **attempted-URL log** (what was fetched, what failed), and ranks its checks: **reproduction** is the strongest, then the **interface** (a signature, a schema, a test) over prose. An interface beats a paragraph; a paragraph beats memory.
+
+**The spec-verification stage** runs after drafting and before the one-way commit, on three axes: **format** (every section present, every tag keyed), **grounding** (every claim in the spec traces to the corpus or a live check), **coverage** (every `[F<#>.AC<n>]` owned by exactly one R-issue). One research agent is dispatched **on the executor's own contract** — it reads `.claude/commands/finish.md` and reports what the spec asks `/finish` to do that the contract forbids or leaves undefined. A design doc the spec cites carries its **grounding line** (which corpus, which verdict) and an **anticipated-wrong-fix note** (the fix a hurried implementer would reach for and why it is wrong). `## Out of scope` is split into **deferred** (decided against, with the owner) and **unverified** (could not be checked, with what would check it); a **no-regression criterion names every reason** a regression could occur, not "no regressions"; and **telemetry is verified at its sink** — the dashboard, the log store — never at the emitting call.
+
 ## What rough-in does NOT research
 
 - **Stack decisions** (which language, framework, runtime, libraries) — those are blueprint's layer

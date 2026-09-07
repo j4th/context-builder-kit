@@ -70,7 +70,7 @@ For each finding classified **Apply** or **Apply with care**:
 
 **One commit per Apply**, not bundled. The atomic-commit history is what the reviewer reads to verify each action; bundling defeats that audit surface.
 
-**Tooling note.** If a comment asks for a local-symbol rename or a cross-file refactor, prefer a semantic code-navigation tool (find-references / safe-rename) if your setup provides one, over hand-editing call sites. Before making a defensive change the reviewer flagged against a library's behavior, verify that behavior against current documentation rather than from memory.
+**Tooling note.** If a comment asks for a local-symbol rename or a cross-file refactor, prefer the built-in `LSP` tool (find-references / safe-rename, via the language plugin; an MCP only for a language without one) over hand-editing call sites. Before making a defensive change the reviewer flagged against a library's behavior, verify that behavior against current documentation rather than from memory.
 
 ## Step 5: Reply to every thread
 

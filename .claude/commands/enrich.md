@@ -41,7 +41,7 @@ Synthesize into the resolved intent + the resolved forks. Don't move to Step 3 u
 
 A read-only investigation, like `/finish`'s plan-mode research — **do not write code here.** Ground the resolved forks in the actual code: the files / symbols the issue touches, the constraints (ADRs, `.claude/rules/*`, `docs/STANDARDS.md`), the dependencies, and the gotchas.
 
-- `Grep` / `Glob` for the surface; find-references / symbol-info / call-site tooling for the blast radius; documentation-lookup tooling to confirm a library's actual behavior; read-only data/schema inspection when the issue is data-shaped.
+- `Grep` / `Glob` for the surface; the built-in `LSP` tool (via the language plugin; an MCP only for a language without one) for find-references / symbol info / call sites — the blast radius; documentation-lookup tooling to confirm a library's actual behavior; read-only data/schema inspection when the issue is data-shaped.
 
 **Scale the investigation to the surface — when the tooling is available:**
 

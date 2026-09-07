@@ -195,6 +195,10 @@ Blueprint produces six prose foundation docs plus tooling configs. The order is 
 
 Each doc has its own template in `references/templates/`. Each template starts with a "what to inherit from scaffold.md and problem_brief.md" section so the doc-production process is grounded in the prior phases, not invented fresh.
 
+**Canonical homes before drafting.** Every artifact more than one foundation doc will state — the data schema, a module interface, the check-task names, the version pins, the domain vocabulary — gets **one canonical home** named before any drafting starts: the schema lives in the data-model ADR, the interface in the seam ADR, the check names in `STANDARDS.md`, the pins in the tooling config, the terms in `ARCHITECTURE.md` § Glossary. Every other drafter *references or splices* the home; none restates it (`cbk-conventions.md` § Multi-surface facts).
+
+**The cross-document critic.** When the drafting fanned out — more than one context wrote the docs — a critic pass is **required** before the HITL review: one agent reads every produced doc and checks five axes across them — schema, interface, check names, versions, terminology — reporting each disagreement as `doc A says X · doc B says Y · home is Z`. When one context drafted every doc the critic is skipped and the skip is recorded in the phase note; the drift it hunts is a fan-out artefact.
+
 **For each doc, the production pattern is**:
 1. Read the template
 2. Extract relevant inheritance from scaffold.md and problem_brief.md

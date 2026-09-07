@@ -20,7 +20,7 @@ A single glanceable manifest of where every surface for this project actually li
 - **Knowledge backend (`<Notion | none>`):** `<hub URL + MCP server, if configured>`
 - **Upstream / pre-cascade docs:** `<path to any frozen reference material, or "none">` — a designated corpus follows the consultation skill's `references/frozen_corpus_ingestion.md` (read in full, never edited; its `<slug>-errata.md` companion amends)
 - **Problem brief / scaffold output:** `docs/cbk/problem_brief.md` · `docs/cbk/scaffold.md`
-- **Tooling conventions:** `<record any project-specific tool / MCP-selection conventions here — e.g. which code-intelligence or live-docs MCP to prefer over the built-ins, or the project's model/effort orchestration conventions for dispatched agents — or "defaults">`
+- **Tooling conventions:** `<record any project-specific tool / MCP-selection conventions here — the code-intelligence route (the built-in LSP tool via the language plugin, or an MCP for a language without one), which live-docs MCP to prefer, or the project's model/effort orchestration conventions for dispatched agents — or "defaults">`
 - **Reviewer agent-memory (`<project | local>`):** `<".claude/agent-memory/ — committed; the kit's .gitignore line deleted" | ".claude/agent-memory-local/ — never committed">` — settled at scaffold's rule-file disposition pass (`pr-review.md` § Reviewer precedent memory)
 
 ## Rule loading and the instruction budget
@@ -202,7 +202,7 @@ Both belong in any project that takes ADRs seriously; the kit's `adr-new` skill 
 | `docs/cbk/frame-MM.md` (additive increment) | **New file** (next sequential number); the prior frame is not mutated and stays `Active` | *No* supersession — an additive increment carries a `Builds on: frame-NN` header (not `Supersedes`); both frames stay `Active` and their open milestones coexist | Not every new framing replaces: an increment extends a workstream whose prior milestones are still valid and open, so the prior frame must not flip to `Superseded` (see the framing skill's `references/procedure.md` § Step 2 pattern D) |
 | `docs/cbk/frame-MM.md` (milestone-scoped re-frame) | **New file** (next sequential number); the prior frame is not mutated | Header states `Supersedes only milestone M<N> of frame-NN`; the prior frame's index status is annotated `Active (M<N> superseded by frame-MM)` via the permitted status-column mutation; the retired milestone's acceptance-criteria set is recorded as retired-un-executed in the new frame | One milestone's shape can fail while its siblings are built and Done; whole-frame supersession would falsify the siblings' history (see the framing skill's `references/procedure.md` § Step 2 pattern E) |
 | `docs/cbk/ROADMAP.md` (github-issues and in-repo-markdown axes) | **Freely mutable** — a status surface, not a cascade event | n/a — a wrong row is fixed in place; a superseded row reads *retired* | Where we are and what is next; blueprint writes it, framing appends rows in the frame's commit, rough-in flips to *roughed-in*, `/finish` flips to *done* on the PR's own branch or the post-merge checklist does (`commands/finish.md` item 8). The audit trail is the index and git history, never this file |
-| `docs/cbk/README.md` | **Append-only for new entries**; status column updates allowed | Status updates are mutations to single column, not whole-file rewrites | Status changes (Active → Superseded → Completed) need to flow |
+| `docs/cbk/README.md` | **Append-only for new entries**; status column updates allowed. Scaffold creates it (from its index template); blueprint, framing and rough-in append a row and a phase note each | Status updates are mutations to single column, not whole-file rewrites | Status changes (Active → Superseded → Completed) need to flow |
 | `docs/STANDARDS.md`, `docs/ARCHITECTURE.md`, `CLAUDE.md` | **Freely mutable** | n/a — living docs | Project-context docs evolve with the project; git history is the version archive |
 | `.claude/rules/*.md` | **Freely mutable** | n/a | Operational rules; mutations are routine |
 | `.claude/skills/*` | **Freely mutable** within the local copy | n/a | Tooling content; mutations refine the cascade |
@@ -243,7 +243,7 @@ A wrong **claim** inside an accepted ADR — a citation, a figure, an attributio
 | What you're doing | Where the convention lives |
 |---|---|
 | Naming a cascade event | Flat `docs/cbk/<artifact>.md`, sequential numbering |
-| Updating the cascade-events index | `docs/cbk/README.md` (status column) |
+| Updating the cascade-events index | `docs/cbk/README.md` — scaffold creates it; blueprint, framing and rough-in append a row + phase note; only the status column flips |
 | Flipping the roadmap row | `docs/cbk/ROADMAP.md` — framing appends, rough-in flips to *roughed-in*, `/finish` flips to *done* on the PR's own branch (`commands/finish.md` item 8) or the post-merge checklist does |
 | Naming a planning-backend issue | `[<workstream-slug>:F<#>:R<#>] <intent>` |
 | Naming a branch | `<type>/<TEAM>-<N>-<short-slug>` |

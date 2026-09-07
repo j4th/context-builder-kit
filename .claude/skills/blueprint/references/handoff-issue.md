@@ -67,7 +67,11 @@ find what to check.
 ## 3. Manual setup steps
 
 The cascade cannot automate these. See `docs/cbk/blueprint.md` § "Credential
-model" for background on why each is needed.
+model" for background on why each is needed. The model extends to **credentials
+not yet held**: a key the operator must apply for, a tier that must be paid for,
+an access grant another person controls — each gets its own line here with who
+grants it, the expected lead time, and what the build can do without it; a
+milestone that needs one names it in its pre-flight row, never assumes it.
 
 - [ ] Run `/install-github-app` inside Claude Code (or equivalent for
       whatever review automation was chosen) — this line only when

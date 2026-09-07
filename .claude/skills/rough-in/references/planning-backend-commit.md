@@ -82,9 +82,9 @@ GitHub Issues cannot be deleted via the standard API — only closed. The cascad
 
 **Why the partial-supersede on re-rough-in**: if R1, R2, and R3 of the prior rough-in were already merged before R4 surfaced as needing rework, R1-R3 represent real work that's already in the codebase. Closing them as superseded would create a misleading historical record. Only R4 (the one that triggered the rework) and R5+ (the queued ones not yet started) get superseded; R1-R3 keep their `state_reason: completed` close.
 
-### The framing.md event entry shape
+### The README.md event entry shape
 
-The entry appended to `docs/cbk/README.md` for each rough-in run records the event in the cascade's append-only log. The entry has a required shape:
+The entry appended to `docs/cbk/README.md` for each rough-in run records the event in the cascade's append-only log, in the shape every appender shares (the scaffold skill's `references/templates/cascade-events-index-template.md`): **a row** in `## Index` — `# | date | rough-in | frame-NN.md § Rough-in events (M<#>) | Completed` — **plus a phase note** carrying the fields below; the compression rationale and the departures go in the note, never in the row. The frame's own `## Rough-in events` table gets its row in the same commit. The note's required fields:
 
 - **Date and milestone identifier**: *"2026-04-14 — regex-pack:F1:M1"*
 - **R-number range created**: *"R1-R2 (2 sub-sub-issues)"*

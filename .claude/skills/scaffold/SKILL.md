@@ -246,7 +246,7 @@ Examples:
 The full template with worked examples for every section lives in `references/scaffold_output_template.md`. Load it when drafting; the example above just shows what one section feels like.
 
 **Commit order** — try in this order:
-1. **GitHub MCP**: create `docs/cbk/` directory, commit `problem_brief.md` and `scaffold.md` to it.
+1. **GitHub MCP**: create `docs/cbk/` directory, commit `problem_brief.md`, `scaffold.md` **and `README.md`** — the cascade-events index, instantiated from `references/templates/cascade-events-index-template.md` with the consultation and scaffold rows and their phase notes — to it in one commit.
 2. **Fallback**: produce both as downloadable artifacts. Tell the user where each goes and that blueprint will need them.
 
 **HITL gate (final)**: user approves the scaffold output doc and confirms the problem brief is committed. Scaffold marks itself complete.
@@ -279,6 +279,7 @@ When scaffold is complete, blueprint inherits:
 - **A verified set of integrations** with known states
 - **The four cascade issue templates** at `.github/ISSUE_TEMPLATE/cascade-{workstream,framing,rough-in,meta}.md` — blueprint reads `cascade-workstream.md` from the repo when constructing parent Issue bodies, framing reads `cascade-framing.md` and `cascade-meta.md`, rough-in reads `cascade-rough-in.md`. Repo files are the source of truth; the bundled copies in each skill are fallbacks for brownfield repos that lack them.
 - **The scaffold output doc** at `docs/cbk/scaffold.md` — containing team shape, working conventions, development preferences, and cascade metadata
+- **The cascade-events index** at `docs/cbk/README.md` — created here, appended by every later phase
 - **The problem brief** at `docs/cbk/problem_brief.md`
 - **The knowledge surface** at `docs/cbk/` — where blueprint will commit `blueprint.md`
 
@@ -306,7 +307,7 @@ Blueprint reads scaffold's outputs at session start via GitHub MCP, or the user 
 
 Auto-checkable, fires after gate 6 and before scaffold declares itself complete. Not a gate (no approval); a safety surface — stop and surface if any item fails. Per `cbk-conventions.md` § Trip-wire / phase-exit checklist pattern.
 
-- [ ] `docs/cbk/scaffold.md` and `docs/cbk/problem_brief.md` are committed
+- [ ] `docs/cbk/scaffold.md`, `docs/cbk/problem_brief.md` and `docs/cbk/README.md` (from the index template, two rows and two notes) are committed
 - [ ] The Cascade metadata rows in `docs/cbk/scaffold.md` agree with `.cascade/backends.toml` (the verification block's axis-mirror check passes)
 - [ ] `docs/adr/` exists with the three starters and ADR-0000's header is filled: `grep -n "YYYY-MM-DD\|<project owner" docs/adr/0000-*.md` prints nothing
 - [ ] On the github-issues and linear axes, the four cascade issue templates are on disk under `.github/ISSUE_TEMPLATE/`, and `cascade-rough-in.md` carries the eight headings including `## Assumptions`
@@ -323,6 +324,7 @@ Auto-checkable, fires after gate 6 and before scaffold declares itself complete.
 - `references/github-starter-templates.md` — the literal `.github/` starter bodies pushed on the github-issues axis (issue forms, `config.yml`, the PR template with the gate blocks, `CODEOWNERS`, the CI stub with its traps, `dependabot.yml` with the floor, the `.gitattributes` counter-line)
 - `references/backends.md` — the backend interface mapping for the phase (both axes)
 - `references/scaffold_output_template.md` — template and worked example for `docs/cbk/scaffold.md`
+- `references/templates/cascade-events-index-template.md` — the `docs/cbk/README.md` scaffold creates beside the brief and the scaffold doc; blueprint, framing and rough-in append a row and a phase note each
 - `references/bootstrap_checklist_template.md` — template for the session checklist
 - `references/manual_steps.md` — canonical list of always-manual operations
 - `references/issue-templates/` — the four cascade GitHub issue templates that Stage 2.5 commits to `.github/ISSUE_TEMPLATE/`. Each is a standalone markdown file with YAML frontmatter (`cascade-workstream.md`, `cascade-framing.md`, `cascade-rough-in.md`, `cascade-meta.md`). Source of truth for the cascade Issue body shapes — downstream skills read the committed copies from the repo, not the bundled copies here.

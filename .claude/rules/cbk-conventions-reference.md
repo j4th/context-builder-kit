@@ -36,7 +36,7 @@ docs/cbk/
 
 **Chronological tracking lives in two places**:
 
-1. **`docs/cbk/README.md`** — across-cascade timeline. Status column tracks Active / Completed / Superseded by frame-NN / Abandoned. Mirrors the shape of `docs/adr/README.md`.
+1. **`docs/cbk/README.md`** — across-cascade timeline. Status column tracks Active / Completed / Superseded by frame-NN / Abandoned. Mirrors the shape of `docs/adr/README.md`. Scaffold creates it from the scaffold skill's `references/templates/cascade-events-index-template.md`; blueprint, framing and rough-in append a row and a phase note each.
 2. **`## Rough-in events` section inside each frame-NN.md** — per-frame timeline of rough-in events that built against that framing. Append-only table within the frame document. Useful for "which milestones from this framing have been roughed-in, on what date, with what capstone PR" lookups without leaving the frame.
 
 Both serve distinct jobs: README is the across-frames table of contents; in-frame events log is the per-frame log. Don't conflate.
@@ -587,6 +587,11 @@ for a in logging-discipline-reviewer cascade-rule-reviewer; do diff <(printf '%s
 # Conventions (P4): the Licensing section, .gitignore anchoring, the issue-less branch form on the contract and in the
 # guard's remediation, and the lockfile counter-line rule with its citation.
 { grep -q '^## Licensing' .claude/rules/cbk-conventions.md && grep -q '^## .gitignore anchoring' .claude/rules/cbk-conventions-reference.md && grep -q 'short-slug>` with' .claude/rules/cbk-conventions.md && grep -q 'short-slug' .claude/hooks/protect-main-branch.sh && grep -q 'linguist-generated=false' .claude/rules/cbk-conventions-reference.md; } || { echo "a P4 conventions section (Licensing, .gitignore anchoring, the issue-less branch, the lockfile counter-line) is missing"; exit 1; }
+
+# Phases (P4): the cascade-events index template exists and scaffold cites it; nothing in rough-in misnames the index;
+# blueprint's template carries its append-only Amendments section; the tooling rule names the built-in LSP tool.
+{ [ -f .claude/skills/scaffold/references/templates/cascade-events-index-template.md ] && grep -q 'cascade-events-index-template.md' .claude/skills/scaffold/SKILL.md && grep -q 'Amendments' .claude/skills/blueprint/references/blueprint-output-template.md && grep -q 'LSP' .claude/rules/tooling.md; } || { echo "a P4 phase surface (the index template, its scaffold cite, blueprint's Amendments, LSP in tooling) is missing"; exit 1; }
+absent grep -rn "framing\.md inde[x]\|framing\.md even[t]" .claude/skills/rough-in/
 
 # Context budget: every `.claude/rules/*.md` WITHOUT `paths:` frontmatter loads at launch,
 # every session, and every non-fork subagent loads the set again. Print the always-loaded

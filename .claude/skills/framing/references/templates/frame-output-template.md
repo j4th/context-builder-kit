@@ -45,6 +45,14 @@ spike solutions, YAGNI) when they applied to per-milestone shape decisions.]
 
 ## Resolved during this framing
 
+[An `/intake` candidate absorbed into a milestone is closed as **completed** — its
+work lives on in the F-issue — never as cancelled. Findings this framing's
+research produced are marked here as **the grounding corpus** later phases cite
+before re-deriving; a finding backed by a single probe is flagged `single-probe`.
+A **prior frame's recorded verdict** (a spike's outcome, a retired milestone's
+reason) binds this frame; re-opening one is an entry here with the new evidence,
+never a silent departure.]
+
 [Required section. Lists every gate, open question, or deferred decision
 identified at framing entry that was closed during this framing event itself
 (as opposed to being deferred to rough-in or a future framing). Common
@@ -78,7 +86,13 @@ distinct from Open questions (deferred forward) and Deferred meta-issues
 - [Explicit list of what this project covers]
 
 ### Out of scope
-- **<Item>** — [which sibling project owns this, or "deferred to future framing"]
+- **<Item>** — [reason] — [which sibling project owns this, or the condition that reopens it]
+
+[**Hard edges** are surfaces this frame never touches; **soft edges** are
+surfaces it consumes but does not own (a consumes-edge names the owning frame
+under § Boundary agreements). Every out-of-scope entry carries its reason and
+either an owner or a reopen condition — an entry with neither is a deferral
+nobody will find.]
 
 ### Boundary agreements with prior framings
 - **frame-<M>**: "frame-M provides <interface/module>. This project consumes it
@@ -86,6 +100,11 @@ distinct from Open questions (deferred forward) and Deferred meta-issues
 - [Repeat per relevant prior framing]
 
 ## Interface Commitments
+
+[Numbered **continuously across the workstream's frames** — a second frame
+continues at the next unused number, never restarts — and **amendable only by a
+dated note** appended under the commitment (`Amended <date>: …`), never by
+editing its text.]
 
 [The most valuable single output of framing. Enables future framings to know
 what they can build against. Make commitments explicit and milestone-dated.
@@ -153,9 +172,12 @@ frames** (a second frame for this workstream starts at the next unused F);
 - [F1.AC3] [Demonstrable-capability criterion]
 
 **Rough issues** (<count> total, <N> user-managed):
-1. <Issue title> — [one-sentence intent]
-2. <Issue title> — [one-sentence intent]
-[Continue per issue]
+1. <Issue title> — [one-sentence intent] — satisfies [F1.AC<n>]
+2. <Issue title> — [one-sentence intent] — satisfies [F1.AC<n>]
+[Continue per issue; every rough issue names the criterion it satisfies, so
+coverage is visible before rough-in. **Re-sequencing is pre-authorised**:
+rough-in may reorder the issues inside a milestone without a re-frame; reordering
+milestones themselves is pre-authorised only where § Milestones says so.]
 
 **Issue notes**: [Anything rough-in needs to know about these issues — Claude-Code-implementable vs. user-managed flags, dependencies between issues, "done" signals at the milestone level.]
 
@@ -187,6 +209,9 @@ After M1 you can [X]. After M2 the system can [Y]. By M<N>, the project delivers
 - [Question 1] — revisit during rough-in *(or: "revisit at frame-<N+1>")*
 - [Question 2] — revisit when [condition]
 
+**Deliberate non-decisions** — decided *not* to decide, with the trigger that forces it:
+- [Non-decision] — decide when [trigger]
+
 ## Pre-flight checks
 
 [Required section. Always present, even if empty.
@@ -205,9 +230,18 @@ sub-issues, but distinguished by the `meta` label). On in-repo-markdown
 planning no backend issue exists — the Issue # column holds "n/a" and this
 table row is itself the record.]
 
-| Issue # | Subject | Depends on | Blocks | Type |
-|---|---|---|---|---|
-| #<N> | <one-line description> | <milestone exit / other meta-issue / "nothing"> | <milestone start / other meta-issue / "rough-in start"> | gate \| decision \| infrastructure |
+| Issue # | Subject | Depends on | Blocks | Type | Status |
+|---|---|---|---|---|---|
+| #<N> | <one-line description> | <milestone exit / other meta-issue / "nothing"> | <milestone start / other meta-issue / "rough-in start"> | gate \| decision \| infrastructure | deferred meta \| checked at framing: <result> |
+
+[The Status column separates a **deferred meta** (an issue rough-in must find
+resolved) from a **framing-time check** (verified during this framing, result
+recorded, no issue needed). A meta-issue's body names **what does not land in
+it** — the adjacent work that stays with its milestone. **Charters have two blast
+radii**: a workstream-wide charter (a convention every milestone obeys) stays a
+pre-flight meta; a milestone-wide one becomes that milestone's first R-issue.
+**Orphaned obligations** — work no milestone and no meta owns — are placed here
+or in a milestone and the placement recorded; an obligation left in prose is lost.]
 
 [**Type values**:
 - **gate**: blocks a transition between milestones. Rough-in must verify it's

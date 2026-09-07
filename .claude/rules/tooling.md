@@ -15,9 +15,19 @@
 | Find a literal string or regex | `Grep` (built-in) | Fast, ripgrep-backed, no server startup |
 | Find files by path / glob | `Glob` (built-in) | Same — pattern matching, no semantics |
 | Read a known file | `Read` (built-in) | Direct; line-numbered output |
-| Find every reference to a symbol / rename cleanly / get signatures | `<your code-intelligence MCP, if wired>` | LSP-grade operations — handles renames, imports, scope; text search misses cross-file refs through aliases |
+| Find every reference to a symbol / rename cleanly / get signatures | The built-in `LSP` tool — first-line | Enabled by the official per-language plugin plus the language server on `PATH` (`https://code.claude.com/docs/en/discover-plugins`, read 2026-09-06; re-verify after harness upgrades); handles renames, imports, scope. Cloud-session caveat: the server must be on the session's `PATH`, which a cloud sandbox may not provide |
+| The same, for a language with no plugin | `<a code-intelligence MCP for that language>` | Second-line only; wired by the phase that needs it |
+| The same, when neither is available | `Grep` + manual cross-file work — last | Text search misses cross-file refs through aliases; say so in the hand-off |
 
-**Decision rule**: if the operation cares about *symbols* (refs, renames, signatures), use the code-intelligence MCP (when wired). If it cares about *text* (strings, patterns), use built-ins. [If no code-intelligence MCP is wired, note the fallback: `Grep` + manual cross-file work.]
+**Decision rule**: if the operation cares about *symbols* (refs, renames, signatures), the built-in `LSP` tool first; an MCP only for a language without a plugin; `Grep` last. If it cares about *text* (strings, patterns), use built-ins.
+
+**Deferred integrations** — a tool the project decided not to wire yet, with the trigger that wires it and the date the decision expires:
+
+| Integration | Deferred because | Wire when | Re-check by |
+|---|---|---|---|
+| [e.g. the language server for the secondary language] | [no code in that language yet] | [the first module lands] | [date] |
+
+**Read versus write per data integration**: every integration that touches a data store names its boundary here — which tools are read-only and which can mutate — and the mutating ones are ask-gated (`cbk-conventions-reference.md` § Hook authoring); a query tool that can also write is wired as two entries or not at all.
 
 ## Library / framework docs
 

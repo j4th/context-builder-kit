@@ -9,7 +9,7 @@ Realistic prompts for verifying the framing skill works correctly after any revi
 
 **What framing should do**:
 
-1. **Step 1 — Inheritance**: read `docs/cbk/problem_brief.md`, `docs/cbk/scaffold.md`, `docs/cbk/blueprint.md` in full via GitHub MCP. Check `docs/cbk/` — empty. Check `docs/cbk/README.md` — doesn't exist yet (this is frame-01). Present verbatim inheritance summary quoting the brief's no-gos, scaffold's quality bar, blueprint's regex pack workstream row, and blueprint's methodology section. HITL gate: user confirms summary.
+1. **Step 1 — Inheritance**: read `docs/cbk/problem_brief.md`, `docs/cbk/scaffold.md`, `docs/cbk/blueprint.md` in full via GitHub MCP. Check `docs/cbk/` — empty. Check `docs/cbk/README.md` — exists with the consultation, scaffold and blueprint rows (scaffold created it; this is frame-01). Present verbatim inheritance summary quoting the brief's no-gos, scaffold's quality bar, blueprint's regex pack workstream row, and blueprint's methodology section. HITL gate: user confirms summary.
 
 2. **Step 2 — Project selection**: confirm "regex pack" against blueprint's workstreams table. Identify framing number as `frame-01`. HITL gate: user confirms.
 
@@ -19,7 +19,7 @@ Realistic prompts for verifying the framing skill works correctly after any revi
 
 5. **Step 5 — Milestones**: 3-5 milestones, default vertical slicing shape. M1 delivers one end-to-end regex lesson. Each milestone has capability verb, depends-on, rough issues, acceptance signal. HITL gate: user reviews narrative arc.
 
-6. **Commit** `frame-01.md` + create `docs/cbk/README.md` with first index row via GitHub MCP.
+6. **Commit** `frame-01.md` + append the frame-01 row and phase note to `docs/cbk/README.md` via GitHub MCP.
 
 **Success criteria**:
 - Inheritance summary quotes verbatim (not paraphrased) from at least problem_brief, scaffold, and blueprint
