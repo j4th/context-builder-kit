@@ -81,7 +81,7 @@ This gate runs in **every rigor mode**, not just full mode. It cannot be skipped
 
 ## The detection matrix (planning = `github-issues`)
 
-Before provisioning, detect what's possible in this session for the GitHub planning surface. As of early 2026, the GitHub MCP server can create repositories and push files, but **cannot** create labels, milestones, or project boards — regardless of PAT scopes. There is no "full automation" state. Every run involves MCP operations + manual instructions.
+Before provisioning, detect what's possible in this session for the GitHub planning surface. What the GitHub MCP server can do in this session is read off its **tool list**, never assumed (an observed gap, 2026-09-06: no label, milestone or project-board tools in the server's list; re-read the list at every scaffold, because it changes with the server's version). `gh` is the default interface on this axis (`tooling.md` § Planning backend): `gh label create` and `gh api` cover labels and milestones, and the project board stays a manual step (`references/manual_steps.md`).
 
 | State | GitHub MCP? | What MCP can do | What's manual | Behavior |
 |---|---|---|---|---|
