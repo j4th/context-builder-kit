@@ -102,7 +102,7 @@ The default heuristic (3-4 → append, 5+ → new file) is rough-in's proposal; 
 | `create_or_update_file` | github MCP | Append rough-in spec content to `frame-NN.md` (option a) or create `frame-NN-M<#>-rough-in.md` (option b) |
 | `create_or_update_file` | github MCP | Append the rough-in event entry to `docs/cbk/README.md` index |
 
-**No external planning-backend operations.** The atomic transition collapses to a single half (just the markdown commits). There is no rollback to perform on the planning side because no external planning ops ran. Partial failure recovery applies to the markdown commits only — if the spec file commit succeeds but the framing.md index update fails, surface and ask the operator to verify state before retry.
+**No external planning-backend operations.** The atomic transition collapses to a single half (just the markdown commits). There is no rollback to perform on the planning side because no external planning ops ran. Partial failure recovery applies to the markdown commits only — if the spec file commit succeeds but the README.md index update fails, surface and ask the operator to verify state before retry.
 
 **Body source**: in `in-repo-markdown` planning, rough-in still reads the `cascade-rough-in.md` template from `.github/ISSUE_TEMPLATE/` (because the templates may exist on disk even in repos without external planning — scaffold commits them regardless of the planning axis, since they're workspace infrastructure that serves both human-created Issues and the cascade's automated runs). The template's section structure is used inside the markdown spec content too, so the spec headings are consistent across planning axes. If the disk template is missing, fall back to the bundled copy.
 

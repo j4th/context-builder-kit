@@ -12,7 +12,7 @@ Create a new ADR. ADRs are **immutable** (ADR-0000) — superseding writes a new
 
 - The user has decided to record a new architecture decision.
 - The user wants to supersede an existing ADR (the new one references the old one's number).
-- A previously-deferred Open Question (in `docs/ARCHITECTURE.md` § Open questions or `docs/cbk/blueprint.md` § Open questions) has been resolved.
+- A previously-deferred open question (in `docs/cbk/blueprint.md` § Open Questions, or wherever the project's indexes keep their open-questions list) has been resolved.
 
 ## When NOT to use
 

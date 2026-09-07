@@ -117,6 +117,7 @@ jobs:
           if printf '%s' "$labels" | grep -qF '"claude-deep-review"'; then
             echo "model=[<top-tier or workhorse model id>]" >> "$GITHUB_OUTPUT"
             echo "effort=xhigh" >> "$GITHUB_OUTPUT"
+            # `ultracode` as exercised on the deep path (a dated observation, 2026-09-06); re-verify the setting name after harness upgrades.
             echo "settings_arg=--settings '{\"ultracode\":true}'" >> "$GITHUB_OUTPUT"
             echo "disallow_arg=" >> "$GITHUB_OUTPUT"
           elif printf '%s' "$labels" | grep -qF '"claude-fast-review"'; then
