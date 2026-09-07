@@ -47,8 +47,8 @@ const judgeOk = (opts) => {
   check(calls.every((c) => c.opts.model && c.opts.effort), "every dispatch names model and effort");
   const armB = exec.find((c) => c.opts.label.includes("Q"));
   check(armB && armB.prompt.includes("Do not open .claude/commands/finish-procedure.md"), "arm B is told not to open arm A's file");
-  check(exec.every((c) => !/arm [AB]\b/.test(c.opts.label)), "labels carry the anonymised id, never the arm letter");
-  check(calls.filter((c) => c.opts.phase === "Judge").every((c) => !c.prompt.includes("arm A") && !c.prompt.includes("arm B")), "judges never see arm letters");
+  check(exec.every((c) => /^arm:[PQ]@/.test(c.opts.label)) && exec.every((c) => !/^arm:[AB]@/.test(c.opts.label)), "labels carry the anonymised id (P/Q), never the arm letter");
+  check(calls.filter((c) => c.opts.phase === "Judge").every((c) => /\b[PQ]: worktree/.test(c.prompt) && !/\b[AB]: worktree/.test(c.prompt)), "judges are told the arms by anonymised id, never by arm letter");
   check(result.ranks.P.join(",") === "1,2,1,2" && result.ranks.Q.join(",") === "2,1,2,1", `ranks follow each judge's ranking (got ${JSON.stringify(result.ranks)})`);
   check(result.flags.P === 2 && result.flags.Q === 0, `flags summed per arm (got ${JSON.stringify(result.flags)})`);
   check(result.plannedAgents === 6, "plannedAgents returned");
@@ -76,6 +76,16 @@ const judgeOk = (opts) => {
   check(calls.filter((c) => c.opts.phase === "Judge").every((c) => c.prompt.includes("MISSING")), "judges are told which arm is missing");
 }
 
+// 5. A judge whose ranking omits an arm is dropped by name and its votes are not counted; the surviving
+//    panel's order balance is re-checked and reported.
+{
+  const { result, logs } = await run(base, { armResult: armOk, judgeResult: (opts, prompt) => { const j = judgeOk(opts, prompt); if (/judge:2@/.test(opts.label)) j.ranking = ["P"]; return j; } });
+  check(logs.some((l) => /dropped judges .*judge 2 \(Q>P\): malformed ranking/.test(l)), `a malformed ranking is named with its judge index and order (got: ${logs.filter((l) => /dropped/.test(l)).join(" | ")})`);
+  check(result.ranks.P.length === 3 && result.ranks.Q.length === 3, `the malformed judge's votes are excluded from both arms (got ${JSON.stringify(result.ranks)})`);
+  check(logs.some((l) => /surviving panel is unbalanced/.test(l)), "an unbalanced surviving panel is reported");
+  check(Array.isArray(result.droppedJudges) && result.droppedJudges.length === 1, "droppedJudges is returned");
+}
+
 check(meta.name === "finish-ab" && Array.isArray(meta.phases) && meta.phases.length === 2, "meta literal is well-formed");
 if (failures) { console.error(`finish-ab-shape: ${failures} failure(s)`); process.exit(1); }
-console.log("finish-ab-shape: 4 scenarios ok");
+console.log("finish-ab-shape: 5 scenarios ok");

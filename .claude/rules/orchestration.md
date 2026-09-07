@@ -98,7 +98,7 @@ Effort is settable per agent definition (`effort:` frontmatter) and per workflow
 | Several top-tier agents in a top-tier session ("parallel synthesis") | One integrative step per workflow/turn gets the top tier; parallel work is worker-tier by definition |
 | Pinning the workhorse tier on every reviewer/finder "for quality" | Mid-tier finder + workhorse verifier is the calibrated shape; an all-workhorse fan-out pays a large multiple for negligible gain |
 | Omitting the model and effort on every `agent()` call ("inherit is safe") | The default is the workhorse tier, stated, and effort named; under a top-tier main loop an unpinned fan-out is a top-tier fan-out |
-| `max` effort as a default "to be safe" | Effort is non-monotonic on agentic work; inherit, then raise only on the stages that prove to need it |
+| `max` effort as a default "to be safe" | Effort is non-monotonic on agentic work; name the level per role (§ Generation notes) and raise only on the stages that prove to need it |
 | Fan-out sized by reflex rather than by the work | Pilot on a slice; the Agent tool fails past its cap and the workflow runtime queues past its — either way the tokens are spent |
 | Keeping a workaround after the constraint lifts | Date every empirical rail with its failure signature and a re-check trigger; note retirements inline |
 | Quoting "official guidance" with no resolvable source | Cite a URL or an authoritative local doc path. An unsourced quotation in a rules file propagates to sibling docs and reviewers before anyone re-checks it |

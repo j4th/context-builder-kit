@@ -55,12 +55,13 @@ def parse_iso(s):
 
 def summarise(path):
     events = []
+    skipped = 0  # unparsable lines (a transcript truncated by a killed agent) are counted, never silently dropped
     with open(path) as f:
         for line in f:
             try:
                 events.append(json.loads(line))
             except json.JSONDecodeError:
-                continue
+                skipped += 1
     per_model = {}  # model id -> token counts; priced per model, so a mixed transcript is never billed at one tier
     stamps = []
     for e in events:
@@ -79,7 +80,7 @@ def summarise(path):
     model = ','.join(sorted(per_model)) or '?'
     totals = {k: sum(t[k] for t in per_model.values()) for k in ('turns', 'inp', 'out', 'cw', 'cr')}
     turns, inp, out, cw, cr = (totals[k] for k in ('turns', 'inp', 'out', 'cw', 'cr'))
-    cost = 0.0
+    cost = None if not per_model else 0.0  # no usage events at all: unpriced and named, never a free row
     for name, t in per_model.items():
         k = tier(name)
         if k is None:
@@ -91,7 +92,7 @@ def summarise(path):
     if len(stamps) >= 2:
         minutes = round((parse_iso(max(stamps)) - parse_iso(min(stamps))).total_seconds() / 60, 1)
     return dict(agent=os.path.basename(path)[6:-6], label=first_prompt(events), model=model, turns=turns,
-                input=inp, cache_write=cw, cache_read=cr, output=out, cost_usd=cost, minutes=minutes)
+                input=inp, cache_write=cw, cache_read=cr, output=out, cost_usd=cost, minutes=minutes, skipped_lines=skipped)
 
 
 def main(argv):
@@ -113,7 +114,10 @@ def main(argv):
     split = f' ({len(priced)} of {len(rows)} agents priced)' if unpriced else ''
     print(f'\nagents: {len(rows)}\ttotal list-price cost: ${total:.2f}{split}')
     if unpriced:
-        print(f'unpriced (model not in PRICE, named here and excluded from the total): {", ".join(unpriced)}')
+        print(f'unpriced (model not in PRICE or no usage events; named here and excluded from the total): {", ".join(unpriced)}')
+    truncated = [f"{r['agent']} ({r['skipped_lines']})" for r in rows if r['skipped_lines']]
+    if truncated:
+        print(f'unparsable lines skipped (a truncated transcript undercounts its agent): {", ".join(truncated)}')
     if '--json' in argv:
         i = argv.index('--json') + 1
         if i >= len(argv):

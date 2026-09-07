@@ -102,7 +102,7 @@ const JUDGE_SCHEMA = {
         },
       },
     },
-    ranking: { type: "array", items: { type: "string" }, description: "arm ids best to worst" },
+    ranking: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 2, description: "both arm ids, best to worst" },
     hallucinations: { type: "array", items: { type: "object", required: ["arm", "claim_verbatim", "contradicting_source"], properties: { arm: { type: "string" }, claim_verbatim: { type: "string" }, contradicting_source: { type: "string" } } } },
     graft: { type: "array", items: { type: "object", required: ["arm", "idea"], properties: { arm: { type: "string" }, idea: { type: "string" } } } },
     word_counts: { type: "array", items: { type: "object", required: ["arm", "pr_body", "plan", "added_lines"], properties: { arm: { type: "string" }, pr_body: { type: "integer" }, plan: { type: "integer" }, added_lines: { type: "integer" } } } },
@@ -117,18 +117,28 @@ const describe = (id) => byAnon[id]
   ? `${id}: worktree ${byAnon[id].worktree}, branch ${byAnon[id].branch}`
   : `${id}: MISSING — the arm returned nothing; score it 1 on every dimension and say so`
 
-const jok = (await parallel(judges.map((j, i) => () => agent(
+const judged = await parallel(judges.map((j, i) => () => agent(
   `You are judge ${i + 1} of ${judges.length}. Read the rubric at ${RUBRIC} and apply it exactly. The two arms are, in the order you must read them: ${j.order.map(describe).join("; ")}. Read the operator brief at ${BRIEF} too, so you know what both arms were told. Verify against the sources the rubric names before scoring. Write your full report to ${S}/judges/judge-${i + 1}.md and return the structured result with one scores entry per arm named ${j.order.join(" and ")}. Do not edit any file in either worktree or in the repository.`,
   { label: `judge:${i + 1}@${j.effort ?? "high"}`, phase: "Judge", model: MODEL, effort: j.effort ?? "high", agentType: "general-purpose", schema: JUDGE_SCHEMA },
-)))).filter(Boolean)
+)))
 
-if (jok.length < judges.length) log(`finish-ab: judges returned: ${jok.length}/${judges.length} — an incomplete panel is unbalanced; treat the ranks as advisory`)
+// A judge that returned nothing, or whose ranking is not exactly the two arm ids, is dropped coverage:
+// named by index and reading order, never a silent shrink of the panel (orchestration.md § Fan-out
+// discipline — log what was dropped). The surviving panel is re-checked for order balance.
 const ids = args.arms.map((c) => c.anon)
+const wellFormed = (j) => j && Array.isArray(j.ranking) && j.ranking.length === ids.length && ids.every((id) => j.ranking.includes(id))
+const dropped = judges.map((j, i) => (wellFormed(judged[i]) ? null : `judge ${i + 1} (${j.order.join(">")}): ${judged[i] ? "malformed ranking " + JSON.stringify(judged[i].ranking) : "no result"}`)).filter(Boolean)
+if (dropped.length) log(`finish-ab: dropped judges (no verdict counted): ${dropped.join("; ")}`)
+const jok = judged.filter(wellFormed)
+const survivingOrders = new Map()
+judges.forEach((j, i) => { if (wellFormed(judged[i])) survivingOrders.set(orderKey(j), (survivingOrders.get(orderKey(j)) ?? 0) + 1) })
+const perOrder = [...survivingOrders.values()]
+if (jok.length < judges.length && (perOrder.length !== 2 || perOrder[0] !== perOrder[1])) log(`finish-ab: the surviving panel is unbalanced across reading orders (${[...survivingOrders.entries()].map(([k, v]) => `${k}: ${v}`).join(", ") || "none"}) — treat the ranks as advisory`)
 const ranks = {}
 const flags = {}
 ids.forEach((id) => {
-  ranks[id] = jok.map((j) => j.ranking.indexOf(id) + 1).filter((r) => r > 0)
+  ranks[id] = jok.map((j) => j.ranking.indexOf(id) + 1)
   flags[id] = jok.reduce((n, j) => n + j.hallucinations.filter((h) => h.arm === id).length, 0)
 })
 log(`finish-ab: ranks: ${ids.map((id) => `${id}: ${ranks[id].join("/")}, flags ${flags[id]}`).join(" | ")}`)
-return { arms: done, judges: jok, ranks, flags, plannedAgents }
+return { arms: done, judges: jok, ranks, flags, droppedJudges: dropped, plannedAgents }

@@ -33,7 +33,7 @@ The triad works because: plan mode prevents wrong directions; task-tracking enfo
 - Mechanical refactors with clear-cut scope (rename a private symbol, update a comment, bump a version pin)
 - Tasks where the operator already wrote the diff in chat
 
-`/finish <N>` runs its research **executably** (in the operator's current permission mode) and then enters plan mode for the formal plan + the approval gate — the read-only gate covers the *plan*, not the research (see `.claude/commands/finish.md` Step 5: 5a research → 5b plan-gate). If an issue were trivial enough to skip the plan gate, the rough-in author would not have created a separate sub-sub-issue for it.
+`/finish <N>` runs its research **executably** (in the operator's current permission mode) and then enters plan mode for the formal plan + the approval gate — the read-only gate covers the *plan*, not the research (see `.claude/commands/finish.md` § What the finished issue is, item 1, and `.claude/commands/finish-procedure.md` § Step 5: 5a research → 5b plan-gate). If an issue were trivial enough to skip the plan gate, the rough-in author would not have created a separate sub-sub-issue for it.
 
 ## Signals the plan needs revision
 
