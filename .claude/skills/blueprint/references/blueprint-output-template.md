@@ -201,6 +201,9 @@ Earlier versions of this template had a "Manual setup runlist" section with the 
 
 ## Planning-axis-aware behavior
 
+On the `github-issues` and `in-repo-markdown` axes blueprint also writes `docs/cbk/ROADMAP.md` from `templates/roadmap.md`, seeded from § Core Projects: one *planned* row per project, the bootstrap row pointing at the handoff issue, `## Now` naming the first runnable command. It is a status surface, freely mutable, never the audit trail.
+
+
 **`github-issues` planning**: this file is the *only* place the initiative content lives. There's no Linear initiative entity. Framing will read this file, decompose the workstreams into proper project specs, and create the GitHub workstream parent Issues + framing sub-issues from there.
 
 **`linear` planning**: this file still gets committed to `docs/cbk/blueprint.md`, AND a Linear initiative entity gets created via Linear MCP with the same Goal, Success Criteria, Not In Scope, and Dependencies content. The file is the source of truth; the Linear entity is a queryable mirror. Framing reads the file; Linear is for human navigation and roll-up reporting.

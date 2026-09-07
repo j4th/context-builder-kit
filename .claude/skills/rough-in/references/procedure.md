@@ -243,7 +243,7 @@ The deferred meta-issue for the automation recommender pass will revise the **te
 
 ## Step 6 — Planning-backend commit (atomic transition)
 
-After all specs are drafted and approved, commit the sub-sub-issues to the planning backend atomically with the markdown event log update. Same discipline as blueprint and framing: capture every operation, execute planning ops first, commit markdown second, rollback on failure, handle partial failure by stopping and surfacing state to the user.
+After all specs are drafted and approved, commit the sub-sub-issues to the planning backend atomically with the markdown event log update — and, where the project keeps `docs/cbk/ROADMAP.md`, the milestone's row flipped to *roughed-in* with the `R` issues linked, in the same commit. Same discipline as blueprint and framing: capture every operation, execute planning ops first, commit markdown second, rollback on failure, handle partial failure by stopping and surfacing state to the user.
 
 Detailed commit step, slug inheritance, profile-aware behavior, atomic transition pattern, partial failure recovery, and failure modes live in `references/planning-backend-commit.md`.
 

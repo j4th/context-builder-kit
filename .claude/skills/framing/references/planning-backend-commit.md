@@ -41,6 +41,10 @@ Framing constructs each sub-issue's body from one of two templates depending on 
 
 Section heading names from both templates are preserved verbatim — do not rename, reorder, or omit sections that the templates provide. Adding additional sections after the template-provided ones is permitted if the capability or meta-issue has content that doesn't fit the standard sections.
 
+### The roadmap row (github-issues and in-repo-markdown axes)
+
+Where `docs/cbk/ROADMAP.md` exists, the markdown half of the transition also appends one row per milestone to § The sequence (status *framed*, `Where` linking the `F` issue) and updates `## Now` — in the **same commit** as `frame-NN.md` and the index row, never a separate one. The roadmap is a status surface (`cbk-conventions.md` § Mutation discipline); a row that is wrong is fixed in place.
+
 ## Atomic transition pattern (two-step per sub-issue)
 
 Framing's planning-backend commit uses GitHub's two-step sub-issue creation:

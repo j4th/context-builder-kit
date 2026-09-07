@@ -183,6 +183,8 @@ The principle for Steps 8–9: **the executor handles findings the codebase need
      - **Defer (N)** — `<verbatim rationale> — conflicts with <ADR / scope / framing>`.
      - **Reject (N)** — one-line dismissal.
 
+   **The roadmap row, before `gh pr create`** — where the project keeps `docs/cbk/ROADMAP.md` and the spec names the flip: update the row and `## Now` on this branch as the last commit (`docs(cascade):`, no CI-skip marker — it is HEAD at the flip), with the PR number predicted from the shared issue-and-PR sequence (`gh api 'repos/{owner}/{repo}/issues?state=all&sort=created&direction=desc&per_page=1'` plus one) and checked against the number `gh pr create` returns; one correcting commit on a mismatch; never a separate PR (the contract, item 8).
+
    If `gh pr create --draft` fails (auth, missing scope, draft PRs disabled, rate limit, PR already exists for this branch), stop and surface the failure with per-step status.
 
 ## Step 11: Hand off
@@ -201,6 +203,8 @@ If any finding was classified **Defer** because it would conflict with an ADR or
 
 **Optional learning-runbook write to Notion** (only when knowledge backend = `notion` is configured for this repo, per `.cascade/backends.toml`): if this execution surfaced a learning that would be a useful durable cross-project runbook entry (e.g., a non-obvious gotcha with the stack, a recipe for a recurring task spanning repos, a corrected understanding of an external system's behavior), prompt the operator: *"Want to promote this learning to a Notion runbook page under the Engineering Wiki? Defaults to SKIP."* Defaults to **SKIP**. Per `.claude/rules/knowledge-backend.md` § "When to write" — this is the rare opt-in path; HITL-gated; never default. If the operator opts in, announce the planned write (title, parent, body preview) before committing. This step is gated to genuinely cross-project learnings only — local-to-the-PR observations stay in the PR body and the hand-off summary, not in Notion.
 
+**Post-merge checklist** (the hand-off ends with it; the operator runs it after the merge): `git switch main && git pull --ff-only && git fetch --prune`; post the drafted roll-forwards; close the meta-issues the close marker did not; append the frame's `## Rough-in events` row when this PR was the milestone's capstone; flip the roadmap row if Step 10 did not; the next runnable command, read off the roadmap. A research milestone's capstone is the verdict artifact — name it and its owner.
+
 Do not call `gh pr ready` and do not merge — those remain the user's calls. The user's draft-review pass is where Surface findings get decided; they can ask you to apply any of them in the PR-feedback-loop turn, or wave them through.
 
 ## What `/finish` does NOT do
@@ -209,7 +213,7 @@ Do not call `gh pr ready` and do not merge — those remain the user's calls. Th
 - **Does not handle re-rough-in.** Surface the need and return to chat for the rough-in skill.
 - **Does not auto-create dependent issues.** If the work reveals a missing sub-sub-issue, surface and return to chat for rough-in.
 - **Does not bypass dependencies.** Refuse to proceed when dependencies are unmet.
-- **Does not modify cascade artifacts** (`docs/cbk/blueprint.md`, `docs/cbk/frame-NN.md`, etc.). Those are produced by chat-skill cascade phases.
+- **Does not modify cascade artifacts** (`docs/cbk/blueprint.md`, `docs/cbk/frame-NN.md`, etc.). Those are produced by chat-skill cascade phases. *The status surfaces are carved out: `docs/cbk/ROADMAP.md`'s row and a frame's `## Rough-in events` table are not cascade events; Step 10 flips the row on this branch when the spec names it, the post-merge checklist otherwise (the contract wins where the two differ).*
 - **Does not modify ADRs.** ADRs are immutable once accepted; revisions happen via new ADRs that supersede the old (chat-skill territory, not `/finish`).
 - **Does not make workstream-level or framing-level decisions.** Those belong to upstream cascade phases (blueprint, framing, rough-in).
 - **Does not skip `/simplify` or `pr-review-toolkit:review-pr`.** The simplify and review passes both run before the PR opens; the simplify pass is non-negotiable per `docs/STANDARDS.md` § Step 4, and the review-toolkit findings are auto-triaged with the four-class rubric (Apply for correctness/validity/defensive; Surface for taste/style; Defer/Reject for conflicts and agent errors). The one exception is an explicit break-glass marker (Step 1), which waives exactly the `pr-review-toolkit:review-pr` half and is recorded on that skill's `## Review gate` line. The orchestrated sweep supplements the two skills and never substitutes for either.
