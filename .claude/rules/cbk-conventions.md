@@ -243,8 +243,8 @@ A wrong **claim** inside an accepted ADR — a citation, a figure, an attributio
 | What you're doing | Where the convention lives |
 |---|---|
 | Naming a cascade event | Flat `docs/cbk/<artifact>.md`, sequential numbering |
-| Updating the cascade-events index | `docs/cbk/README.md` — scaffold creates it; blueprint, framing and rough-in append a row + phase note; only the status column flips |
-| Flipping the roadmap row | `docs/cbk/ROADMAP.md` — framing appends, rough-in flips to *roughed-in*, `/finish` flips to *done* on the PR's own branch (`commands/finish.md` item 8) or the post-merge checklist does |
+| Updating the cascade-events index | `docs/cbk/README.md` — see § Mutation discipline (its row names the creator and the appenders) |
+| Flipping the roadmap row | `docs/cbk/ROADMAP.md` — see § Mutation discipline (its row names who flips it and when) |
 | Naming a planning-backend issue | `[<workstream-slug>:F<#>:R<#>] <intent>` |
 | Naming a branch | `<type>/<TEAM>-<N>-<short-slug>` |
 | Closing an issue from a PR | `Closes <TEAM>-N` (Linear) or `Closes #N` (GitHub) in PR body |
