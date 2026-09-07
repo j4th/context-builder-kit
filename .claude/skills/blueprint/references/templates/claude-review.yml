@@ -43,8 +43,8 @@ on:
   pull_request:
     types: [opened, ready_for_review, reopened, labeled]
     # Docs-only and cascade-artifact PRs are not reviewed by the bot. This is NOT a
-    # required check, so a paths filter is safe here (unlike ci.yml — cbk-conventions.md
-    # § [skip ci] rule, the required-checks trap). A docs-only PR whose docs are one-way
+    # required check, so a paths filter is safe here (unlike ci.yml — cbk-conventions-reference.md
+    # § Required-checks trap). A docs-only PR whose docs are one-way
     # doors (ADRs, the conventions) is reviewed by a human, not skipped by everyone.
     paths-ignore:
       - 'docs/cbk/**'

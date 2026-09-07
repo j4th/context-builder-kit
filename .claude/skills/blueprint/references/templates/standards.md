@@ -180,7 +180,7 @@ The exemption must be specific: name the gate, name the commits or sub-batch, an
 
 **When this section appears**: only when blueprint's stack decisions or scaffold's setup added a CI gate that didn't exist on day one of the repo. If the repo had its full CI from the first commit, no bootstrap exemption section is needed.
 
-**A required check always reports**: a workflow promoted to a required check carries no `paths:` trigger filter and a stable, explicit job `name:` set before promotion — a skipped or renamed check parks every PR (`cbk-conventions.md` § `[skip ci]` rule, the required-checks trap); STANDARDS.md states this rule where it lists the gates.
+**A required check always reports**: a workflow promoted to a required check carries no `paths:` trigger filter and a stable, explicit job `name:` set before promotion — a skipped or renamed check parks every PR (`cbk-conventions-reference.md` § Required-checks trap); STANDARDS.md states this rule where it lists the gates.
 
 **Surface this proactively**: if blueprint's stack decisions include adding a new gate during this phase (new CI workflow, new pre-commit hook, new required check), the skill should explicitly tell the user at the relevant HITL gate: *"This means the commit that adds <gate name> can't itself be reviewed by <gate name> — that's a known bootstrap exemption. I'll document it in STANDARDS.md so it doesn't surprise anyone later."*
 

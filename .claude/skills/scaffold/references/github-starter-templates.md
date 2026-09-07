@@ -186,8 +186,8 @@ jobs:
   check:
     # `name:` is the check-run context a ruleset will require. Set it before the job
     # is promoted and never rename it afterwards — matching is by name, and a rename
-    # orphans the required context (cbk-conventions.md § [skip ci] rule, the
-    # required-checks trap, cause 3).
+    # orphans the required context (cbk-conventions-reference.md § Required-checks
+    # trap, cause 3).
     name: check
     runs-on: ubuntu-latest
     steps:

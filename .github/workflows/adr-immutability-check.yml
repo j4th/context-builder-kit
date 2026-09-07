@@ -7,8 +7,8 @@ name: ADR immutability check
 # files are allowed; deletions and modifications are not).
 
 # No `paths:` filter, on purpose: a required check that is skipped by a path
-# filter never reports and parks the PR forever (cbk-conventions.md § [skip ci]
-# rule, the required-checks trap, cause 2). The job exits 0 in seconds when no
+# filter never reports and parks the PR forever (cbk-conventions-reference.md
+# § Required-checks trap, cause 2). The job exits 0 in seconds when no
 # ADR changed, so always-run costs nothing.
 on:
   pull_request:
