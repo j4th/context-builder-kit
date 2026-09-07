@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "_comment_hooks": "PreToolUse guards in two tiers. HARD-DENY (exit 2) for actions never legitimate for the agent: protect-immutable-adrs.sh blocks Edit/Write/MultiEdit on existing docs/adr/NNNN-*.md; protect-lock-files.sh blocks edits to lock files (change them via the package manager); protect-main-branch.sh blocks `git commit` on main/master (branch-first per cbk-conventions.md § Branch naming). ASK-GATE (permissionDecision \"ask\") for one-way doors legitimate only when operator-instructed — the permission prompt IS the per-action HITL approval, and it fires even when a broad allowlist entry would otherwise auto-approve: guard-pr-state.sh intercepts gh pr ready/merge/close/reopen; require-knowledge-backend-ok.sh intercepts knowledge-backend MCP writes (Notion matcher shipped as the v1 reference — adjust the regex to your MCP's tool names). All guards fail open (exit 0 + stderr warning naming the surviving backstop) on environment defects, so a missing jq can't turn a targeted guard into a universal block. A project may add a PostToolUse advisory formatter — see .claude/hooks/format-on-edit.sh (exemplar; wire its case arms to your stack and register it here).",
+  "_comment_hooks": "Guards in FOUR tiers; each tier names its mechanism and its dated source; prerequisites and the canonical dry-run are stated once at the end (cbk-conventions-reference.md § HITL gate load-bearing heuristics › Mechanize the gates; the authoring shape is § Hook authoring). Every command uses ${CLAUDE_PROJECT_DIR}/… — handlers run in the current directory (code.claude.com/docs/en/hooks, verified 2026-09-06), so a bare relative path is not found from a subdirectory. HARD-DENY (PreToolUse, exit 2) for actions never legitimate for the agent: protect-immutable-adrs.sh blocks Edit/Write/MultiEdit on existing docs/adr/NNNN-*.md; protect-lock-files.sh blocks edits to lock files (change them via the package manager); protect-main-branch.sh blocks `git commit` on main/master (branch-first per cbk-conventions.md § Branch naming; judged on the branch at entry, so branch creation and the first commit are separate calls); require-repo-root-for-agents.sh blocks Task/Agent/Workflow dispatch from any directory but the checkout's git top-level (the memory-root mechanism and its dated source are stated once in pr-review.md § Reviewer precedent memory); the `Task|Agent|Workflow` matcher is a dated observation of the tool names the harness reports, with the older name kept so a rename degrades to a no-op. ASK-GATE (PreToolUse, permissionDecision \"ask\") for one-way doors legitimate only when operator-instructed — the permission prompt IS the per-action HITL approval, and it fires even when a broad allowlist entry would otherwise auto-approve: guard-pr-state.sh intercepts gh pr ready/merge/close/reopen; require-knowledge-backend-ok.sh intercepts knowledge-backend MCP writes (Notion matcher shipped as the v1 reference — adjust the regex to your MCP's tool names; when the knowledge axis is `none` the guard is inert because its tools are not connected, and it follows the rule file's disposition at bootstrap). ADVISORY (PostToolUse, exit 0 always) ships as unregistered exemplars with their stanzas beside `hooks`: format-on-edit.sh (`_example_PostToolUse_formatter`) and analyze-on-edit.sh (`_example_PostToolUse_analyzer` — the project's analyzer on the edited file's package, errors only; measured under a second per package on a real run, 2026-09-05) — copy a stanza into hooks.PostToolUse after wiring its case arms to your stack. STOP (Stop, exit 2 blocks the stop once): detect-forked-agent-memory.sh exits 2 while a `.claude/agent-memory/` tree exists anywhere but the root, so the agent that forked it moves it before handing off; `stop_hook_active` prevents a loop, and the harness overrides a Stop hook after eight consecutive blocks (code.claude.com/docs/en/hooks-guide § Limitations and troubleshooting, verified 2026-09-06). Registered on Stop only: on SubagentStop it would block every finishing subagent, which has no hand-off. All guards fail open (exit 0 + stderr warning naming the surviving backstop) on environment defects, so a missing jq can't turn a targeted guard into a universal block. Prerequisites: jq, git, bash 3.2+. Canonical dry-run: pipe a crafted JSON payload into the script and assert the exit (the verification block runs the launch-root guard's payloads on every run; the Stop hook's fixture run is the procedure in cbk-conventions-reference.md § Hook authoring › Verify by payload, recorded in the PR body's table).",
   "hooks": {
     "PreToolUse": [
       {
@@ -8,11 +8,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/protect-immutable-adrs.sh"
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/protect-immutable-adrs.sh"
           },
           {
             "type": "command",
-            "command": ".claude/hooks/protect-lock-files.sh"
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/protect-lock-files.sh"
           }
         ]
       },
@@ -21,11 +21,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/protect-main-branch.sh"
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/protect-main-branch.sh"
           },
           {
             "type": "command",
-            "command": ".claude/hooks/guard-pr-state.sh"
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-pr-state.sh"
           }
         ]
       },
@@ -34,7 +34,26 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/require-knowledge-backend-ok.sh"
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/require-knowledge-backend-ok.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Task|Agent|Workflow",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/require-repo-root-for-agents.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/detect-forked-agent-memory.sh"
           }
         ]
       }
@@ -46,7 +65,17 @@
     "hooks": [
       {
         "type": "command",
-        "command": ".claude/hooks/format-on-edit.sh"
+        "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/format-on-edit.sh"
+      }
+    ]
+  },
+  "_example_PostToolUse_analyzer": {
+    "_comment": "Copy this object into hooks.PostToolUse after wiring .claude/hooks/analyze-on-edit.sh's case arm to your analyzer (measure it first: under a second per package, or it belongs in the check task). Advisory tier: exit 0 always; errors only.",
+    "matcher": "Edit|Write|MultiEdit",
+    "hooks": [
+      {
+        "type": "command",
+        "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/analyze-on-edit.sh"
       }
     ]
   },

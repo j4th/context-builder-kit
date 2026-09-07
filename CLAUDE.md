@@ -19,7 +19,7 @@ The skills compose into a six-phase **AI-assisted development cascade**. Each ph
 | 3 | Blueprint | `.claude/skills/blueprint/` | Brief + scaffold output | Foundation docs (CLAUDE.md, ARCHITECTURE.md, STANDARDS.md, CONTRIBUTING.md) + `blueprint.md` (stack + workstreams) |
 | 4 | Framing | `.claude/skills/framing/` | Blueprint + one workstream | `frame-NN.md` (milestones + rough issues for one workstream) |
 | 5 | Rough-in | `.claude/skills/rough-in/` | One framing + one milestone | Sub-sub-issues with plan-mode prompts, each Claude-Code-ready |
-| 6 | Finish | `.claude/commands/finish.md` (slash command) | One sub-sub-issue | A draft PR with code, tests, and review-toolkit triage |
+| 6 | Finish | `.claude/commands/finish.md` (slash command) | One sub-sub-issue | A draft PR with code, tests, a `## Review gate` block (the two-skill floor, actually invoked, plus the bounded sweep) and the `## Triage` block |
 
 The cascade is a **funnel, not a waterfall**: phases 4 and 5 operate **one project / one milestone at a time, just-in-time**. Framing v0.4 today is wasted if v0.1's actual build teaches you something that should change v0.4 — frame the next thing, build it, then frame the thing after that.
 
@@ -37,7 +37,7 @@ The cascade is top-down, but a **bottom-up contribution lane** complements it fo
 │   ├── enrich.md                  ← rough-in for one small capability (enhancement lane, skips framing)
 │   └── pr-respond.md              ← the PR feedback-loop executor (inverse of /finish)
 ├── agents/                        ← project-local PR reviewers (adr-conformance, logging-discipline, cascade-rule; memory-enabled) + Explore (cheap-tier search exemplar)
-├── hooks/                         ← PreToolUse guards, two-tiered: hard-deny (protect-immutable-adrs, protect-lock-files, protect-main-branch) + ask-gate (guard-pr-state, require-knowledge-backend-ok) + format-on-edit exemplar
+├── hooks/                         ← guards in four tiers: hard-deny (protect-immutable-adrs, protect-lock-files, protect-main-branch, require-repo-root-for-agents) + ask-gate (guard-pr-state, require-knowledge-backend-ok) + advisory exemplars, unregistered (format-on-edit, analyze-on-edit) + stop (detect-forked-agent-memory)
 ├── rules/                         ← operational contracts (cbk-conventions, pr-review — each split into an always-loaded contract and a path-scoped `-reference.md` half — plus testing, logging, simplification, knowledge-backend) and rule templates (tooling; orchestration, itself also split); workflows.md is portable
 ├── workflows/                     ← saved orchestrations (review-sweep: find-then-adversarially-verify review pass)
 └── skills/
@@ -59,7 +59,7 @@ These are load-bearing across the kit. Edits that violate them break the cascade
 - **Cascade events are append-only.** Re-framing produces `frame-02.md` that supersedes `frame-01.md` via a status field; it does not overwrite. ADRs are immutable; superseding writes a new ADR. The cascade IS the audit trail of decisions.
 - **Each phase has explicit HITL (human-in-the-loop) gates and explicit *rigor modes* (light / standard / full).** Don't collapse gates without considering the one-way-door property of the action they protect. A gate exists where a downstream commit (Linear write, GitHub Issue creation, branch/PR push, ADR commit) would be expensive to unwind.
 - **Inheritance is verbatim, not paraphrased.** Each phase reads prior-phase artifacts in full and quotes the relevant content into its inheritance summary. Paraphrasing is the most common cascade failure mode.
-- **`/finish` is the executor; planning happens upstream.** `/finish` does not modify issue bodies, does not handle re-rough-in, does not bypass dependencies, does not skip `/simplify` or `pr-review-toolkit:review-pr`. When `/finish` hits something the spec didn't anticipate, it surfaces and aborts rather than improvising — the gap is data for the next revision.
+- **`/finish` is the executor; planning happens upstream.** `/finish` does not modify issue bodies, does not handle re-rough-in, does not bypass dependencies, does not skip `/simplify` or `pr-review-toolkit:review-pr` (the floor — two skills actually invoked, once, recorded in the PR body's `## Review gate` block; the orchestrated sweep supplements and never substitutes). When `/finish` hits something the spec didn't anticipate, it surfaces and aborts rather than improvising — the gap is data for the next revision.
 - **Issue letters reflect skills; M is frame-local, F continues per workstream.** Frame docs label milestones `### F<#> — M<#>: <name>`: `M` is the frame-local milestone position, `F` numbers the framing issue and continues the workstream's sequence across frames (never restarting), keeping `[F<N>.AC<M>]` trace IDs unique cascade-wide. `R` numbers rough-in's issues. See `cbk-conventions.md` § Title-prefix scheme.
 - **Rough-in's specs target Claude Code plan mode, not a human typing.** The Implementation section states intent and constraints, not implementation sequences (plan mode is a decomposition engine; over-prescribing overrides its priors). Granularity is "coherent review units" (2-6 R-issues per milestone), not atomic work units.
 - **Constant + two independent axes** for the backend shape:

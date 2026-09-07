@@ -19,6 +19,7 @@
 # a targeted lock-file block into a universal Edit/Write/MultiEdit block, which
 # is worse than allowing a lock-file edit to slip through. The operator notices
 # the warning and fixes their environment.
+# Tier:     HARD-DENY (see the registry comment in .claude/settings.json).
 
 set -uo pipefail
 # Note: deliberately NOT using `set -e` — we want to exit 0 (fail-open) on

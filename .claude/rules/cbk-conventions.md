@@ -21,6 +21,7 @@ A single glanceable manifest of where every surface for this project actually li
 - **Upstream / pre-cascade docs:** `<path to any frozen reference material, or "none">`
 - **Problem brief / scaffold output:** `docs/cbk/problem_brief.md` · `docs/cbk/scaffold.md`
 - **Tooling conventions:** `<record any project-specific tool / MCP-selection conventions here — e.g. which code-intelligence or live-docs MCP to prefer over the built-ins, or the project's model/effort orchestration conventions for dispatched agents — or "defaults">`
+- **Reviewer agent-memory (`<project | local>`):** `<".claude/agent-memory/ — committed; the kit's .gitignore line deleted" | ".claude/agent-memory-local/ — never committed">` — settled at scaffold's rule-file disposition pass (`pr-review.md` § Reviewer precedent memory)
 
 ## Rule loading and the instruction budget
 
@@ -179,6 +180,8 @@ Both belong in any project that takes ADRs seriously; the kit's `adr-new` skill 
 | Code | **Freely mutable** | n/a | Standard code evolution |
 
 Cascade events being append-only is structurally important: the cascade IS the audit trail of decisions. A new framing supersedes an old one with a new file; the old one stays in `docs/cbk/` for future readers to understand "we used to think X, now we think Y."
+
+**The table and the hook registry are two views of one list.** A row enforced by a hook names it: ADRs → `protect-immutable-adrs.sh` (plus the CI lint); lock files → `protect-lock-files.sh`. A hook that enforces a rule clause rather than a table row names the clause: `protect-main-branch.sh` → § Branch naming; `require-repo-root-for-agents.sh` and `detect-forked-agent-memory.sh` → `pr-review.md` § Reviewer precedent memory (one home for the memory tree); `guard-pr-state.sh` → the PR-state one-way door in `cbk-conventions-reference.md` § HITL gate load-bearing heuristics; `require-knowledge-backend-ok.sh` → `knowledge-backend.md` § HITL announcement discipline. Rows with no hook (the append-only cascade artifacts, the index's status column) are instruction-enforced and carry a deferred-hardening note per § HITL gate load-bearing heuristics. The registry in `.claude/settings.json` lists the same hooks under their tiers, and the verification block checks the registry against the files. The authoring shape lives in `cbk-conventions-reference.md` § Hook authoring.
 **ADR supersession has more than one grain.** The `docs/adr/*` row above shows whole-ADR supersession; two finer-grained relationships sit alongside it, both preserving the parent's immutability (neither edits the parent file):
 
 - **Refine** — `Refines: ADR-NNNN (Dn, …)` in the child's header narrows or clause-level-clarifies a specific decision `Dn` in the parent **without invalidating it**. The parent stays **Accepted**; both parent and child are consulted for conformance. Use when implementation reveals an accepted clause was written too generally and needs a scoped reading, not a reversal. The parent gains **no back-pointer** (it is immutable) and **no status change** — discoverability comes from the child's `Refines:` field plus the child's ADR-index row.

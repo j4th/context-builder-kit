@@ -170,7 +170,7 @@ Workflow-level anti-patterns are inline here; domain-specific anti-patterns (tes
 | Rule | Use when | One-liner |
 |---|---|---|
 | [`testing.md`](testing.md) | Writing tests | Three regimes; test-name-quotable-from-acceptance-criterion; integration cadence |
-| [`pr-review.md`](pr-review.md) | Triaging review findings | Four-class rubric; dispatch roster; adversarial-verify option |
+| [`pr-review.md`](pr-review.md) | Triaging review findings | The two-skill floor and its `## Review gate` record; the bounded sweep that supplements; four-class rubric; dispatch roster |
 | [`simplification.md`](simplification.md) | Running `/simplify` | Behavior-preserving auto-apply; same four-class triage; non-skippable |
 | [`cbk-conventions.md`](cbk-conventions.md) | Working with cascade artifacts | Layout, branch names, PR markers, [skip ci] discipline, mutation discipline |
 | [`knowledge-backend.md`](knowledge-backend.md) | Reading/writing the knowledge backend | HITL announcement discipline; write tiering |

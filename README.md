@@ -17,7 +17,7 @@ The kit is the operational surface of an AI-assisted development cascade: a sequ
        ↓
    rough-in       →   ready-to-implement sub-sub-issues   (each with plan-mode prompt)
        ↓
-   /finish <N>    →   draft PR                            (code, tests, simplify, review-toolkit triage)
+   /finish <N>    →   draft PR                            (code, tests, the review floor + bounded sweep, triage)
 ```
 
 The cascade is **a funnel, not a waterfall**: framing and rough-in run **one workstream / one milestone at a time, just-in-time**. Frame the next thing, build it, then frame the thing after — that's how each phase gets to learn from the previous.
@@ -279,7 +279,7 @@ Closes [TUI-42]. Conventional Commits title.
 
 The user then reviews the draft and flips it to ready when satisfied — that triggers any GitHub Action auto-review (e.g., `claude-review.yml`) and the merge is the user's call.
 
-**`/finish` does NOT**: modify the issue body; handle re-rough-in; bypass dependencies; skip simplify or review-toolkit; mark the PR ready; merge. When the spec is wrong or something is missing, `/finish` surfaces and aborts rather than improvising.
+**`/finish` does NOT**: modify the issue body; handle re-rough-in; bypass dependencies; skip either half of the review floor (`/simplify`, `pr-review-toolkit:review-pr` — both as skills, recorded in the `## Review gate` block); mark the PR ready; merge. When the spec is wrong or something is missing, `/finish` surfaces and aborts rather than improvising.
 
 ## What the kit ships
 
@@ -306,9 +306,12 @@ The user then reviews the draft and flips it to ready when satisfied — that tr
 │   ├── protect-immutable-adrs.sh      ← hard-deny: edits to existing ADRs
 │   ├── protect-lock-files.sh          ← hard-deny: hand edits to lock files
 │   ├── protect-main-branch.sh         ← hard-deny: git commit on main
+│   ├── require-repo-root-for-agents.sh ← hard-deny: Task/Agent/Workflow dispatch outside the repo root
 │   ├── guard-pr-state.sh              ← ask-gate: gh pr ready/merge/close/reopen
 │   ├── require-knowledge-backend-ok.sh ← ask-gate: knowledge-backend MCP writes
-│   └── format-on-edit.sh              ← exemplar (unregistered; stanza in settings.json)
+│   ├── detect-forked-agent-memory.sh  ← stop: a reviewer-memory tree outside the root blocks the hand-off
+│   ├── format-on-edit.sh              ← advisory exemplar (unregistered; stanza in settings.json)
+│   └── analyze-on-edit.sh             ← advisory exemplar (unregistered; stanza in settings.json)
 ├── rules/
 │   ├── cbk-conventions.md             ← project conventions — contract half (template; you fill this)
 │   ├── cbk-conventions-reference.md   ← its path-scoped reference half

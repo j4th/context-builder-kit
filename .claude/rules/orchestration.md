@@ -25,7 +25,7 @@ Tier by **role**, not by phase or file type:
 
 **Default is inherit (omit the model).** Pinning is the exception, taken only when the role obviously fits a different tier. Never pin *above* the session model. A mid-tier finder feeding a workhorse-tier verifier beats an all-workhorse fan-out on cost with negligible quality loss — the verify stage is what makes the cheap finder safe. Anthropic's published multi-agent result is the canonical precedent for that shape: a strong lead agent over cheaper workers, not a uniform-strong fan-out ([multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system)).
 
-The kit ships two worked exemplars of the ladder: `.claude/agents/Explore.md` (search pinned to the mechanical tier; promote per-invocation for a genuinely hard scan) and `.claude/workflows/review-sweep.js` (mid-tier find stage → workhorse verify stage; triage stays in the main thread, because judgment belongs to the session model).
+The kit ships two worked exemplars of the ladder: `.claude/agents/Explore.md` (search pinned to the mechanical tier; promote per-invocation for a genuinely hard scan) and `.claude/workflows/review-sweep.js` (roster read at runtime → mid-tier find stage → dedup and a declared bound → verify stage at the session model, effort high; the run logs its planned agent count first and returns its own record; triage stays in the main thread, because judgment belongs to the session model).
 
 ## The effort axis (co-equal dial)
 
@@ -54,6 +54,7 @@ Effort is settable per agent definition (`effort:` frontmatter) and per workflow
 
 ## Fan-out discipline
 
+- **Bound the work, not the concurrency.** The cap below is about how many agents run at once; a *work* bound — how many deduplicated findings a review sweep carries into its verify stage, how many items a fan-out may act on — is a design decision every fan-out declares before it dispatches, logs as a planned count, and reports overflow from, never silently (`pr-review.md` § Fan-outs are bounded: the sweep's 3-per-dimension / 8-verified defaults). Naming the runtime's concurrency cap as a reason to skip a work bound is the mis-sizing this bullet exists to prevent.
 - **Let the runtime's cap govern — don't author a lower one.** Size the fan-out to the work, bounded by the harness's authored-size guideline, and let the runtime queue the excess. If throttling appears (agents dying near-instantly with zero tokens, or schema-bound agents returning without structured output), throttle to small waves — and **record the observation dated, with its failure signature and a re-check trigger**, never as a standing cap. A cap written as a standing rule outlives its evidence (`cbk-conventions.md`, dated-empirical-rails).
 - **Read contractual limits off the live tool description** (concurrency cap, lifetime agent cap, per-call item cap) rather than trusting a rules-file snapshot.
 - **Keep the retry pass regardless of concurrency.** Agents resolve null for reasons unrelated to throttling — filter, re-run the gaps, and log what was dropped.

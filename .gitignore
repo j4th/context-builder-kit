@@ -4,5 +4,7 @@ reference/
 # ships the memory mechanism empty, so kit-session calibration must not ride
 # along when a target project copies .claude/. Target projects default the
 # other way — commit the directory — per pr-review.md § Reviewer precedent
-# memory.
+# memory: when your Surface inventory row says `project`, DELETE this line
+# (scaffold's rule-file disposition pass prompts the choice; nothing flips it
+# for you).
 .claude/agent-memory/

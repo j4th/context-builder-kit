@@ -23,6 +23,7 @@ When generating manual instructions in the bootstrap checklist's section 2, use 
 ### Repository administration
 
 - **Branch protection rules**: Visit `<repo URL>/settings/branches` → "Add branch protection rule" → pattern `main` → enable "Require a pull request before merging" and "Require status checks to pass before merging". For team profiles, also enable "Require approvals" with at least 1 reviewer. Expected outcome: direct pushes to main are rejected.
+- **Reviewer agent-memory**: decided in the bootstrap checklist § Rule-file disposition (`project` = committed, `local` = never committed) and recorded in `cbk-conventions.md` § Surface inventory; with `project`, delete the kit's `.claude/agent-memory/` line from `.gitignore`.
 - **Repository secrets**: Visit `<repo URL>/settings/secrets/actions` → "New repository secret" for any deployment tokens, API keys, or credentials. Scaffold never handles secret values directly.
 - **Repository visibility changes**: visibility set at create time. Changing later is at `<repo URL>/settings` → "Danger Zone". Scaffold never changes visibility after creation.
 - **Team member invitations**: Visit `<repo URL>/settings/access` → "Invite a collaborator". Or for org repos, manage via the org's team settings.
