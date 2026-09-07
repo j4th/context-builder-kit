@@ -320,7 +320,6 @@ Step 7 does NOT have a HITL gate. The summary is rough-in's final output, not a 
 
 Step 7 runs in every rigor mode. Light mode can trim the subsection prose (shorter handoff, one-line commits) but cannot skip any of the four sections. The loose threads section is especially load-bearing for cascade calibration and light mode must not collapse it.
 
-
 ## The capstone pattern
 
 Most milestones end with a **capstone issue** — the last sub-sub-issue that integrates the prior work and proves the milestone's capability. It's structurally different from the earlier issues:
@@ -331,7 +330,6 @@ Most milestones end with a **capstone issue** — the last sub-sub-issue that in
 The capstone is often the last chance to catch "we built the pieces but they don't compose" before the next milestone inherits the assumption that the pieces work. Rough-in should explicitly identify the capstone during issue plan drafting and note it in the plan.
 
 **Not every milestone has a capstone.** Spike milestones (research-only) don't have one — their "capstone" is a document or decision. Infrastructure milestones often don't either — the done signal is "the workbench works" which is verified by the next milestone's first real run. Vertical slice milestones almost always have one because the demonstrable capability needs proving.
-
 
 ## HITL gates summary
 
@@ -364,4 +362,3 @@ Detailed failure mode analysis with recovery patterns lives in `references/failu
 **Solo**: rough-in is typically run by the same person who framed the milestone. HITL gates are lighter because the context is fresh. Standard or light mode is the usual pick.
 
 **Team**: rough-in produces specs that other team members (or Claude Code, which is a kind of team member) will execute. Acceptance criteria and plan-mode prompts have to be self-contained in a way solo runs can sometimes get away with. Full mode is the usual pick, and the final pre-commit gate gets extra scrutiny because the specs are contracts with execution.
-

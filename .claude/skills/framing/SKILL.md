@@ -16,7 +16,7 @@ Framing is one-project-at-a-time, just-in-time, **by design**. The research is u
 
 The artifact is defined by **`references/contract.md`** — what `frame-NN.md` must contain and the tests every milestone must pass — together with the two templates. That is the whole read for drafting. The step-by-step procedure with its per-step gates (`references/procedure.md`) is on demand: full mode, or when a step is unclear.
 
-Why: on 2026-09-01 an A/B on a real workstream gave six drafters identical inputs, three reading the procedure and three reading the contract, at three model tiers. At the workhorse tier and at the top tier the contract-only drafts ranked first and second with no flagged false claims; the procedure-following drafts ranked third and fourth with three flags each and prescriptive rough issues. The mid tier ranked last either way. Procedure written for earlier models is prescriptive in ways that now cost quality (`.claude/rules/orchestration-reference.md` § Applied instances). Nothing was retired — it moved.
+Why: the 2026-09-01 A/B recorded in `references/contract.md`'s opening paragraph and, in full, in `.claude/rules/orchestration-reference.md` § Applied instances — procedure written for earlier models is prescriptive in ways that now cost quality. Nothing was retired — it moved.
 
 ## Cascade events, not project slots
 
@@ -50,7 +50,7 @@ What no mode skips: reading the inputs in full, at least one milestone with a de
 
 1. **Read** the inputs above, `references/contract.md`, `references/templates/frame-output-template.md` and `references/templates/milestone-template.md`.
 2. **Draft the whole frame** against the contract. Where a step would have stopped for a gate in a mode that has none, decide, proceed, and carry the question into the decision list the gate presents. Rough issues are intents; milestones are capabilities; pre-flight units go in the table; interface commitments are first-class; appetite is re-estimated where the project asks, never absorbed.
-3. **Verify before the gate.** One fresh-context verifier at the project's verify tier reads the draft and the sources, attacks every citation and every claim about the repo, runs the phase exit checklist mechanically, and returns defects with a verbatim quote each. Fix them. For a high-stakes frame, produce two or three contract-first drafts, judge them blind, and synthesize from the winner. Tiering is the project's `.claude/rules/orchestration.md`: drafters and verifiers at the workhorse tier, effort `high`, never a finder tier for anything that lands in the artifact.
+3. **Verify before the gate** — one fresh-context verifier at the project's verify tier, per `references/contract.md` § Before the gate; fix its defects before presenting.
 4. **Present** the frame with the decision list — the questions the draft would have asked — and the narrative arc ("After M1 you can X … by MN the project delivers Z"), and the structural tests stated plainly: each milestone's "show this to someone" moment, each rough issue an intent, rough-issue counts per milestone.
 
 Depth of research is a user signal: when the project is greenfield or entering new technical territory, propose a depth and let the user confirm; never silently scale it down, and never present partial work as complete. `references/research-phase.md` has the depth patterns and what framing does **not** research (MCP servers, plugins, stack, methodology, CI gates — all blueprint's, inherited as constraints).

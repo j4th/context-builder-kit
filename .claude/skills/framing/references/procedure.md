@@ -188,7 +188,6 @@ Surface the structural tests explicitly in the gate:
 - *"Each rough issue is phrased as an intent, not a prescription — they name *what* each sub-sub-issue should accomplish and leave the *how* to rough-in and plan mode. Anything in the list that feels like it's pre-deciding an implementation detail rough-in should decide?"*
 - *"Rough-issue counts per milestone: [list them]. Rough-in will typically produce 2-6 R-issues per milestone for Claude-Code-executed workflows, so framing's intent list landing in that neighborhood is a good sign. If any milestone has 8+ rough issues, the milestone might be too big — want me to escalate back to splitting?"*
 
-
 ## Backend-axis-aware behavior
 
 Framing's behavior differs along **two independent axes** set by scaffold: the planning backend (`github-issues` / `linear` / `in-repo-markdown`) and the knowledge backend (`notion` / `none`). The planning-axis differences live in `references/planning-backend-matrix.md`; the knowledge-axis contract lives in `.claude/rules/knowledge-backend.md`. Short version:
@@ -214,7 +213,6 @@ When framing surfaces a Pre-flight check / deferred meta-issue that's genuinely 
 
 Defaults to **SKIP**. Fires only for meta-issues marked as cross-project; never for normal milestone-blocking meta-issues. Per `.claude/rules/knowledge-backend.md` HITL discipline, announce the planned write before committing.
 
-
 ## HITL gates summary
 
 Framing has five HITL gates in **full mode**, three in **standard mode**, and one in **light mode**.
@@ -237,7 +235,6 @@ Framing has five HITL gates in **full mode**, three in **standard mode**, and on
 
 Each gate is an explicit "approve to proceed" moment. Iterate within a gate as many times as needed. The mode dial can be tuned mid-session.
 
-
 ## Failure modes to defend against
 
 - **Framing all workstreams at once** — most common temptation, especially when the user has a clean blueprint with many workstreams. Resist. Frame one, build, then frame the next.
@@ -256,4 +253,3 @@ Detailed failure mode analysis with recovery patterns lives in `references/failu
 **Solo**: framing is largely a working session with the user's future self. Interface commitments still matter (they're contracts with future framings) but the ceremony around them is lighter. CONTRIBUTING.md updates are typically deferred. Rigor mode often defaults to standard or light.
 
 **Team**: framing produces a contract that other team members will read. Interface Commitments are heavyweight — they say what other people can rely on. Methodology selection from blueprint is a team agreement that framing must respect. Rigor mode often defaults to full or standard.
-

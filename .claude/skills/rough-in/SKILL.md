@@ -16,10 +16,9 @@ Rough-in is one-milestone-at-a-time, just-in-time, **by design**. Framing alread
 
 The artifact is defined by **`references/contract.md`** — what one milestone's R-issue set must contain and the tests every spec must pass — together with the spec template and the executor's body parser. That is the whole read for drafting. The step-by-step procedure with its per-step gates (`references/procedure.md`) is on demand: full mode, or when a step is unclear.
 
-Why: on 2026-09-02 an A/B on a real milestone gave four drafters identical inputs at two model tiers, two reading the procedure and two reading the contract. Two of three blind workhorse-tier judges ranked a contract draft first and the procedure's workhorse-tier draft last. Every output in both arms carried the executor's headings and put no code in an Implementation section — the artifact contract held either way — and what separated the arms was noise the procedure invited: a re-quoted inheritance block inside the artifact, fabricated line counts from Step 5.5's template diff, one frame rule re-decided. The contract's own gaps (unnumbered R-level criteria, a foundation doc's open questions cited for the frame's) are closed in the contract. Recorded in `.claude/rules/orchestration-reference.md` § Applied instances. Nothing was retired — it moved.
+Why: the 2026-09-02 A/B recorded in `references/contract.md`'s opening paragraph and, in full, in `.claude/rules/orchestration-reference.md` § Applied instances — the artifact contract held in both arms, and what separated them was run material the procedure invited into the artifact. Nothing was retired — it moved.
 
 ## What rough-in reads and what it produces
-
 
 **Required inputs**:
 - `docs/cbk/problem_brief.md` — for no-gos and constraints still relevant to implementation
@@ -38,7 +37,6 @@ Why: on 2026-09-02 an A/B on a real milestone gave four drafters identical input
 - An update to `docs/cbk/README.md` chronological index noting that milestone M_n was roughed-in (append-only)
 
 ## Required pre-flight check: deferred meta-issues
-
 
 Before decomposing any milestone, rough-in **MUST** read the Pre-flight checks table from the latest frame-NN.md and verify any meta-issue with `Blocks: M_n start` is resolved (closed) or explicitly cleared by the user. If unresolved meta-issues block M_n, **rough-in stops and surfaces the gap** rather than proceeding.
 
@@ -68,7 +66,7 @@ What no mode skips: reading every required input in full, the deferred-meta-issu
 
 1. **Read** the inputs above, `references/contract.md`, `references/templates/rough-in-spec-template.md`, and the executor's body parser (`.claude/commands/finish.md`'s preconditions, or the project's equivalent) — the parser's heading list is what every spec must carry, and where the disk issue template differs the parser wins and the drift is recorded.
 2. **Draft the whole set** against the contract: the pre-flight result, the issue plan, the coverage map, every spec body, the commit-time text. Where a step would have stopped for a gate in a mode that has none, decide, proceed, and carry the question into the decision list. R-issues are review units, not work units; the frame's intents are inputs; criteria are numbered and traced; the artifact carries no run material.
-3. **Verify before the gate.** One fresh-context verifier at the project's verify tier reads the set and the sources, attacks every citation, every repo claim and every package-API claim, checks the coverage map against the bodies and every test tag against a numbered criterion, runs the phase exit checklist mechanically, and returns defects with a verbatim quote each. Fix them. For a high-stakes milestone, produce two or three contract-first drafts, judge them blind, and synthesize from the winner. Tiering is the project's `.claude/rules/orchestration.md`: drafters and verifiers at the workhorse tier, effort `high`, never a finder tier for anything that lands in an issue body.
+3. **Verify before the gate** — one fresh-context verifier at the project's verify tier, per `references/contract.md` § Before the gate; fix its defects before presenting.
 4. **Present** the set: the issue plan with its narrative arc ("R1 stands the harness up, R2 …, R4 is the capstone"), the milestone's capability, rough issues and acceptance signal quoted verbatim from the frame, the coverage map, each spec, and the decision list — the questions the draft would have asked.
 
 Depth of research is a user signal: when the milestone's rough issues enter territory no prior rough-in has exercised, propose a depth and let the user confirm; never silently scale it down, and never present partial work as complete. `references/research-phase.md` has the depth patterns, what rough-in does **not** research, and the grounding rules for existence claims.
@@ -100,7 +98,6 @@ Auto-checkable list that fires after the final gate, before declaring rough-in c
 
 ## Backend-axis-aware behavior
 
-
 Rough-in's behavior differs along **two independent axes** set by scaffold: the planning backend (`github-issues` / `linear` / `in-repo-markdown`) and the knowledge backend (`notion` / `none`). The planning-axis differences live in `references/planning-backend-matrix.md`; the knowledge-axis contract lives in `.claude/rules/knowledge-backend.md`.
 
 **Planning axis**:
@@ -118,7 +115,6 @@ Detailed per-axis behavior and edge cases live in `references/planning-backend-c
 - **`none`**: no Notion interactions at all.
 
 ## Handoff contract to finish
-
 
 When rough-in commits, the handoff to finish (Claude Code's native execution phase, not a chat skill) is:
 
