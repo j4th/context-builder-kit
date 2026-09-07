@@ -271,8 +271,6 @@ A `.gitignore` entry is **anchored by default** — `/build/`, `/.env`, `/target
 - **Harness transients are ignored by anchored path** — the agent's scratch and memory-local trees (`/.claude/agent-memory-local/`, the session scratchpad if it is ever placed in-tree), never by a bare name that would also hide a real directory.
 - **No shipped reviewer restates this.** The `cascade-rule-reviewer` names the section in scope; the rule lives here once.
 
-
-
 ## Methodology — choice space
 
 Blueprint picks a methodology from the register based on team shape, appetite, and quality bar. Common choices:
