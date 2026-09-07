@@ -74,7 +74,7 @@ The terms the contract half's § Fan-out discipline points at; all fetched 2026-
 
 ## Primary sources
 
-Verified 2026-09-05 by the harvest's research run; **re-fetch before re-citing** rather than trusting the summary.
+Verified 2026-09-05 by the harvest's research run; **re-fetch before re-citing** rather than trusting the summary. The contract half cites these pages by short name — the effort page, the models overview, the cost page (`optimizing-for-cost-and-intelligence`), the Opus 5 / Sonnet 5 / Fable 5.1 guides, sub-agents, workflows, costs, model-config, the model-and-effort blog — and each resolves to a row below.
 
 | Source | What it grounds |
 |---|---|
