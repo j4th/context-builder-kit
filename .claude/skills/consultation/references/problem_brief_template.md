@@ -24,6 +24,13 @@ re-asking:
   - **Notion scope** — `<root URL or "workspace">` (designated at consultation;
     scaffold may promote to project hub).
 
+If consultation ingested a frozen corpus on disk (frozen_corpus_ingestion.md),
+record the path and the citation convention so every later phase reads the
+same source:
+
+  - **Frozen corpus** — `<path>` (read in full; never edited; cite as
+    `<path>/<file> § <heading>`; defects go to `<path>/<slug>-errata.md`).
+
 Omit this section entirely if no pre-cascade content was ingested
 (greenfield-from-conversation).>
 
@@ -76,6 +83,21 @@ constraint.>
 <What exists today, what works, what's broken, what constrains the new work.
 See brownfield_addendum.md for structure. Note if a codebase analysis is
 needed — flag it for blueprint, do not run it here.>
+
+## 9. Handoff notes for later phases *(optional; one line per phase, addressed by name)*
+
+<Companion notes the later phases read before they start — what this brief
+cannot express in its own sections. Address each phase by name; omit a phase
+with nothing to say:
+
+- **scaffold:** <what to land and register — a frozen corpus path and its
+  enforcement set; a backend the operator already has; a repo that exists>
+- **blueprint:** <decisions the corpus or the operator already made, with the
+  `Promotes:` source; constraints on the stack the brief's sections imply>
+- **framing:** <milestones the operator named as fixed; a measurement the
+  first frame must plan for>
+- **rough-in:** <a test-side convention the operator already uses; a surface
+  that needs the measurement variant>>
 
 ---
 

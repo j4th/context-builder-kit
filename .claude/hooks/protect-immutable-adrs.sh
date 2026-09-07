@@ -9,6 +9,8 @@
 #   - creating a new ADR file (NNNN doesn't exist yet)
 #   - editing docs/adr/template.md
 #   - editing docs/adr/README.md (the index)
+#   - editing docs/adr/corrections.md (the append-only claim register — where a wrong
+#     citation, figure, attribution or formula in an accepted ADR is corrected)
 # Blocked:
 #   - any Edit/Write/MultiEdit on docs/adr/NNNN-*.md when that file already exists
 #
@@ -62,8 +64,9 @@ this one. Add 'Supersedes: ADR-NNNN' to the new ADR's frontmatter and update
 the old one's status only via that new ADR's existence (do not edit the old
 file's status field directly — the README index expresses supersession).
 
-If you genuinely need to fix a typo, do it via a separate, explicit commit
-that the user has reviewed in advance.
+A wrong citation, figure, attribution or formula is not a decision revision:
+record it as an entry in docs/adr/corrections.md (append-only) and leave this
+file as written.
 EOF
       exit 2
     fi
@@ -72,7 +75,8 @@ EOF
 BLOCKED: ADRs are immutable (per ADR-0000).
 File: $rel
 
-Write a new ADR that supersedes this one instead of editing it.
+Write a new ADR that supersedes this one instead of editing it; a wrong claim
+(citation, figure, attribution, formula) goes to docs/adr/corrections.md.
 EOF
     exit 2
   fi

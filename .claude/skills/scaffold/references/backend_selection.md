@@ -121,7 +121,7 @@ If the operator picks `notion`, the immediate follow-up runs **brownfield Notion
 - Surface findings to operator
 - Offer three options: (a) create new row in Projects DB, (b) designate existing page, (c) skip Notion provisioning
 
-If consultation already designated a Notion scope (Mode A/B from `consultation/references/notion_ingestion.md`), scaffold **reuses that designation** rather than re-asking. The scope is in `problem_brief.md`'s `## Pre-cascade sources` section; read it before running detection.
+If consultation already designated a Notion scope (Mode A/B from `consultation/references/notion_ingestion.md`), scaffold **reuses that designation** rather than re-asking. The scope is in `problem_brief.md`'s `## Pre-cascade sources` section; read it before running detection. The same section's `Frozen corpus` line, when present, is inherited the same way: the corpus path is recorded in `scaffold.md` and the conventions' Surface inventory (`Upstream / pre-cascade docs`), and the brownfield audit lands the files and registers the enforcement set.
 
 If the Notion MCP isn't connected, surface honestly:
 

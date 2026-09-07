@@ -236,6 +236,7 @@ A snapshot pins one specific output. The contract is usually a property ("the as
 | End-to-end integration | Tests-as-shape-of-done | Wire pipeline with mocked boundaries → assert telemetry | Mocked external services, assert turn/transaction telemetry |
 | Hardware-on-real-device rehearsal | Tests-as-shape-of-done | Tagged for target-only execution | Mock-backed in CI; real-hardware-backed manually |
 | High-frequency loop tick | Telemetry assertions only | n/a | Assert telemetry event shape; never per-tick state |
+| A fact stated on more than one surface (an index and its source, a template and its parser, a bundled copy) | **Drift guard** — a fourth shape: the test's subject is the consistency itself | Written when the second copy lands | Diff the copies or parse both and compare; `cbk-conventions.md` § Multi-surface facts names the sets the kit already guards |
 
 ## Where the regimes meet
 

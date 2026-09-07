@@ -18,7 +18,7 @@ A single glanceable manifest of where every surface for this project actually li
 - **Code + cascade artifacts (the constant):** `<repo URL>`
 - **Planning backend (`<GitHub Issues | Linear | in-repo markdown>`):** `<workspace / initiative / team+key / project pointers, as applicable>`
 - **Knowledge backend (`<Notion | none>`):** `<hub URL + MCP server, if configured>`
-- **Upstream / pre-cascade docs:** `<path to any frozen reference material, or "none">`
+- **Upstream / pre-cascade docs:** `<path to any frozen reference material, or "none">` — a designated corpus follows the consultation skill's `references/frozen_corpus_ingestion.md` (read in full, never edited; its `<slug>-errata.md` companion amends)
 - **Problem brief / scaffold output:** `docs/cbk/problem_brief.md` · `docs/cbk/scaffold.md`
 - **Tooling conventions:** `<record any project-specific tool / MCP-selection conventions here — e.g. which code-intelligence or live-docs MCP to prefer over the built-ins, or the project's model/effort orchestration conventions for dispatched agents — or "defaults">`
 - **Reviewer agent-memory (`<project | local>`):** `<".claude/agent-memory/ — committed; the kit's .gitignore line deleted" | ".claude/agent-memory-local/ — never committed">` — settled at scaffold's rule-file disposition pass (`pr-review.md` § Reviewer precedent memory)
@@ -147,6 +147,17 @@ How to avoid:
 
 → *Moved to* `cbk-conventions-reference.md` § Verify-against-reality before a one-way door (optional practice) *(path-scoped; see § Rule loading and the instruction budget).*
 
+## Multi-surface facts
+
+Some facts are stated in more than one place by design — an ADR and its index rows, a rule and the reviewer that enforces it, a template and the executor that parses it, a repo artifact and its knowledge-backend companion. Stated once, the discipline is:
+
+- **Every restatement records where the fact's other statements live**, and an edit sweeps every recorded location in one commit — never "update the index later".
+- **Back-pointers are asymmetric.** The immutable source never points forward — an ADR gains no link to its refiners, its extenders, its corrections or its companion page; the companion points back. Discoverability is the companion's job plus the index row.
+- **A re-check trigger is reachable from the line that fires it** — a dated rail names what re-verifies it *at the rail*, not in a separate list.
+- **Closed sets are machine-maintained where the tree can** — the verification block diffs the copies it can reach (the bundled executor templates, the reviewers' `## Writing memory`, the adr-starters, the price table); a set the tree cannot diff carries its other locations in prose, at each copy.
+
+**The companion vocabulary** — an *immutable source* plus an *append-only companion* — has three instances: `docs/adr/NNNN-*.md` + `docs/adr/corrections.md` (claims that proved wrong); a frozen pre-cascade corpus + its `<slug>-errata.md` (consultation's `references/frozen_corpus_ingestion.md`); a repo artifact + its knowledge-backend companion page (`knowledge-backend.md` § When to write). The four rules apply to each. § ADR index sync below is the first instance of this discipline, and a drift-guard test whose subject is the consistency itself is the fourth test shape (`testing.md` § Quick reference).
+
 ## ADR index sync
 
 Every ADR addition (and every supersession) updates **multiple indexes** in lockstep:
@@ -156,7 +167,7 @@ Every ADR addition (and every supersession) updates **multiple indexes** in lock
 3. **`docs/ARCHITECTURE.md` § Configurability summary** (if the project uses a configurability-first principle)
 4. **`docs/cbk/blueprint.md` § Stack decisions** — also updated for post-blueprint ADRs (since blueprint.md is itself a cascade artifact)
 
-The `adr-new` skill (at `.claude/skills/adr-new/SKILL.md`) automates the cross-index sync. Manual ADR creation works but is error-prone (multiple indexes to keep in sync); use the skill.
+This list is the one home for the sync targets: `adr-new` reads it and states no count of its own; on drift the README index row is canonical and the other surfaces are corrected to it. The blueprint's § Stack decisions table is append-only and gains a one-line bullet only when the ADR changes a *stack* decision — it is a cascade artifact, not an index. The `adr-new` skill (at `.claude/skills/adr-new/SKILL.md`) automates the cross-index sync. Manual ADR creation works but is error-prone (multiple indexes to keep in sync); use the skill.
 
 ADR immutability should be enforced two ways:
 - **A PreToolUse hook** at `.claude/hooks/protect-immutable-adrs.sh` blocks Claude Code edits to existing ADR files
@@ -173,6 +184,8 @@ Both belong in any project that takes ADRs seriously; the kit's `adr-new` skill 
 | Artifact | Mutation rule | Supersession pattern | Rationale |
 |---|---|---|---|
 | `docs/adr/[0-9]{4}-*.md` | **Immutable** | New ADR with `Supersedes: ADR-NNNN` field; old ADR's status changes to "Superseded by ADR-MMMM" | ADR-0000 immutability discipline + hook enforcement + CI lint |
+| `docs/adr/corrections.md` | **Append-only**; dated entries never edited — a correction to a correction is a new entry; evidence annotated under the entry when its meaning goes stale | n/a | The claim companion to the immutable ADRs (§ Multi-surface facts); `protect-immutable-adrs.sh` leaves it editable by design |
+| A designated frozen pre-cascade corpus + `<slug>-errata.md` | Corpus **frozen** — read in full, never edited by any phase; the errata companion **append-only** and dated ("amends; never edits") | n/a — a superseded reading is a new errata entry | The reference material the cascade inherits verbatim (consultation's `references/frozen_corpus_ingestion.md`); scaffold registers the hook, CI job, `.gitattributes` and editor entries that keep it byte-stable |
 | `docs/cbk/blueprint.md` | **Append-only for new ADRs** (the Stack decisions table); otherwise immutable to preserve cascade history | Re-blueprint creates new file | Blueprint is a cascade event; mutation breaks the audit trail |
 | `docs/cbk/frame-NN.md` | **Append-only for `## Rough-in events` table**; otherwise immutable post-commit | Re-framing creates `frame-MM.md` with `Supersedes: frame-NN` field; old frame's status → "Superseded" | Frames are cascade events; rough-in events are the timeline log |
 | `docs/cbk/frame-MM.md` (additive increment) | **New file** (next sequential number); the prior frame is not mutated and stays `Active` | *No* supersession — an additive increment carries a `Builds on: frame-NN` header (not `Supersedes`); both frames stay `Active` and their open milestones coexist | Not every new framing replaces: an increment extends a workstream whose prior milestones are still valid and open, so the prior frame must not flip to `Superseded` (see the framing skill's `references/procedure.md` § Step 2 pattern D) |
@@ -190,9 +203,13 @@ Cascade events being append-only is structurally important: the cascade IS the a
 **ADR supersession has more than one grain.** The `docs/adr/*` row above shows whole-ADR supersession; two finer-grained relationships sit alongside it, both preserving the parent's immutability (neither edits the parent file):
 
 - **Refine** — `Refines: ADR-NNNN (Dn, …)` in the child's header narrows or clause-level-clarifies a specific decision `Dn` in the parent **without invalidating it**. The parent stays **Accepted**; both parent and child are consulted for conformance. Use when implementation reveals an accepted clause was written too generally and needs a scoped reading, not a reversal. The parent gains **no back-pointer** (it is immutable) and **no status change** — discoverability comes from the child's `Refines:` field plus the child's ADR-index row.
-- **Clause-scoped supersede** — `Supersedes: ADR-NNNN Dn` reverses only decision `Dn` of the parent while the parent's other clauses stand. The parent stays **Accepted** (it is not wholly superseded); the child's index row names the specific clause it replaces.
+- **Clause-scoped supersede** — `Supersedes: ADR-NNNN Dn` reverses only decision `Dn` of the parent while the parent's other clauses stand. The parent stays **Accepted** (it is not wholly superseded); the child's index row names the specific clause it replaces, and the parent's index row is annotated (`Accepted · Dn superseded by ADR-MMMM`) while the parent file stays untouched.
+- **Extend** — `Extends: ADR-NNNN (Dn, …)` adds an obligation beside a parent clause that **stays satisfied as written**. The parent stays **Accepted** and is not narrowed; the child adds a check the parent alone would not raise. **The disambiguation test:** a child that *removes a permitted reading* of the parent clause Refines; a child that *adds an obligation beside a clause that stays satisfied* Extends. Both are asymmetric — the parent gains no back-pointer; the child's header field and its index row carry the relation, and the status cell carries grain and parent inline (`Accepted · Extends ADR-0003 (D1)`).
+- **Promote** — `Promotes: <corpus path> § <heading>` records a decision lifted from a frozen pre-cascade corpus (the consultation skill's `references/frozen_corpus_ingestion.md`); the corpus is the provenance, the ADR the binding form.
 
-**Reviewers that check ADR conformance must follow the `Refines:` chain.** When an ADR intersecting a diff names a refiner (or a clause-scoped superseder), load that child too and apply its scoped clauses — a parent read in isolation yields the pre-narrowing reading. The kit's `adr-conformance-reviewer` agent (see `.claude/rules/pr-review.md` § Project-local agents to dispatch alongside) is where this chain-following lives.
+A wrong **claim** inside an accepted ADR — a citation, a figure, an attribution, a formula — is none of these grains: it goes to `docs/adr/corrections.md`, the append-only register, and the ADR stays as written.
+
+**Reviewers that check ADR conformance must follow the `Refines:` and `Extends:` chains.** When an ADR intersecting a diff names a refiner (or a clause-scoped superseder), load that child too and apply its scoped clauses — a parent read in isolation yields the pre-narrowing reading. An extender is the asymmetric case: the parent passes unchanged while the child can fail, so a diff clean against the parent is not clean until every extender is checked. A reviewer consults `docs/adr/corrections.md` before flagging a claim, and cites an entry rather than restating it. The kit's `adr-conformance-reviewer` agent (see `.claude/rules/pr-review.md` § Project-local agents to dispatch alongside) is where this chain-following lives.
 
 ## HITL gate load-bearing heuristics
 

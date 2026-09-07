@@ -13,7 +13,7 @@ The `/adr-new` Claude Code skill (`.claude/skills/adr-new/SKILL.md`) automates t
 3. Add cross-references in `Related` if the new ADR connects to existing ones.
 4. Add a row to the Index in this README and to the Decisions log in `docs/ARCHITECTURE.md`. If the project tracks stack decisions in `docs/cbk/blueprint.md`, mirror there too.
 5. Open a PR. ADR text changes through normal review.
-6. After merge, an accepted ADR is **immutable** — its content is not edited again. Updates happen via new ADRs that supersede the old (Status: `Superseded by ADR-NNNN`). The PreToolUse hook in `.claude/hooks/protect-immutable-adrs.sh` enforces this at the Claude Code tool level; the `.github/workflows/adr-immutability-check.yml` CI workflow enforces it at the raw-git level.
+6. After merge, an accepted ADR is **immutable** — its content is not edited again. Updates happen via new ADRs that supersede the old (Status: `Superseded by ADR-NNNN`). The PreToolUse hook in `.claude/hooks/protect-immutable-adrs.sh` enforces this at the Claude Code tool level; the `.github/workflows/adr-immutability-check.yml` CI workflow enforces it at the raw-git level. A **claim** inside an accepted ADR that proves wrong — a citation, a figure, an attribution, a formula — is not a decision revision: record it in [`corrections.md`](corrections.md) (append-only) and leave the ADR as written.
 
 ## Status legend
 
@@ -23,6 +23,8 @@ The `/adr-new` Claude Code skill (`.claude/skills/adr-new/SKILL.md`) automates t
 | `Accepted` | Active and binding |
 | `Deprecated` | No longer recommended, but still in effect; new code should not assume it |
 | `Superseded by ADR-NNNN` | Replaced by a newer decision |
+
+The status cell carries the relation grain and the parent inline — `Accepted · Refines ADR-0007 (D2)`, `Accepted · Extends ADR-0003 (D1)`, `Accepted · D3 superseded by ADR-0012` — so a clause-scoped supersession annotates the parent's row while the parent file stays untouched.
 
 ## Numbering convention
 
@@ -37,3 +39,7 @@ The `/adr-new` Claude Code skill (`.claude/skills/adr-new/SKILL.md`) automates t
 | # | Title | Status |
 |---|---|---|
 | [0000](0000-record-architecture-decisions.md) | Record architecture decisions | Accepted |
+
+## Corrections
+
+Claims that proved wrong after acceptance live in [`corrections.md`](corrections.md) — the append-only companion, four genres: wrong when written, right then stale, orphaned attribution, defective formula. A reviewer consults it before flagging; a decision that needs revising still takes a new ADR.

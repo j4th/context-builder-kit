@@ -447,8 +447,16 @@ absent grep -rn "initiative\.md" .claude/ README.md
 grep -q "^## Rough-in events" .claude/skills/framing/references/templates/frame-output-template.md
 grep -q "^## Pre-flight checks" .claude/skills/framing/references/templates/frame-output-template.md
 grep -q "^## Assumptions" .claude/skills/rough-in/references/templates/rough-in-spec-template.md
-# Deferred pair (known red until #37 lands): adr-new cites `docs/ARCHITECTURE.md § Configurability summary`
-# and `§ Open questions`, which the architecture template does not emit. Do not add the pin before #37.
+# Resolved pair (#37): adr-new no longer names index surfaces of its own — the conventions' § ADR index sync is the
+# one home for the sync targets — so the two sections the architecture template does not emit are not cited there.
+absent grep -n "Configurability summar[y]\|§ Open question[s]" .claude/skills/adr-new/SKILL.md
+# Decision records (P4): the Extends grain and the relation slots on every surface that reads them; the corrections
+# register in both homes (the adr-starters diff below keeps them identical), named by the hook and the README;
+# Multi-surface facts stated once; the frozen-corpus reference routed from consultation's SKILL.md.
+grep -q '^## Multi-surface facts' .claude/rules/cbk-conventions.md || { echo "cbk-conventions.md lacks § Multi-surface facts"; exit 1; }
+for f in .claude/rules/cbk-conventions.md .claude/skills/adr-new/SKILL.md .claude/agents/adr-conformance-reviewer.md .claude/skills/scaffold/references/adr-starters/template.md; do grep -q 'Extends:' "$f" || { echo "$f does not name the Extends: grain"; exit 1; }; done
+for f in .claude/hooks/protect-immutable-adrs.sh .claude/skills/scaffold/references/adr-starters/README.md; do grep -q 'corrections.md' "$f" || { echo "$f does not name docs/adr/corrections.md"; exit 1; }; done
+{ [ -f .claude/skills/consultation/references/frozen_corpus_ingestion.md ] && grep -q 'frozen_corpus_ingestion.md' .claude/skills/consultation/SKILL.md; } || { echo "frozen_corpus_ingestion.md is missing or unrouted from consultation/SKILL.md"; exit 1; }
 
 # Bundled starters stay byte-identical to their originals (the kit's root docs/adr/ is the source of
 # truth) — kit tree only: a target project fills ADR-0000's header and adds ADRs, so its docs/adr

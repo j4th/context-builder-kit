@@ -4,6 +4,10 @@
 - **Date:** YYYY-MM-DD
 - **Deciders:** <names or roles>
 - **Related:** ADR-NNNN, ADR-NNNN  *(optional; remove the line if none)*
+- **Supersedes:** ADR-NNNN  *(replaces the parent's decision; `ADR-NNNN Dn` replaces one clause and the parent stays Accepted — remove if none)*
+- **Refines:** ADR-NNNN (Dn, …)  *(narrows a parent clause to a scoped reading — removes a permitted reading; the parent stays Accepted — remove if none)*
+- **Extends:** ADR-NNNN (Dn, …)  *(adds an obligation beside a parent clause that stays satisfied as written; the parent is not narrowed — remove if none)*
+- **Promotes:** <corpus path> § <heading>  *(a decision lifted from a frozen pre-cascade corpus; the corpus is the provenance — remove if none)*
 
 ## Context
 

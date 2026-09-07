@@ -27,7 +27,7 @@ We adopt the **ADR pattern** (option 2). Decisions live as individual numbered f
 
 `docs/ARCHITECTURE.md` becomes the orientation document — system overview, component map, key flows, cross-cutting concerns, and an index of accepted ADRs — rather than the decisions log itself.
 
-ADRs are **immutable once accepted**. To revise a decision, write a new ADR that supersedes the old one (the old one's status updates to `Superseded by ADR-NNNN` but its content stays as written). This preserves the history of "we tried this, then we tried that, here's why we ended up here" rather than papering over it.
+ADRs are **immutable once accepted**. To revise a decision, write a new ADR that supersedes the old one (the old one's status updates to `Superseded by ADR-NNNN` but its content stays as written). This preserves the history of "we tried this, then we tried that, here's why we ended up here" rather than papering over it. Revising a *decision* is the only thing that takes a new ADR; a *claim* inside an accepted ADR that proves wrong — a citation, a figure, an attribution, a formula — is corrected in `corrections.md` (append-only) and the ADR stays as written.
 
 Reference vocabulary throughout the codebase is `ADR-NNNN` (four digits, matching the file prefix).
 
