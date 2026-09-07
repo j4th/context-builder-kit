@@ -9,9 +9,9 @@ attributed to the model that actually answered, not to the label the script aske
 mixes models is priced per model; one unpriced model leaves that agent's row unpriced, and the row is named
 and excluded from the total — never folded in as zero.
 
-PRICE is list price per MTok as of 2026-09-05 (platform.claude.com/docs/en/about-claude/models/overview
-§ Compare models, Pricing row: Fable 5.1 $10/$50, Opus 5 $5/$25, Sonnet 5 $2/$10, Haiku 4.5 $1/$5), with
-cache writes at 1.25x input (5-minute TTL) and cache reads at 0.1x input. Every cache write is priced at the
+PRICE below is list price per MTok as of 2026-09-05 (platform.claude.com/docs/en/about-claude/models/overview
+§ Compare models, Pricing row — quoted in .claude/rules/orchestration-reference.md § Generation notes — the
+sources, which the kit's verification block diffs against PRICE), with cache writes at 1.25x input (5-minute TTL) and cache reads at 0.1x input. Every cache write is priced at the
 5-minute rate — the per-TTL breakdown inside `cache_creation` is not read. A 1-hour cache TTL prices writes
 at 2x; because the cache-write share differs by tier, that widens a write-heavy tier's ratio rather than
 cancelling out (on one measured run, 2026-09-01, it moved a pooled top-tier:workhorse ratio from 3.2x to
