@@ -2,7 +2,8 @@
 # .claude/rules/cbk-conventions-reference.md § Dependency settle-window. Copy to
 # .github/dependabot.yml in a target project and fill the ecosystem blocks; the
 # scaffold starter (.claude/skills/scaffold/references/github-starter-templates.md)
-# carries the same body with its reasons.
+# carries the github-actions entry below with its reasons, plus the stack-ecosystem
+# stub a target project needs; the two files are not mirrors — this one is the kit's own.
 #
 # Three invariants:
 # 1. `cooldown` gates VERSION updates only — never security updates (platform
