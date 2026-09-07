@@ -76,7 +76,7 @@ When research asserts a codebase fact into a framing artifact — "helper X alre
 
 ## The verdict-first committed corpus
 
-Research that a phase inherits is committed **verdict-first**: each finding carries one of three verdicts — **verified** (reproduced or read at the primary source), **refuted** (with the consequence that refutes it, not a counter-claim), or **unverifiable** (kept and labelled, never dropped — an unverifiable claim silently removed reappears as a confident one). Verification targets the *specifics* a downstream decision rests on (a version, a limit, a signature), not the summary. The corpus states its counts as **usable versus raw** ("14 usable of 22 raw"), carries a **gaps block** (what was looked for and not found) and an **attempted-URL log** (what was fetched, what failed), and ranks its checks: **reproduction** is the strongest, then the **interface** (a signature, a schema, a test) over prose. An interface beats a paragraph; a paragraph beats memory.
+The rough-in skill's `references/research-phase.md` § The verdict-first committed corpus carries the full statement — three verdicts with unverifiable kept and labelled, usable-versus-raw counts, the gaps block, the attempted-URL log, reproduction over interface over prose; the discipline is identical at both phases and is not restated here.
 
 ## What framing does NOT research
 
