@@ -90,7 +90,7 @@ Failure modes are presented in rough order of frequency — the most common ones
 
 **Why it's a failure mode**: the cascade-event model is **append-only**. Re-rough-in creates new sub-sub-issues with higher R-numbers and supersedes the prior ones via close + label; it never overwrites. Overwriting destroys the historical record of what rough-in believed at the prior date, makes it impossible to compare prior and current specs side-by-side, and breaks the README.md index entries that point at the original sub-sub-issues.
 
-**Defense**: `references/procedure.md` § Failure modes names this as a failure mode and `references/planning-backend-commit.md` § Re-rough-in detection covers the supersede flow with the partial-supersede rule (only open or in-progress sub-sub-issues get superseded; already-merged ones stay completed). Step 2's re-rough-in detection in SKILL.md treats re-rough-in as a deliberate cascade event, not as an edit operation.
+**Defense**: `references/procedure.md` § Failure modes names this as a failure mode and `references/planning-backend-commit.md` § Re-rough-in detection covers the supersede flow with the partial-supersede rule (only open or in-progress sub-sub-issues get superseded; already-merged ones stay completed). Step 2's re-rough-in detection in `references/procedure.md` treats re-rough-in as a deliberate cascade event, not as an edit operation.
 
 **Recovery**: if rough-in catches itself trying to edit existing sub-sub-issues during a re-rough-in run, stop, present the planned edits as a re-rough-in proposal instead, run the supersede flow (close prior open R-issues with `superseded` label, create new R-issues with continuing R-numbers), and update the README.md index with the re-rough-in event.
 

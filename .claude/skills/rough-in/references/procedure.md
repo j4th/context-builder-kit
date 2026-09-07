@@ -216,7 +216,7 @@ The user's options at this gate:
 
 Step 5.5's commit is **its own atomic transition**, not bundled with Step 6's planning-backend commit. The provisioning and the sub-sub-issue creation are logically independent:
 
-- The slash command file doesn't depend on sub-sub-issues existing
+- The executor pair doesn't depend on sub-sub-issues existing
 - The sub-sub-issues don't depend on the executor pair existing
 
 Running them in separate transitions is cleaner than bundling: if the pair's commit fails or hangs, rough-in surfaces the Step 5.5 failure and asks the user how to proceed. The user can retry the pair's commit, skip it and proceed to Step 6 anyway (with a note that the first `/finish` invocation will need the file committed by hand), or abort the whole rough-in run. Step 6 can still complete successfully even if Step 5.5 fails, though in that case rough-in's final output will flag the missing slash command.
@@ -225,7 +225,7 @@ Running them in separate transitions is cleaner than bundling: if the pair's com
 
 ### Planning-axis-aware behavior
 
-**`github-issues` planning**: as described above. The slash command file is committed to the repo via GitHub MCP, same pattern as the cascade issue templates scaffold commits during its Stage 2.5.
+**`github-issues` planning**: as described above. The executor pair is committed to the repo via GitHub MCP, same pattern as the cascade issue templates scaffold commits during its Stage 2.5.
 
 **`linear` planning**: the slash command still lives in the GitHub repo (code is in GitHub even when planning is in Linear), so the step runs identically to `github-issues`. The `/finish` command's behavior may differ slightly when planning = `linear` — specifically, step 1 of the slash command would read the Linear Issue rather than the GitHub Issue — but that's a concern for the bundled template's content, not for Step 5.5's provisioning logic.
 
@@ -337,7 +337,7 @@ The capstone is often the last chance to catch "we built the pieces but they don
 - **Standard mode — three gates** (`SKILL.md` § Three rigor modes): (1) inheritance + pre-flight; (2) the verified set — issue plan, coverage map and specs together, with the decision list; (3) the final pre-commit review, which carries Step 5.5's provisioning state — on a cold start or drift, Step 5.5's own gate fires inside gate 3, never collapsed.
 - **Light mode — one gate**: the combined up-front confirmation; the verified set is then presented with its decision list and committed on approval, and Step 5.5's cold-start or drift gate still fires when it fires.
 
-The deferred meta-issues pre-flight check and the final pre-commit gate run in every mode. **Step 5.5's provisioning gate also cannot collapse** when it fires (cold-start case), because the one-way-door property of committing a slash command file future Claude Code sessions will invoke is too strong. In the already-provisioned case, Step 5.5 is a silent no-op with no gate.
+The deferred meta-issues pre-flight check and the final pre-commit gate run in every mode. **Step 5.5's provisioning gate also cannot collapse** when it fires (cold-start case), because the one-way-door property of committing the executor pair future Claude Code sessions will invoke is too strong. In the already-provisioned case, Step 5.5 is a silent no-op with no gate.
 
 ## Failure modes to defend against
 

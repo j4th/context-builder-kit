@@ -11,7 +11,8 @@ and excluded from the total — never folded in as zero.
 
 PRICE is list price per MTok as of 2026-09-05 (platform.claude.com/docs/en/about-claude/models/overview
 § Compare models, Pricing row: Fable 5.1 $10/$50, Opus 5 $5/$25, Sonnet 5 $2/$10, Haiku 4.5 $1/$5), with
-cache writes at 1.25x input (5-minute TTL) and cache reads at 0.1x input. A 1-hour cache TTL prices writes
+cache writes at 1.25x input (5-minute TTL) and cache reads at 0.1x input. Every cache write is priced at the
+5-minute rate — the per-TTL breakdown inside `cache_creation` is not read. A 1-hour cache TTL prices writes
 at 2x; because the cache-write share differs by tier, that widens a write-heavy tier's ratio rather than
 cancelling out (on one measured run, 2026-09-01, it moved a pooled top-tier:workhorse ratio from 3.2x to
 3.6x). Re-verify the table against the models page before quoting absolute dollars.
@@ -104,7 +105,7 @@ def main(argv):
     if not rows:
         print(f'no agent-*.jsonl under {d}')
         return 1
-    cols = ['label', 'model', 'turns', 'input', 'cache_write', 'cache_read', 'output', 'cost_usd', 'minutes']
+    cols = ['agent', 'label', 'model', 'turns', 'input', 'cache_write', 'cache_read', 'output', 'cost_usd', 'minutes']
     print('\t'.join(cols))
     for r in rows:
         print('\t'.join(f'{r[c]:.2f}' if isinstance(r[c], float) else str(r[c]) for c in cols))

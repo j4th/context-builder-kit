@@ -40,7 +40,7 @@ const judgeOk = (opts) => {
 //    arm isolation instruction, ranks and flags computed.
 {
   const { result, logs, calls } = await run(base, { armResult: armOk, judgeResult: judgeOk });
-  check(/planned agents: 2 executors \+ 4 judges = 6/.test(logs[0] ?? ""), `planned count is the first log line (got: ${logs[0]})`);
+  check(/planned agents: 2 executors \+ 4 judges \+ up to 4 judge retries = at most 10/.test(logs[0] ?? ""), `planned count is the first log line (got: ${logs[0]})`);
   check(calls.length === 6, `six agents dispatched (got ${calls.length})`);
   const exec = calls.filter((c) => c.opts.phase === "Execute");
   check(exec.every((c) => c.opts.isolation === "worktree"), "every executor runs in its own worktree");
@@ -51,7 +51,7 @@ const judgeOk = (opts) => {
   check(calls.filter((c) => c.opts.phase === "Judge").every((c) => /\b[PQ]: worktree/.test(c.prompt) && !/\b[AB]: worktree/.test(c.prompt)), "judges are told the arms by anonymised id, never by arm letter");
   check(result.ranks.P.join(",") === "1,2,1,2" && result.ranks.Q.join(",") === "2,1,2,1", `ranks follow each judge's ranking (got ${JSON.stringify(result.ranks)})`);
   check(result.flags.P === 2 && result.flags.Q === 0, `flags summed per arm (got ${JSON.stringify(result.flags)})`);
-  check(result.plannedAgents === 6, "plannedAgents returned");
+  check(result.plannedAgents === 10, "plannedAgents returned (2 executors + 4 judges + 4 retries)");
 }
 
 // 2. Odd panel refused before any dispatch.
@@ -69,11 +69,58 @@ const judgeOk = (opts) => {
   check(err && /split evenly/.test(err.message), `unbalanced orders throw the split-evenly message (got: ${err && err.message})`);
 }
 
-// 4. A missing arm is logged as dropped and described to the judges as MISSING.
+// 4. A missing arm is logged as dropped by name and the judge panel is not dispatched; the run returns its record.
 {
-  const { logs, calls } = await run(base, { armResult: (opts) => (opts.label.includes("Q") ? null : armOk(opts)), judgeResult: judgeOk });
-  check(logs.some((l) => /dropped arms/.test(l)), "a null arm result is logged as dropped");
-  check(calls.filter((c) => c.opts.phase === "Judge").every((c) => c.prompt.includes("MISSING")), "judges are told which arm is missing");
+  const { result, logs, calls } = await run(base, { armResult: (opts) => (opts.label.includes("Q") ? null : armOk(opts)), judgeResult: judgeOk });
+  check(logs.some((l) => /dropped arms .*Q: no result/.test(l)), `a null arm result is logged as dropped by anon id (got: ${logs.filter((l) => /dropped/.test(l)).join(" | ")})`);
+  check(calls.filter((c) => c.opts.phase === "Judge").length === 0, "no judge is dispatched for a one-arm run");
+  check(result.droppedArms.length === 1 && result.judges.length === 0 && result.panel === null, "the record names the dropped arm and carries no ranks");
+}
+
+// 4b. An arm result missing the fields the summary needs is malformed: dropped and named, never dereferenced.
+{
+  const { result, logs, calls } = await run(base, { armResult: (opts) => (opts.label.includes("Q") ? { branch: "b", worktree: "/w" } : armOk(opts)), judgeResult: judgeOk });
+  check(logs.some((l) => /dropped arms .*Q: malformed result/.test(l)), "a malformed arm result is logged as dropped with its keys");
+  check(calls.filter((c) => c.opts.phase === "Judge").length === 0 && result.droppedArms.length === 1, "no crash, no judging");
+}
+
+// 6. Unknown judge ids and missing arguments are refused before any dispatch.
+{
+  let err = null; let dispatched = 0;
+  const count = (opts) => { dispatched += 1; return armOk(opts); };
+  try { await run({ ...base, judges: [{ order: ["X", "Y"], effort: "high" }, { order: ["Y", "X"], effort: "high" }] }, { armResult: count, judgeResult: judgeOk }); } catch (e) { err = e; }
+  check(err && /permutation of the arm ids P, Q/.test(err.message) && dispatched === 0, `unknown judge ids throw before dispatch (got: ${err && err.message})`);
+  err = null;
+  try { await run({ ...base, issue: undefined }, { armResult: count, judgeResult: judgeOk }); } catch (e) { err = e; }
+  check(err && /args\.issue is required/.test(err.message) && dispatched === 0, `a missing argument throws before dispatch (got: ${err && err.message})`);
+  err = null;
+  try { await run({ ...base, arms: [arms[0], { ...arms[1], anon: "P" }] }, { armResult: count, judgeResult: judgeOk }); } catch (e) { err = e; }
+  check(err && /anon ids must be distinct/.test(err.message) && dispatched === 0, `duplicate anon ids throw before dispatch (got: ${err && err.message})`);
+}
+
+// 7. Defaults and overrides reach every call: opus/high by default; a caller's model and effort on the executors,
+//    the model on the judges, each judge keeping its own effort.
+{
+  const { calls } = await run(base, { armResult: armOk, judgeResult: judgeOk });
+  check(calls.every((c) => c.opts.model === "opus"), "the default model is opus on every call");
+  const ex = calls.filter((c) => c.opts.phase === "Execute");
+  check(ex.every((c) => c.opts.effort === "high") && ex.some((c) => c.opts.label === "arm:P@opus/high"), "executors default to high with the label naming both");
+  check(calls.some((c) => c.opts.label === "judge:3@xhigh") && calls.some((c) => c.opts.label === "judge:1@high"), "each judge carries its own effort in its label");
+  const o = await run({ ...base, model: "sonnet", effort: "medium" }, { armResult: armOk, judgeResult: judgeOk });
+  check(o.calls.every((c) => c.opts.model === "sonnet"), "an override model reaches every call");
+  check(o.calls.filter((c) => c.opts.phase === "Execute").every((c) => c.opts.effort === "medium"), "an override effort reaches the executors");
+  check(o.calls.some((c) => c.opts.label === "judge:3@xhigh" && c.opts.effort === "xhigh"), "a judge keeps its own effort under an executor override");
+  const q = o.calls.find((c) => c.opts.label.startsWith("judge:2@"));
+  check(q && q.prompt.indexOf("Q: worktree") < q.prompt.indexOf("P: worktree"), "judge 2 reads the arms in its own order (Q before P)");
+}
+
+// 8. A judge that returned nothing is retried once, labelled :retry; a retried verdict counts and nothing is dropped.
+{
+  let second = 0;
+  const { result, logs, calls } = await run(base, { armResult: armOk, judgeResult: (opts, prompt) => { if (/judge:2@high$/.test(opts.label)) { second += 1; return null; } return judgeOk(opts, prompt); } });
+  check(calls.some((c) => c.opts.label === "judge:2@high:retry"), "the failed judge is retried once with the :retry label");
+  check(logs.some((l) => /retrying once: judge 2/.test(l)), "the retry names the judge");
+  check(result.panel && result.panel.returned === 4 && !logs.some((l) => /dropped judges/.test(l)), `a retried verdict counts (got panel ${JSON.stringify(result.panel)})`);
 }
 
 // 5. A judge whose ranking omits an arm is dropped by name and its votes are not counted; the surviving
@@ -88,4 +135,4 @@ const judgeOk = (opts) => {
 
 check(meta.name === "finish-ab" && Array.isArray(meta.phases) && meta.phases.length === 2, "meta literal is well-formed");
 if (failures) { console.error(`finish-ab-shape: ${failures} failure(s)`); process.exit(1); }
-console.log("finish-ab-shape: 5 scenarios ok");
+console.log("finish-ab-shape: 10 scenarios ok");
