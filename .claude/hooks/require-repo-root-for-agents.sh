@@ -42,8 +42,8 @@ set -uo pipefail
 
 if ! command -v jq &>/dev/null; then
   echo "require-repo-root-for-agents: WARNING — jq not installed; the launch-directory guard is DISABLED." >&2
-  echo "                              Backstop: detect-forked-agent-memory.sh (Stop tier) still catches a" >&2
-  echo "                              stray .claude/agent-memory/ before the hand-off; git status shows it untracked." >&2
+  echo "                              Backstop: detect-forked-agent-memory.sh (Stop tier) needs no jq and still" >&2
+  echo "                              catches a stray agent-memory tree before the hand-off; git status shows it untracked." >&2
   exit 0
 fi
 

@@ -288,4 +288,35 @@ for (const roster of [null, { crossCutting: "not-an-array" }]) {
   n++;
 }
 
+// 20 — an all-slash hint normalizes to nothing and is unusable, never a match-everything.
+{
+  const { out } = await scenario("empty hint", {
+    args: { files: ["src/x.ts"] },
+    roster: { crossCutting: [], domain: [{ name: "slash-reviewer", pathHints: ["/"] }], note: "" },
+    findings: {}, verdict: () => null,
+  });
+  assert.ok(!out.reviewers.includes("slash-reviewer"), "a bare / must not match every file");
+  assert.ok(out.droppedCoverage.some((d) => d.includes("slash-reviewer")), "an empty hint is dropped coverage");
+  n++;
+}
+
+// 21 — a hint is a prefix: it does not claim a sibling path that merely contains it.
+{
+  const { out } = await scenario("anchored prefix", { args: { files: ["test/src/schema/x.ts"] }, roster: rosterOK, findings: {}, verdict: () => null });
+  assert.ok(!out.reviewers.includes("schema-reviewer"), "src/schema/ must not match test/src/schema/x.ts");
+  n++;
+}
+
+// 22 — a reviewer named in both roster halves is dispatched once.
+{
+  const { out } = await scenario("reviewer listed twice", {
+    args: { files: ["src/schema/a.ts"] },
+    roster: { crossCutting: ["schema-reviewer"], domain: [{ name: "schema-reviewer", pathHints: ["src/schema/"] }], note: "" },
+    findings: {}, verdict: () => null,
+  });
+  assert.deepEqual(out.reviewers, ["schema-reviewer"]);
+  assert.equal(out.dimensions.filter((d) => d === "schema-reviewer").length, 1);
+  n++;
+}
+
 console.log(`review-sweep accounting: meta + body parse, ${n} scenarios OK`);

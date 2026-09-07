@@ -11,10 +11,11 @@
 # flip's auto-review it was found by a reviewer walking every changed file;
 # here it is found before the hand-off, by the agent that made it.
 #
-# Blocked:  the main conversation's stop, once, while a stray agent-memory
-#           directory exists (exit 2 + the remediation on stderr).
+# Blocked:  the main conversation's stop, once, while a stray agent-memory or
+#           agent-memory-local directory exists — both memory scopes fork the same
+#           way (exit 2 + the remediation on stderr).
 # Allowed:  a clean tree; a second stop after one block (`stop_hook_active`);
-#           any environment defect (fail-open with a warning).
+#           a working directory that is not a git checkout (fail-open with a warning).
 # Event:    Stop only. Not SubagentStop — a finishing subagent has no hand-off
 #           to repair the tree in, and `stop_hook_active` is documented for
 #           Stop; registering there would block every subagent of a review
@@ -32,9 +33,10 @@
 # Path:     registered as ${CLAUDE_PROJECT_DIR}/.claude/hooks/… (handlers run
 #           in the current directory — https://code.claude.com/docs/en/hooks).
 # Tier:     STOP.
-# Fail-open on environment defects (missing jq) with a stderr warning. No
-# bash-4-only builtins (a stock macOS bash is 3.2): the directory list is read
-# with a while loop, not mapfile.
+# No jq dependency: the scan needs none, and the one field this hook reads
+# (`stop_hook_active`) is matched with grep — so this backstop works exactly when
+# the jq-dependent guards have failed open. No bash-4-only builtins (a stock
+# macOS bash is 3.2): the directory list is read with a while loop, not mapfile.
 
 set -uo pipefail
 
@@ -48,19 +50,16 @@ PROJECT_DIR="$(git -C "${CLAUDE_PROJECT_DIR:-$PWD}" rev-parse --show-toplevel 2>
   exit 0
 }
 
-if ! command -v jq &>/dev/null; then
-  echo "detect-forked-agent-memory: WARNING — jq not installed; fork detection DISABLED (advisory)." >&2
-  echo "                            Backstop: the verification block's fork grep (cbk-conventions-reference.md § Verification)." >&2
-  exit 0
-fi
-
 input="$(cat)"
 # Absent field ⇒ first block. Present and true ⇒ the agent is already continuing from this hook.
-active="$(printf '%s' "$input" | jq -r '.stop_hook_active // empty')"
+# Matched with grep, not jq, so fork detection has no environment dependency to fail open on.
+active=""
+printf '%s' "$input" | grep -Eq '"stop_hook_active"[[:space:]]*:[[:space:]]*true' && active="true"
 
 cd "$PROJECT_DIR" || exit 0
 
-# Every directory named agent-memory that is not the root's own. -prune stops
+# Every directory named agent-memory or agent-memory-local that is not the root's
+# own (the `project` and `local` scopes fork identically). -prune stops
 # descent into the root's own tree, worktrees (each is its own checkout with its
 # own root tree), .git, and build output — add your stack's build directories to
 # the list. No -mindepth: as first written, -mindepth 2 exempted depth-1 directories
@@ -68,9 +67,9 @@ cd "$PROJECT_DIR" || exit 0
 # (reproduced 2026-09-06; -mindepth 1 would not have, but the option buys nothing here).
 forks=()
 while IFS= read -r d; do forks+=("$d"); done < <(
-  find . \( -path './.claude/agent-memory' -o -path './.claude/worktrees' -o -name .git \
+  find . \( -path './.claude/agent-memory' -o -path './.claude/agent-memory-local' -o -path './.claude/worktrees' -o -name .git \
          -o -name node_modules -o -name target -o -name build -o -name _build \
-         -o -name dist -o -name .venv \) -prune -o -type d -name agent-memory -print 2>/dev/null | sort
+         -o -name dist -o -name .venv \) -prune -o -type d \( -name agent-memory -o -name agent-memory-local \) -print 2>/dev/null | sort
 )
 
 [ "${#forks[@]}" -eq 0 ] && exit 0
@@ -85,8 +84,9 @@ cat >&2 <<MSG
 BLOCKED: a reviewer memory tree exists outside the repository root:
 $(printf '  %s\n' "${forks[@]}")
 
-Project-local reviewers declare \`memory: project\`; the only legitimate home
-is $PROJECT_DIR/.claude/agent-memory/<reviewer>/ (pr-review.md § Reviewer
+Project-local reviewers declare \`memory: project\` or \`memory: local\`; the only
+legitimate homes are $PROJECT_DIR/.claude/agent-memory/<reviewer>/ and
+$PROJECT_DIR/.claude/agent-memory-local/<reviewer>/ (pr-review.md § Reviewer
 precedent memory). Before stopping: move each <reviewer>/ directory's files
 into the root tree, append their pointer lines to the root MEMORY.md for that
 reviewer, delete the forked tree, and say so in the hand-off.

@@ -126,20 +126,23 @@ If the section is ambiguous, missing, or names a reviewer whose agent file does 
     const crossCutting = roster.crossCutting.map(bare);
     const domain = roster.domain.map((d) => ({
       name: bare(d.name),
-      pathHints: (Array.isArray(d.pathHints) ? d.pathHints : []).map((h) => String(h).replace(/`/g, "").trim().replace(/^\/+|\/+$/g, "")),
+      pathHints: (Array.isArray(d.pathHints) ? d.pathHints : []).map((h) => String(h).replace(/`/g, "").trim().replace(/^\/+|\/+$/g, "")).filter((h) => h !== ""),
     }));
-    // A hint that is a glob or prose can never match a path: that reviewer is
-    // dropped coverage, not "not in scope".
+    // A hint that is a glob or prose can never match a path, and an empty one
+    // (a bare "/") was filtered above: that reviewer is dropped coverage, not
+    // "not in scope".
     const unusable = domain.filter((d) => !d.pathHints.length || d.pathHints.every((h) => /[*?]|\s/.test(h)));
     if (unusable.length) droppedCoverage.push(`domain reviewers with unmatchable pathHints (empty, glob or prose): ${unusable.map((d) => d.name).join(", ")}`);
     const usable = domain.filter((d) => !unusable.includes(d));
-    const matched = usable.filter((d) => files.some((f) => d.pathHints.some((h) => f.includes(h)))).map((d) => d.name);
+    // Hints are directory prefixes (pr-review.md § Reviewer craft rules), so the match is anchored
+    // at the path's start — a substring match would let src/schema/ claim test/src/schema/x.
+    const matched = usable.filter((d) => files.some((f) => d.pathHints.some((h) => f.startsWith(h)))).map((d) => d.name);
     const skipped = usable.filter((d) => !matched.includes(d.name)).map((d) => d.name);
     if (skipped.length) {
       log(`review-sweep: domain reviewers not path-matched by this diff: ${skipped.join(", ")}`);
       if (files.length === 0) droppedCoverage.push(`domain reviewers (no changed-file list to match): ${skipped.join(", ")}`);
     }
-    reviewers = [...crossCutting, ...matched];
+    reviewers = [...new Set([...crossCutting, ...matched])];
   }
 }
 log(`review-sweep: project reviewers — ${reviewers.join(", ") || "(none)"}`);

@@ -27,7 +27,7 @@ This is a floor, not a menu. Neither is satisfied by an agent that read the diff
 
 ```markdown
 ## Review gate
-- `/simplify` — ran: <N> cleanup agents, <N> findings, <N> applied · or: invoked, not covered — <dropped dimensions> · or: waived — <break-glass reason>
+- `/simplify` — ran: <N> cleanup agents, <N> findings, <N> applied · or: invoked, not covered — <dropped dimensions> (never waived)
 - `pr-review-toolkit:review-pr` — ran: <N> agents, <N> findings, triaged <A/AwC/S/D/R> · or: invoked, not covered — <dropped dimensions> · or: waived — <break-glass reason>
 - `review-sweep` — ran: <N> finders + <N> verifiers, <N> confirmed / <N> refuted / <N> unverified, dropped coverage: <reviewers or dimensions, or none>, bounds <per-dimension>/<verified> · or: skipped — <reason>
 ```
