@@ -11,6 +11,7 @@
 #
 # Advisory-only contract: exit 0 ALWAYS. Formatting failures surface on stderr
 # as non-fatal notes; they never block the tool call.
+# Tier:     ADVISORY (see the registry comment in .claude/settings.json).
 
 set -uo pipefail
 # Note: deliberately NOT using `set -e` — see the advisory contract above.

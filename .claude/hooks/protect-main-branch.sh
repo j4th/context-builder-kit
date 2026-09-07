@@ -21,6 +21,7 @@
 # Hook receives JSON on stdin with the tool input. Exit 2 + stderr blocks.
 # Fail-open on environment defects (missing jq, non-repo cwd): exit 0 with a
 # loud stderr warning, mirroring protect-lock-files.sh.
+# Tier:     HARD-DENY (see the registry comment in .claude/settings.json).
 
 set -uo pipefail
 # Deliberately NOT `set -e` — fail-open on environment defects rather than

@@ -10,6 +10,13 @@ import assert from "node:assert/strict";
 
 const src = readFileSync(new URL("../review-sweep.js", import.meta.url), "utf8");
 const body = src.replace(/^export const meta = \{[\s\S]*?\n\};\n/, "");
+// The parse check lives here (one extraction, not two): the meta literal is evaluated as an
+// object and the body as an async function — either failing to parse fails this harness.
+const metaSrc = src.match(/^export const meta = \{[\s\S]*?\n\};\n/)?.[0];
+assert.ok(metaSrc, "review-sweep.js must open with `export const meta = { … };`");
+const meta = new Function(metaSrc.replace(/^export /, "") + "return meta;")();
+assert.equal(meta.name, "review-sweep");
+assert.ok(Array.isArray(meta.phases) && meta.phases.length === 3, "meta.phases declares Roster, Find, Verify");
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 const run = new AsyncFunction("args", "agent", "parallel", "log", "phase", body);
 
@@ -96,4 +103,4 @@ for (const roster of [null, { crossCutting: "not-an-array" }]) {
   assert.ok(logs.findIndex((l) => l.includes("planned agents")) < logs.findIndex((l) => l.includes("carrying")));
 }
 
-console.log("review-sweep accounting: 6 scenarios OK");
+console.log("review-sweep accounting: meta + body parse, 6 scenarios OK");

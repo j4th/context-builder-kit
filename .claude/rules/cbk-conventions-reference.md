@@ -481,33 +481,34 @@ absent grep -rn "instead of a single direct dispatc[h]\|direct dispatch[^.]*is t
 diff <(awk '/^--- BEGIN TEMPLATE ---/{flag=1; next} flag' .claude/skills/rough-in/references/finish-command.md) .claude/commands/finish.md >/dev/null || { echo "commands/finish.md and the bundled template body have drifted"; exit 1; }
 
 # The sweep: bounded (3 per dimension, 8 verified), roster read at runtime (no mirror), the
-# planned count logged before the find stage, its own gate line returned — it parses (a workflow
-# body carries a top-level return, so node --check runs on the body wrapped in a function) and
-# its accounting holds under the stub harness (no agent is dispatched).
+# planned count logged before the find stage, its own gate line returned — and it parses and its
+# accounting holds under the stub harness (one extraction: the harness evaluates the meta literal
+# and the body; no agent is dispatched). Node is required; do not soften this check.
 { grep -q 'maxPerDimension ?? 3' .claude/workflows/review-sweep.js && grep -q 'maxVerify ?? 8' .claude/workflows/review-sweep.js && grep -q 'planned agents' .claude/workflows/review-sweep.js && grep -q 'gateLine' .claude/workflows/review-sweep.js; } || { echo "review-sweep.js lost a bound, the planned-count log, or its gate line"; exit 1; }
 absent grep -n 'REVIEWER_TRIGGERS' .claude/workflows/review-sweep.js
-{ awk '/^};$/ && !done {print; print "async function __workflow_body() {"; done=1; next} {print} END {print "}"}' .claude/workflows/review-sweep.js > "${TMPDIR:-/tmp}/review-sweep-check.mjs" && node --check "${TMPDIR:-/tmp}/review-sweep-check.mjs"; } || { echo "review-sweep.js does not parse (or node is missing — install it; do not soften this check)"; exit 1; }
-node .claude/workflows/tests/review-sweep-accounting.mjs || { echo "review-sweep.js accounting regressed"; exit 1; }
-# Hook registry ⇔ files: every shipped guard is registered at least once, the advisory exemplars
-# stay unregistered, every registered command (placeholder form) exists and is executable, and the
-# registry comment names every hook and all four tiers (the mutation table and the registry are
-# two views of one list).
-for h in .claude/hooks/*.sh; do b=$(basename "$h"); n=$(jq -r '[.hooks[][] | .hooks[] | .command] | map(select(endswith("'"$b"'"))) | length' .claude/settings.json); case "$b" in format-on-edit.sh|analyze-on-edit.sh) [ "$n" -eq 0 ] || { echo "advisory exemplar $b is registered"; exit 1; };; *) [ "$n" -ge 1 ] || { echo "$b is not registered"; exit 1; };; esac; jq -r '._comment_hooks' .claude/settings.json | grep -q "$b" || { echo "registry comment does not name $b"; exit 1; }; done
-jq -r '[.hooks[][] | .hooks[] | .command][]' .claude/settings.json | sort -u | while read -r c; do case "$c" in '${CLAUDE_PROJECT_DIR}/'*) ;; *) echo "registered hook is not in placeholder form (handlers run in the current directory): $c"; exit 1;; esac; c="${c/\$\{CLAUDE_PROJECT_DIR\}/.}"; [ -x "$c" ] || { echo "registered hook missing or not executable: $c"; exit 1; }; done
-for t in HARD-DENY ASK-GATE ADVISORY STOP; do jq -r '._comment_hooks' .claude/settings.json | grep -q "$t" || { echo "registry comment lacks the $t tier"; exit 1; }; done
+node .claude/workflows/tests/review-sweep-accounting.mjs || { echo "review-sweep.js does not parse or its accounting regressed"; exit 1; }
+# Hook registry ⇔ files ⇔ table: every shipped guard is registered at least once and the advisory
+# exemplars stay unregistered; every command field in settings.json — registered or an exemplar
+# stanza — is in placeholder form, exists and is executable; every hook header carries its Tier:
+# line; the registry comment names every hook and all four tiers; and the conventions' two-views
+# paragraph (cbk-conventions.md § Mutation discipline) names every registered hook.
+hookcomment=$(jq -r '._comment_hooks' .claude/settings.json)
+for h in .claude/hooks/*.sh; do b=$(basename "$h"); n=$(jq -r '[.hooks[][] | .hooks[] | .command] | map(select(endswith("'"$b"'"))) | length' .claude/settings.json); case "$b" in format-on-edit.sh|analyze-on-edit.sh) [ "$n" -eq 0 ] || { echo "advisory exemplar $b is registered"; exit 1; };; *) [ "$n" -ge 1 ] || { echo "$b is not registered"; exit 1; };; esac; grep -q "$b" <<<"$hookcomment" || { echo "registry comment does not name $b"; exit 1; }; grep -q '^# Tier:' "$h" || { echo "$b has no Tier: line in its header"; exit 1; }; done
+jq -r '.. | objects | select(has("command")) | .command' .claude/settings.json | sort -u | while read -r c; do case "$c" in '${CLAUDE_PROJECT_DIR}/'*) ;; *) echo "hook command is not in placeholder form (handlers run in the current directory): $c"; exit 1;; esac; c="${c/\$\{CLAUDE_PROJECT_DIR\}/.}"; [ -x "$c" ] || { echo "hook command missing or not executable: $c"; exit 1; }; done
+for t in HARD-DENY ASK-GATE ADVISORY STOP; do grep -q "$t" <<<"$hookcomment" || { echo "registry comment lacks the $t tier"; exit 1; }; done
+jq -r '[.hooks[][] | .hooks[] | .command][]' .claude/settings.json | sort -u | while read -r c; do b=$(basename "$c"); grep -q "$b" .claude/rules/cbk-conventions.md || { echo "cbk-conventions.md § Mutation discipline does not name the registered hook $b"; exit 1; }; done
 # The launch-root guard, on its branches (crafted payloads; read-only). Only exit 2 denies, so the
 # blocking case asserts 2 exactly; `|| rc=$?` keeps -e satisfied while the status stays testable.
 rc=0; printf '{"tool_name":"Agent","tool_input":{},"cwd":"%s/docs"}' "$PWD" | .claude/hooks/require-repo-root-for-agents.sh >/dev/null 2>&1 || rc=$?
 [ "$rc" -eq 2 ] || { echo "launch-root guard did not DENY a subdirectory dispatch (exit $rc; only 2 blocks)"; exit 1; }
 printf '{"tool_name":"Agent","tool_input":{},"cwd":"%s"}' "$PWD" | .claude/hooks/require-repo-root-for-agents.sh >/dev/null 2>&1 || { echo "launch-root guard blocked a root dispatch"; exit 1; }
-# No reviewer-memory tree outside the root (the outcome the Stop hook repairs; the gate's own check).
-absent sh -c "find . \( -path './.claude/agent-memory' -o -path './.claude/worktrees' -o -name .git -o -name node_modules -o -name target -o -name build -o -name _build -o -name dist -o -name .venv \) -prune -o -type d -name agent-memory -print 2>/dev/null | grep ."
+# No reviewer-memory tree outside the root — asked of the Stop hook itself with a crafted payload,
+# so the exclusion list has one home (it exits 2 while a stray tree exists; the gate's own check).
+printf '{"stop_hook_active":false}' | CLAUDE_PROJECT_DIR="$PWD" .claude/hooks/detect-forked-agent-memory.sh 2>/dev/null || { echo "a reviewer-memory tree exists outside the root (detect-forked-agent-memory.sh blocked; run it to see the paths)"; exit 1; }
 # Every shipped reviewer carries the same `## Writing memory` section (its one text); the copies are diffed.
 for a in logging-discipline-reviewer cascade-rule-reviewer; do diff <(awk '/^## Writing memory/{p=1} p' .claude/agents/adr-conformance-reviewer.md) <(awk '/^## Writing memory/{p=1} p' .claude/agents/$a.md) || { echo "## Writing memory drifted in $a"; exit 1; }; done
 # The commit-versus-local memory choice has a Surface inventory row for the bootstrap prompt to fill.
 { grep -q 'Reviewer agent-memory' .claude/rules/cbk-conventions.md && grep -q 'Reviewer agent-memory' .claude/skills/scaffold/references/bootstrap_checklist_template.md; } || { echo "the Reviewer agent-memory row or its bootstrap prompt is missing"; exit 1; }
-
-
 
 # Context budget: every `.claude/rules/*.md` WITHOUT `paths:` frontmatter loads at launch,
 # every session, and every non-fork subagent loads the set again. Print the always-loaded

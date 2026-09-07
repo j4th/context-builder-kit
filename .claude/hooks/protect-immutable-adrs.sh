@@ -17,6 +17,7 @@
 # Fail-open on environment defects (missing jq, unset CLAUDE_PROJECT_DIR):
 # exit 0 with a loud stderr warning. Failing closed would convert a targeted
 # ADR guard into a universal Edit/Write/MultiEdit block, which is worse.
+# Tier:     HARD-DENY (see the registry comment in .claude/settings.json).
 
 set -uo pipefail
 # Note: deliberately NOT using `set -e` — we fail open (exit 0) on environment

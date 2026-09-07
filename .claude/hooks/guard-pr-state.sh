@@ -13,6 +13,7 @@
 #
 # Fail-open on environment defects (missing jq), mirroring
 # protect-lock-files.sh.
+# Tier:     ASK-GATE (see the registry comment in .claude/settings.json).
 
 set -uo pipefail
 

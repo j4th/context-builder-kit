@@ -14,6 +14,7 @@
 # call), so a deterministic permissionDecision:"ask" is the right mechanism —
 # it forces the operator prompt even when a broad permissions-allow entry
 # would otherwise auto-approve the tool.
+# Tier:     ASK-GATE (see the registry comment in .claude/settings.json).
 
 set -uo pipefail
 cat > /dev/null # consume stdin; the decision is unconditional for matched tools
