@@ -54,8 +54,6 @@ gh issue edit "$n" --body-file "$body_resolved"                                 
 
 Two rough edges recorded from an exercised run (a dated field observation, 2026-09-06; re-verify against the sub-issues API page above): the link call returns the **parent** issue object, so a status line built from its `.number` prints "#N under #N" — read the child's number from the create step, never from the link response; and a body carrying a literal placeholder cannot be final at creation, because an issue's own number is not known until it exists — the create-then-edit pass is the mechanism, not a workaround.
 
-
-
 Rough-in's planning-backend commit uses GitHub's two-step sub-issue creation, same as framing's pattern:
 
 1. Create the sub-sub-issue via `issue_write` (returns issue number + id)

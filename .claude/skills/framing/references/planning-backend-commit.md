@@ -51,8 +51,6 @@ Where `docs/cbk/ROADMAP.md` exists, the markdown half of the transition also app
 
 `gh` is the default interface; the five-command shape — create, read the id, link under the parent, verify once at the end, create-then-edit for placeholders — and its two rough edges live in one home, the rough-in skill's `references/planning-backend-commit.md` § The `gh` shape. Framing's delta: the link target is the workstream parent, and the create-then-edit pass resolves `F<#>` placeholders and meta-issue cross-references.
 
-
-
 Framing's planning-backend commit uses GitHub's two-step sub-issue creation:
 1. Create the sub-issue via `issue_write` (returns issue number + id)
 2. Link it to the parent via `sub_issue_write` with method `add` and the parent's issue_number + the new sub-issue's id
