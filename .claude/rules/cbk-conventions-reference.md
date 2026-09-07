@@ -488,10 +488,10 @@ grep -q 'finish-procedure.md' .claude/commands/finish.md || { echo "commands/fin
 diff <(awk '/^--- BEGIN TEMPLATE ---/{flag=1; next} flag' .claude/skills/rough-in/references/finish-procedure.md) .claude/commands/finish-procedure.md >/dev/null || { echo "commands/finish-procedure.md and its bundled template have drifted"; exit 1; }
 
 # The sweep: bounded (3 per dimension, 8 verified), roster read at runtime (no mirror), the
-# planned count logged before the find stage, its own gate line returned — and it parses and its
+# planned count logged before the find stage, its finders' effort named, its own gate line returned — and it parses and its
 # accounting holds under the stub harness (one extraction: the harness evaluates the meta literal
 # and the body; no agent is dispatched). Node is required; do not soften this check.
-{ grep -q 'maxPerDimension ?? 3' .claude/workflows/review-sweep.js && grep -q 'maxVerify ?? 8' .claude/workflows/review-sweep.js && grep -q 'planned agents' .claude/workflows/review-sweep.js && grep -q 'gateLine' .claude/workflows/review-sweep.js; } || { echo "review-sweep.js lost a bound, the planned-count log, or its gate line"; exit 1; }
+{ grep -q 'maxPerDimension ?? 3' .claude/workflows/review-sweep.js && grep -q 'maxVerify ?? 8' .claude/workflows/review-sweep.js && grep -q 'planned agents' .claude/workflows/review-sweep.js && grep -q 'gateLine' .claude/workflows/review-sweep.js && grep -q 'FIND_EFFORT' .claude/workflows/review-sweep.js && grep -q 'RETRY_EFFORT' .claude/workflows/review-sweep.js; } || { echo "review-sweep.js lost a bound, the planned-count log, or its gate line"; exit 1; }
 absent grep -n 'REVIEWER_TRIGGERS' .claude/workflows/review-sweep.js
 node .claude/workflows/tests/review-sweep-accounting.mjs || { echo "review-sweep.js does not parse or its accounting regressed"; exit 1; }
 # The harness exemplars: the A/B script parses and refuses an unbalanced panel; the cost reader prices per
@@ -499,11 +499,14 @@ node .claude/workflows/tests/review-sweep-accounting.mjs || { echo "review-sweep
 node .claude/workflows/tests/finish-ab-shape.mjs || { echo "finish-ab.js does not parse or its panel guard regressed"; exit 1; }
 bash .claude/workflows/tests/agent-cost-fixture.sh || { echo "agent-cost.py regressed on the fixture"; exit 1; }
 # Every dispatch names its model and its effort (orchestration.md § The role ladder): agent definitions
-# carry both, except a model without the dial, which carries none; the sweep names both effort constants;
-# the orchestration rule keeps its P3 sections.
-for a in .claude/agents/*.md; do grep -q '^model:' "$a" || { echo "$a names no model"; exit 1; }; if grep -q '^model: haiku' "$a"; then absent grep -n '^effort:' "$a"; else grep -q '^effort:' "$a" || { echo "$a names no effort (orchestration.md § The role ladder)"; exit 1; }; fi; done
-{ grep -q 'FIND_EFFORT' .claude/workflows/review-sweep.js && grep -q 'RETRY_EFFORT' .claude/workflows/review-sweep.js; } || { echo "review-sweep.js does not name its finders' effort"; exit 1; }
-{ grep -q 'The default is the workhorse tier, stated explicitly' .claude/rules/orchestration.md && grep -q '^### Generation notes' .claude/rules/orchestration.md && grep -q '^## Cost terms and run hygiene' .claude/rules/orchestration-reference.md && grep -q 'Never delegate the decision' .claude/rules/workflows.md; } || { echo "the orchestration rule lost a P3 section"; exit 1; }
+# carry both, except a model without the dial, which carries none (the frontmatter is read once per file).
+for a in .claude/agents/*.md; do fm=$(sed -n '2,/^---$/p' "$a"); grep -q '^model:' <<<"$fm" || { echo "$a names no model"; exit 1; }; if grep -q '^model: haiku' <<<"$fm"; then absent grep -n '^effort:' <<<"$fm"; else grep -q '^effort:' <<<"$fm" || { echo "$a names no effort (orchestration.md § The role ladder)"; exit 1; }; fi; done
+# The orchestration rule keeps its P3 sections and named clauses: the cascade-drafting ladder row, the
+# generation notes, the cost-terms section, and workflows.md's "Never delegate the decision" clause.
+{ grep -q '^| Drafting a persistent cascade artifact' .claude/rules/orchestration.md && grep -q '^### Generation notes' .claude/rules/orchestration.md && grep -q '^## Cost terms and run hygiene' .claude/rules/orchestration-reference.md && grep -q 'Never delegate the decision' .claude/rules/workflows.md; } || { echo "the orchestration rule lost a P3 section"; exit 1; }
+# The list-price table has two copies — the cost reader's PRICE and the reference half's quoted pricing
+# row — and they must agree (both are dated; a price edit lands in both or fails here).
+diff <(grep -oE "'[a-z]+': \([0-9.]+, [0-9.]+\)" .claude/workflows/agent-cost.py | sed -E "s/'([a-z]+)': \(([0-9]+)\.0, ([0-9]+)\.0\)/\1 \2 \3/") <(grep -oE '(Fable 5\.1|Opus 5|Sonnet 5|Haiku 4\.5) \$[0-9]+/\$[0-9]+' .claude/rules/orchestration-reference.md | head -4 | sed -E 's/Fable 5\.1/fable/; s/Opus 5/opus/; s/Sonnet 5/sonnet/; s/Haiku 4\.5/haiku/; s/ \$([0-9]+)\/\$([0-9]+)/ \1 \2/') || { echo "the list-price table drifted between agent-cost.py PRICE and orchestration-reference.md § Generation notes — the sources"; exit 1; }
 # No self-check prose on a prompt surface (rules are excluded: they quote the pattern as a citation) and no
 # blanket tool default in tooling.md (C11). The literals split themselves so this line never matches.
 absent grep -rniE "double-chec[k]|use a subagent to verif[y]|verify your (own )?wor[k]" .claude/skills .claude/commands .claude/agents
