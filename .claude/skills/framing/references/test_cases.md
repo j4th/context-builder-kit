@@ -28,7 +28,6 @@ Realistic prompts for verifying the framing skill works correctly after any revi
 - Interface Commitments table is present even though the consumer doesn't exist yet
 - `docs/cbk/README.md` was appended (row + phase note), not created — scaffold created it; and the roadmap rows for the new milestones landed in the frame's commit
 - Every milestone has a verb-phrase capability statement
-- `README.md` index is created alongside `frame-01.md` in the same commit
 - Exactly three HITL gates (standard mode)
 - Full mode offered no MCP or plugin research track (framing does not research tooling); the frame's Pre-flight checks table carries the exact empty-state string `No deferred meta-issues from this framing` when empty.
 
@@ -36,7 +35,7 @@ Realistic prompts for verifying the framing skill works correctly after any revi
 - Framing produces milestones without reading all three inheritance docs in full
 - Research happens without asking the user about depth
 - Interface Commitments section absent or written as prose instead of a table
-- `README.md` index not created or created separately
+- `README.md` index row or phase note missing, or appended in a separate commit
 - Framing all three workstreams instead of just the regex pack
 
 ## Test case 2 — Subsequent framing with "Builds on" inheritance

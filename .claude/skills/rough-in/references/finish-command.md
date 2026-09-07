@@ -128,6 +128,7 @@ This command is contract-first. On 2026-09-03 an A/B gave two workhorse-tier exe
 - **Claims match code.** No comment, commit message or PR-body sentence asserts something the diff contradicts.
 - **Honesty of the gate.** The three `## Review gate` lines are literally true — an invocation the transcript does not show was not made — and every Apply commit named in `## Triage` exists on the branch with the stated SHA, one finding per commit.
 - **Green.** The project's `check` task passes at the branch head.
+- **Backward sweep.** The hand-off carries the sweep's line — the sibling count read in one call, each absence claim checked by the body's own command, the falsified separated from the false-when-written, or the one-line pass — never an omitted line.
 - **Measurement issues.** For an issue whose criteria are measurements, the **verdict rule**'s commit precedes the first measurement commit on the branch (`git log --reverse`), the capstone shows the findings table unchanged against the base branch, and every departure from the rule is weighed in the verdict rather than folded into it.
 - **No improvisation past the spec.** A spec defect — unverifiable criterion, ADR conflict, missing dependency, drifted doc — is surfaced and the run stops; it is not patched in flight.
 - **Partial failure surfaces.** A failed external call — `git`, `gh`, an MCP call, the check task, a skill — stops the run, and the hand-off states what reached the remote and what did not, with the choices and their consequences. No blind retry.
