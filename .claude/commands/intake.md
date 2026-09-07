@@ -30,7 +30,7 @@ If the reference can't be resolved (issue not found, ambiguous, resolves to a PR
 
 A read-only investigation, like plan mode — **do not write code here**. Trace the code paths implicated by the symptom:
 
-- `Grep` / `Glob` for the symptom's surface; the built-in `LSP` tool (via the language plugin; an MCP only for a language without one) for find-references / symbol info / call sites; a library-docs source to confirm a dependency's actual behavior before blaming it; read-only query tooling to inspect the data store's shape when the bug is data-shaped.
+- `Grep` / `Glob` for the symptom's surface; find-references / symbol info / call sites (which tool: `tooling.md` § Code intelligence); a library-docs source to confirm a dependency's actual behavior before blaming it; read-only query tooling to inspect the data store's shape when the bug is data-shaped.
 
 **Scale the investigation to the bug's surface — when the tooling is available:**
 
