@@ -311,4 +311,37 @@ for (const roster of [null, { crossCutting: "not-an-array" }]) {
   n++;
 }
 
+// 23 — the effort pins: every first-pass finder at the find effort, the haiku roster call with no effort
+//      (no dial), every verifier at high.
+{
+  const { calls } = await scenario("effort pins", {
+    args: { files: ["src/a.ts"] },
+    roster: { crossCutting: ["cascade-rule-reviewer"], domain: [], note: "" },
+    findings: { "code-review": { findings: [F("a", 1, "x", "high")] } },
+    verdict: () => ({ real: true, reasoning: "" }),
+  });
+  const finds = calls.filter((c) => c.label.startsWith("find:") && !c.label.endsWith(":retry"));
+  assert.ok(finds.length > 0 && finds.every((c) => c.opts.effort === "medium"), "first-pass finders run at medium");
+  assert.equal(calls.find((c) => c.label.startsWith("roster:")).opts.effort, undefined, "the haiku roster call carries no effort");
+  const verifies = calls.filter((c) => c.label.startsWith("verify:"));
+  assert.ok(verifies.length > 0 && verifies.every((c) => c.opts.effort === "high"), "verifiers run at high");
+  n++;
+}
+
+// 24 — findEffort and retryEffort overrides reach the calls.
+{
+  let attempt = 0;
+  const { calls } = await scenario("effort overrides", {
+    args: { files: ["src/a.ts"], findEffort: "low", retryEffort: "xhigh" },
+    roster: { crossCutting: [], domain: [], note: "" },
+    findings: { "code-review": () => { attempt += 1; return attempt === 1 ? null : { findings: [] }; } },
+    verdict: () => null,
+  });
+  const cr = calls.filter((c) => c.label.startsWith("find:code-review"));
+  assert.equal(cr[0].opts.effort, "low");
+  assert.equal(cr[1].label, "find:code-review:retry");
+  assert.equal(cr[1].opts.effort, "xhigh");
+  n++;
+}
+
 console.log(`review-sweep accounting: meta + body parse, ${n} scenarios OK`);
