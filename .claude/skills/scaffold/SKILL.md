@@ -89,7 +89,7 @@ Before provisioning, detect what's possible in this session for the GitHub plann
 | **2. MCP + read-only** | ✅, read-only | List repos, read files (brownfield audit) | Everything above + repo creation | Audit via MCP. All provisioning manual. |
 | **3. No MCP** | ❌ | Nothing | Everything | Full manual guided checklist. |
 
-**PAT guidance**: fine-grained PATs are recommended. Minimum: Repository permissions — Contents (read & write), Metadata (read). Projects V2 has a known gap in fine-grained PATs; classic PAT with `repo` and `project` scopes is the fallback.
+**PAT guidance** *(a dated rail, 2026-09-06 — re-verify against GitHub's current PAT documentation before relying on it; the Projects V2 gap is a live platform limitation, not a kit choice)*: fine-grained PATs are recommended. Minimum: Repository permissions — Contents (read & write), Metadata (read). If Projects V2 access fails under a fine-grained PAT, fall back to a classic PAT with `repo` and `project` scopes, and confirm the gap still exists before assuming it.
 
 **Tell the user which state you detected and what will be manual** before provisioning starts.
 
