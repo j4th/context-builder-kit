@@ -601,6 +601,28 @@ grep -q 'short-slug>` with' .claude/rules/cbk-conventions.md || { echo "§ Branc
 grep -q 'short-slug' .claude/hooks/protect-main-branch.sh || { echo "protect-main-branch.sh's remediation does not name both branch forms"; exit 1; }
 grep -q 'linguist-generated=false' .claude/rules/cbk-conventions-reference.md || { echo "§ Dependency settle-window lacks the lockfile counter-line"; exit 1; }
 
+# Starters and the lint (P4, Tasks 1–2): the .github starter bodies exist and scaffold's profile cites them; the PR
+# template carries both gate blocks; the ADR lint has no trigger filter and a pinned job name; manual_steps no longer
+# scopes its list by detection state. The cascade-depth:rough label is created by scaffold on purpose (a recorded deviation).
+[ -f .claude/skills/scaffold/references/github-starter-templates.md ] || { echo "scaffold lacks references/github-starter-templates.md"; exit 1; }
+grep -q 'github-starter-templates.md' .claude/skills/scaffold/references/github_only_profile.md || { echo "github_only_profile.md does not cite the starter bodies"; exit 1; }
+for h in '## Review gate' '## Triage'; do grep -q "^$h" .claude/skills/scaffold/references/github-starter-templates.md || { echo "the starter PR template lacks $h"; exit 1; }; done
+absent grep -nE "^\s*paths(-ignore)?:" .github/workflows/adr-immutability-check.yml
+grep -q 'name: ADR immutability' .github/workflows/adr-immutability-check.yml || { echo "the ADR lint's job has no pinned name"; exit 1; }
+absent grep -n "regardless of detection stat[e]" .claude/skills/scaffold/references/manual_steps.md
+# The roadmap and the executor (P4, Tasks 3 and 5): the template exists, the conventions carve the surface out, and the
+# executor names the flip, the post-merge checklist, the backward sweep and the measurement issue's verdict rule.
+[ -f .claude/skills/blueprint/references/templates/roadmap.md ] || { echo "blueprint lacks references/templates/roadmap.md"; exit 1; }
+grep -q 'ROADMAP.md' .claude/rules/cbk-conventions.md || { echo "cbk-conventions.md does not carve out docs/cbk/ROADMAP.md"; exit 1; }
+for w in 'ROADMAP.md' 'post-merge checklist' 'backward sweep' 'verdict rule'; do grep -qi "$w" .claude/commands/finish.md || { echo "commands/finish.md does not name: $w"; exit 1; }; done
+grep -qi 'backward sweep' .claude/commands/finish-procedure.md || { echo "finish-procedure.md lacks the backward sweep"; exit 1; }
+grep -q 'verdict rule' .claude/skills/rough-in/references/templates/rough-in-spec-template.md || { echo "the spec template lacks the measurement variant's verdict rule"; exit 1; }
+# Review automation (P4, Task 4): both workflow templates exist with their stated constraints; scaffold's review
+# question names its consequence; rough-in's gh shape carries the create-then-edit pass.
+for t in claude-review.yml claude.yml; do [ -f .claude/skills/blueprint/references/templates/$t ] || { echo "blueprint lacks templates/$t"; exit 1; }; grep -q 'timeout-minutes' .claude/skills/blueprint/references/templates/$t || { echo "templates/$t has no job timeout (constraint 3)"; exit 1; }; done
+for w in 'cannot review the PR that introduces it' -- '--disallowedTools Agent' 'continue-on-error: true' 'Assert the review posted'; do [ "$w" = -- ] && continue; grep -qF -- "$w" .claude/skills/blueprint/references/templates/claude-review.yml || { echo "templates/claude-review.yml lacks: $w"; exit 1; }; done
+grep -q 'solo-merge with automated review' .claude/skills/scaffold/SKILL.md || { echo "scaffold's PR question does not name its consequence"; exit 1; }
+grep -q 'create-then-edit' .claude/skills/rough-in/references/planning-backend-commit.md || { echo "rough-in's gh shape lacks the create-then-edit pass"; exit 1; }
 # Phases (P4): the cascade-events index template exists and scaffold cites it; nothing in rough-in misnames the index;
 # blueprint's template carries its append-only Amendments section; the tooling rule names the built-in LSP tool.
 [ -f .claude/skills/scaffold/references/templates/cascade-events-index-template.md ] || { echo "scaffold lacks references/templates/cascade-events-index-template.md"; exit 1; }
