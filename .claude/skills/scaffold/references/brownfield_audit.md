@@ -79,7 +79,7 @@ These rules implement `backends.md`'s `reuse_existing` mode without requiring a 
 ## Failure modes specific to brownfield
 
 - **Scope gravity from existing setup** — user wants to mirror everything the old setup had even though half of it doesn't match the current project's scope. Same problem as in consultation's brownfield case. Name it: *"You mentioned X, Y, Z exist in the old setup — are those actually in scope for this project, or are they carryover from habit?"*
-- **Phantom resources** — user claims something exists, audit read pass finds nothing. Don't proceed on the user's claim alone; re-check or ask them to double-check.
+- **Phantom resources** — user claims something exists, audit read pass finds nothing. Don't proceed on the user's claim alone; re-check, or ask them to confirm it.
 - **Audit bleeding into provisioning** — the audit is read-only. If you find yourself writing during the audit, stop. Provisioning starts after the audit's HITL gate, not during.
 - **Skipping the "worth keeping" question** — without it, the brownfield brief becomes a list of complaints. Insist on at least one item, even small.
 

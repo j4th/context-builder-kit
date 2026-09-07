@@ -3,6 +3,7 @@ name: adr-conformance-reviewer
 description: Reviews a code diff for conformance to the project's immutable ADRs. Loads the ADR index, identifies which ADRs intersect the changed files, then checks each intersecting ADR's "Decision" and "Consequences" sections against the diff. Reports concrete violations with file:line citations and the ADR being violated. Use when reviewing a PR diff or before marking a draft PR ready.
 tools: Read, Glob, Grep, Bash
 model: sonnet
+effort: high
 memory: project
 ---
 

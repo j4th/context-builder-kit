@@ -8,22 +8,14 @@
 // the roster reader's dirty output is sanitized; a domain reviewer is dispatched when
 // its prefix matches and is out of scope (not dropped) when it does not; the retry
 // pass escalates effort once; caller-supplied reviewers and finders are honoured.
-import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
+import { loadWorkflow } from "./load-workflow.mjs";
 
-const src = readFileSync(new URL("../review-sweep.js", import.meta.url), "utf8");
-const body = src.replace(/^export const meta = \{[\s\S]*?\n\};\n/, "");
-// The parse check lives here (one extraction, not two): the meta literal is evaluated as an
+// The parse check lives in the loader (one extraction, not two): the meta literal is evaluated as an
 // object and the body as an async function — either failing to parse fails this harness.
-const metaSrc = src.match(/^export const meta = \{[\s\S]*?\n\};\n/)?.[0];
-assert.ok(metaSrc, "review-sweep.js must open with `export const meta = { … };`");
-const meta = new Function(metaSrc.replace(/^export /, "") + "return meta;")();
+const { meta, run } = loadWorkflow(new URL("../review-sweep.js", import.meta.url));
 assert.equal(meta.name, "review-sweep");
 assert.ok(Array.isArray(meta.phases) && meta.phases.length === 3, "meta.phases declares Roster, Find, Verify");
-// The only source evaluated here is the repo's own review-sweep.js (the file under test) —
-// first-party code, never an input; this is the harness's equivalent of importing it.
-const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-const run = new AsyncFunction("args", "agent", "parallel", "log", "phase", body);
 
 // findings[key] may be an object ({findings: […]}), null (the finder fails every time),
 // or a function of the call's opts (vary the response per call — e.g. fail once, then succeed).
@@ -211,7 +203,7 @@ for (const roster of [null, { crossCutting: "not-an-array" }]) {
   n++;
 }
 
-// 14 — the retry pass runs once, labelled :retry, at effort high, and its findings count.
+// 14 — the retry pass runs once, labelled :retry, at the retry effort (first pass at the find effort), and its findings count.
 {
   let attempt = 0;
   const { out, calls } = await scenario("retry succeeds", {
@@ -221,7 +213,7 @@ for (const roster of [null, { crossCutting: "not-an-array" }]) {
   });
   const findCalls = calls.filter((c) => c.label.startsWith("find:code-review"));
   assert.equal(findCalls.length, 2);
-  assert.equal(findCalls[0].opts.effort, undefined);
+  assert.equal(findCalls[0].opts.effort, "medium");
   assert.equal(findCalls[1].label, "find:code-review:retry");
   assert.equal(findCalls[1].opts.effort, "high");
   assert.ok(out.confirmed.some((f) => f.title === "found on retry"));
@@ -316,6 +308,39 @@ for (const roster of [null, { crossCutting: "not-an-array" }]) {
   });
   assert.deepEqual(out.reviewers, ["schema-reviewer"]);
   assert.equal(out.dimensions.filter((d) => d === "schema-reviewer").length, 1);
+  n++;
+}
+
+// 23 — the effort pins: every first-pass finder at the find effort, the haiku roster call with no effort
+//      (no dial), every verifier at high.
+{
+  const { calls } = await scenario("effort pins", {
+    args: { files: ["src/a.ts"] },
+    roster: { crossCutting: ["cascade-rule-reviewer"], domain: [], note: "" },
+    findings: { "code-review": { findings: [F("a", 1, "x", "high")] } },
+    verdict: () => ({ real: true, reasoning: "" }),
+  });
+  const finds = calls.filter((c) => c.label.startsWith("find:") && !c.label.endsWith(":retry"));
+  assert.ok(finds.length > 0 && finds.every((c) => c.opts.effort === "medium"), "first-pass finders run at medium");
+  assert.equal(calls.find((c) => c.label.startsWith("roster:")).opts.effort, undefined, "the haiku roster call carries no effort");
+  const verifies = calls.filter((c) => c.label.startsWith("verify:"));
+  assert.ok(verifies.length > 0 && verifies.every((c) => c.opts.effort === "high"), "verifiers run at high");
+  n++;
+}
+
+// 24 — findEffort and retryEffort overrides reach the calls.
+{
+  let attempt = 0;
+  const { calls } = await scenario("effort overrides", {
+    args: { files: ["src/a.ts"], findEffort: "low", retryEffort: "xhigh" },
+    roster: { crossCutting: [], domain: [], note: "" },
+    findings: { "code-review": () => { attempt += 1; return attempt === 1 ? null : { findings: [] }; } },
+    verdict: () => null,
+  });
+  const cr = calls.filter((c) => c.label.startsWith("find:code-review"));
+  assert.equal(cr[0].opts.effort, "low");
+  assert.equal(cr[1].label, "find:code-review:retry");
+  assert.equal(cr[1].opts.effort, "xhigh");
   n++;
 }
 

@@ -12,385 +12,107 @@ Framing is one-project-at-a-time, just-in-time, **by design**. The research is u
 
 **Target executor (transitive)**: framing's output feeds rough-in, which produces specs for Claude Code plan mode. Framing doesn't write plan-mode prompts directly, but its rough-issues list and its milestone boundaries are the seeds that rough-in shapes into Implementation sections. That transitivity affects framing in two specific ways: **rough-issues are intents, not prescriptions** (they describe *what* each rough-in R-issue should accomplish, not *how* to implement it — plan mode is a decomposition engine and even the rough-in author shouldn't pre-decompose into implementation sequences, let alone framing), and **milestones are demonstrable capabilities, not decomposed atoms** (each milestone is a verb the system can do, tested with the "can I show this to someone?" question, not a noun describing what was built). See [Anthropic's Claude Code best practices](https://code.claude.com/docs/en/best-practices) for the underlying framing: *"Separate research and planning from implementation to avoid solving the wrong problem. Letting Claude jump straight to coding can produce code that solves the wrong problem."* Over-prescriptive rough-issues at framing time propagate downstream as over-prescriptive Implementation sections at rough-in time, and over-atomized milestones propagate downstream as over-atomized R-issue lists. Both failures of the same underlying miscalibration show up at framing's layer first.
 
+## This skill is contract-first
+
+The artifact is defined by **`references/contract.md`** — what `frame-NN.md` must contain and the tests every milestone must pass — together with the two templates. That is the whole read for drafting. The step-by-step procedure with its per-step gates (`references/procedure.md`) is on demand: full mode, or when a step is unclear.
+
+Why: the 2026-09-01 A/B recorded in `references/contract.md`'s second paragraph and, in full, in `.claude/rules/orchestration-reference.md` § Applied instances — procedure written for earlier models is prescriptive in ways that now cost quality. Nothing was retired — it moved.
+
 ## Cascade events, not project slots
 
-Each framing produces a **numbered** file: `frame-01.md` is the first framing the user did, `frame-02.md` is the second, and so on. The number is the framing's identity in the cascade timeline, not the project's identity.
+Each framing produces a **numbered** file: `frame-01.md` is the first framing the user did, `frame-02.md` the second, and so on. The number is the framing's identity in the cascade timeline, not the project's. Re-framing a project after code is built produces a new file with the next number; the prior framing stays in the history. The `docs/cbk/README.md` index tracks the timeline with a status column (Active / Completed / Superseded by frame-NN / Abandoned), and **rough-in always picks up the highest-numbered Active framing as "what's next."** Layout (flat by default, nested by override) comes from the project's `cbk-conventions.md`.
 
-Default flat layout (recommended; matches the ADR pattern for sequential, append-only cascade events with single-document artifacts):
-
-```
-docs/cbk/
-├── README.md           ← chronological cascade-events index with status column
-├── problem_brief.md    ← from consultation
-├── scaffold.md         ← from scaffold
-├── blueprint.md        ← from blueprint
-├── frame-01.md         ← first framing (e.g. regex project)
-├── frame-02.md         ← second framing (e.g. tmux project, after regex was built)
-└── frame-NN.md         ← etc.
-```
-
-Nested layout (alternative; for projects whose framing events produce multi-file bundles):
-
-```
-docs/cbk/
-├── README.md
-├── ...prior phase artifacts...
-└── framings/
-    ├── frame-01/
-    │   ├── frame-01.md
-    │   └── ...sibling docs...
-    └── frame-02/
-        └── ...
-```
-
-The project picks layout via `.claude/rules/cbk-conventions.md`; framing reads that file at session start to determine the path shape. **For projects without an explicit conventions file, default to flat.**
-
-This matters because **framings are events in time, not slots for projects**. If the user re-frames the regex project after some code is built (because they learned something that should change the milestone breakdown), the new framing becomes `frame-04.md` — both the original and the new one stay in the cascade history. The `docs/cbk/README.md` index tracks the timeline with a status column (Active / Completed / Superseded by frame-NN / Abandoned), and **rough-in always picks up the highest-numbered Active framing as "what's next."**
-
-The user doesn't read these files day-to-day. The actual work product lives elsewhere in the repo (code, docs, tests). The `docs/cbk/` namespace is for cascade consumption — answering "what does the next phase need to know" — and the highest-numbered framing is always the answer to "what's next."
+Five selection patterns exist — named explicitly, picked from sequence, whole-frame re-framing, additive increment (`Builds on:`, both frames stay Active), and milestone-scoped re-framing (`Supersedes only milestone M<N>`). The last three carry header and index-status rules; they are spelled out in `references/procedure.md` § Step 2 and in `cbk-conventions.md` § Mutation discipline.
 
 ## Required inputs and how to read them
 
-Framing requires three prior-phase artifacts as inputs, and optionally any prior framings:
-
 - `docs/cbk/problem_brief.md` — from consultation
 - `docs/cbk/scaffold.md` — from scaffold
-- `docs/cbk/blueprint.md` — from blueprint, especially § "Workstreams"
-- `docs/cbk/frame-NN.md` (any prior framings, if this is not frame-01 — flat layout default; nested at `docs/cbk/framings/frame-NN.md` if project's `cbk-conventions.md` configured nested)
-- `docs/cbk/README.md` (the chronological cascade-events index, if it exists)
+- `docs/cbk/blueprint.md` — from blueprint, especially § "Workstreams" and any § "Notes for framing"
+- `docs/cbk/frame-NN.md` — every prior framing (their interface commitments are inherited verbatim)
+- `docs/cbk/README.md` — the cascade-events index, for the next frame number
+- the project's decision records (ADRs, any design-decision ledger), `docs/ARCHITECTURE.md`, `CLAUDE.md`, `.claude/rules/cbk-conventions.md`
+- the workstream's parent issue on the planning backend, and any intake candidates filed under it
 
-If any of the first three are missing, **do not silently proceed**. Either run the missing phase first, accept an uploaded file or verbal equivalent (and flag that the input is informal), or — if the user is starting framing cold without the prior phases — ask what's available and adapt.
-
-**Reading the inputs**. If the repo is connected via GitHub MCP, read all relevant files via the MCP. If not, ask the user to upload them or paste them. Do not proceed until you have read the three required inputs in full plus any prior framings — framing depends on inheriting from them, and skimming or guessing at their content is the most common framing failure mode.
-
-**The "Builds on" inheritance is unique to framing.** Unlike consultation/scaffold/blueprint (which inherit from a fixed set of prior phases), framing also inherits from any prior cascade events at its own level. Frame-03 reads frame-01 and frame-02 to know which interface commitments already exist and which milestones already shipped. This is what makes the cascade-event model work — framings build on each other, not just on the phases above.
-
-Detailed inheritance discipline lives in `references/inheritance.md`.
+Read them from the repo (or via the git-host MCP when that is how the repo is connected); if the files are not reachable, ask the user to upload or paste them. If any of the first three is missing, **do not silently proceed**: run the missing phase, accept an uploaded or verbal equivalent (and flag that the input is informal), or ask what is available. Read every input **in full** before drafting — skimming or guessing at their content is the most common framing failure, and it is the one light mode is most likely to cause. `references/inheritance.md` holds the verbatim-summary discipline for the modes that present one.
 
 ## Three rigor modes — light, standard, full
 
-Framing's full flow (inheritance → project selection → research phase → refined definition → milestones, with five HITL gates) is the **full mode**, not a requirement. There are three rigor modes:
+**Detect-then-confirm** at session start: propose a mode in one sentence from the user's opening message and let them override in one word. Default to **standard** for a first-time user. The dial can be turned mid-session.
 
-**Full mode** — five HITL gates (one per step). Best for: greenfield projects, projects with significant architectural uncertainty, projects with multiple sibling dependencies, anyone who wants every decision reviewed before commit.
+- **Light mode — one gate.** One up-front confirmation (workstream, frame number, mode, anything the operator already knows the answer to), then run to completion: draft contract-first, verify, present the frame with the decision list, commit on approval. Best for "just give me the milestones" and workstreams whose shape is nearly self-evident.
+- **Standard mode — three gates.** (1) inheritance + project selection; (2) the verified draft — refined definition and milestones together, with the decision list; (3) the final `frame-NN.md` before commit.
+- **Full mode — five gates**, one per step, following `references/procedure.md`. The contract still governs the output. (Tooling research — MCP servers, plugins — is blueprint's in every mode.)
 
-**Standard mode** — three HITL gates batched at meaningful boundaries: (1) after inheritance + project selection combined, (2) after refined definition + milestones combined, (3) final review of frame-NN.md before commit. Best for: users who have done the cascade once, projects with established patterns, building-on-existing-code projects where infrastructure is already in place.
+What no mode skips: reading the inputs in full, at least one milestone with a demonstrable capability, the `frame-NN.md` file, and the verification pass below.
 
-**Light mode** — one combined up-front confirmation listing what framing will produce, then run-to-completion until presentation. Best for: users who say *"just give me the milestones"*, *"keep it minimal"*, *"I know what I'm doing"*, or who are framing a small, well-understood project where the milestones are nearly self-evident.
+## How the draft is produced
 
-**Detect-then-confirm**: at session start, propose a mode in one sentence based on the user's opening message. *"Sounds like you've got a clear sense of how this project should break down — I'll run in **standard mode**, three gates total. Say 'full' for per-step gates or 'light' for one combined confirmation."* Let the user override in one word. If their opening message gives no signal, default to **standard mode** for first-time users since per-step review is heavy and most users don't need it on the first pass; offer to switch to **full mode** if they want every decision reviewed.
+1. **Read** the inputs above, `references/contract.md`, `references/templates/frame-output-template.md` and `references/templates/milestone-template.md`.
+2. **Draft the whole frame** against the contract. Where a step would have stopped for a gate in a mode that has none, decide, proceed, and carry the question into the decision list the gate presents. Rough issues are intents; milestones are capabilities; pre-flight units go in the table; interface commitments are first-class; appetite is re-estimated where the project asks, never absorbed.
+3. **Verify before the gate** — one fresh-context verifier at the project's verify tier, per `references/contract.md` § Before the gate; fix its defects before presenting.
+4. **Present** the frame with the decision list — the questions the draft would have asked — and the narrative arc ("After M1 you can X … by MN the project delivers Z"), and the structural tests stated plainly: each milestone's "show this to someone" moment, each rough issue an intent, rough-issue counts per milestone.
 
-The mode dial can be tuned mid-session — if the user says *"actually let's go faster from here"* during full mode, switch to standard for the remaining steps without restarting.
+Depth of research is a user signal: when the project is greenfield or entering new technical territory, propose a depth and let the user confirm; never silently scale it down, and never present partial work as complete. `references/research-phase.md` has the depth patterns and what framing does **not** research (MCP servers, plugins, stack, methodology, CI gates — all blueprint's, inherited as constraints).
 
-What framing should *not* skip even in light mode: **reading the inputs in full** (skipping inheritance is the failure mode light mode is most likely to cause), **at least one explicit milestone with a demonstrable capability** (otherwise the framing has no concrete output), and **the frame-NN.md cascade event file** (the cascade's transition mechanism for this phase).
+If the project runs a contribution-intake lane, candidates filed under the workstream are **inputs, not greenfield**: fold each into the milestone it informs and reconcile it at the commit (promote to its F-issue, or close as superseded). `cbk-conventions.md` names the concrete op.
 
-## Step 1 — Inheritance check
+## Producing the frame-NN.md file and committing
 
-The first step always. Read all required inputs in full, present a verbatim inheritance summary, and gate before proceeding.
+Write `docs/cbk/frame-NN.md` (path per the project's layout) from the approved draft and append a row to `docs/cbk/README.md` with the framing number, the workstream, the date and status `Active`. On a backend planning axis, create one F-sub-issue per milestone (and one meta-issue per pre-flight row) parented under the workstream's parent issue — the two-step create-then-link pattern, the atomic transition with the markdown commit, the rollback rules and the partial-failure protocol are in `references/planning-backend-commit.md`; the issue bodies come from the repo's `.github/ISSUE_TEMPLATE/cascade-framing.md` and `cascade-meta.md`, disk first. Where the project keeps a roadmap surface, add its rows in the same commit. If no commit path is available, hand the files to the operator as downloadable artifacts rather than leaving the frame in the conversation.
 
-The inheritance summary must quote the brief's relevant content, the scaffold's quality bar, the blueprint's relevant workstream entry, and any prior framings' interface commitments verbatim. Do not paraphrase — paraphrasing is the failure mode.
-
-Detailed inheritance discipline and the summary template live in `references/inheritance.md`.
-
-**HITL gate**: present the inheritance summary inline, get explicit user approval before moving to project selection.
-
-## Step 2 — Project selection from blueprint
-
-Pick which workstream from blueprint to frame. There are three patterns:
-
-**A) Named explicitly** — *"Frame the regex project"* → look it up in `docs/cbk/blueprint.md` § "Workstreams", confirm the row, proceed.
-
-**B) Picked from sequence** — *"Frame the next one"* → read prior framings to determine which projects have been framed, identify the next unframed project from blueprint's workstreams table, confirm with user.
-
-**C) Re-framing an already-framed project** — *"Re-frame the regex project, the milestone shape didn't survive contact with the code"* → read the prior framing of that project, treat the new framing as a deliberate cascade event that supersedes the prior one (without overwriting it), proceed. The prior framing stays in the cascade history.
-**D) Additive increment to a still-Active framing** — *"Add the completion milestone to this workstream — the prior frame's milestones are still open, this doesn't replace them"* → read the prior framing of that workstream, then treat the new framing as a deliberate cascade event that **adds** a milestone (or a small set) **without superseding** the prior frame. Both framings stay `Active`. The new framing takes the next sequential frame number, carries a **"Builds on: frame-NN"** header (not a "Supersedes" one), inherits the prior frame's charter and interface commitments verbatim, and its new milestone(s) coexist in the cascade with the prior frame's still-open milestones. Sequencing across the two frames' open milestones is operator pull-flow.
-
-**E) Milestone-scoped re-framing** — *"M4's shape didn't survive contact with the code, but M1–M3 are built and Done"* → a third grain between whole-frame supersession (C) and the additive increment (D). The new frame supersedes **only the named milestone's shape**: its header states the scope explicitly ("Supersedes only milestone M<N> of frame-NN; M1–M<N-1> are built and Done"), the prior frame stays in the cascade **untouched** with its index status annotated via the permitted status-column mutation ("Active (M<N> superseded by frame-MM)"), and the retired milestone's acceptance-criteria set is recorded in the new frame as **retired un-executed** — never silently dropped, so a later reader can see what was promised and consciously withdrawn.
-
-Additive increment vs. re-framing (pattern C) is a status distinction: re-framing **replaces** a milestone breakdown that didn't survive contact with the code (old frame → `Superseded`); an additive increment **extends** a workstream whose prior milestones are still valid and open (old frame stays `Active`). Reach for additive increment when a gap assessment or a newly-surfaced prerequisite reveals work the prior frame didn't cover *and* the prior frame's milestones are still the right shape. Reach for re-framing when the prior frame's milestones themselves need re-cutting — whole-frame (C) when the breakdown as a whole is wrong, milestone-scoped (E) when one milestone needs re-cutting and the rest are done or still right.
-
-**A single-milestone additive increment is legitimate — do not fold it into a sibling.** An additive increment often carries exactly one milestone: the increment is one demonstrable capability, and its sub-pieces are R-issues *inside* that milestone, not milestones of their own (none independently passes the demonstrable-capability test — together they are the single capability). This is the sanctioned exception to Step 5's "1 milestone usually means fold into a sibling" heuristic — that smell applies to a *fresh* framing of a workstream, not to an increment on an already-Active one. State the shape in the frame header ("additive increment; one milestone") so a later reader doesn't mistake the single milestone for the anomaly.
-
-Once the project is selected, **link back to the blueprint workstream explicitly**. The frame-NN.md header says: *"This frames the **\<project name\>** workstream from `docs/cbk/blueprint.md` § 'Workstreams', row N."*
-
-Also identify the framing number: read `docs/cbk/README.md` (if it exists) to find the highest existing frame number, increment, and use that as this framing's number. If no framings exist, this is `frame-01`.
-
-**HITL gate**: confirm the project selection and the framing number with the user.
-
-## Step 3 — Research phase
-
-Resolve genuine uncertainty before producing milestones. **Depth is a user signal, not a framing judgment** — framing surfaces the relevant signals (greenfield vs. building-on-existing, prior framings to inherit from, deferred decisions from blueprint, user expertise) and proposes a depth in one sentence, then lets the user confirm or override. Same shape as the rigor dial. **Never silently scale down research** — the user can't tell from the milestone output whether framing did a deep or shallow pass, so silent shortcuts erode trust.
-
-When framing hits token pressure, surface it explicitly and give the user the choice between finishing partial work, skimming to fit, or continuing in a follow-up message. **Never silently produce partial work and present it as complete.**
-
-Two research sub-tracks, both running in every rigor mode at the depth the user confirmed:
-
-**3a. Implementation patterns** — when the project is greenfield or entering new technical territory, search for reference implementations, library tradeoffs, and established patterns. When the architecture docs already specify the approach, validate currency and surface gotchas. Cite from `methodology_register.md` when the cascade's shared knowledge has an answer for the pattern question (vertical slicing, walking skeleton, tracer bullets, spike solutions, YAGNI). If a prior framing established a pattern this project will inherit, surface the inheritance explicitly — never silently reuse.
-
-**3c. Resolve open technical questions** — library choices that affect milestone boundaries, pattern choices that affect build sequence, interface decisions that affect downstream consumers, methodology-specific decisions that flow from blueprint's selection but get instantiated here.
-
-**What framing does NOT research**: MCP server selection, Claude Code plugin selection, stack decisions, methodology selection, CI gate decisions. All of those belong in **blueprint** — framing inherits them and treats them as constraints. If framing notices the project would benefit from tooling not in the current setup, flag it as a Suggested foundation doc update in Step 4, never silently add it. The boundary between framing's project-level concerns and blueprint's workspace-level concerns is deliberate and documented in `backends.md`.
-
-Detailed depth-proposal patterns, presentation templates, and the failure modes specific to this step live in `references/research-phase.md`.
-
-**HITL gate (full mode only)**: present research findings, land on technical approach with the user before producing the refined definition.
-
-## Step 4 — Refined project definition
-
-Produce the refined project definition. This is the substantive output of framing — it captures everything learned in steps 1-3 and lands the technical approach in a structured form.
-
-The refined definition has these sections (template in `references/templates/frame-output-template.md`):
-
-1. **Header** — links to the blueprint workstream being expanded, names the framing number, lists "builds on" prior framings if any
-2. **Purpose** — one paragraph, refined from the rough description
-3. **Approach** — technical approach landed on in the research phase
-4. **Components** — what gets built, with one-line technical descriptions and which milestone builds each
-5. **Boundaries** — in scope, out of scope, agreements with sibling projects (i.e. with prior framings)
-6. **Interface Commitments** — table: what interface, which downstream consumer, stable by which milestone, brief shape
-7. **Key Constraints** — architectural, integration, forward-compatibility, performance, structural decisions
-8. **Suggested foundation doc updates** — flagged as suggestions only, never auto-applied
-9. **Open questions** — items deferred to rough-in or the next framing
-
-The Interface Commitments table is the most valuable single output — it's the contract that enables future framings to know what they can build against, and it makes cross-framing dependencies explicit and milestone-dated. Preserve it as a first-class output regardless of rigor mode.
-
-**HITL gate**: present the refined definition inline, iterate until the user approves.
-
-## Step 5 — Milestones with rough issues
-
-Decompose the project into sequenced milestones, each one a **demonstrable capability** — something the system can do that it couldn't before. Not "module X exists" but "the system can now [verb]."
-
-Each milestone has:
-
-- **Sequence number and name** (e.g., "M1: Regex pure-function verifier")
-- **Capability** (one sentence: "After this, the system can verify regex lessons against expected matches")
-- **Rough issues** (title + one-sentence intent each — these become inputs to rough-in, the next phase)
-- **Internal dependencies** (which milestones gate which)
-- **Issue type flags** (which are Claude-Code-implementable vs user-managed manual issues)
-
-### Milestone count: as many as the workstream genuinely has demonstrable capabilities
-
-**The honest test isn't the count, it's the demonstrable-capability test.** Each milestone should pass one specific question: *"Can I show this to someone and have them see a meaningful change in what the system can do?"* If yes, it's a milestone. If the answer is *"well, after this the code will be slightly better factored"* or *"after this we'll have added the next layer of the data model,"* it's not a milestone — it's a step inside one.
-
-Typical workstreams produce **3-6 milestones**, but that range is a secondary signal, not a prescription. A small, tightly-scoped workstream might legitimately have 2 milestones (the walking-skeleton milestone and the completion milestone). A large, multi-surface workstream might legitimately have 6-7 milestones spanning infrastructure, feature slices, integration, and hardening. Outside the 2-7 range signals a problem in the same spirit as rough-in's 2-6 range: **1 milestone** usually means the workstream should be folded into a sibling (or is legitimately atomic, in which case note the departure and proceed), **8+ milestones** usually means the workstream is too big and should be split across two framings (escalate back to blueprint).
-
-**Do not decompose milestones into implementation atoms just to hit a count.** A milestone that reads "After this, the system can run one lesson end-to-end" is stronger than five milestones that read "After this, we'll have the loader" / "After this, we'll have the verifier" / "After this, we'll have the CLI entry point" / etc. — the first is a demonstrable capability, the rest are implementation steps that happen *inside* a milestone. The failure mode to watch for: if adjacent milestones in your draft can't each pass the "can I show this to someone?" test, they're probably a single milestone pre-decomposed into steps.
-
-### Rough issues: intents that rough-in will shape into coherent review units, not prescriptions
-
-The **rough issues** list for each milestone is the seed that rough-in's Step 4 will read, inherit from, and shape into coherent review units per rough-in's own discipline. Framing does not pre-decide rough-in's R-issue boundaries — that's rough-in's job, done just-in-time with actual implementation context. Framing's job is to name the **intents** that rough-in will organize.
-
-**Each rough issue is an intent, not a prescription.** The shape should be a one-sentence statement of *what the sub-sub-issue exists to do*, not *how it should be implemented*. Compare:
-
-- ✅ *"Define the Verifier trait with associated types for Input, Context, Error per IC-1 from this framing"* — intent, points at the IC that locks the shape
-- ❌ *"Create `crates/core-engine/src/verifier.rs` with `pub trait Verifier { type Input; type Context; type Error; fn verify(...) -> Result<(), Self::Error>; }`"* — prescription, inlines a signature rough-in should either derive from IC-1 or leave to plan mode
-
-The intent phrasing matters because rough-in's Implementation sections (the thing handed to Claude Code plan mode) inherit their shape from framing's rough issues. If framing produces prescriptive rough issues, rough-in naturally inherits that prescriptive framing and produces over-specified Implementation sections. If framing produces intent-shaped rough issues, rough-in has room to apply its own eight-properties discipline without fighting against framing's seeds. See rough-in's `references/plan-mode-prompts.md` § Property 8 for the downstream discipline; framing's job is to set that discipline up for success by starting with intents.
-
-**Rough issue count per milestone**: the same "review-unit discipline" that rough-in applies to R-issues applies (transitively) to framing's rough issues. Rough-in will ultimately produce **2-6 R-issues per milestone** for Claude-Code-executed workflows (see rough-in's Step 4). Framing's rough-issue list should therefore land in roughly the same range — 2-6 intents per milestone is typical. If framing's draft has 8+ rough issues for a milestone, that's a signal the milestone is too big (split it) or framing is pre-decomposing work that rough-in will naturally collapse (merge adjacent intents). If framing's draft has 1 rough issue for a milestone, either the milestone is truly atomic (legitimate, note and proceed) or the milestone is too small (fold into a sibling).
-
-The range is secondary to the test: **each rough issue should be a coherent implementation intent that a rough-in R-issue could reasonably correspond to** — not necessarily 1:1, because rough-in may merge or split based on real implementation context, but in the same neighborhood of granularity.
-
-**Calibration lean**: because execution is AI-assisted (plan mode decomposes a well-shaped issue into ~5–10 internal steps), rough-in tends to land at the *low* end of its 2–6 range — it routinely collapses framing's rough-issue sketch into fewer, coarser review units. Don't over-discretize at framing; when unsure between more-smaller and fewer-larger intents, prefer fewer. This is a lean, not a rule — it reflects a solo + AI-assisted appetite; a larger team may want finer boundaries.
-
-### Absorbing intake candidates (if the project runs a contribution-intake lane)
-
-Some projects run a **bottom-up contribution-intake lane** that files capability *candidates* under a workstream *before* framing — "we should build X" requests held in a project-specific holding surface for not-yet-framed work (see the project's `cbk-conventions.md`). When such candidates exist under the workstream you're framing (they appear in the parent's issue list framing already reads for its idempotency check), treat them as **inputs, not greenfield**: fold each candidate's intent into the milestone(s) it informs, and **reconcile** it as you create the F-issues — promote it 1:1 to its F-issue, or close it as superseded by the F-issue(s) it informed — so it leaves the project's holding surface (the concrete relabel/close op lives in the project's `cbk-conventions.md`). Surface the candidate→milestone mapping in the milestone HITL gate. Projects without an intake lane have nothing to absorb; skip.
-
-### Milestone shape and pattern
-
-Milestone shape is **flexible by default with vertical slicing as the recommended pattern** (the methodology register's recommendation):
-
-- **Vertical slices** (default) — each milestone delivers end-to-end functionality for a subset of the project. Aligns with Linear Method's project methodology.
-- **Spike milestones** — research-only checkpoints with no shippable output. Use sparingly, only when blueprint flagged a real research risk.
-- **Infrastructure milestones** — CI, build, tooling work that enables later vertical slices. Greenfield projects often have one of these as M1.
-
-If blueprint picked a specific methodology (Shape Up, Kanban, Scrum), honor it — Shape Up's appetite-based approach naturally produces vertical slices that fit a fixed appetite, Kanban's continuous flow produces continuously-sized milestones, Scrum's sprints produce sprint-bounded milestones.
-
-Detailed milestone-shape guidance and the milestone template live in `references/templates/milestone-template.md`.
-
-### Pre-flight meta-issues and the charter pattern
-
-Not every unit of work a framing produces is a milestone. A **Pre-flight meta-issue** is a decision-or-de-risk unit that *gates* a milestone start rather than delivering a demonstrable capability: it produces decisions, governing ADR(s), a reference doc, and/or a throwaway spike, then unblocks the milestone(s) that depend on it. Pre-flight meta-issues are recorded as rows in the frame's **Pre-flight checks** table (never as milestones — they have no shippable capability), each carrying a `Blocks: M<n> start` marker; rough-in must verify each is resolved before decomposing the milestone it blocks (see § Handoff contract to rough-in).
-
-The highest-leverage Pre-flight meta-issue is the **charter**. Emit one when a workstream's design **concept is frozen but its buildable spec is not** — the approach is already settled upstream (reviewer-enforced, or ratified at blueprint / in an existing ADR), yet the concrete pattern that *every* milestone will share (schema conventions, an identity or key strategy, a versioning discipline, a load pattern, cross-cutting per-row invariants) has not been pinned down. In that case framing emits a **standalone charter meta-issue** that, before the first buildable milestone lands:
-
-- **Ratifies the cross-milestone contract** — settles the load-bearing engineering decisions and reconciles any conflicting specs inherited from prior phases into one authoritative set.
-- **Produces the governing ADR(s)** — the immutable decisions every milestone inherits.
-- **Produces a reference / pattern doc** — a concise buildable spec (a reference doc in the workstream's source tree) that downstream R-issues read and follow verbatim.
-- **Optionally runs a throwaway de-risk spike** — when a concrete engineering risk should be settled before committing the pattern (e.g. *"does this approach hold at the real data scale, or under the real constraint?"*). The spike is disposable; only its verdict survives, into the ADR(s). A charter whose research is already settled carries **no spike** — decision-only is a legitimate charter shape.
-- **Is marked `Blocks: M1 start`** (or whichever milestone is first to build on the pattern) in the Pre-flight checks table.
-
-**Why standalone, not folded into M1**: the charter's decisions govern *all* the workstream's milestones, not just the first — and when a spike is involved, the pattern wants proving before any milestone commits to it. Folding a cross-milestone contract into M1 buries a decision that the later milestones equally depend on inside one milestone's implementation, and forecloses the spike. The charter earns its own blocked-by meta-issue precisely because its blast radius is the whole workstream.
-
-**Charter output is inherited verbatim, never re-derived.** Once it resolves, its ADR(s) and reference doc are the source of truth; every downstream R-issue treats the pattern as a fixed constraint and does not re-litigate it. The charter simply concentrates the workstream's one-time decisions into a single gated artifact, so the milestones after it stay purely about demonstrable capability.
-
-**The pre-registration flavor.** When a milestone runs a wide comparison or selection (many candidates × many metrics) that feeds a gated one-way decision, the charter pre-registers the rules in an immutable decision record **before any candidate runs**: the closed candidate set (adding one later costs a refining record), the named success targets and thresholds, the evaluation protocol, expected-outcome pre-commitments — **including likely-null expectations**, so a null result reads as confirmation rather than spin — and named known limitations that every downstream output inherits. Three companions keep the frozen rules honest:
-
-- **Post-freeze arrivals join an exploratory tier.** A candidate that appears after rule-freeze runs surface-only at the gate — visible and compared, but ineligible for the gated decision unless a refining record admits it.
-- **Deviations are refining records with honest disclosure** — what was pre-committed, what reality showed, and what changes (see the adr-new skill § Refines vs Supersedes) — never a silent re-interpretation.
-- **A standing gate's no-change verdict is recorded.** When the gate runs and decides *no change*, that re-affirmation is a first-class event with rationale on the standing artifact — so absence-of-change stays distinguishable from gate-never-ran.
-
-**Spikes pre-declare three outcomes.** A charter (or milestone) spike gating a risky adoption — a niche dependency, a native-build toolchain, an unproven approach — pre-declares **promote / named fallback / documented drop** as first-class outcomes, so a drop is a recorded verdict rather than a quiet abandonment, and the next risky adoption can cite the precedent instead of re-arguing the shape.
-
-**When *not* to emit a charter**: if a decision is local to one milestone, fold it into that milestone — don't manufacture a Pre-flight meta-issue for it. If both the concept *and* the buildable spec are already settled upstream, skip straight to M1; a charter with nothing to ratify is ceremony. And if the *concept itself* is still unfrozen (you're choosing the approach, not just its buildable form), that belongs to blueprint or a spike milestone, not a charter.
-
-### Example excerpt (what one milestone looks like in practice)
-
-To make the output shape concrete: here's what one milestone spec looks like, taken from a real cascade run on a CLI-tutorial project whose first workstream was a "regex pack" of lessons. Note the specificity — the capability is a verb the system can do, the rough issues are concrete enough for rough-in to decompose, and the dependency is explicit.
-
-**Input fragment** (user during milestone HITL):
-> "M1 should be the smallest thing that proves the verifier trait works. Just enough to pass one regex lesson end-to-end. Nothing fancy."
-
-**Output fragment** (resulting frame-01.md milestone excerpt):
-```markdown
-### F1 — M1: Pure-function verifier proves the trait
-
-**Capability**: After this, the system can run one TOML-defined regex lesson, verify the user's input against the lesson's expected matches, and report pass/fail with a hint on failure.
-
-**Depends on**: Nothing — first milestone
-
-**Rough issues** (5 total, all Claude-Code-implementable):
-1. Define `Verifier` trait with `Input`, `Context`, `Error` associated types and `verify` method
-2. Implement `RegexVerifier` as the first concrete impl, using the `regex` crate
-3. Define `Lesson` struct with TOML deserialization for `prompt`, `expected_matches`, `foils`
-4. Wire up minimal CLI entry point that loads one lesson, prompts the user, runs the verifier, prints result
-5. Author the first regex lesson as a TOML fixture and a passing end-to-end test
-
-**Issue notes**: All five issues are Claude-Code-implementable — no user-managed setup required because mise + cargo are already configured from scaffold. M1's "done" signal is `cargo run -- regex/lesson_01.toml` succeeds and a smoke test passes in CI.
-```
-
-The full milestone template lives in `references/templates/milestone-template.md`. The example above just shows what one milestone feels like in practice.
-
-**HITL gate**: present the milestone list with the narrative arc (*"After M1 you can X. After M2 you can Y. By MN the project delivers Z."*). Iterate until the user approves.
-
-Surface the structural tests explicitly in the gate:
-- *"Each milestone here is a demonstrable capability — for M[i], the specific 'show this to someone' moment is [one-sentence demo]. Does each milestone pass that test, or are any of them really implementation steps that should be folded into a sibling?"*
-- *"Each rough issue is phrased as an intent, not a prescription — they name *what* each sub-sub-issue should accomplish and leave the *how* to rough-in and plan mode. Anything in the list that feels like it's pre-deciding an implementation detail rough-in should decide?"*
-- *"Rough-issue counts per milestone: [list them]. Rough-in will typically produce 2-6 R-issues per milestone for Claude-Code-executed workflows, so framing's intent list landing in that neighborhood is a good sign. If any milestone has 8+ rough issues, the milestone might be too big — want me to escalate back to splitting?"*
-
-## Producing the frame-NN.md file
-
-After step 5, framing produces the actual `docs/cbk/frame-NN.md` (or `docs/cbk/framings/frame-NN.md` per project's `cbk-conventions.md` layout) by combining the refined definition (step 4 output) and the milestones (step 5 output) into the single cascade-event file. The template is in `references/templates/frame-output-template.md`.
-
-Append a row to `docs/cbk/README.md` (the chronological cascade-events index) with the framing number, the workstream framed, the date, and the status (`Active`).
-
-Commit both files via GitHub MCP. Fall back to downloadable artifacts if MCP isn't available. The frame-NN.md file is the cascade artifact for this phase and is what rough-in will read.
-
-**HITL gate (final)**: present the frame-NN.md file inline, get explicit user approval before commit.
+**HITL gate (final)**: present the file and the list of issues to be created; get explicit approval before any write. The gate wording is in `references/planning-backend-commit.md` § HITL gate update.
 
 ## Phase exit checklist
 
-Auto-checkable list that fires after the final HITL gate, before declaring framing complete. Not a gate (no user approval); a safety surface (skill stops if any item fails). Per cbk-conventions.md § Trip-wire pattern:
+Auto-checkable list that fires after the final gate, before declaring framing complete. Not a gate; a safety surface (the skill stops if any item fails), per `cbk-conventions.md` § Trip-wire pattern:
 
-- [ ] `frame-NN.md` content includes all required sections: Purpose, Approach, Components, Boundaries, Interface Commitments, **Pre-flight checks** table (with the empty-default text `"No deferred meta-issues from this framing"` if none — this exact string is what rough-in's pre-flight check matches; see `references/templates/frame-output-template.md` § Pre-flight checks), Open questions, Milestones (each with `[F<N>.AC<M>]` trace IDs in acceptance criteria)
+- [ ] `frame-NN.md` content includes all required sections: Purpose, Approach, Components, Boundaries, Interface Commitments, **Pre-flight checks** table (with the empty-default text `"No deferred meta-issues from this framing"` if none — the string rough-in matches on), Open questions, Milestones (each with `[F<N>.AC<M>]` trace IDs in acceptance criteria)
 - [ ] Frame-NN's number was correctly identified (highest existing in `docs/cbk/README.md` + 1)
 - [ ] Workstream parent issue exists (github-issues and linear planning; n/a on in-repo-markdown) and matches the workstream slug
 - [ ] No prior F-issue exists for this milestone (idempotency)
 - [ ] Markdown commit and (on backend planning axes) F-issue creation atomic transition succeeded, or partial state surfaced cleanly
 - [ ] `docs/cbk/README.md` updated with new entry + status `Active`
 - [ ] If the project runs a contribution-intake lane (cbk-conventions): no candidate it filed under this workstream remains un-reconciled — each was promoted to an F-issue or closed as superseded
-- [ ] Every call this run exercised that `references/planning-backend-matrix.md` flags as individually unexercised has been restamped in the same commit
+- [ ] The verification pass ran and its defects were fixed or consciously kept (recorded in the gate)
 
 ## Backend-axis-aware behavior
 
-Framing's behavior differs along **two independent axes** set by scaffold: the planning backend (`github-issues` / `linear` / `in-repo-markdown`) and the knowledge backend (`notion` / `none`). The planning-axis differences live in `references/planning-backend-matrix.md`; the knowledge-axis contract lives in `.claude/rules/knowledge-backend.md`. Short version:
-
-**Planning axis**:
-- `github-issues`: framing creates one F-sub-issue per milestone under the workstream parent Issue via `issue_write` + `sub_issue_write add`. Markdown commit + sub-issue creation form one atomic transition.
-- `linear`: framing creates one Linear F-issue per milestone via `mcp__linear__save_issue` parented under the workstream issue. Same atomic-transition discipline. Read the workstream parent via `mcp__linear__get_issue` first; idempotency-check via `mcp__linear__list_issues`. On partial failure, surface state — do not retry blindly.
-- `in-repo-markdown`: no external planning entities. The frame-NN.md markdown is the entire planning artifact. Atomic transition collapses to a single half.
-
-**Knowledge axis**:
-- `notion`: framing **may optionally** read from the project's Notion hub at inheritance for richer context. Framing **may optionally** promote a cross-project meta-issue to a Notion runbook page when the meta-issue surfaces material that genuinely spans repos (NOT for normal milestone deferred-decision meta-issues; those stay in the planning backend or markdown). Both reads and writes are HITL-gated and default-SKIP.
-- `none`: no Notion interactions.
-
-The two axes compose independently. Always read `scaffold.md` to learn the operator's choice before behaving along either axis.
-
-Detailed planning-axis behavior including failure modes lives in `references/planning-backend-matrix.md`. Knowledge-axis discipline lives in `.claude/rules/knowledge-backend.md`. Project-specific identifiers (Linear team key, workstream slugs, label conventions, hub URLs) live in the project's `.claude/rules/cbk-conventions.md`.
-
-### Optional Notion-write gate (knowledge = `notion`, cross-project meta-issues only)
-
-When framing surfaces a Pre-flight check / deferred meta-issue that's genuinely cross-project (e.g., a runbook that spans this repo and another, a vendor evaluation, an architectural decision affecting multiple workstreams), the closing HITL gate also asks:
-
-> *"This meta-issue (`<title>`) looks cross-project. Want me to promote it to a Notion runbook page under the Engineering Wiki, so it's discoverable from outside this repo? Defaults to SKIP — the meta-issue stays in the planning backend (or in `frame-NN.md` for in-repo-markdown) regardless."*
-
-Defaults to **SKIP**. Fires only for meta-issues marked as cross-project; never for normal milestone-blocking meta-issues. Per `.claude/rules/knowledge-backend.md` HITL discipline, announce the planned write before committing.
-
-## HITL gates summary
-
-Framing has five HITL gates in **full mode**, three in **standard mode**, and one in **light mode**.
-
-**Full mode — five gates** (per-step review):
-
-1. **After inheritance check** — user confirms the inheritance summary is accurate
-2. **After project selection** — user confirms which project is being framed and the framing number
-3. **After research phase** — user lands on the technical approach and the resolutions of the open technical questions
-4. **After refined definition** — user reviews and approves the refined project definition
-5. **After milestones** — user reviews the milestone list with narrative arc
-
-**Standard mode — three gates** (step-boundary review):
-
-1. **After inheritance + project selection combined** — user confirms inheritance and project selection in one batched gate
-2. **After refined definition + milestones combined** — user reviews the refined definition with milestones together
-3. **After frame-NN.md is drafted** — final review before commit
-
-**Light mode — one gate**: a single up-front confirmation listing what framing will produce, then run-to-completion until the frame-NN.md file is presented for final review.
-
-Each gate is an explicit "approve to proceed" moment. Iterate within a gate as many times as needed. The mode dial can be tuned mid-session.
+Two independent axes set by scaffold. **Planning**: `github-issues` creates F-sub-issues via issue-write plus sub-issue-link, atomic with the markdown commit; `linear` creates F-issues parented under the workstream issue via `save_issue`; `in-repo-markdown` has no external entities and the transition collapses to the markdown commit. **Knowledge**: `notion` permits optional reads at inheritance and a promote-to-runbook offer for genuinely cross-project meta-issues — reads and writes both HITL-gated and default-skip, never for normal milestone-blocking meta-issues, and every planned write announced before it is committed; `none` means no Notion interaction. The long form of both axes is `references/procedure.md` § Backend-axis-aware behavior; the operational detail is `references/planning-backend-matrix.md`, `references/backends.md`, and the project's `cbk-conventions.md` for the identifiers.
 
 ## Handoff contract to rough-in
 
 When framing is complete, rough-in inherits:
 
-- **The latest frame-NN.md** at `docs/cbk/frame-NN.md` (flat) or `docs/cbk/framings/frame-NN.md` (nested, per project's `cbk-conventions.md`) — containing refined definition, milestones, rough issues, interface commitments, **and the Pre-flight checks table**
+- **The latest frame-NN.md** — refined definition, milestones, rough issues, interface commitments, **and the Pre-flight checks table**
 - **The cascade-events index** at `docs/cbk/README.md` — for finding the latest framing (highest-numbered Active row)
-- **All prior framings** at `docs/cbk/frame-NN.md` — for cross-framing interface commitments
-- **Planning-backend issues created by framing** (github-issues and linear planning) — F-level sub-issues (labeled `cascade-depth:framed`) and any deferred meta-issues (labeled `cascade-depth:framed` + `meta`), all parented under the workstream parent issue
+- **All prior framings** — for cross-framing interface commitments
+- **Planning-backend issues created by framing** — F-level sub-issues (labeled `cascade-depth:framed`) and any pre-flight meta-issues (`cascade-depth:framed` + `meta`), all parented under the workstream parent issue
 
-**What rough-in does with this**: reads the latest frame-NN.md (the highest-numbered one), picks one milestone from it, decomposes that milestone's rough issues into ready-to-implement issues (with acceptance criteria, technical detail, and Claude Code plan-mode prompts).
+**What rough-in does with this**: reads the latest frame-NN.md (the highest-numbered one), picks one milestone from it, and decomposes that milestone's rough issues into ready-to-implement issues (with acceptance criteria, technical detail, and Claude Code plan-mode prompts). Rough-in does not need prior framings except as historical context for interface commitments.
 
-**Mandatory deferred meta-issues check**: before decomposing milestone M_n, rough-in MUST read the Pre-flight checks table from the latest frame-NN.md and verify any meta-issue with `Blocks: M_n start` is resolved (closed) or explicitly cleared (the user confirms it's no longer blocking). If unresolved meta-issues block M_n, **rough-in stops and surfaces the gap** rather than proceeding. The check obligation lives on rough-in, but the table existing in frame-NN.md is framing's responsibility — empty tables explicitly say "No deferred meta-issues from this framing" so rough-in knows the table was considered, not skipped.
+**Mandatory pre-flight check**: before decomposing milestone M_n, rough-in MUST read the Pre-flight checks table from the latest frame-NN.md and verify any row with `Blocks: M_n start` is resolved (closed) or explicitly cleared by the user. If unresolved rows block M_n, **rough-in stops and surfaces the gap**. The check obligation lives on rough-in; the table existing — with its explicit "none" when empty — is framing's responsibility.
 
-**What framing must not pass to rough-in**: implementation code, detailed issue specs (those are rough-in's job), production deployment decisions (those happen later still), test specifications below the milestone-acceptance level.
+**What framing must not pass to rough-in**: implementation code, detailed issue specs, production deployment decisions, test specifications below the milestone-acceptance level.
 
-**The latest framing is always the answer to "what's next."** Rough-in doesn't need to know about prior framings except as historical context for interface commitments — it always operates on the highest-numbered framing.
-
-## Failure modes to defend against
-
-- **Framing all workstreams at once** — most common temptation, especially when the user has a clean blueprint with many workstreams. Resist. Frame one, build, then frame the next.
-- **Skipping inheritance** — light mode's biggest risk. Even in light mode, framing must read all required inputs in full.
-- **Inventing milestones that don't match the methodology blueprint picked** — if blueprint chose Shape Up appetite-based, framing must respect appetite as the constraint, not impose Scrum-style sprints. Honor the methodology selection.
-- **Auto-updating foundation docs without HITL approval** — framing flags suggested updates as a section in frame-NN.md, never silently mutates blueprint's foundation docs. The user reviews and applies updates manually.
-- **Treating interface commitments as informal cross-references** — they're a first-class output. Every framing should produce an Interface Commitments table even if it's empty (which is itself signal — "this project has no downstream consumers, build it however").
-- **Overwriting prior framings instead of creating new ones** — re-framing the same project produces a new `frame-NN.md` file with the next sequence number. The prior framing stays in the cascade history. Never overwrite.
-- **Producing milestones without demonstrable capabilities** — "M1: scaffolding" is wrong. "M1: the system can run one regex lesson end-to-end" is right. Every milestone is a verb the system can do, not a noun describing what was built.
-- **Skipping the cascade-events index update** — `docs/cbk/README.md` is the chronological log that tells future framings (and rough-in) where in the cascade we are. Forgetting to append to it makes the cascade timeline invisible.
-
-Detailed failure mode analysis with recovery patterns lives in `references/failure-modes.md`.
-
-## Solo vs. team notes
-
-**Solo**: framing is largely a working session with the user's future self. Interface commitments still matter (they're contracts with future framings) but the ceremony around them is lighter. CONTRIBUTING.md updates are typically deferred. Rigor mode often defaults to standard or light.
-
-**Team**: framing produces a contract that other team members will read. Interface Commitments are heavyweight — they say what other people can rely on. Methodology selection from blueprint is a team agreement that framing must respect. Rigor mode often defaults to full or standard.
+**The latest framing is always the answer to "what's next."**
 
 ## Project-level overrides
 
-Project-specific overrides (workstream slugs, Linear team key, branch-naming convention, layout choice flat-vs-nested, project-specific operational evidence) live in the project's `.claude/rules/cbk-conventions.md`. Read that file at session start when running framing in a configured project; treat its content as overrides on top of this skill's defaults. If no `cbk-conventions.md` exists, framing operates with the defaults documented here.
+Project-specific overrides (workstream slugs, team key, branch naming, layout, operational evidence) live in the project's `.claude/rules/cbk-conventions.md`. Read it at session start; treat its content as overrides on this skill's defaults. If no `cbk-conventions.md` exists, framing operates with the defaults documented here.
 
 ## Reference files
 
-- `references/planning-backend-commit.md` — the Issue-per-capability creation step, atomic transition pattern with the markdown commit, slug-inheritance-from-Milestone discipline, re-framing rollback handling (read this in tandem with `backends.md` from the cascade meta-doc set)
+- `references/contract.md` — **the default read**: what the frame must contain, the tests each milestone must pass, what the drafter returns, the verify-before-gate step
+- `references/procedure.md` — the full step-by-step procedure (Steps 1–5, the long-form backend-axis behaviour, the five-gate summary, failure modes, solo vs. team); full mode, or on demand
+- `references/templates/frame-output-template.md` — the frame-NN.md template with worked example
+- `references/templates/milestone-template.md` — milestone shapes and the per-milestone template
+- `references/planning-backend-commit.md` — the F-issue creation step, atomic transition, rollback, partial-failure recovery, brownfield recovery
+- `references/inheritance.md` — reading prior artifacts, the verbatim summary template, the "builds on" pattern
+- `references/research-phase.md` — depth patterns, what framing does not research
+- `references/hitl-question-bank.md` — clarifying questions per round (full and standard modes)
+- `references/planning-backend-matrix.md`, `references/backends.md` — planning-axis behavior
+- `references/failure-modes.md` — framing-specific failure modes with recovery patterns
+- `references/test_cases.md` — realistic test prompts with success criteria for verifying the skill after revisions; the last case walks the contract-first default and its verification pass
 
-- `references/inheritance.md` — how to read prior phase artifacts and prior framings, the verbatim summary template, the "builds on" inheritance pattern
-- `references/research-phase.md` — implementation patterns research, open-question resolution, the fan-out and grounding disciplines
-- `references/templates/frame-output-template.md` — the frame-NN.md cascade event file template with worked example
-- `references/templates/milestone-template.md` — milestone shape guidance and the per-milestone template
-- `references/hitl-question-bank.md` — clarifying questions for inheritance, project selection, research, refined definition, and milestone rounds
-- `references/planning-backend-matrix.md` — planning-axis behavior differences (`github-issues` / `linear` / `in-repo-markdown`)
-- `references/failure-modes.md` — framing-specific failure modes with examples
-- `references/test_cases.md` — realistic test prompts (each names its scenario) with success criteria for verifying the skill still works after revisions
-
-Kit-wide operational contracts (`.claude/rules/`):
-- `knowledge-backend.md` — knowledge-axis behavior (read patterns, write tiering, HITL discipline). Loaded when scaffold.md records knowledge backend = `notion`.
-
-Read references on demand, not all at once. The SKILL.md is a routing document; the heavy operational content lives in the references.
+Read references on demand, not all at once. SKILL.md routes; the contract and the templates are the drafting read; the procedure is the on-demand read.

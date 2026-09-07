@@ -212,9 +212,27 @@ These tests are not exhaustive — they cover the canonical happy path and the i
 - Two grounding documents in the same run contradict each other about whether something exists
 - A verifier samples only positive anchors (see `references/failure-modes.md` § 13)
 
+## Test 9 — Contract-first draft with the verification pass
+
+**Prompt**: *"Rough in M2 — light mode."* on a repo whose active frame has M1 roughed-in and built, M2 with four rough issues and one pre-flight row blocking one criterion, and an executor pair on disk that matches the bundle.
+
+**Success criteria**:
+- The skill reads the inputs and `references/contract.md`; `references/procedure.md` is not opened (light mode, no unclear step)
+- The whole set is drafted before anything is shown: pre-flight result, issue plan, coverage map (every `[F<#>.AC<n>]` owned by exactly one R-issue), every spec body with numbered `[R<#>.AC<m>]` criteria and test tags keyed to them, the commit-time text
+- One fresh-context verifier at the verify tier attacks citations, repo claims, package-API claims, the coverage map and the test tags, and its defects are fixed before the gate
+- The one gate carries the decision list; the framing-invited judgment call (which R-issue the blocking row becomes a dependency of) is made and its reason recorded
+- Step 5.5 reports "present and matching" for both files of the pair without a gate; Step 6 runs in the main loop after the gate
+- No inheritance summary, gate-question list or provisioning diff appears inside any spec body
+
+**Failure signals**:
+- A spec's Dependencies section names an open issue in prose that is not a dependency (the executor would refuse it)
+- A test tag that resolves to no numbered criterion
+- The drafter, not the main loop, attempts Step 5.5 or Step 6
+- The set is presented unverified, or "verification" is the drafter re-reading its own output
+
 ## Cross-test invariants
 
-A few things should be true across all eight tests:
+A few things should be true across all tests:
 
 - **The pre-flight checks runs in every test**, even Test 3 (markdown-only) where the planning backend doesn't exist
 - **No HITL gate is skipped silently** — if a gate is collapsed (in light mode), the user explicitly chose light mode
@@ -233,3 +251,5 @@ Add a new test when:
 - The cascade adds a new phase that changes rough-in's handoff contract
 
 Tests are intentionally minimal — they're not a comprehensive coverage matrix, they're a smoke test set that catches the most common regressions. The full coverage comes from real cascade runs against dogfooded projects.
+
+Run every case at the project's worker tier and again at its escalation tier — a skill's effectiveness depends on the model under it (`platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices` § Test with all models you plan to use, fetched 2026-09-05).

@@ -1,0 +1,364 @@
+# Rough-in — the procedure
+
+Read this only when running rough-in in **full mode** or **standard mode**, or when the contract-first draft (`contract.md`) leaves you unsure how a step is meant to go. In light mode the contract, the spec template and the executor's parser are the whole read; `SKILL.md` routes. Nothing here overrides the contract: where the two differ, the contract governs and the difference is a defect to report.
+
+The one-way doors — Step 5.5's provisioning and Step 6's atomic transition — are run by the main loop after the gate in every mode, never by a dispatched drafter.
+
+## Step 1 — Inheritance and pre-flight checks
+
+Read all required inputs in full, present verbatim inheritance summary including the specific framing milestone being roughed-in, run the mandatory deferred meta-issues pre-flight check.
+
+The inheritance summary must quote the milestone's capability statement, rough issues list, and acceptance signal verbatim from frame-NN.md. Do not paraphrase — paraphrasing is the failure mode.
+
+Detailed inheritance discipline lives in `references/inheritance.md`.
+
+**HITL gate (full mode)**: present the inheritance summary and the meta-issues check result, get explicit user approval before moving to research.
+
+## Step 2 — Milestone selection within framing
+
+If the user has named the specific milestone (*"rough in F1"* or *"rough in the regex-pack verifier milestone"*), look it up in frame-NN.md and confirm the row. If the user said *"rough in the next milestone"*, read `README.md` index and prior rough-in records to determine which milestones in the current framing have been roughed-in, identify the next unroughed-in milestone in sequence, confirm with user.
+
+If the user is re-roughing-in an already-roughed-in milestone (because the prior rough-in spec didn't survive contact with the code), treat the new rough-in as a deliberate cascade event that supersedes the prior one. The prior sub-sub-issues get closed with `state_reason: not_planned` + `superseded` label as part of the same atomic transition that creates the new ones. See `references/planning-backend-commit.md` for the re-rough-in pattern.
+
+Two lighter-grain corrections sit between full re-rough-in and doing nothing — both operator-triggered, both recorded as ledger events in the frame's `## Rough-in events` table:
+
+- **Additive completeness pass.** When the operator suspects an already-roughed-in milestone under-covers its space, map the milestone against a completeness taxonomy of what *could* exist, then classify each instinct as: **present** (already covered — cite where), a **genuine gap** (new R-issues appended with the next R-numbers, wired into the existing dependency DAG; existing open issues untouched), **deferred** (a meta-issue that consumes the milestone's output later), or a **category error** (recorded *with the reason why not*, so the question doesn't recur next pass). A completeness pass may also add scope to the milestone's capstone issue. It is additive by construction — nothing closes, nothing is superseded — and the ledger row records the taxonomy verdicts and any expected-count deviation with the operator's approval.
+- **In-place body refresh (un-executed issues only).** When an un-executed issue's body carries factually wrong mechanisms — claims falsified by work that landed after it was written — the default close-and-recreate is not the only correction: the operator may approve a single in-place body refresh, with a provenance comment posted on the issue recording what changed and why, and a ledger row recording the refresh event. Boundaries: **executed issues are never retro-edited**; shape changes (a different decomposition, not just stale facts) still take the close-and-recreate re-rough-in path; and roll-forward comments remain the factual record between refreshes.
+
+Also inherit the slug and F-number from the framing sub-issue title — read the parent framing sub-issue via `issue_read` to get the canonical slug + F-number pair, use these to construct sub-sub-issue names like `[<slug>:F<#>:R<#>]`. **Never re-derive the slug** from the workstream name or the framing capability name — always inherit from the parent's existing title.
+
+**HITL gate**: confirm the milestone selection and the F-number being roughed-in.
+
+## Step 3 — Research phase (depth is a user signal)
+
+Resolve remaining uncertainty before producing issue specs. **Depth is a user signal, not a rough-in judgment** — same pattern as framing's research phase. Rough-in surfaces the signals (framing's open questions for this milestone, the complexity of the rough issues list, whether the stack has been exercised by prior rough-in runs, user expertise) and proposes a depth in one sentence. User confirms or overrides.
+
+**When rough-in hits token pressure**, surface it explicitly and give the user the choice between finishing partial work, skimming to fit, or continuing in a follow-up message. **Never silently produce partial work and present it as complete.**
+
+Two research sub-tracks, same structure as framing:
+
+**3a. Implementation patterns** — look up concrete patterns for each rough issue's intent. What's the idiomatic approach in the stack for "Define trait with associated types"? What's the canonical TOML deserialization pattern? The goal is to resolve technical approach questions that would otherwise block issue spec drafting or force Claude Code to relitigate them during execution.
+
+**3c. Resolve open questions from framing** — framing may have deferred decisions to rough-in with explicit trip-wires (*"revisit during rough-in"*). Read the Open questions section of frame-NN.md and either resolve each with the user or escalate back to framing if the question has become bigger than rough-in can handle.
+
+**What rough-in does NOT research**: stack decisions (those are blueprint), methodology selection (blueprint), workstream-level interface commitments (framing), MCP server selection (blueprint), cascade-level conventions (scaffold/blueprint). Rough-in operates at the milestone level — patterns, specific libraries for specific rough issues, acceptance criteria detail, plan-mode prompt shape.
+
+Detailed research patterns and question banks live in `references/research-phase.md`.
+
+**HITL gate (full mode only)**: present research findings and the technical approach before producing the issue plan.
+
+## Step 4 — Issue plan (before drafting individual specs)
+
+Produce an **issue plan** — a short ordered list of sub-sub-issues with titles and one-sentence intents, before drafting the full specs. This is cheaper to iterate on than full specs and catches granularity problems (too many issues, too few, wrong boundaries) early.
+
+Each issue plan entry has:
+- **Sequence number and name** (e.g., "R1: Define Verifier trait")
+- **Issue title** following the convention `[<slug>:F<#>:R<#>] <intent>`
+- **One-sentence intent** (the thing this issue exists to do)
+- **Issue type flag**: Claude-Code-implementable (default), user-managed (manual setup), or hybrid
+- **Dependency on prior R-issues in the milestone**, if any
+- **Whether this is the capstone** — the last issue in the milestone that integrates or validates the prior work and is often different in shape (see Capstone pattern below)
+
+**Target count: 2-6 rough-in issues per milestone is typical for Claude-Code-executed workflows, and 3-7 for human-executed workflows.** The lower bound is 2 rather than 3 because Claude Code plan mode is itself a decomposition engine — [plan mode's read-only exploration phase adds a verification layer before code gets touched](https://code.claude.com/docs/en/best-practices), and when a well-shaped issue is handed to plan mode it internally decomposes into ~5-10 steps and executes them in sequence within one session. The right rough-in granularity is **"coherent review units with clean boundaries"** rather than "atomic work units." Two well-shaped issues that each plan-mode into ~5-10 internal steps is often preferable to four small issues that each plan-mode into 2-3 steps, because the per-issue `/finish` overhead (plan mode warmup, review cycles, PR latency, board-automation round trips) is real and compounds across a milestone.
+
+**The honest test isn't the count, it's whether each issue is a coherent review unit.** A "coherent review unit" is: one reviewer can read the PR in one sitting and form a complete opinion about it; the work is scoped to a single cross-crate boundary or a single architectural concern; the work doesn't straddle a layer that would benefit from separate landing. If two issues are each coherent review units and merging them would make the reviewer's job harder, keep them separate. If two issues are each so small that reviewing them separately feels like reviewing the same code twice, merge them — the "why R1 before R2" reasoning doesn't disappear when they merge, it becomes internal plan-mode step ordering, which is cheaper to revise than issue-boundary ordering.
+
+Outside the range signals a problem in the same spirit as before but with softer edges: **1 issue** often means the milestone is too small in a way that should have been caught at framing (fold into a sibling milestone), OR the milestone has one genuinely atomic piece of work with a clean boundary (legitimately 1-issue — note the departure from the typical range in the HITL gate and proceed). **8+ issues** means the milestone is too big (split via a re-framing trigger) or the rough-in author is pre-decomposing work that plan mode would handle internally (collapse adjacent issues with the review-unit test above).
+
+**HITL gate**: present the issue plan as a numbered list with the narrative arc (*"R1 defines the trait, R2 implements the first concrete verifier, R3 wires the loader, R4 is the capstone integration + smoke test"*). Iterate until the user approves the plan. Surface any count outside the 2-6 range explicitly so the user can accept the departure consciously rather than by omission. **Do not draft individual specs until the plan is approved** — drafting specs is expensive and wasteful if the plan is wrong.
+
+## Step 5 — Draft individual issue specs
+
+For each approved issue plan entry, draft the full sub-sub-issue spec using the template in `references/templates/rough-in-spec-template.md`. Each spec contains:
+
+1. **Title** — exact naming convention from the plan
+2. **Intent** — one paragraph, expanded from the plan's one-sentence intent
+3. **Acceptance criteria** — concrete, verifiable, user-visible or test-visible outcomes. "The tests pass" is not acceptance; "`cargo run -- regex/lesson_01.toml` succeeds with output matching `expected.txt`" is.
+4. **Test plan** — named tests that satisfy each acceptance criterion. One named test per criterion (rephrased from imperative spec to declarative test name), quotable verbatim from the test runner's output. For logic-regime modules these are scaffolded as failing tests *before* implementation begins (see `.claude/rules/testing.md` for regime classification); for boundary adapters they're the conformance + shim dispatch tests; for UI / integration they're the assertions written after the surface exists. The test plan is what `/finish`'s execute step anchors on for the red-first scaffolding — vague test names ("the function works") force the implementer to invent the contract, defeating the point.
+5. **Technical detail** — the specifics Claude Code needs to know: files to create/modify, functions to define with signatures, patterns from research to follow, libraries to use, gotchas to avoid
+6. **Claude Code plan-mode prompt** — the actual prompt the user (or the bootstrap-finish CLAUDE.md section) will hand to Claude Code's plan mode. This is the load-bearing output of rough-in. It must be self-contained enough that Claude Code can read it and produce a plan without needing to chase down external context.
+7. **Dependencies** — explicit list of prior R-issues that must be complete before this one can start
+8. **Done signal** — a specific, observable outcome that means this issue is done. Usually the same as the acceptance criteria's top-line check but stated as a verification command the user can run.
+
+**The executor's parser is the authority on section names.** `/finish` identifies sections by heading name and requires exactly eight, in order: Context, Assumptions, Implementation, Acceptance criteria, Test plan, Done signal, Dependencies, PR contract (`commands/finish.md` § Preconditions; the procedure's Step 2). The eight properties above are what every spec must *express*; the headings are how the executor *finds* them. Every other surface that restates the list — `references/templates/rough-in-spec-template.md`, the scaffold-shipped `issue-templates/cascade-rough-in.md`, `references/handoff-to-finish.md`, `references/plan-mode-prompts.md` — is a copy, and the conventions' verification block checks the two templates against each other, every heading against the executor, and the prose restatements against the template's list. A project that renames a section edits the executor first and the copies with it; a copy that disagrees with the executor is a defect to fix, never a difference to work around.
+
+**The Claude Code plan-mode prompt is the most important part of each spec.** It's the thing that makes rough-in valuable over just "framing plus a wish list." A plan-mode prompt has these properties:
+
+- Written in second person ("Implement the Verifier trait...") so Claude Code reads it as an instruction
+- Contains enough architectural context to avoid relitigating framing's decisions
+- Names specific files, constraints, and invariants; inlines signatures **only when they're verbatim from a locked interface commitment** (otherwise leaves signature shape to plan mode's Plan phase)
+- Cites CLAUDE.md / ARCHITECTURE.md / STANDARDS.md sections by name when the rules matter
+- Specifies the test or verification step that proves the implementation is correct
+- Is ~300-800 words (up to ~1000 for cross-crate capstones) — long enough to be self-contained, short enough to read in one pass
+- **States intent and constraints, not implementation sequences** — plan mode is a decomposition engine; over-prescriptive Implementation sections override its priors and produce strictly worse code than a cleaner prompt would. The only legitimate inline code blocks are IC-verbatim shapes prefaced with *"IC-N shape is verbatim and not negotiable."*
+
+Detailed spec drafting guidance, the full eight-property list, pitfalls (including a CSV loader worked example), and plan-mode prompt patterns live in `references/plan-mode-prompts.md`.
+
+### Example excerpt (what one rough-in spec looks like in practice)
+
+To make the output shape concrete: here's what one sub-sub-issue spec looks like, taken from a real cascade run — R1 of M1 of a "regex-pack" workstream. Note the specificity — acceptance is observable, technical detail is concrete, plan-mode prompt is self-contained.
+
+**Output fragment** (resulting `[regex-pack:F1:R1]` sub-issue body):
+
+```markdown
+## Intent
+
+Define the `Verifier` trait as the load-bearing abstraction every pack will implement. This is the first concrete touch of the v0.4 hard gate's architectural commitment — the trait must accommodate all four verifier shapes without growing variant logic in `core-engine`.
+
+## Acceptance criteria
+
+- `crates/core-engine/src/verifier.rs` exists and compiles cleanly under `cargo check --workspace`
+- The trait has associated types for `Input`, `Context`, `Error` and a single `verify` method
+- `cargo doc --no-deps` renders the trait with complete rustdoc
+- The trait compiles with no concrete impls (impls come in R2)
+
+## Test plan
+
+Regime: conformance-first (this is the trait declaration; concrete-impl conformance lands in R2). The trait file itself has nothing to TDD against until R2 has an impl, so the R1 test plan is a compile-and-doc smoke check rather than red-first unit tests.
+
+- `cargo check --workspace` passes (trait declaration compiles)
+- `cargo doc --no-deps` succeeds and the rendered output for `tuitor_engine::verifier::Verifier` includes the docstring referencing `docs/ARCHITECTURE.md § "The Verifier trait"`
+
+## Technical detail
+
+- File: `crates/core-engine/src/verifier.rs` (new file)
+- Function: `trait Verifier { type Input; type Context; type Error; fn verify(&self, input: &Self::Input, ctx: &Self::Context) -> Result<(), Self::Error>; }`
+- Add `pub mod verifier;` to `crates/core-engine/src/lib.rs`
+- Cite `docs/ARCHITECTURE.md § "The Verifier trait"` for the rationale in the rustdoc header
+
+## Claude Code plan-mode prompt
+
+Implement the `Verifier` trait as defined in `docs/ARCHITECTURE.md § "The Verifier trait"`. The trait has associated types `Input`, `Context`, and `Error`, and a single method `verify(&self, input: &Self::Input, ctx: &Self::Context) -> Result<(), Self::Error>`. The trait is pure — no async, no I/O, no network, per the engine sync/offline invariant in STANDARDS.md § Unenforced invariants.
+
+Create `crates/core-engine/src/verifier.rs`, define the trait with full rustdoc citing the ARCHITECTURE.md section, and add `pub mod verifier;` to `crates/core-engine/src/lib.rs`. Do not create any concrete implementations — those come in a later issue. Verify via `cargo check --workspace` and `cargo doc --no-deps`. Open a PR with `closes #<N>` where <N> is this issue's number.
+
+## Dependencies
+
+None — this is the first issue in M1.
+
+## Done signal
+
+`cargo check --workspace && cargo doc --no-deps` succeeds, the trait is visible in the rustdoc output, and the PR merges.
+```
+
+The full spec template lives in `references/templates/rough-in-spec-template.md`. The example above shows what one spec feels like in practice — every field populated, no placeholders, self-contained enough that Claude Code can execute it.
+
+**HITL gate**: present each spec inline for review, or batch them into one presentation for standard/light mode. Iterate until the user approves each spec individually or the full set.
+
+## Step 5.5 — Provision the executor pair (if missing)
+
+**Purpose**: ensure the executor pair — `.claude/commands/finish.md` (the contract) and `.claude/commands/finish-procedure.md` (the procedure) — exists in the user's repo before rough-in commits the first sub-sub-issue. Without it, the user has no tooling to pick up the sub-sub-issues rough-in is about to create — they'd have to hand-write the slash command between the Step 6 commit and their first `/finish` invocation, which is friction at exactly the wrong moment.
+
+**Idempotent and self-healing**: this step runs on every rough-in run but is a no-op in repos that already have `/finish` provisioned. Only the first rough-in run against a given repo actually commits the executor pair.
+
+### Step protocol
+
+1. **Query the repo** via `get_file_contents` for `.claude/commands/finish.md` and `.claude/commands/finish-procedure.md`
+2. **Compare against the bundled templates** at `references/finish-command.md` (the contract — its body below the `--- BEGIN TEMPLATE ---` marker is the canonical `.claude/commands/finish.md`) and `references/finish-procedure.md` (the procedure — its body below the same marker is the canonical `.claude/commands/finish-procedure.md`), judged per file:
+3. **Classify the result**:
+   - **A file does not exist**: this is the cold-start case. Proceed to the HITL gate to commit the pair (both files in one atomic transition).
+   - **Both files exist and match their bundled templates verbatim**: already provisioned. Skip the step, log *"`/finish` executor pair already provisioned, skipping Step 5.5"* in the inheritance summary. No HITL gate fires.
+   - **A file exists but differs from its bundled template**: drift detected on that file. Surface to the user (see Drift handling below), per file.
+
+### Drift handling
+
+When either file of the pair exists but its content doesn't match its bundled template, rough-in surfaces the drift by presenting that file's **diff** (not the full file on either side) with three explicit options:
+
+> "Your repo's `.claude/commands/finish.md` (or `finish-procedure.md`) differs from the cascade's current bundled template. Here's the diff (context: 3 lines each side):
+>
+> ```diff
+> [unified diff output, changed sections only]
+> ```
+>
+> This could mean (a) you've customized it, (b) a prior cascade version wrote an older template that's since been revised, or (c) someone edited it outside the cascade. Three options:
+>
+> **1. Leave the existing version in place** — keep your customization / prior revision.
+> **2. Overwrite with the current bundled template** — pick up cascade revisions or reset to current default.
+> **3. Abort and handle manually** — inspect further in your editor, re-run rough-in when ready.
+>
+> Which?"
+
+Rough-in waits for explicit user choice. Do not auto-select any option. Do not proceed past Step 5.5 until the user picks. **Never dump both full files** — the diff is what's actionable.
+
+**Never overwrite silently**: the user's existing `/finish` may be a deliberate customization or a prior revision that shouldn't be reverted. The drift discipline respects user edits by default.
+
+### HITL gate (only fires in the cold-start case)
+
+When a file of the pair does not exist, rough-in presents a **structured summary** — not the full content — and asks for explicit approval:
+
+> "Your repo doesn't have `.claude/commands/finish.md` (and `finish-procedure.md`) yet. Before I commit the next sub-sub-issues, I want to commit the `/finish` executor pair that will execute them.
+>
+> **What this is**: `.claude/commands/finish.md` — the contract the `/finish <N>` command runs against: what a finished issue is and the tests the result must pass; `.claude/commands/finish-procedure.md` — the step-by-step procedure it was extracted from, read on demand when a step is unclear.
+>
+> **Provenance**: the kit's current executor — contract-first since 2026-09-06 on a measured A/B (`.claude/rules/orchestration-reference.md` § Applied instances). Research runs executably, the plan is gated in plan mode, the branch is created before code lands, tests land red-first, `/simplify` and `pr-review-toolkit:review-pr` run once as the floor with the bounded sweep beside them, and a draft PR opens carrying the `## Review gate` and `## Triage` blocks.
+>
+> **What the contract contains, in five sections**:
+> 1. Read in full before planning — the issue and its comments, the frame, the decision records, the rules that bind the diff, the repository itself
+> 2. Preconditions — state and shape (the eight headings), dependencies closed as completed, idempotency, break-glass
+> 3. What the finished issue is — the gated plan, the branch, red-first tests, the implementation, atomic commits, the green gate, the review floor once, the draft PR, the hand-off
+> 4. The tests every finish must pass — fidelity, assumptions, red-first evidence, tags resolve, scope, claims match code, honesty of the gate, green, no improvisation, partial failure surfaces
+> 5. What this command does not do
+>
+> **Scope boundaries**: `/finish` does NOT write specs, modify issue bodies, auto-create dependent issues, bypass dependencies, flip the PR to ready, or merge. If the spec is wrong, `/finish` aborts and surfaces — re-rough-in is rough-in's job, not `/finish`'s.
+>
+> Commit this pair to `.claude/commands/`? Reply **yes** / **ok** / **approved** to commit, **show full** to see the complete contract inline (and the procedure on request) before deciding, or tell me what to adjust."
+
+The user's options at this gate:
+1. **Approve sight-unseen** (`yes`, `ok`, `approved`): rough-in commits both bundled templates verbatim. This is the common case and the default path.
+2. **Request full inspection** (`show full`, `let me see it`, `dump it`): rough-in dumps the full contract inline (and the procedure if asked), then re-presents the approval prompt. This preserves the full one-way-door inspection option for users who want it.
+3. **Request adjustments**: surface the proposed changes, discuss, and update the commit plan accordingly. Adjustments at this layer are rare but the path exists.
+
+**Rationale**: the one-way-door property requires the user to have the *opportunity* to inspect what's landing and to *explicitly approve*. It does not require a wall-of-text default presentation. The structured summary is informative enough to support sight-unseen acceptance (the contract's five sections plus scope boundaries plus provenance), and the full template is one request away for anyone who wants deeper inspection. This hits the one-way-door discipline without forcing the 52-line contract (with its 240-line procedure available on request) through every first rough-in run.
+
+**This gate runs in every rigor mode, including light mode.** The one-way-door property is too strong for the gate to collapse. Light mode collapses other gates but not this one — but "doesn't collapse" means "still fires and gets explicit approval", not "still dumps 150 lines."
+
+### Atomic transition (independent of Step 6)
+
+Step 5.5's commit is **its own atomic transition**, not bundled with Step 6's planning-backend commit. The provisioning and the sub-sub-issue creation are logically independent:
+
+- The executor pair doesn't depend on sub-sub-issues existing
+- The sub-sub-issues don't depend on the executor pair existing
+
+Running them in separate transitions is cleaner than bundling: if the pair's commit fails or hangs, rough-in surfaces the Step 5.5 failure and asks the user how to proceed. The user can retry the pair's commit, skip it and proceed to Step 6 anyway (with a note that the first `/finish` invocation will need the file committed by hand), or abort the whole rough-in run. Step 6 can still complete successfully even if Step 5.5 fails, though in that case rough-in's final output will flag the missing slash command.
+
+**Partial failure recovery**: same discipline as the planning-backend commit. Stop immediately, surface state, do not retry blindly, wait for user direction. See `references/planning-backend-commit.md` § Partial failure recovery for the full protocol (Step 5.5 borrows it verbatim).
+
+### Planning-axis-aware behavior
+
+**`github-issues` planning**: as described above. The executor pair is committed to the repo via GitHub MCP, same pattern as the cascade issue templates scaffold commits during its Stage 2.5.
+
+**`linear` planning**: the slash command still lives in the GitHub repo (code is in GitHub even when planning is in Linear), so the step runs identically to `github-issues`. The `/finish` command's behavior may differ slightly when planning = `linear` — specifically, step 1 of the slash command would read the Linear Issue rather than the GitHub Issue — but that's a concern for the bundled template's content, not for Step 5.5's provisioning logic.
+
+**`in-repo-markdown` planning**: Step 5.5 is **skipped entirely**. There are no GitHub sub-sub-issues (and no Linear issues) in `in-repo-markdown` planning, so there's nothing for `/finish` to pick up, so the slash command isn't needed. Rough-in logs *"`in-repo-markdown` planning — Step 5.5 skipped (no sub-sub-issues to /finish)"* in the inheritance summary and moves to Step 6 (which in `in-repo-markdown` planning is itself a markdown-only commit per `references/planning-backend-matrix.md`).
+
+### Why this step belongs in rough-in, not in a separate skill
+
+The alternative was to build a sixth in-chat skill (bootstrap-finish) scoped narrowly to writing the slash command. That was rejected in favor of this step for three reasons:
+
+1. **Timing**: the slash command needs to exist *before* the first `/finish` invocation, which means *before* any rough-in's sub-sub-issues are ready to be executed. Rough-in is the natural place for "provision the thing that will read my output."
+2. **Self-bootstrapping**: a step inside rough-in means a fresh cascade run (consultation → scaffold → blueprint → framing → rough-in in an empty repo) ends up with a fully working cascade including `/finish`, with no separate bootstrap step the user has to remember.
+3. **Scope parallel to scaffold's Stage 2.5**: scaffold commits issue templates as workspace infrastructure; rough-in commits the slash command as execution infrastructure. Both are idempotent, both are small, both run as "provision the thing the next phase needs." The pattern is consistent.
+
+The deferred meta-issue for the automation recommender pass will revise the **template content** in `references/finish-command.md` and `references/finish-procedure.md`, not the step structure. Step 5.5's shape is stable; the template it provisions is what evolves.
+
+## Step 6 — Planning-backend commit (atomic transition)
+
+After all specs are drafted and approved, commit the sub-sub-issues to the planning backend atomically with the markdown event log update. Same discipline as blueprint and framing: capture every operation, execute planning ops first, commit markdown second, rollback on failure, handle partial failure by stopping and surfacing state to the user.
+
+Detailed commit step, slug inheritance, profile-aware behavior, atomic transition pattern, partial failure recovery, and failure modes live in `references/planning-backend-commit.md`.
+
+**Execution presentation**: during the atomic transition, surface per-step status as a running checklist (one line per operation, no full tool responses). On any failure, switch to full-expansion mode and dump the failing step's raw response alongside the captured partial state. See `references/planning-backend-commit.md` § Presentation pattern for execution for the full protocol.
+
+**HITL gate (final)**: present the full set of sub-sub-issues that will be created (titles, Milestones they'll be assigned to via parent, labels, plan-mode prompts) alongside the markdown event log entry. Get explicit user approval before the atomic transition runs.
+
+## Step 7 — Post-transition presentation and summary
+
+After Step 6's atomic transition succeeds, rough-in produces a **completion summary** that hands off to `/finish` and closes the run. This is not optional — the summary is the skill's final deliverable and what the user reads immediately after the commit lands.
+
+The completion summary has four required sections:
+
+### 1. Commits
+
+List of SHAs landed during this run with one-line summaries. Example:
+
+> **Commits landed**:
+> - `a3f2c1d` — Sub-sub-issues #48, #49 created and parented under #37
+> - `b8e4907` — docs/cbk/README.md rough-in event entry for M1
+
+If Step 5.5 fired its own commit in this run (the `/finish` provisioning case), that commit is listed here too. If Step 5.5 was a no-op or skipped, don't list it — only real commits land in this section.
+
+### 2. Sub-sub-issues
+
+Table of issues created with title, number, dependency, and capstone marker. Example:
+
+> | # | Title | Depends on | Capstone |
+> |---|---|---|---|
+> | #48 | [regex-pack:F1:R1] Define Verifier trait per IC-1 | None | — |
+> | #49 | [regex-pack:F1:R2] Implement RegexConstructVerifier with match-span detail | #48 | ✓ |
+
+For re-rough-in runs, also list any superseded prior issues in a second table so the user can see what was replaced: *"Prior issues superseded during this run: #45, #46, #47."*
+
+### 3. Handoff
+
+The exact next command the user should run plus what they should expect to see. This is the "what happens next" guidance and it must be specific enough to act on without re-reading the skill docs.
+
+Example:
+
+> **Handoff to `/finish`**:
+>
+> Run `/finish 48` in Claude Code to pick up R1. The first thing `/finish` does is transition #48 from Ready to In Progress on the board, then it reads the issue body and hands the Implementation section to plan mode. You'll see plan mode's proposal before any code gets written — approve or iterate there.
+>
+> After #48 closes via merged PR, `/finish 49` picks up R2. R2 depends on R1, so don't run it before #48's PR merges.
+
+For cases where the first R-issue has open dependencies (e.g., the milestone's first rough-in issue depends on a deferred meta-issue that's still open), the handoff explicitly flags this: *"#48 depends on #23 closing — do not run `/finish 48` until #23 is resolved. The soonest-runnable issue is none; resolve dependencies first."*
+
+### 4. Loose threads
+
+**Observations from this run that didn't belong in a HITL gate but are worth surfacing for later attention.** This is where "this should become a skill revision" observations live. Without a structured place for these, they get lost between runs, which is exactly the calibration data the cascade needs most.
+
+Three subcategories:
+
+**Observations that might become skill revisions** — one-line observations with pointers to where the revision would land:
+> - *"Step 4's count text still mentions 'typical 3-7 range' in one place that I updated to 2-6 during this run but flagged as drift — see SKILL.md line 111"*
+> - *"The CSV loader bad/good example in plan-mode-prompts.md could use a TypeScript companion for non-Rust projects — add to Pitfall 6 in the next revision pass"*
+
+**Observations that are repo-level state for the user to track** — free-form:
+> - *"#23 is still open and gates M3 — will need to run the automation recommender before rough-in on F3 can start"*
+> - *"The IC-1 shape in frame-01.md is locked for this milestone but may need revisiting at M3 when the TUI layer starts consuming it"*
+
+**Observations that are cascade-level drift to flag** — explicit "drift detected" labeling:
+> - *"Drift detected: .github/ISSUE_TEMPLATE/cascade-rough-in.md's HTML comments don't reference the eight-property shape — scaffold's canonical needs updating"*
+> - *"Drift detected: Step 5.5 presentation was verbose during this run, noted as feedback for the next revision pass"*
+
+If there are no observations in a subcategory, omit that subcategory rather than writing "none." If there are no loose threads at all, write "No loose threads from this run" as a single line rather than a full section — the section's absence from a summary is itself a signal.
+
+### HITL gate — none
+
+Step 7 does NOT have a HITL gate. The summary is rough-in's final output, not a check-in. The user reads it, acts on the handoff, or pushes back if something is wrong — but the summary itself is not gated on approval because there's nothing left to commit at this point.
+
+### Rigor mode behavior
+
+Step 7 runs in every rigor mode. Light mode can trim the subsection prose (shorter handoff, one-line commits) but cannot skip any of the four sections. The loose threads section is especially load-bearing for cascade calibration and light mode must not collapse it.
+
+## The capstone pattern
+
+Most milestones end with a **capstone issue** — the last sub-sub-issue that integrates the prior work and proves the milestone's capability. It's structurally different from the earlier issues:
+
+- **Earlier issues** typically define modules, implement functions, wire config — unit-level work
+- **The capstone** typically tests end-to-end, runs the first real fixture, opens the smoke test, or writes the integration test that proves the milestone's capability is actually real
+
+The capstone is often the last chance to catch "we built the pieces but they don't compose" before the next milestone inherits the assumption that the pieces work. Rough-in should explicitly identify the capstone during issue plan drafting and note it in the plan.
+
+**Not every milestone has a capstone.** Spike milestones (research-only) don't have one — their "capstone" is a document or decision. Infrastructure milestones often don't either — the done signal is "the workbench works" which is verified by the next milestone's first real run. Vertical slice milestones almost always have one because the demonstrable capability needs proving.
+
+## HITL gates summary
+
+- **Full mode — up to nine gates**: one per step (inheritance + meta-check, milestone selection, research depth, research findings, issue plan, individual specs, batch review, Step 5.5's provisioning gate [only on a cold start or drift], final pre-commit review).
+- **Standard mode — three gates** (`SKILL.md` § Three rigor modes): (1) inheritance + pre-flight; (2) the verified set — issue plan, coverage map and specs together, with the decision list; (3) the final pre-commit review, which carries Step 5.5's provisioning state — on a cold start or drift, Step 5.5's own gate fires inside gate 3, never collapsed.
+- **Light mode — one gate**: the combined up-front confirmation; the verified set is then presented with its decision list and committed on approval, and Step 5.5's cold-start or drift gate still fires when it fires.
+
+The deferred meta-issues pre-flight check and the final pre-commit gate run in every mode. **Step 5.5's provisioning gate also cannot collapse** when it fires (cold-start case), because the one-way-door property of committing the executor pair future Claude Code sessions will invoke is too strong. In the already-provisioned case, Step 5.5 is a silent no-op with no gate.
+
+## Failure modes to defend against
+
+- **Rough-in multiple milestones at once** — most common temptation. Resist. Rough-in one, build through finish, then rough-in the next.
+- **Skipping the pre-flight checks** — light mode's biggest risk. The check is mandatory in every rigor mode; the sub-sub-issue creation is too expensive to unwind if a meta-issue should have blocked it.
+- **Drafting individual specs before the issue plan is approved** — wastes work when the plan is wrong. Always approve the plan first.
+- **Vague acceptance criteria** — "the tests pass" is not acceptance; "`cargo run -- X` produces output Y" is. Vague criteria force finish to guess.
+- **Plan-mode prompts that require external context finish doesn't have** — prompts must be self-contained. If a prompt says "follow the pattern from the previous issue," finish has to chase down which previous issue, which is friction that erodes trust in the cascade.
+- **Inventing acceptance signals or plan-mode prompts** instead of deriving them from the framing milestone's acceptance signal and the cascade's existing conventions
+- **Partial-state failures during the atomic transition** — handled by the partial failure recovery protocol in `references/planning-backend-commit.md`. Never retry blindly, never auto-rollback on hang, always surface state to the user.
+- **Slug drift from framing sub-issue** — the slug must be inherited from the parent's title, never re-derived. Drift here breaks the grep-ability of the hierarchy across all cascade artifacts.
+- **Overwriting prior rough-in specs instead of creating new ones on re-rough-in** — re-rough-in creates new sub-sub-issues with higher R-numbers and supersedes the prior ones via close + label. Never overwrites.
+- **Missing Pre-flight checks table in the framing** — if the framing pre-dates this pattern, surface as framing drift and ask the user to either confirm no meta-issues exist or loop back to framing.
+- **Silently overwriting a user-customized `/finish` in Step 5.5** — if the repo already has `.claude/commands/finish.md` with content that differs from the bundled template, the user may have customized it deliberately. Defense: Step 5.5's drift detection surfaces the divergence with three explicit options (leave in place / overwrite / abort) and waits for the user to pick. Never auto-overwrite.
+- **Committing sub-sub-issues before the slash command is in place (or detected as intentionally absent)** — if Step 5.5 fails and Step 6 proceeds anyway, the user ends up with sub-sub-issues but no tool to execute them. Defense: Step 5.5 runs before Step 6, and Step 6's final pre-commit gate surfaces any unresolved Step 5.5 state (slash command missing, drift unresolved, commit failed) so the user can decide whether to proceed with the known gap or abort.
+- **Template drift between bundle and repo after cascade revisions** — the cascade's bundled `references/finish-command.md` gets updated (via the automation recommender pass or other revisions) but existing repos still have the old committed version. Defense: Step 5.5's drift detection catches this on the next rough-in run and offers to update, with the user's existing version preserved if they decline.
+
+Detailed failure mode analysis with recovery patterns lives in `references/failure-modes.md`.
+
+## Solo vs. team notes
+
+**Solo**: rough-in is typically run by the same person who framed the milestone. HITL gates are lighter because the context is fresh. Standard or light mode is the usual pick.
+
+**Team**: rough-in produces specs that other team members (or Claude Code, which is a kind of team member) will execute. Acceptance criteria and plan-mode prompts have to be self-contained in a way solo runs can sometimes get away with. Full mode is the usual pick, and the final pre-commit gate gets extra scrutiny because the specs are contracts with execution.

@@ -227,7 +227,7 @@ The skill produces an Interface Commitments table — what stable interfaces the
 
 **Phase 5.** Takes one milestone from a `frame-NN.md` and produces a set of **sub-sub-issues** under the framing F-issue. Each issue is sized as a **coherent review unit** — typically 2–6 issues per milestone for Claude-Code-executed work.
 
-Each issue body has seven sections: Context, Implementation, Acceptance criteria, Test plan, Done signal, Dependencies, PR contract. The `## Implementation` section is the load-bearing input to Claude Code's plan mode in the next phase.
+Each issue body has eight sections: Context, Assumptions, Implementation, Acceptance criteria, Test plan, Done signal, Dependencies, PR contract. The `## Implementation` section is the load-bearing input to Claude Code's plan mode in the next phase.
 
 **Abbreviated example** of one rough-in issue body:
 
@@ -266,16 +266,15 @@ Closes [TUI-42]. Conventional Commits title.
 
 ### 6. `/finish <issue-number>` — execute one sub-sub-issue end-to-end
 
-**Phase 6.** A Claude Code slash command (`.claude/commands/finish.md`), not a chat skill. Picks up a rough-in sub-sub-issue and runs it through to a draft PR:
+**Phase 6.** A Claude Code slash command (`.claude/commands/finish.md`), not a chat skill — contract-first: `finish.md` is the contract (what a finished issue is and the tests the result must pass), `finish-procedure.md` beside it is the step-by-step read on demand. Picks up a rough-in sub-sub-issue and runs it through to a draft PR:
 
-1. Read the issue body (seven sections)
-2. Verify dependencies (all listed prior-issues closed-completed)
-3. Idempotency check (no existing PR / branch for this issue)
-4. **Plan mode** anchored on the `## Implementation` section
-5. Execute the plan (red tests → green → refactor → `mise run check`)
-6. **`/simplify`** pass (per `.claude/rules/simplification.md`)
-7. **`pr-review-toolkit:review-pr`** with auto-triage of findings (per `.claude/rules/pr-review.md`)
-8. Open the PR as **draft** with the triage table in the body
+1. Read the issue body and its comments (eight sections), the frame, the decision records and the rules that bind
+2. Preconditions: state and shape, dependencies closed-completed, idempotency, break-glass
+3. Research the `## Implementation` section executably, then gate the plan in **plan mode**
+4. Branch first, then execute (red tests → green → refactor → the project's `check` task)
+5. **`/simplify`** as a skill (per `.claude/rules/simplification.md`)
+6. **`pr-review-toolkit:review-pr`** as a skill, with the bounded review sweep beside it, then four-class triage (per `.claude/rules/pr-review.md`) — the floor, once
+7. Open the PR as **draft** carrying the `## Review gate` and `## Triage` blocks
 
 The user then reviews the draft and flips it to ready when satisfied — that triggers any GitHub Action auto-review (e.g., `claude-review.yml`) and the merge is the user's call.
 
@@ -286,7 +285,8 @@ The user then reviews the draft and flips it to ready when satisfied — that tr
 ```
 .claude/
 ├── commands/
-│   ├── finish.md                      ← Phase 6 executor slash command
+│   ├── finish.md                      ← Phase 6 executor slash command (the contract)
+│   ├── finish-procedure.md            ← its procedure, read on demand
 │   ├── intake.md                      ← bottom-up entry: external report → /finish-able issue
 │   ├── enrich.md                      ← rough-in for one small capability
 │   └── pr-respond.md                  ← the PR feedback-loop executor
@@ -294,8 +294,8 @@ The user then reviews the draft and flips it to ready when satisfied — that tr
 │   ├── consultation/                  ← Phase 1
 │   ├── scaffold/                      ← Phase 2 (+ references/adr-starters/, references/issue-templates/)
 │   ├── blueprint/                     ← Phase 3
-│   ├── framing/                       ← Phase 4
-│   ├── rough-in/                      ← Phase 5 (+ references/finish-command.md, the bundled executor)
+│   ├── framing/                       ← Phase 4 (+ references/contract.md, references/procedure.md)
+│   ├── rough-in/                      ← Phase 5 (+ references/contract.md, references/procedure.md; references/finish-command.md + finish-procedure.md, the bundled executor pair)
 │   └── adr-new/                       ← ADR scaffolder (used by blueprint and onward)
 ├── agents/
 │   ├── adr-conformance-reviewer.md    ← dispatched on every review pass
@@ -326,7 +326,10 @@ The user then reviews the draft and flips it to ready when satisfied — that tr
 │   ├── tooling.md                     ← tool-selection skeleton (template)
 │   └── knowledge-backend.md           ← Notion-axis contract (delete with its hook when the axis is none)
 ├── workflows/
-│   └── review-sweep.js                ← find-then-verify review orchestration
+│   ├── review-sweep.js                ← find-then-verify review orchestration
+│   ├── finish-ab/                     ← two-arm A/B harness exemplar (worktree-isolated arms, balanced blind judges)
+│   ├── agent-cost.py                  ← per-agent cost reader for a run's transcripts
+│   └── tests/                         ← stub harnesses for the workflows (no agent dispatched)
 └── settings.json                      ← hook registration + plugin/MCP manifest
 
 docs/adr/
@@ -341,7 +344,7 @@ CLAUDE.md                              ← kit-level instructions for Claude Cod
 .mcp.json.example                      ← MCP server config template
 ```
 
-Each skill follows the same pattern: a `SKILL.md` entrypoint plus a `references/` directory with templates and operational reference docs (failure modes, question banks, axis-specific behavior, inheritance discipline). Skills load `references/*.md` lazily on demand.
+Each skill follows the same pattern: a `SKILL.md` entrypoint plus a `references/` directory with templates and operational reference docs (failure modes, question banks, axis-specific behavior, inheritance discipline). The three producing phases — framing, rough-in and `/finish` — are contract-first: `references/contract.md` (for the executor, `commands/finish.md` itself) is the drafting read, `references/procedure.md` (`commands/finish-procedure.md`) the step-by-step on demand, and `SKILL.md` routes. Skills load `references/*.md` lazily on demand.
 
 ## Required dependencies
 

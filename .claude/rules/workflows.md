@@ -33,7 +33,7 @@ The triad works because: plan mode prevents wrong directions; task-tracking enfo
 - Mechanical refactors with clear-cut scope (rename a private symbol, update a comment, bump a version pin)
 - Tasks where the operator already wrote the diff in chat
 
-`/finish <N>` runs its research **executably** (in the operator's current permission mode) and then enters plan mode for the formal plan + the approval gate — the read-only gate covers the *plan*, not the research (see `.claude/commands/finish.md` Step 5: 5a research → 5b plan-gate). If an issue were trivial enough to skip the plan gate, the rough-in author would not have created a separate sub-sub-issue for it.
+`/finish <N>` runs its research **executably** (in the operator's current permission mode) and then enters plan mode for the formal plan + the approval gate — the read-only gate covers the *plan*, not the research (see `.claude/commands/finish.md` § What the finished issue is, item 1, and `.claude/commands/finish-procedure.md` § Step 5: 5a research → 5b plan-gate). If an issue were trivial enough to skip the plan gate, the rough-in author would not have created a separate sub-sub-issue for it.
 
 ## Signals the plan needs revision
 
@@ -102,7 +102,7 @@ Subagents (search, planning, general-purpose, project-local reviewers) offload w
 - The agent would need to ask the operator a clarifying question (subagents can't; only the main session can)
 - The verification step needs to happen interactively
 
-**Never delegate understanding.** The subagent gathers; you synthesize. Don't write "based on your findings, fix the bug" — write "Read `<file>:<line>`. The bug is that X happens when Y. Fix it by changing Z." If you can't write that specific instruction, the subagent hasn't given you enough — read the findings, then write the instruction.
+**Never delegate the decision.** The subagent gathers — or, under a top-tier session, one fresh-context synthesis agent may assemble the product (the permitted slot, `orchestration.md` § The ceiling rule); you read the product rather than the raw inputs, verify the claims you carry forward, and own triage. Don't write "based on your findings, fix the bug" — write "Read `<file>:<line>`. The bug is that X happens when Y. Fix it by changing Z." If you can't write that specific instruction, the subagent hasn't given you enough — read the findings, then write the instruction.
 
 **Ground the fan-out.** Any existence/absence claim a dispatched researcher asserts is verified repo-wide, verifiers preferentially attack negative claims, and drafters cite the run's grounding corpus — the full three-rule statement lives in the rough-in skill's `references/research-phase.md` § Grounding existence claims.
 
