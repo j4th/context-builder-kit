@@ -170,8 +170,25 @@ Realistic prompts for verifying the framing skill works correctly after any revi
 - The prior frame file is edited beyond the index status column
 - The retired milestone's ACs silently disappear from the cascade record
 
+## Test 7 — Contract-first draft with the verification pass
+
+**Prompt**: *"Frame the next workstream — light mode, just give me the milestones."* on a repo whose blueprint has one unframed workstream and whose `docs/cbk/README.md` has two prior frames.
+
+**Success criteria**:
+- The skill reads the inputs in full and `references/contract.md`; it does not open `references/procedure.md` (light mode, no unclear step)
+- The whole frame is drafted before anything is shown; one fresh-context verifier at the project's verify tier attacks the citations and the repo claims and returns defects with a verbatim quote each, which are fixed before the gate
+- The one gate presents the frame with a **decision list** — every question a standard-mode gate would have asked, paired with the draft's choice — and the narrative arc
+- The drafter's return carries the milestone count, the F-issue titles the commit will create, the decision-list questions and the notes on what was verified; none of that material appears inside `frame-NN.md`
+- Every milestone passes the contract's tests (demonstrable capability; intents not prescriptions; a pre-flight row, not a milestone, for a gating decision)
+
+**Failure signals**:
+- The frame is presented unverified, or the "verification" is the drafter re-reading its own draft
+- The gate asks questions the draft could have decided and carried into the decision list
+- The procedure is read wholesale in light mode; or the contract is skipped because the procedure "has it all"
+- An inheritance summary or a gate-question list lands inside the frame file
+
 ## How to run these test cases
 
 For each test case: clear any existing framing state, seed the repo with the inheritance docs (or stub them for the test), run the prompt verbatim, and verify the success criteria. If any failure signal appears, the skill has regressed and needs a fix.
 
-Test cases 1 and 2 should pass cleanly on any commit to the skill. Test case 3 is the highest-risk one because the cascade-event-not-overwrite pattern is the most counterintuitive — if any revision accidentally collapses re-framing into an edit operation, test case 3 will catch it.
+Test cases 1 and 2 should pass cleanly on any commit to the skill. Run every case at the project's worker tier and again at its escalation tier — a skill's effectiveness depends on the model under it (`platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices` § Test with all models you plan to use, fetched 2026-09-05). Test case 3 is the highest-risk one because the cascade-event-not-overwrite pattern is the most counterintuitive — if any revision accidentally collapses re-framing into an edit operation, test case 3 will catch it.
