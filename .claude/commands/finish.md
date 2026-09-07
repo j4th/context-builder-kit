@@ -152,7 +152,7 @@ The principle for Steps 8–9: **the executor handles findings the codebase need
 
    **A failed review agent is dropped coverage, not zero findings.** An agent that fails, times out, or returns nothing leaves its whole dimension unreviewed — track failed dimensions and unverified findings explicitly and retry them before treating the review pass as complete. This generalizes the missing-toolkit rule above to every agent in the dispatch.
 
-3. **Triage and auto-action findings per `.claude/rules/pr-review.md`.** That file is the canonical source for the four-class rubric (Apply / Apply with care / Surface / Defer / Reject), the Apply/Surface calibration per category (docs, defensive additions, naming, test additions, style), the "What NOT to flag" exclusion list, the path-conditional aggressiveness, and the anti-patterns. Read it now if it's not already in context.
+3. **Triage and auto-action findings per `.claude/rules/pr-review.md`.** That file is the canonical source for the four-class rubric (Apply / Apply with care / Surface / Defer / Reject), the Apply/Surface calibration per category (docs, defensive additions, naming, test additions, style), the "What NOT to flag" exclusion list, the path-conditional aggressiveness, and the anti-patterns. Read it now if it's not already in context. Read `.claude/rules/pr-review-reference.md` § Apply / Surface calibration and § Path-conditional aggressiveness before classifying — a triage is not a file read, so the path-scoped reference does not load on its own.
 
    **Quick summary of the rubric for orientation** (the rules file is authoritative when in doubt):
 

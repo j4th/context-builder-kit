@@ -1,4 +1,14 @@
+---
+paths:
+  - "**/*_test.<ext>"
+  - "**/*.test.<ext>"
+  - "**/test/**"
+  - "**/tests/**"
+---
+
 # Testing Rules
+
+> **Path-scoped — stamp the globs at install.** This rule loads only when a test file or a test directory is read (`https://code.claude.com/docs/en/memory`). Replace `<ext>` with the project's test-file extension(s) and drop the directory patterns the project does not use. A placeholder glob matches nothing; the conventions' verification block flags it. Anything a test-writing session needs *before* it opens a test file — the project's test-side trace-tag form, for one — is restated here rather than left in a rule this session never loads.
 
 Operational rules for tests. The principle (logic modules get real tests; boundary impls get conformance + mocks; tests are part of done) lives in your `docs/STANDARDS.md`; this file is the implementation contract — when, in what order, and to what shape.
 
@@ -135,6 +145,8 @@ The mapping is:
 - One acceptance criterion → one test name (rephrased from imperative spec to declarative test)
 - The rough-in `## Test plan` section names them; the implementer writes them as failing tests on day one
 - A reviewer reading the test runner's trace output sees the contract in the same words the issue body uses
+
+The test-side trace tag, restated here because a test-writing session loads this rule and may never open a cascade file: a test's name or docstring tags the **R-issue's own** criterion number (e.g. `[<ISSUE-KEY> AC2]`), while the R-issue's acceptance-criteria list is what cites the parent framing's `[F<N>.AC<M>]` IDs — two anchors, one per loop. The convention, and the project's chosen tag form, live in `cbk-conventions-reference.md` § Trace ID convention.
 
 ## Async tests are the default
 

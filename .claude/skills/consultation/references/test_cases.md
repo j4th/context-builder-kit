@@ -1,6 +1,6 @@
 # Test cases for the consultation skill
 
-Three realistic test prompts that exercise the full range of consultation scenarios. These are the contract for "consultation works": when the skill is run on these prompts, the output should produce a faithful problem brief and the conversation should hit the expected steps without skipping or solutionizing prematurely. Use them when revising the skill to verify nothing regressed.
+The realistic test prompts below exercise the full range of consultation scenarios. These are the contract for "consultation works": when the skill is run on these prompts, the output should produce a faithful problem brief and the conversation should hit the expected steps without skipping or solutionizing prematurely. Use them when revising the skill to verify nothing regressed.
 
 For Claude.ai's qualitative test loop (no subagents, no benchmarking): a real human runs the skill on each prompt as if they were the user, then judges the output against the success criteria below. There's no automated grader for this skill — the outputs are too prose-heavy and the quality criteria are too qualitative.
 

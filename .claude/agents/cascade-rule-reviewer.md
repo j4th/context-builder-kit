@@ -14,12 +14,7 @@ The `adr-conformance-reviewer` covers ADRs in `docs/adr/`. The `logging-discipli
 
 The contracts I check for compliance:
 
-- `.claude/rules/testing.md` — three-regime testing discipline (test-first / conformance-first / shape-of-done); the regime is a property of the module class, and the named tests trace back to acceptance criteria
-- `.claude/rules/cbk-conventions.md` — branch naming, title-prefix scheme, close-marker conventions, `[skip ci]` rule, mutation discipline (ADRs immutable, cascade artifacts append-only), workstream slug stability
-- `.claude/rules/simplification.md` — `/simplify` discipline, dead-code / unnecessary-indirection patterns, no behavior change
-- `.claude/rules/knowledge-backend.md` — knowledge-backend writes are HITL-gated and default-SKIP, the repo is canonical for code + cascade artifacts, no ADR mirroring, no cascade-artifact mirroring
-
-Note: `.claude/rules/pr-review.md` is **not** in my "rules to check compliance against" list — it's the **rubric** I (and all other reviewer agents) use to classify findings (Apply / Apply with care / Surface / Defer / Reject). I apply it; I don't check the diff for "is pr-review.md being followed."
+Every file under `.claude/rules/` **except** `logging.md` (the logging reviewer's) and the `pr-review.md` pair (the rubric I apply, not a contract I check the diff against). That set is derived, not enumerated — a rule added, split or renamed is in scope the moment it lands. Today it is: `testing.md` (three-regime testing; the named tests trace to acceptance criteria), `cbk-conventions.md` and `cbk-conventions-reference.md` (branch naming, title prefixes, close markers, the `[skip ci]` rule, mutation discipline, workstream slug stability), `simplification.md`, `knowledge-backend.md` (writes HITL-gated and default-SKIP; the repo is canonical for code and cascade artifacts), `workflows.md`, `tooling.md`, `orchestration.md` and `orchestration-reference.md`. Read the reference half of a split rule when the contract's pointer names the section the diff touches.
 
 Out of scope (handled by other reviewers):
 - `.claude/rules/logging.md` → `logging-discipline-reviewer`

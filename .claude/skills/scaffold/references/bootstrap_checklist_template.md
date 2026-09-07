@@ -8,7 +8,7 @@ The session-scoped artifact scaffold produces alongside the conventions document
 - **Downloadable artifact**: also produce as `bootstrap_checklist.md` via `create_file` + `present_files` so the user can save or share it
 - **Do not commit to repo**: the checklist is session-scoped, not persistent. The conventions doc is the persistent artifact
 
-## Three sections, in order
+## Four sections, in order
 
 ### 1. Completed items
 
@@ -23,6 +23,7 @@ Resources provisioned via MCP, with links and a one-line description each. Forma
 - **Scaffold output doc**: committed at `<repo>/docs/cbk/scaffold.md`
 - **Problem brief**: committed at `<repo>/docs/cbk/problem_brief.md`
 - **Knowledge surface**: `docs/cbk/` directory created
+- **ADR starters**: `docs/adr/` created from the kit's starters — README, template, and ADR-0000 dated <date>, deciders <who>
 
 ## 🔧 Completed manually (by you during this session)
 
@@ -70,6 +71,34 @@ Walk through each row. If anything fails, retry or fall back to manual instructi
 ```
 
 Only include rows that are actually applicable. State 2 (no projects toolset) omits the project board row. State 4 (no MCP) puts everything in section 2 (manual instructions) and the verification matrix becomes longer.
+
+### 4. Rule-file disposition
+
+The kit's `.claude/rules/` ships three template rules that carry bracketed placeholders (`cbk-conventions.md`, `orchestration.md`, `tooling.md`) and two path-scoped rules whose `paths:` globs are placeholders (`logging.md`, `testing.md`). Nothing else in the cascade ever asks about them, so this section does: print the always-loaded set with its size first (the loop in `cbk-conventions-reference.md` § Verification), then require an explicit disposition per file. A row with no disposition is a defect, not a default — a real run reached dozens of merged PRs with `[Record the project's posture here]` still in an always-loaded rule.
+
+```markdown
+## 📐 Rule-file disposition
+
+Always-loaded rules as of this checklist:
+<paste the always-loaded loop's output — one line per file with its byte count, and the total>
+
+| Rule | Disposition | Reason |
+|---|---|---|
+| `cbk-conventions.md` | filled | surface inventory, branch naming, close markers stamped from this scaffold |
+| `orchestration.md` | filled / path-scoped / deleted | <e.g. "filled — default posture recorded"> |
+| `tooling.md` | filled / path-scoped / deleted | <e.g. "deleted — no MCPs wired yet; restore from the kit when the first lands"> |
+| `logging.md` | stamped | `paths:` set to `**/*.<ext>` |
+| `testing.md` | stamped | `paths:` set to `**/*_test.<ext>`, `**/test/**` |
+| `knowledge-backend.md` | kept / deleted | <"deleted with its hook and settings stanza — knowledge axis is none"> |
+
+One-time choices settled here (each has a kit default; a choice with no forcing surface is a choice the kit made for you):
+- **Reviewer agent-memory**: `memory: project` (committed under `.claude/agent-memory/`, precedents survive clones and get PR-reviewed) or `memory: local` (`.claude/agent-memory-local/`, never committed). Decision: <project | local>. Recorded in `cbk-conventions.md` § Surface inventory.
+- **Licence**: <SPDX id | none yet — all rights reserved>. Lives in the repo's `LICENSE` file and README § License (scaffold seeds both; the Repository line above names the choice) — it is not a row of `docs/cbk/scaffold.md`'s Cascade metadata table.
+```
+
+The dispositions and what each means: **filled** — the bracketed sections carry this project's values, and the file opens with a one-line provenance note (the date, that it was filled from the kit's template, where it deviates); choices are appended under the template prose, not written over it. **path-scoped** — the file gains a `paths:` block so it loads only when a matching file is read. **deleted** — the file governs a surface this project does not have, and boilerplate would only tax every session; delete every index that lists it in the same change (`CLAUDE.md`, `README.md`, the reviewer that enumerates it) and note the restore condition. **kept** is valid only for a rule with no placeholders. **stamped** is the path-scoped rules' equivalent of filled.
+
+In light mode this section is one line per file.
 
 ## Tone and posture
 

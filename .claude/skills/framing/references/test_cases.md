@@ -1,6 +1,6 @@
 # Framing test cases
 
-Six realistic prompts for verifying the framing skill works correctly after any revision pass. Each test case represents a structurally distinct scenario — first framing of the cascade, subsequent framing exercising the "Builds on" inheritance pattern, re-framing exercising the cascade-event-not-overwrite pattern, the planning-backend commit, the additive increment, and the milestone-scoped re-frame. Run all six after any revision to confirm nothing regressed.
+Realistic prompts for verifying the framing skill works correctly after any revision pass. Each test case represents a structurally distinct scenario — first framing of the cascade, subsequent framing exercising the "Builds on" inheritance pattern, re-framing exercising the cascade-event-not-overwrite pattern, the planning-backend commit, the additive increment, and the milestone-scoped re-frame. Run all of them after any revision to confirm nothing regressed.
 
 ## Test case 1 — Canonical first framing (frame-01)
 
@@ -29,6 +29,7 @@ Six realistic prompts for verifying the framing skill works correctly after any 
 - Every milestone has a verb-phrase capability statement
 - `README.md` index is created alongside `frame-01.md` in the same commit
 - Exactly three HITL gates (standard mode)
+- Full mode offered no MCP or plugin research track (framing does not research tooling); the frame's Pre-flight checks table carries the exact empty-state string `No deferred meta-issues from this framing` when empty.
 
 **Failure signals**:
 - Framing produces milestones without reading all three inheritance docs in full

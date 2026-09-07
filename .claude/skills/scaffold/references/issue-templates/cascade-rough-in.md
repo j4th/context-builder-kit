@@ -28,7 +28,7 @@ This issue is structured so that:
 You can edit any section freely. Prose, links, code snippets, references
 to other docs are all fine — the template is structural, not dogmatic.
 
-The only hard rule: keep the section headings as written. /finish
+The only hard rule: keep the eight section headings as written, in order. /finish
 identifies sections by heading name, so renaming "Implementation" to
 "What to build" will break the slash command's anchoring.
 -->
@@ -46,6 +46,27 @@ docs/cbk/frame-NN.md, etc.
 -->
 
 You are implementing R<#> of M<#> under the **<workstream-slug>** workstream's framing capability F<#> (link to parent: #<parent-issue-number>). _One paragraph of context here._
+
+## Assumptions
+
+<!--
+Surface assumptions before any implementation content. Per Addy Osmani's
+"how to write a good spec for AI agents" pattern. List every gap rough-in
+filled in that the user might want to correct: API arities chosen without
+verification, library versions assumed available, semantic interpretations
+of the framing's intent that could go either way. Include `[ASSUMPTION:]`
+tag prefix per item so /finish can grep for them at execution time.
+
+If empty, write `- None — all parameters explicit from the framing intent
+and acceptance criteria.` Do not delete the section.
+
+Resolved assumptions (confirmed during implementation) move out of this
+section and inline into the relevant ## Implementation paragraph; do not
+maintain a separate "Resolved" subsection.
+-->
+
+- [ASSUMPTION: <gap description>] <one-line context — why this assumption was made and what would change if wrong>
+- [ASSUMPTION: <next>] ...
 
 ## Implementation
 

@@ -38,7 +38,7 @@ The cascade is top-down, but a **bottom-up contribution lane** complements it fo
 │   └── pr-respond.md              ← the PR feedback-loop executor (inverse of /finish)
 ├── agents/                        ← project-local PR reviewers (adr-conformance, logging-discipline, cascade-rule; memory-enabled) + Explore (cheap-tier search exemplar)
 ├── hooks/                         ← PreToolUse guards, two-tiered: hard-deny (protect-immutable-adrs, protect-lock-files, protect-main-branch) + ask-gate (guard-pr-state, require-knowledge-backend-ok) + format-on-edit exemplar
-├── rules/                         ← operational contracts (cbk-conventions template, pr-review, testing, logging, simplification, knowledge-backend) + rule templates (workflows, tooling, orchestration)
+├── rules/                         ← operational contracts (cbk-conventions, pr-review — each split into an always-loaded contract and a path-scoped `-reference.md` half — plus testing, logging, simplification, knowledge-backend) and rule templates (tooling; orchestration, itself also split); workflows.md is portable
 ├── workflows/                     ← saved orchestrations (review-sweep: find-then-adversarially-verify review pass)
 └── skills/
     ├── consultation/SKILL.md      + references/   ← phase 1
@@ -74,7 +74,7 @@ These are load-bearing across the kit. Edits that violate them break the cascade
 Because there is no build/test/lint, the verification surface is editorial:
 
 - **When editing a `SKILL.md`**, also update its `references/test_cases.md` if the change touches behavior the test cases verify, and check that any cited reference file under `references/` still exists and matches.
-- **When editing the `cbk-conventions.md` rule file**, run the verification greps listed at the bottom of that file (under `## Verification`) to confirm portability invariants — e.g. that no project-specific identifiers leaked into skill content and that path/naming conventions stay consistent.
+- **When editing the `cbk-conventions.md` rule file**, run the verification block in `cbk-conventions-reference.md` § Verification (the kit sub-block must be green on this tree) to confirm portability invariants — e.g. that no project-specific identifiers leaked into skill content and that path/naming conventions stay consistent.
 - **When adding a new reference doc to a skill**, follow the existing `references/<topic>.md` naming and add a pointer from `SKILL.md` to it. Skills don't auto-discover references; the entrypoint must cite them.
 - **Templates live in `references/templates/`** and are quoted verbatim in skill output. Edits to a template change every future cascade artifact — treat them as the contract.
 
@@ -90,7 +90,9 @@ Kit-wide operational contracts (`.claude/rules/`):
 - `cbk-conventions.md` — project-level conventions template (target projects copy + fill in)
 - `pr-review.md`, `simplification.md`, `testing.md`, `logging.md` — operational discipline for the named tooling concern
 - `knowledge-backend.md` — the operational contract for the knowledge-backend axis (read patterns, write tiering, HITL discipline, brownfield detection, lazy provisioning)
-- `workflows.md`, `tooling.md`, `orchestration.md` — **templates** (like `cbk-conventions.md`): agent workflow patterns, tool-selection skeleton, and model/effort tiering. Target projects copy and fill the bracketed sections; fast-aging platform claims inside them are dated observations to re-verify, per the conventions' dated-empirical-rails principle
+- `tooling.md`, `orchestration.md` — **templates** (like `cbk-conventions.md`): tool-selection skeleton and model/effort tiering. Target projects copy and fill the bracketed sections; fast-aging platform claims inside them are dated observations to re-verify, per the conventions' dated-empirical-rails principle
+- `workflows.md` — a **portable rule** (agent workflow patterns), kept always-loaded on purpose; it is not a template
+- `cbk-conventions-reference.md`, `orchestration-reference.md`, `pr-review-reference.md` — the path-scoped halves; see `cbk-conventions.md` § Rule loading and the instruction budget
 
 ## When the user invokes a skill
 

@@ -1,6 +1,6 @@
 # Test cases for the scaffold skill
 
-Three realistic test prompts that exercise scaffold's profile selection, discovery step, and provisioning flow. These are the contract for "scaffold works": when run on these prompts, the output should produce a faithful `docs/cbk/scaffold.md` and the conversation should hit the expected gates without skipping the safety floors. Use them when revising the skill to verify nothing regressed.
+The realistic test prompts below exercise scaffold's profile selection, discovery step, and provisioning flow. These are the contract for "scaffold works": when run on these prompts, the output should produce a faithful `docs/cbk/scaffold.md` and the conversation should hit the expected gates without skipping the safety floors. Use them when revising the skill to verify nothing regressed.
 
 For Claude.ai's qualitative test loop (no subagents, no benchmarking): a real human runs the skill on each prompt as if they were the user, then judges the output against the success criteria below.
 
@@ -17,6 +17,7 @@ For Claude.ai's qualitative test loop (no subagents, no benchmarking): a real hu
 - Stage 2 provisions repo via GitHub MCP, walks user through manual label creation, branch naming uses a short team identifier
 - Stage 3 produces `docs/cbk/scaffold.md` with all five sections populated and commits both `problem_brief.md` and `scaffold.md` to `docs/cbk/`
 - Bootstrap checklist surfaces what's manual
+- The bootstrap checklist has four sections; section 4 lists every shipped template and path-scoped rule with a disposition, and prints the always-loaded set first. `docs/adr/` exists with ADR-0000's header filled (no `YYYY-MM-DD`). The committed `cascade-rough-in.md` carries eight headings including `## Assumptions`.
 
 **What failure looks like:**
 - Skill skips the three-level constraint conversation

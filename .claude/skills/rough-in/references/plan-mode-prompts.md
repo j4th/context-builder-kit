@@ -9,7 +9,7 @@ This is the reference rough-in consults most often during Step 5 (drafting indiv
 `/finish {issue_number}` is the Claude Code slash command that picks up a rough-in sub-sub-issue and executes it. It will be defined in CLAUDE.md by the bootstrap-finish skill (the sixth and final in-chat skill, scoped to writing the finish section into CLAUDE.md once M1 of the first workstream has been built by hand). For now, the contract `/finish` will follow is:
 
 1. **Read the issue body** via `issue_read get`
-2. **Identify the section structure** by parsing `## ` headings — anchor on the standard six sections (Context / Implementation / Acceptance criteria / Done signal / Dependencies / PR contract)
+2. **Identify the section structure** by parsing `## ` headings — anchor on the eight sections, in order (Context / Assumptions / Implementation / Acceptance criteria / Test plan / Done signal / Dependencies / PR contract)
 3. **Verify the Dependencies section** — for each issue number listed, query its state and confirm it's closed. If any dependency is open, refuse to proceed and surface the unmet dependency to the user.
 4. **Hand the body to Claude Code's plan mode** with the Implementation section as the primary anchor and the other sections as supporting context. Plan mode is allowed to fetch additional context (read cited docs, look at sibling files, query the parent framing sub-issue) but doesn't *need* to because the spec is self-contained.
 5. **User reviews the plan**, approves or iterates

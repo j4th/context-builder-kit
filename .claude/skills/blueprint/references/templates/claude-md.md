@@ -3,17 +3,18 @@
 The agent's session primer. Loaded EVERY session by Claude Code. Must be lean.
 
 **Research findings that shape this template** (preserved from the initiative-planner skill, all still applicable):
-- ETH Zürich: Architecture sections increase inference cost without improving task success. Remove them — use `@docs/ARCHITECTURE.md` instead.
+- ETH Zürich: Architecture sections increase inference cost without improving task success. Remove them — mention `docs/ARCHITECTURE.md` as a backticked path and let the agent read it when a task needs it.
 - HumanLayer: Claude Code's system prompt has ~50 instructions. Your CLAUDE.md competes for that attention. **Target <300 lines, <150 is better.**
 - GitHub (analysis of 2,500 repos): Six core areas: commands, testing, project structure, code style, git workflow, boundaries.
 - Key insight: Code examples beat prose descriptions. Agents are in-context learners — they follow patterns they see, not rules they read.
 - Never put formatting/linting rules here. Use deterministic tools + hooks.
 
-**Always-loaded vs on-demand**:
+**Always-loaded vs on-demand — and the `@` trap**:
 - CLAUDE.md = always loaded. Keep it minimal.
-- ARCHITECTURE.md = loaded via `@docs/ARCHITECTURE.md` when building subsystems.
-- STANDARDS.md = loaded via `@docs/STANDARDS.md` when doing PRs or quality checks.
-- CONTRIBUTING.md = read once by humans, not Claude — do not @-reference unless specifically relevant.
+- `docs/ARCHITECTURE.md` = read on demand when building subsystems. Mention it as a backticked path.
+- `docs/STANDARDS.md` = read on demand when doing PRs or quality checks. Same rule.
+- CONTRIBUTING.md = read once by humans, not Claude — do not mention it in CLAUDE.md unless specifically relevant.
+- **`@path` is an import, not a mention.** Claude Code's memory documentation (`https://code.claude.com/docs/en/memory`) states that imported files are expanded and loaded into context at launch, alongside the CLAUDE.md that references them. A `@docs/ARCHITECTURE.md` line therefore loads the whole architecture doc into every session — the opposite of on-demand. A backticked path is inert: the agent reads it only when it decides to. Write `@` only for content that genuinely belongs in every session, and budget it as always-loaded.
 
 ## What to inherit before drafting
 
@@ -107,22 +108,24 @@ For new projects from blueprint, this is "pre-implementation — see docs/cbk/bl
 
 ## References
 
-- @docs/ARCHITECTURE.md — load when building a specific subsystem
-- @docs/STANDARDS.md — load when doing PRs or quality checks
-- @docs/cbk/blueprint.md — load when context about the initiative or workstreams is needed
-- @docs/cbk/problem_brief.md — load when context about the original problem is needed
+- `docs/ARCHITECTURE.md` — read when building a specific subsystem
+- `docs/STANDARDS.md` — read when doing PRs or quality checks
+- `docs/cbk/blueprint.md` — read when context about the initiative or workstreams is needed
+- `docs/cbk/problem_brief.md` — read when context about the original problem is needed
 ```
+
+The References block lists backticked paths. They are mentions, not imports — never write them as `@docs/…`; see the `@` trap in the always-loaded note above.
 
 ## What does NOT belong here
 
-- **Architecture descriptions** — use `@docs/ARCHITECTURE.md` reference instead
+- **Architecture descriptions** — mention `docs/ARCHITECTURE.md` and let the agent read it instead
 - **Detailed code style rules** — use linter + formatter, not prose
 - **Project structure trees** — agent can `ls`; only document non-obvious layout
 - **Long explanations of why decisions were made** — that's the ARCHITECTURE.md decisions log
 - **History or changelog** — irrelevant to agent behavior
 - **Things the agent can infer from the code itself** — every line that could be inferred is wasted context
 - **Cascade-internal metadata** — that's what `docs/cbk/blueprint.md` is for
-- **The full problem brief** — `@`-reference it when relevant, don't paste it in
+- **The full problem brief** — mention `docs/cbk/problem_brief.md` when relevant, don't paste it in
 
 ## Pre-implementation projects
 
@@ -148,6 +151,6 @@ If the user invoked light mode and asked for CLAUDE.md, produce a tighter versio
 - Skip the patterns section if the project is pre-implementation
 - Skip the gotchas section if there are no known gotchas yet
 - Status section is one line
-- References section keeps only the @-references the user actually uses
+- References section keeps only the paths the user actually reads
 
 Target: ~50–100 lines for light mode, ~100–250 lines for default. Never over 300.

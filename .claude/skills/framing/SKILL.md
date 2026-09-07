@@ -1,7 +1,7 @@
 ---
 name: framing
 disable-model-invocation: true
-description: Decompose a Linear project into sequenced milestones with rough issues. Use this skill when the user wants to break a project into milestones, plan implementation for a project, sequence build order, or move from planning into execution. Trigger when the user says 'plan this project', 'frame this project', 'what are the milestones', 'break this project down', 'how should I sequence this work', 'I have my plan, what's next', references a specific project by name, or references the cascade at the framing level. Also trigger when the user picks a workstream from blueprint and wants to go deeper. **Invoke deliberately — `disable-model-invocation` means this skill never auto-triggers; the moment for it is "I have a workstream from blueprint and need real milestones I can build against", even when the word "framing" never comes up.** Phase 4 of the cascade. One project at a time, just-in-time, never all at once. Produces a numbered cascade-event file (frame-NN.md) plus updates the chronological framing index.
+description: Decompose one workstream into sequenced milestones with rough issues. Use this skill when the user wants to break a project into milestones, plan implementation for a project, sequence build order, or move from planning into execution. Trigger when the user says 'plan this project', 'frame this project', 'what are the milestones', 'break this project down', 'how should I sequence this work', 'I have my plan, what's next', references a specific project by name, or references the cascade at the framing level. Also trigger when the user picks a workstream from blueprint and wants to go deeper. **Invoke deliberately — `disable-model-invocation` means this skill never auto-triggers; the moment for it is "I have a workstream from blueprint and need real milestones I can build against", even when the word "framing" never comes up.** Phase 4 of the cascade. One project at a time, just-in-time, never all at once. Produces a numbered cascade-event file (frame-NN.md) plus updates the chronological framing index.
 ---
 
 # Framing
@@ -71,9 +71,9 @@ Detailed inheritance discipline lives in `references/inheritance.md`.
 
 Framing's full flow (inheritance → project selection → research phase → refined definition → milestones, with five HITL gates) is the **full mode**, not a requirement. There are three rigor modes:
 
-**Full mode** — five HITL gates (one per step). Includes the development tooling research phase (MCP servers + Claude Code plugins specific to this project). Best for: greenfield projects, projects with significant architectural uncertainty, projects with multiple sibling dependencies, anyone who wants every decision reviewed before commit.
+**Full mode** — five HITL gates (one per step). Best for: greenfield projects, projects with significant architectural uncertainty, projects with multiple sibling dependencies, anyone who wants every decision reviewed before commit.
 
-**Standard mode** — three HITL gates batched at meaningful boundaries: (1) after inheritance + project selection combined, (2) after refined definition + milestones combined, (3) final review of frame-NN.md before commit. Skips the development tooling research phase by default unless the user asks. Best for: users who have done the cascade once, projects with established patterns, building-on-existing-code projects where infrastructure is already in place.
+**Standard mode** — three HITL gates batched at meaningful boundaries: (1) after inheritance + project selection combined, (2) after refined definition + milestones combined, (3) final review of frame-NN.md before commit. Best for: users who have done the cascade once, projects with established patterns, building-on-existing-code projects where infrastructure is already in place.
 
 **Light mode** — one combined up-front confirmation listing what framing will produce, then run-to-completion until presentation. Best for: users who say *"just give me the milestones"*, *"keep it minimal"*, *"I know what I'm doing"*, or who are framing a small, well-understood project where the milestones are nearly self-evident.
 
@@ -281,13 +281,14 @@ Commit both files via GitHub MCP. Fall back to downloadable artifacts if MCP isn
 
 Auto-checkable list that fires after the final HITL gate, before declaring framing complete. Not a gate (no user approval); a safety surface (skill stops if any item fails). Per cbk-conventions.md § Trip-wire pattern:
 
-- [ ] `frame-NN.md` content includes all required sections: Purpose, Approach, Components, Boundaries, Interface Commitments, **Pre-flight checks** table (with empty-default `"No pre-flight blockers from this framing"` if none), Open questions, Milestones (each with `[F<N>.AC<M>]` trace IDs in acceptance criteria)
+- [ ] `frame-NN.md` content includes all required sections: Purpose, Approach, Components, Boundaries, Interface Commitments, **Pre-flight checks** table (with the empty-default text `"No deferred meta-issues from this framing"` if none — this exact string is what rough-in's pre-flight check matches; see `references/templates/frame-output-template.md` § Pre-flight checks), Open questions, Milestones (each with `[F<N>.AC<M>]` trace IDs in acceptance criteria)
 - [ ] Frame-NN's number was correctly identified (highest existing in `docs/cbk/README.md` + 1)
 - [ ] Workstream parent issue exists (github-issues and linear planning; n/a on in-repo-markdown) and matches the workstream slug
 - [ ] No prior F-issue exists for this milestone (idempotency)
 - [ ] Markdown commit and (on backend planning axes) F-issue creation atomic transition succeeded, or partial state surfaced cleanly
 - [ ] `docs/cbk/README.md` updated with new entry + status `Active`
 - [ ] If the project runs a contribution-intake lane (cbk-conventions): no candidate it filed under this workstream remains un-reconciled — each was promoted to an F-issue or closed as superseded
+- [ ] Every call this run exercised that `references/planning-backend-matrix.md` flags as individually unexercised has been restamped in the same commit
 
 ## Backend-axis-aware behavior
 
@@ -322,7 +323,7 @@ Framing has five HITL gates in **full mode**, three in **standard mode**, and on
 
 1. **After inheritance check** — user confirms the inheritance summary is accurate
 2. **After project selection** — user confirms which project is being framed and the framing number
-3. **After research phase** — user lands on technical approach and (in full mode) reviews MCP/plugin recommendations
+3. **After research phase** — user lands on the technical approach and the resolutions of the open technical questions
 4. **After refined definition** — user reviews and approves the refined project definition
 5. **After milestones** — user reviews the milestone list with narrative arc
 
@@ -381,13 +382,13 @@ Project-specific overrides (workstream slugs, Linear team key, branch-naming con
 - `references/planning-backend-commit.md` — the Issue-per-capability creation step, atomic transition pattern with the markdown commit, slug-inheritance-from-Milestone discipline, re-framing rollback handling (read this in tandem with `backends.md` from the cascade meta-doc set)
 
 - `references/inheritance.md` — how to read prior phase artifacts and prior framings, the verbatim summary template, the "builds on" inheritance pattern
-- `references/research-phase.md` — implementation patterns research, MCP/plugin recommendation discipline, open-question resolution
+- `references/research-phase.md` — implementation patterns research, open-question resolution, the fan-out and grounding disciplines
 - `references/templates/frame-output-template.md` — the frame-NN.md cascade event file template with worked example
 - `references/templates/milestone-template.md` — milestone shape guidance and the per-milestone template
 - `references/hitl-question-bank.md` — clarifying questions for inheritance, project selection, research, refined definition, and milestone rounds
 - `references/planning-backend-matrix.md` — planning-axis behavior differences (`github-issues` / `linear` / `in-repo-markdown`)
 - `references/failure-modes.md` — framing-specific failure modes with examples
-- `references/test_cases.md` — three realistic test prompts (canonical first framing / subsequent framing builds on prior / re-framing after code) with success criteria for verifying the skill still works after revisions
+- `references/test_cases.md` — realistic test prompts (each names its scenario) with success criteria for verifying the skill still works after revisions
 
 Kit-wide operational contracts (`.claude/rules/`):
 - `knowledge-backend.md` — knowledge-axis behavior (read patterns, write tiering, HITL discipline). Loaded when scaffold.md records knowledge backend = `notion`.

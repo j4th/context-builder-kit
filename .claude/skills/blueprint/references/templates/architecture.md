@@ -1,6 +1,6 @@
 # ARCHITECTURE.md template
 
-On-demand reference doc. NOT loaded every session — loaded via `@docs/ARCHITECTURE.md` when building specific subsystems. Can be comprehensive because it doesn't compete with every session's context.
+On-demand reference doc. NOT loaded every session — the agent reads `docs/ARCHITECTURE.md` when building specific subsystems (CLAUDE.md mentions it as a backticked path, never as an `@` import, which would expand it into every session at launch). Can be comprehensive because it doesn't compete with every session's context.
 
 **Research-informed priorities** (preserved from initiative-planner, all still applicable):
 - **Decisions log with rejected alternatives = highest agent value** (prevents relitigating)
@@ -26,7 +26,7 @@ On-demand reference doc. NOT loaded every session — loaded via `@docs/ARCHITEC
 ```markdown
 # [Project Name] — Architecture
 
-> On-demand reference. Load via `@docs/ARCHITECTURE.md` when building subsystems.
+> On-demand reference. Read `docs/ARCHITECTURE.md` when building subsystems.
 
 ## Design Principles
 

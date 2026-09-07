@@ -1,6 +1,6 @@
 # Workflows — agent workflow patterns
 
-> **This file is a template.** Copy it into a target project's `.claude/rules/workflows.md` and adapt the bracketed placeholders. It guides which workflow pattern to apply when working in the project. Pairs with [`tooling.md`](tooling.md) (which tool) and [`orchestration.md`](orchestration.md) (which model/effort per dispatched agent) — together they answer "which pattern, which tool, which tier."
+> **This file is a portable rule.** It applies as shipped. Its one bracketed section (§ Cost+scope-explicit) is optional — fill it if the project tracks paid resources or agent-run quota, delete it otherwise. It guides which workflow pattern to apply when working in the project. Pairs with [`tooling.md`](tooling.md) (which tool) and [`orchestration.md`](orchestration.md) (which model/effort per dispatched agent) — together they answer "which pattern, which tool, which tier."
 >
 > Synthesized from Anthropic's [Claude Code best practices](https://www.anthropic.com/engineering/claude-code-best-practices), the [Humanlayer CLAUDE.md guide](https://www.humanlayer.dev/blog/writing-a-good-claude-md), the [Steve Kinney TDD-with-Claude course](https://stevekinney.com/courses/ai-development/test-driven-development-with-claude), and the Kiro / Spec-Kit / Martin-Fowler SDD comparison.
 >
@@ -177,6 +177,7 @@ Workflow-level anti-patterns are inline here; domain-specific anti-patterns (tes
 | [`logging.md`](logging.md) | Adding structured-log calls or telemetry | Structured-only; correlation-ID propagation; telemetry-vs-Logger boundary |
 | [`tooling.md`](tooling.md) | Picking a tool | Built-ins first-line; MCPs second-line for capability gaps; per-tool decision rules |
 | [`orchestration.md`](orchestration.md) | Dispatching any agent, subagent, or workflow stage | Model×effort tiering under the ceiling rule; dispatch-mechanism decision; fan-out discipline |
+| `*-reference.md` | Only when a matching file is read | The path-scoped halves of the conventions, orchestration and review rules; every section has a pointer heading in its contract |
 
 ## See also
 
