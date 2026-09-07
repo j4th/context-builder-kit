@@ -24,7 +24,7 @@ The Implementation section is the load-bearing input to step 5. The other sectio
 
 `/finish` is provisioned by **rough-in's Step 5.5**, which runs between spec drafting (Step 5) and the planning-backend commit (Step 6). Step 5.5 checks whether `.claude/commands/finish.md` exists in the user's repo via `get_file_contents`, and handles three cases:
 
-- **File does not exist**: cold-start case. Rough-in reads the bundled template from `references/finish-command.md` (below the `--- BEGIN TEMPLATE ---` marker), presents it at a HITL gate for user review, and commits it to `.claude/commands/finish.md` in the repo via GitHub MCP on approval. This is the only case where the HITL gate fires.
+- **File does not exist**: cold-start case. Rough-in reads the bundled templates from `references/finish-command.md` and `references/finish-procedure.md` (the procedure half, provisioned beside it; both below their `--- BEGIN TEMPLATE ---` markers), presents it at a HITL gate for user review, and commits it to `.claude/commands/finish.md` in the repo via GitHub MCP on approval. This is the only case where the HITL gate fires.
 - **File exists and matches the bundled template verbatim**: already provisioned. Step 5.5 is a silent no-op. No gate fires, no commit happens, rough-in logs the skip and moves to Step 6.
 - **File exists but differs from the bundled template**: drift detected. Rough-in surfaces the divergence with three explicit options (leave in place / overwrite / abort) and waits for the user to pick before proceeding.
 
@@ -34,7 +34,7 @@ Step 5.5 runs its own atomic transition — not bundled with Step 6's planning-b
 
 ## Revision path via the automation recommender pass
 
-The version of `.claude/commands/finish.md` that Step 5.5 provisions on a fresh cascade run is the **initial speculation-based draft**, written before any real M1 execution existed. It is a solid starting point but not an optimized version.
+The executor pair that Step 5.5 provisions on a fresh cascade run is the kit's **current revision** — contract-first since 2026-09-06, revised through real executions (`.claude/rules/orchestration-reference.md` § Applied instances). It is a measured starting point, not a finished one: every real execution that surfaces a gap feeds the revision path below.
 
 The revision path:
 
@@ -42,19 +42,19 @@ The revision path:
 
 2. **The recommender pass includes `/finish` in its revision scope** explicitly. The recommender looks at friction points from M1 and M2 execution, missing guardrails the initial command didn't anticipate, over-rigid guardrails that added friction without adding safety, better pattern matches, subagent opportunities, and hook opportunities. It produces recommendations for revising `/finish` alongside the other automation recommendations.
 
-3. **Accepted recommendations update `references/finish-command.md`** in the rough-in skill bundle — not the committed copy in the user's repo directly. The skill bundle is the source of truth for the bundled template; the committed copy is what the bundled template provisioned on a specific date.
+3. **Accepted recommendations update `references/finish-command.md` and `references/finish-procedure.md`** (the procedure half, provisioned beside it) in the rough-in skill bundle — not the committed copy in the user's repo directly. The skill bundle is the source of truth for the bundled template; the committed copy is what the bundled template provisioned on a specific date.
 
 4. **Subsequent rough-in runs detect the drift** via Step 5.5's drift handling. When a user runs rough-in in a repo where the committed `/finish` differs from the updated bundled template, the step surfaces the drift and offers the three options. If the user picks "overwrite", the revised template replaces the committed copy in a single commit. If the user picks "leave in place", their existing customized version is preserved.
 
 5. **Fresh cascade runs automatically pick up the updated template** because Step 5.5's cold-start case reads the current bundled template. A user starting a new cascade in a new repo two months after the recommender pass gets the revised `/finish` from the start.
 
-## Why the initial version is OK as speculation-based
+## Why provisioning before this repo's first execution is OK
 
-The counterargument to provisioning `/finish` before real execution data exists is that speculation-based instructions may encode wrong assumptions. The counter-counterargument is that the friction of hand-writing `/finish` before the first execution is higher than the cost of revising it after two milestones, **and the initial version doesn't have to be perfect — it just has to be "don't silently improvise, surface gaps instead"**.
+The counterargument to provisioning `/finish` before this repository has any execution data is that the executor may encode assumptions the project will not share. The counter-counterargument is that the friction of hand-writing `/finish` before the first execution is higher than the cost of revising it after two milestones, **and the provisioned version doesn't have to fit perfectly — it has to "surface gaps, never improvise past them"**.
 
-The opening paragraph of the bundled template enforces this discipline: *"If you find the instructions below don't match what's actually in the issue body, or if you hit friction this document doesn't anticipate, surface the gap to the user rather than improvising past it. The improvisation data is what the first revision pass needs."*
+The contract's opening paragraph enforces this discipline: *"If the issue does not match what this contract expects, or you hit friction it does not anticipate, **surface the gap** rather than improvising past it — the gap you surface is data for the next revision; the improvisation is data that gets lost."*
 
-As long as the initial version is honest about its own provenance and sets up Claude Code to surface gaps rather than work around them, the friction patterns from early executions become visible in real-time and feed the revision pass. Speculation-based instructions are fine when they're honest about being speculation-based.
+As long as the provisioned pair is honest about its provenance and sets up Claude Code to surface gaps rather than work around them, the friction patterns from early executions become visible in real time and feed the revision pass.
 
 ## What rough-in's specs need to look like for `/finish` to succeed
 
@@ -110,6 +110,6 @@ This is identical to what `/finish` would do automatically; the only difference 
 - **Plan mode's internals** — Claude Code's plan mode is a black box from rough-in's perspective
 - **PR review patterns** — the cascade doesn't prescribe how PRs get reviewed; that's the team's process
 - **Deployment, release, or rollout patterns** — out of cascade scope; the cascade ends at PR merge
-- **The specific content of the bundled `/finish` template** — that lives in `references/finish-command.md`, below the `--- BEGIN TEMPLATE ---` marker. This document covers the handoff contract and revision path; the reference file covers the actual template content
+- **The specific content of the bundled `/finish` templates** — that lives in `references/finish-command.md` (the contract) and `references/finish-procedure.md` (the procedure), below their `--- BEGIN TEMPLATE ---` markers. This document covers the handoff contract and revision path; the reference file covers the actual template content
 
 If you're starting a fresh cascade run against a new repo, rough-in's Step 5.5 will provision the slash command automatically on its first run in that repo. No separate bootstrap step, no manual hand-writing. If Step 5.5 fails for environmental reasons, the fallback pattern above is available.
