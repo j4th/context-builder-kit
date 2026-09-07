@@ -88,12 +88,7 @@ The rough-in / `/intake` / `/enrich` flows set this at issue-creation time — s
 
 ## Licensing
 
-The repository records a licence choice, and **"none yet — all rights reserved" is a valid, recorded choice** (the `LICENSE` file absent on purpose, the README § License saying so). Scaffold confirms the licence with the operator the way it confirms visibility — one question, at repository creation, with the solo default (MIT) offered and never a copyleft licence without explicit opt-in — and seeds the `LICENSE` file and the README section from the answer. Two constraints the choice carries:
-
-- **Relicensing needs every contributor's consent from the second contributor on.** A project that stays "none yet" through its first outside contribution has made a decision by default; decide before that PR merges.
-- **Third-party asset licences bind independently** of the repository's — a font, an icon set, a dataset or a model weight ships under its own terms, recorded beside the asset (a `LICENSE-<asset>` or a `NOTICE` entry), and a licence the asset forbids for the repository's use is a blocker, not a footnote.
-
-The filled-in copy of this section records the SPDX identifier (or "none yet"), the date, and the asset licences the tree carries.
+→ *Moved to* `cbk-conventions-reference.md` § Licensing *(path-scoped; see § Rule loading and the instruction budget).*
 
 ## Closes-keyword conventions
 

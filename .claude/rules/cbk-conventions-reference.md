@@ -283,6 +283,15 @@ Blueprint picks a methodology from the register based on team shape, appetite, a
 
 Whichever methodology blueprint picks, this section in the project's filled-in copy of `cbk-conventions.md` should record: cycles on/off, pull-flow style, WIP discipline, appetite-tagging convention. Without this record, the methodology selection from blueprint is hard to operate against.
 
+## Licensing
+
+The repository records a licence choice, and **"none yet — all rights reserved" is a valid, recorded choice** (the `LICENSE` file absent on purpose, the README § License saying so). Scaffold confirms the licence with the operator the way it confirms visibility — one question, at repository creation, with the solo default (MIT) offered and never a copyleft licence without explicit opt-in — and seeds the `LICENSE` file and the README section from the answer. Two constraints the choice carries:
+
+- **Relicensing needs every contributor's consent from the second contributor on.** A project that stays "none yet" through its first outside contribution has made a decision by default; decide before that PR merges.
+- **Third-party asset licences bind independently** of the repository's — a font, an icon set, a dataset or a model weight ships under its own terms, recorded beside the asset (a `LICENSE-<asset>` or a `NOTICE` entry), and a licence the asset forbids for the repository's use is a blocker, not a footnote.
+
+The filled-in copy of this section records the SPDX identifier (or "none yet"), the date, and the asset licences the tree carries.
+
 ## Verify-against-reality before a one-way door (optional practice)
 
 The portable framing skill trusts documentation. A project can add a heavier discipline if its stack is fast-moving or its data assumptions are load-bearing: **before committing a frame (or any one-way-door decision), verify the load-bearing assumptions against reality** rather than the docs. Two shapes, adopt if useful:
@@ -584,7 +593,7 @@ for a in logging-discipline-reviewer cascade-rule-reviewer; do diff <(printf '%s
 
 # Conventions (P4): the Licensing section, .gitignore anchoring, the issue-less branch form on the contract and in the
 # guard's remediation, and the lockfile counter-line rule with its citation.
-{ grep -q '^## Licensing' .claude/rules/cbk-conventions.md && grep -q '^## .gitignore anchoring' .claude/rules/cbk-conventions-reference.md && grep -q 'short-slug>` with' .claude/rules/cbk-conventions.md && grep -q 'short-slug' .claude/hooks/protect-main-branch.sh && grep -q 'linguist-generated=false' .claude/rules/cbk-conventions-reference.md; } || { echo "a P4 conventions section (Licensing, .gitignore anchoring, the issue-less branch, the lockfile counter-line) is missing"; exit 1; }
+{ grep -q '^## Licensing' .claude/rules/cbk-conventions-reference.md && grep -q '^## .gitignore anchoring' .claude/rules/cbk-conventions-reference.md && grep -q 'short-slug>` with' .claude/rules/cbk-conventions.md && grep -q 'short-slug' .claude/hooks/protect-main-branch.sh && grep -q 'linguist-generated=false' .claude/rules/cbk-conventions-reference.md; } || { echo "a P4 conventions section (Licensing, .gitignore anchoring, the issue-less branch, the lockfile counter-line) is missing"; exit 1; }
 
 # Phases (P4): the cascade-events index template exists and scaffold cites it; nothing in rough-in misnames the index;
 # blueprint's template carries its append-only Amendments section; the tooling rule names the built-in LSP tool.
