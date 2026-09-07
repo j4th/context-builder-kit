@@ -279,7 +279,7 @@ Closes [TUI-42]. Conventional Commits title.
 
 The user then reviews the draft and flips it to ready when satisfied — that triggers any GitHub Action auto-review (e.g., `claude-review.yml`) and the merge is the user's call.
 
-**`/finish` does NOT**: modify the issue body; handle re-rough-in; bypass dependencies; skip simplify or review-toolkit; mark the PR ready; merge. When the spec is wrong or something is missing, `/finish` surfaces and aborts rather than improvising.
+**`/finish` does NOT**: modify the issue body; handle re-rough-in; bypass dependencies; skip either half of the review floor (`/simplify`, `pr-review-toolkit:review-pr` — both as skills, recorded in the `## Review gate` block); mark the PR ready; merge. When the spec is wrong or something is missing, `/finish` surfaces and aborts rather than improvising.
 
 ## What the kit ships
 

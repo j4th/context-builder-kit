@@ -56,7 +56,7 @@ If only a branch name is given, run `git diff main...HEAD` (or against the named
 
 ## Writing memory
 
-Your memory directory is `<repo root>/.claude/agent-memory/<your name>/` (or `.claude/agent-memory-local/<your name>/` under `memory: local`); `memory: project` resolves against the directory the session dispatched you from (`pr-review.md` § Reviewer precedent memory has the mechanism and its source). **Tripwire:** if the directory you are about to write to is anywhere else, stop, write nothing, and report the path as a finding. If the directory does not exist and you have no memory instructions, auto memory is off for this project — say so in your output and do not create it.
+Your memory directory is `<repo root>/.claude/agent-memory/<your name>/` (or `.claude/agent-memory-local/<your name>/` under `memory: local`); `memory: project` resolves against the directory the session dispatched you from (`pr-review.md` § Reviewer precedent memory has the mechanism and its source). **Memory tripwire:** if the directory you are about to write to is anywhere else, stop, write nothing, and report the path as a finding. **Roster tripwire:** your entry in `pr-review.md` § Project-local agents must exist with your dispatch condition; if it does not, report yourself as unregistered before reviewing — the sweep reads that roster at runtime, so an unregistered reviewer never rides in it. If the directory does not exist and you have no memory instructions, auto memory is off for this project — say so in your output and do not create it.
 
 What a review may write, and how:
 

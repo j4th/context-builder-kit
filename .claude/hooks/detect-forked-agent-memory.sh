@@ -55,8 +55,9 @@ cd "$PROJECT_DIR" || exit 0
 # Every directory named agent-memory that is not the root's own. -prune stops
 # descent into the root's own tree, worktrees (each is its own checkout with its
 # own root tree), .git, and build output — add your stack's build directories to
-# the list. No -mindepth: it would exempt depth-1 directories from the prune test,
-# so a top-level node_modules would be walked and flagged.
+# the list. No -mindepth: as first written, -mindepth 2 exempted depth-1 directories
+# from the prune test, so a top-level node_modules was walked and its contents flagged
+# (reproduced 2026-09-06; -mindepth 1 would not have, but the option buys nothing here).
 forks=()
 while IFS= read -r d; do forks+=("$d"); done < <(
   find . \( -path './.claude/agent-memory' -o -path './.claude/worktrees' -o -name .git \
