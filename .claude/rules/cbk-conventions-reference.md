@@ -615,10 +615,11 @@ grep -q 'Orchestration posture' .claude/skills/scaffold/references/bootstrap_che
 # and all four tiers; and the conventions' two-views paragraph (cbk-conventions.md § Mutation
 # discipline) names every registered hook.
 hookcomment=$(jq -r '._comment_hooks' .claude/settings.json)
-# No hook-shaped object at the top level of settings.json (§ Hook authoring): the harness discards the
-# whole file on one, silently. An empty key read is red, never a vacuous pass.
+# No hook-shaped object under any top-level key other than hooks, at ANY depth (§ Hook authoring): the
+# harness discards the whole file on one, silently, and its loader reads a matcher or a non-empty hooks
+# nested as readily as flat. An empty key read is red, never a vacuous pass.
 [ "$(jq -r 'keys | length' .claude/settings.json)" -ge 1 ] || { echo "settings.json: no top-level keys read — the check below would pass vacuously"; exit 1; }
-bad=$(jq -r 'to_entries | map(select(.key != "hooks" and (.value | type == "object") and ((.value | has("matcher")) or (.value | has("hooks"))))) | .[].key' .claude/settings.json); [ -z "$bad" ] || { echo "settings.json: hook-shaped top-level object(s) void the whole file: $bad"; exit 1; }
+bad=$(jq -r 'to_entries[] | select(.key != "hooks") | select([.value | .. | objects | select(has("matcher") or ((.hooks | type) == "array" and (.hooks | length) > 0) or ((.hooks | type) == "object" and (.hooks | length) > 0))] | length > 0) | .key' .claude/settings.json); [ -z "$bad" ] || { echo "settings.json: hook-shaped object(s) outside hooks void the whole file (flat or nested, under): $bad"; exit 1; }
 absent grep -n '"_example_PostToolUse_' .claude/settings.json
 for h in .claude/hooks/*.sh; do b=$(basename "$h"); n=$(jq -r '[.hooks[][] | .hooks[] | .command] | map(select(endswith("'"$b"'"))) | length' .claude/settings.json); case "$b" in format-on-edit.sh|analyze-on-edit.sh) if [ ! -f docs/cbk/scaffold.md ]; then [ "$n" -eq 0 ] || { echo "advisory exemplar $b is registered (the kit tree ships it unregistered; a target declares ADVISORY_WIRED in its sub-block)"; exit 1; }; fi;; *) [ "$n" -ge 1 ] || { echo "$b is not registered"; exit 1; };; esac; grep -q "$b" <<<"$hookcomment" || { echo "registry comment does not name $b"; exit 1; }; grep -q '^# Tier:' "$h" || { echo "$b has no Tier: line in its header"; exit 1; }; done
 [ "$(jq -r '.. | objects | select(has("command")) | .command' .claude/settings.json | wc -l)" -ge 1 ] || { echo "settings.json carries no hook commands at all"; exit 1; }
