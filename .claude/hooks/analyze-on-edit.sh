@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # PostToolUse hook (Edit|Write|MultiEdit matcher) — EXEMPLAR: a project copies
-# this hook, wires its analyzer into the case arms below, and registers it via
-# the `_example_PostToolUse_analyzer` stanza in settings.json.
+# this hook, wires its analyzer into the case arms below, and registers it with
+# the `Register:` stanza in this header (never as a top-level settings.json key).
 #
 # Runs the project's analyzer on the PACKAGE of every edited source file and
 # prints only its ERRORS, so a boundary violation surfaces at the edit rather
@@ -23,6 +23,12 @@
 # Allowed:  everything.
 # Path:     registered (once wired) as ${CLAUDE_PROJECT_DIR}/.claude/hooks/…
 # Tier:     ADVISORY.
+# Register: copy this object into hooks.PostToolUse in .claude/settings.json once the case
+#           arms are wired — never as a top-level key (cbk-conventions-reference.md § Hook
+#           authoring: a hook-shaped object outside `hooks` voids the whole settings file):
+#           { "matcher": "Edit|Write|MultiEdit",
+#             "hooks": [ { "type": "command",
+#                          "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/analyze-on-edit.sh" } ] }
 
 set -uo pipefail
 # Deliberately NOT `set -e` — see the advisory contract above.

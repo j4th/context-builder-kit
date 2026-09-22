@@ -391,7 +391,7 @@ Four files reliably need editing per project, and scaffold's bootstrap checklist
 
 2. **`.claude/commands/finish.md`** — bakes in the project's `check` task, `docs/STANDARDS.md § Step 4`, `.claude/rules/testing.md`, `.claude/rules/logging.md`, `pr-review-toolkit:review-pr`, `/simplify`. If your stack doesn't have one of these, edit the file. The eight-section spec contract that `/finish` reads from issue bodies is the stable interface; the tooling assumptions are the swap-out point.
 
-3. **`.claude/settings.json`** — adjust `enabledPlugins` if your installed identifiers differ; adjust `enabledMcpjsonServers` if you don't use one of the five defaults or want to add others.
+3. **`.claude/settings.json`** — adjust `enabledPlugins` if your installed identifiers differ; adjust `enabledMcpjsonServers` if you don't use one of the five defaults or want to add others. Never add a hook-shaped object as a top-level key while doing so — the advisory hooks' registration stanzas live in their headers (see `.claude/rules/cbk-conventions-reference.md` § Hook authoring).
 
 4. **`.claude/rules/logging.md` and `.claude/rules/testing.md`** — stamp the `paths:` globs at the top with your project's real extensions; they ship as placeholders and a placeholder glob loads nothing. Then settle a disposition for each template rule (`orchestration.md`, `tooling.md`, and the bracketed entry in `cbk-conventions-reference.md`'s `paths:`): fill, path-scope, or delete — see `cbk-conventions.md` § Rule loading and the instruction budget.
 
