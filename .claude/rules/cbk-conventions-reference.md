@@ -268,7 +268,7 @@ A `.gitignore` entry is **anchored by default** — `/build/`, `/.env`, `/target
 - **Any-depth entries are deliberate and marked.** An entry meant to match at every depth (`**/node_modules/`, `*.pyc`, `.DS_Store`) carries a one-line comment saying so; an unmarked unanchored entry is a defect.
 - **Per-language sections are scoped to the language's directory home** once one is declared — a Python section under `/services/api/` writes `/services/api/__pycache__/`, not `__pycache__/`. Before a home is declared, the section says which.
 - **A commit that changes `.gitignore` states its pin assertions in the body**: which path each new entry is meant to match, and one path it must *not* match. `git check-ignore -v <path>` is the test; the assertion is what makes a later reader able to re-run it.
-- **Harness transients are ignored by anchored path** — the agent's scratch and memory-local trees (`/.claude/agent-memory-local/`, the session scratchpad if it is ever placed in-tree), never by a bare name that would also hide a real directory.
+- **Harness transients are ignored by anchored path** — the agent's scratch and memory-local trees (`/.claude/agent-memory-local/`, the session scratchpad if it is ever placed in-tree) and a hosted review action's staging copy of the branch's tooling (`/.claude-pr/` — it carries a copy of the committed memory tree, which the Stop-tier fork detector prunes unconditionally and the ignore-driven prune covers once the entry exists; #58, 2026-09-07 comment), never by a bare name that would also hide a real directory.
 - **No shipped reviewer restates this.** The `cascade-rule-reviewer` names the section in scope; the rule lives here once.
 
 ## Methodology — choice space
@@ -581,6 +581,9 @@ node .claude/workflows/tests/review-sweep-accounting.mjs || { echo "review-sweep
 node .claude/workflows/tests/finish-ab-shape.mjs || { echo "finish-ab.js does not parse or its panel guard regressed"; exit 1; }
 node .claude/workflows/tests/load-workflow-shape.mjs || { echo "load-workflow.mjs regressed"; exit 1; }
 bash .claude/workflows/tests/agent-cost-fixture.sh || { echo "agent-cost.py regressed on the fixture"; exit 1; }
+# Every hook honours the stdin/exit contract (§ Hook authoring): structural checks over .claude/hooks/*.sh
+# plus one over-buffer probe per decision site. Runs in throwaway trees; never touches this checkout.
+bash .claude/workflows/tests/hook-contract-fixture.sh || { echo "a hook violates the stdin/exit contract (the fixture names it)"; exit 1; }
 # Every dispatch names its model and its effort (orchestration.md § The role ladder): agent definitions
 # carry both, except a model without the dial, which carries none (the frontmatter is read once per file).
 for a in .claude/agents/*.md; do fm=$(sed -n '2,/^---$/p' "$a"); grep -q '^model:' <<<"$fm" || { echo "$a names no model"; exit 1; }; if grep -q '^model: haiku' <<<"$fm"; then absent grep -n '^effort:' <<<"$fm"; else grep -q '^effort:' <<<"$fm" || { echo "$a names no effort (orchestration.md § The role ladder)"; exit 1; }; fi; done
