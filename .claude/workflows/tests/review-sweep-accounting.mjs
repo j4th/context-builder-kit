@@ -223,6 +223,27 @@ for (const roster of [null, { crossCutting: "not-an-array" }]) {
   n++;
 }
 
+// 14b — two dimensions fail the first pass with mixed retry outcomes: the retried finding lands on ITS
+// dimension (the index-list reindex — results[i] from retried[k]), the still-failing one is dropped by
+// name, and nothing is misattributed. One failure cannot tell i from k; two can.
+{
+  const attempts = { "code-review": 0, "test-coverage": 0 };
+  const { out } = await scenario("mixed retry outcomes", {
+    args: { files: ["a"] }, roster: rosterOK,
+    findings: {
+      "code-review": () => { attempts["code-review"] += 1; return null; },
+      "test-coverage": () => { attempts["test-coverage"] += 1; return attempts["test-coverage"] === 1 ? null : { findings: [F("a", 2, "found on the second dimension's retry", "medium")] }; },
+    },
+    verdict: real,
+  });
+  assert.deepEqual(attempts, { "code-review": 2, "test-coverage": 2 });
+  const f = out.confirmed.find((x) => x.title === "found on the second dimension's retry");
+  assert.ok(f, "the retried finding is counted");
+  assert.equal(f.dimension, "test-coverage", `the retried finding is attributed to its own dimension (got ${f.dimension})`);
+  assert.deepEqual(out.failedDimensions, ["code-review"]);
+  n++;
+}
+
 // 15 — caller-supplied reviewers skip the roster agent; an explicit empty list means "no project reviewers".
 {
   const { out, logs } = await scenario("caller reviewers", { args: { files: ["a"], reviewers: ["custom-reviewer"] }, roster: null, findings: {}, verdict: () => null });
