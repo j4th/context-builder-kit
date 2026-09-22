@@ -40,6 +40,7 @@ jobs:
       pull-requests: read
       issues: read
       actions: read
+      checks: read           # `gh pr checks` is allowlisted below; the scope must match
       id-token: write
     if: |
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
@@ -77,8 +78,10 @@ jobs:
         uses: anthropics/claude-code-action@[full-commit-sha] # v[version]
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # named twice — see claude-review.yml's note at its additional_permissions
           additional_permissions: |
             actions: read
+            checks: read
           claude_args: |
             --model [<workhorse model id>]
             --fallback-model [<mid-tier model id>]

@@ -111,6 +111,14 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
 
+      - name: Fetch the base ref (so `git diff origin/<base>...HEAD` resolves)
+        # `ref: head.sha` above checks out only the PR head; without this the reviewer's first diff
+        # against the base fails ("no merge base") and it spends turns retrying fetches its allowlist
+        # refuses (#58 addendum, item 12). The ref name is read from an env var, never interpolated.
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: git fetch --no-tags origin "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
+
       - name: Pick model + effort from labels
         id: model
         # Constraint 5 — label-driven proportionality. Precedence: claude-deep-review >
@@ -151,8 +159,16 @@ jobs:
           show_full_output: true
           # track_progress is unsupported on `labeled` events (the action fails).
           track_progress: ${{ github.event.action != 'labeled' && 'true' || 'false' }}
+          # Named twice on purpose — here and in the job's `permissions:` block. The job block scopes
+          # the workflow's own token; this input is what the action requests when it exchanges its OIDC
+          # token for an app token (`parseAdditionalPermissions` in anthropics/claude-code-action
+          # `src/github/token.ts`, read 2026-09-21). Without `checks: read` here, `gh pr checks` fails
+          # `Resource not accessible by integration` and the review takes the PR body's claim of a green
+          # gate at face value (observed 2026-09-18). `statuses: read` only when the rollup carries commit
+          # statuses (a non-Actions CI, a deploy bot) — measure with `gh api repos/{owner}/{repo}/commits/<sha>/status`.
           additional_permissions: |
             actions: read
+            checks: read
           prompt: |
             You are reviewing a pull request against [<project one-liner: what it is, who it is
             for, the one property a UI-looking edit can break>]. Read `CLAUDE.md` first
@@ -162,6 +178,11 @@ jobs:
 
             Enumerate every changed file (`gh pr diff ${{ github.event.pull_request.number }} --name-only`)
             and walk each one; read the surrounding file, not only the hunk, when context matters.
+            If the diff exceeds [N] changed files (a sync of vendored or kit-copied trees, a generated
+            bulk), you cannot walk every file inside the turn cap: review the authored set the PR body
+            names and every file that is not a byte-identical copy of its source, post the summary FIRST
+            with the list of files you did not read, and say so in the verdict line. A capped run that
+            posted nothing is the failure this clause prevents (#58 addendum, item 11).
 
             Then post, **in this order**:
 
