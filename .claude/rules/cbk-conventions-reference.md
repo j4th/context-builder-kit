@@ -465,6 +465,10 @@ Workspace deviations from kit recommendation (if any):
 
 The kit's brownfield detection (run by scaffold's Stage 2 when knowledge backend = Notion) will surface what already exists in the operator's Notion. Record the post-detection state here so later phases inherit it rather than re-detecting cold.
 
+## Syncing the kit
+
+A target that recorded its **Kit commit** (scaffold's Cascade metadata table) syncs to a newer kit as a three-way merge, not a hand-reconciliation: for every file, `git merge-file <ours> <kit@install-sha> <kit@target-sha>` — base is the kit at the install sha, ours the project's copy, theirs the new kit. On a real application 47 of 48 files the project had customized auto-resolved (pure kit drift, derivable from the base); the conflict hunks were the two big rule files, where the kit's generalized text and the project's filled text both had to survive (#58, second application, item 10). The file-by-file table — classify each file as copy / add / merge / keep, then note what each merge must preserve — is the reusable artifact; write it before the branch. Two traps: a project sub-block re-homed into this file from a pre-split contract must split its own retired-vocabulary literals (or the block's `absent` check matches it), and byte-identity for `copy` rows is asserted against the target sha, so a fix a project needs ahead of the kit is filed upstream and carried as a named exception, never silently patched into a copy. Record the new sha in the table when the sync merges.
+
 ## Verification
 
 Two audiences share one block. **Kit-repo checks** hold on the kit's own tree and on any target project's copy of `.claude/`; **project checks** hold only in a filled-in target project and skip themselves when `docs/cbk/scaffold.md` is absent. A red check is a defect in the check until proven otherwise: a suite with a permanently red line is a suite nobody runs, which is worse than no suite. Every check says what it catches. Run the block after major edits to cascade skills, to the rules, or to a project's filled-in copy of this file.

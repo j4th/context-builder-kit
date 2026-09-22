@@ -236,6 +236,10 @@ Cascade events being append-only is structurally important: the cascade IS the a
 | Phase exit | Run the `## Phase exit checklist` from the relevant cascade skill |
 | Knowledge backend operations (Notion reads/writes, HITL discipline, brownfield detection, lazy provisioning) | See `.claude/rules/knowledge-backend.md`; project-specific values in § Knowledge backend above |
 
+## Syncing the kit
+
+Three-way `git merge-file` against the recorded **Kit commit**; the file-by-file table first. → `cbk-conventions-reference.md` § Syncing the kit.
+
 ## Verification
 
 → *Moved to* `cbk-conventions-reference.md` § Verification *(path-scoped; see § Rule loading and the instruction budget).*
