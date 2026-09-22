@@ -35,7 +35,9 @@ async function scenario(name, { args, roster, findings, verdict }) {
     if (label.startsWith("verify:")) return verdict(label.slice(7), opts);
     throw new Error(`unexpected label ${label}`);
   };
-  const parallel = async (thunks) => Promise.all(thunks.map(async (t) => { try { return await t(); } catch { return null; } }));
+  // A thunk that THROWS is a bug in this harness's own mock and must fail the test; the runtime
+  // resolves a failed agent to null without throwing, so null is modelled by returning null (#58 item 10).
+  const parallel = async (thunks) => Promise.all(thunks.map((t) => t()));
   const out = await run(args, agent, parallel, (m) => logs.push(m), () => {});
   const buckets = [...out.confirmed, ...out.refuted, ...out.unverified].map((f) => `${f.file}:${f.line}:${f.title}`);
   assert.equal(new Set(buckets).size, buckets.length, `${name}: a finding landed in two buckets`);
@@ -341,6 +343,47 @@ for (const roster of [null, { crossCutting: "not-an-array" }]) {
   assert.equal(cr[0].opts.effort, "low");
   assert.equal(cr[1].label, "find:code-review:retry");
   assert.equal(cr[1].opts.effort, "xhigh");
+  n++;
+}
+
+// 14 — a hint matches on a directory boundary, never on a common prefix.
+{
+  const { out } = await scenario("boundary-safe hint", {
+    args: { files: ["src/schema-extra/a.ts"] },
+    roster: rosterOK, findings: {}, verdict: () => null,
+  });
+  assert.ok(!out.reviewers.includes("schema-reviewer"), "src/schema must not claim src/schema-extra/");
+  const { out: exact } = await scenario("boundary-safe hint (exact)", { args: { files: ["src/schema"] }, roster: rosterOK, findings: {}, verdict: () => null });
+  assert.ok(exact.reviewers.includes("schema-reviewer"), "a changed path equal to the hint matches");
+  n += 2;
+}
+
+// 15 — a roster read that THROWS degrades like a null read: gate line, dropped coverage, no crash.
+{
+  const logs = [];
+  const agent = async (_prompt, opts = {}) => { if ((opts.label ?? "").startsWith("roster:")) throw new Error("budget ceiling"); return (opts.label ?? "").startsWith("verify:") ? null : { findings: [] }; };
+  const parallel = async (thunks) => Promise.all(thunks.map((t) => t()));
+  const out = await run({ files: ["a"] }, agent, parallel, (m) => logs.push(m), () => {});
+  assert.deepEqual(out.reviewers, []);
+  assert.ok(out.droppedCoverage.some((d) => d.includes("roster read failed")), "a throwing roster read is dropped coverage, not an aborted run");
+  assert.ok(typeof out.gateLine === "string" && out.gateLine.length > 0, "the run still returns its gate line");
+  n++;
+}
+
+// 16 — the least-loaded-owner bound with THREE converging reporters charges the idle one.
+{
+  const three = { crossCutting: ["adr-conformance-reviewer", "cascade-rule-reviewer"], domain: [], note: "" };
+  const { out } = await scenario("three converging reporters", {
+    args: { files: ["a"], maxPerDimension: 1, maxVerify: 8 }, roster: three,
+    findings: {
+      "code-review": { findings: [F("a", 1, "cr only", "high"), F("a", 5, "shared", "low")] },
+      "adr-conformance-reviewer": { findings: [F("a", 2, "adr only", "high"), F("a", 5, "shared", "low")] },
+      "cascade-rule-reviewer": { findings: [F("a", 5, "shared", "low")] },
+    },
+    verdict: real,
+  });
+  assert.ok(out.confirmed.some((f) => f.line === 5), "the three-way shared finding is charged to the reporter with no other finding and verified");
+  assert.ok(out.confirmed.some((f) => f.title === "cr only") && out.confirmed.some((f) => f.title === "adr only"), "neither loaded reporter loses its own unique finding to the shared one");
   n++;
 }
 
