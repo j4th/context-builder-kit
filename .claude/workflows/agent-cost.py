@@ -82,8 +82,7 @@ def summarise(path):
         t['cw'] += u.get('cache_creation_input_tokens', 0)
         t['cr'] += u.get('cache_read_input_tokens', 0)
     model = ','.join(sorted(per_model)) or '?'
-    totals = {k: sum(t[k] for t in per_model.values()) for k in ('turns', 'inp', 'out', 'cw', 'cr')}
-    turns, inp, out, cw, cr = (totals[k] for k in ('turns', 'inp', 'out', 'cw', 'cr'))
+    turns, inp, out, cw, cr = (sum(t[k] for t in per_model.values()) for k in ('turns', 'inp', 'out', 'cw', 'cr'))
     cost = None if not per_model else 0.0  # no usage events at all: unpriced and named, never a free row
     for name, t in per_model.items():
         k = tier(name)
