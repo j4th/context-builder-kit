@@ -43,6 +43,10 @@
 #           a bare relative path would not resolve from the very subdirectory
 #           this guard exists to block.
 # Tier:     HARD-DENY.
+# Depends:  jq (the payload's tool_name and cwd) and git (the top-level of that
+#           cwd) — absent, the guard fails open: exit 0 with a stderr warning
+#           naming the backstop, detect-forked-agent-memory.sh (Stop tier,
+#           needs no jq).
 #
 # Hook receives JSON on stdin. Exit 2 + stderr blocks. Fail-open on
 # environment defects (missing jq, not a git checkout): exit 0 with a loud

@@ -23,6 +23,9 @@
 # Allowed:  everything.
 # Path:     registered (once wired) as ${CLAUDE_PROJECT_DIR}/.claude/hooks/…
 # Tier:     ADVISORY.
+# Depends:  jq (the payload fields), git (the edited file's checkout) and the
+#           project's analyzer once the case arms are wired — absent, the hook
+#           skips: exit 0 with a stderr note; the check task is the backstop.
 # Register: copy this object into hooks.PostToolUse in .claude/settings.json once the case
 #           arms are wired — never as a top-level key (cbk-conventions-reference.md § Hook
 #           authoring: a hook-shaped object outside `hooks` voids the whole settings file):
