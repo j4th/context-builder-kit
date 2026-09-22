@@ -36,6 +36,8 @@ if (!Array.isArray(args.arms) || args.arms.length !== 2) throw new Error("finish
 args.arms.forEach((c) => { for (const k of ["arm", "anon", "read"]) if (!c || !c[k]) throw new Error(`finish-ab: every arm needs arm, anon and read (got ${JSON.stringify(c)})`) })
 const ids = args.arms.map((c) => c.anon)
 if (new Set(ids).size !== ids.length) throw new Error(`finish-ab: anon ids must be distinct (got ${ids.join(", ")})`)
+const armLabels = args.arms.map((c) => c.arm)
+if (new Set(armLabels).size !== armLabels.length) throw new Error(`finish-ab: arm labels must be distinct — otherFile() picks the OTHER arm by label (got ${armLabels.join(", ")})`)
 const judges = Array.isArray(args.judges) ? args.judges : []
 if (judges.length === 0 || judges.length % 2 !== 0) throw new Error(`finish-ab: a two-arm panel needs an even number of judges, half per reading order (got ${judges.length})`)
 judges.forEach((j, i) => { if (!j || !Array.isArray(j.order) || j.order.length !== ids.length || !ids.every((id) => j.order.includes(id))) throw new Error(`finish-ab: judge ${i + 1}'s order must be a permutation of the arm ids ${ids.join(", ")} (got ${JSON.stringify(j && j.order)})`) })
@@ -129,7 +131,7 @@ const byAnon = {}
 done.forEach((d) => { byAnon[d.anon] = d.result })
 const describe = (id) => `${id}: worktree ${byAnon[id].worktree}, branch ${byAnon[id].branch}`
 const judgePrompt = (j, i) => `You are judge ${i + 1} of ${judges.length}. Read the rubric at ${RUBRIC} and apply it exactly. The two arms are, in the order you must read them: ${j.order.map(describe).join("; ")}. Read the operator brief at ${BRIEF} too, so you know what both arms were told. Verify against the sources the rubric names before scoring. Write your full report to ${S}/judges/judge-${i + 1}.md and return the structured result with one scores entry per arm named ${j.order.join(" and ")}. Do not edit any file in either worktree or in the repository.`
-const judgeOpts = (j, i, retry) => ({ label: `judge:${i + 1}@${j.effort ?? "high"}${retry ? ":retry" : ""}`, phase: "Judge", model: MODEL, effort: j.effort ?? "high", agentType: "general-purpose", schema: JUDGE_SCHEMA })
+const judgeOpts = (j, i, retry) => { const effort = j.effort ?? "high"; return { label: `judge:${i + 1}@${effort}${retry ? ":retry" : ""}`, phase: "Judge", model: MODEL, effort, agentType: "general-purpose", schema: JUDGE_SCHEMA } }
 
 const judged = await parallel(judges.map((j, i) => () => agent(judgePrompt(j, i), judgeOpts(j, i, false))))
 // A judge that returned nothing is retried once at the same order and effort — the retry pass, not the
@@ -156,9 +158,9 @@ const ranks = {}
 const flags = {}
 ids.forEach((id) => {
   ranks[id] = jok.map((j) => j.ranking.indexOf(id) + 1)
-  flags[id] = jok.reduce((n, j) => n + j.hallucinations.filter((h) => h.arm === id).length, 0)
+  flags[id] = jok.reduce((n, j) => n + (j.hallucinations ?? []).filter((h) => h.arm === id).length, 0) // a well-formed ranking with no hallucinations field counts zero, never crashes (#58 item 9)
 })
-const unattributed = jok.reduce((n, j) => n + j.hallucinations.filter((h) => !ids.includes(h.arm)).length, 0)
+const unattributed = jok.reduce((n, j) => n + (j.hallucinations ?? []).filter((h) => !ids.includes(h.arm)).length, 0)
 if (unattributed) log(`finish-ab: ${unattributed} contradicted-claim entr${unattributed === 1 ? "y" : "ies"} name no arm id and count for neither arm`)
 log(`finish-ab: ranks: ${ids.map((id) => `${id}: ${ranks[id].join("/")}, flags ${flags[id]}`).join(" | ")}`)
 return { arms: done, droppedArms: [], judges: jok, ranks, flags, droppedJudges: dropped, unattributedFlags: unattributed, panel: { planned: judges.length, returned: jok.length, byOrder: Object.fromEntries(survivingOrders) }, plannedAgents }
