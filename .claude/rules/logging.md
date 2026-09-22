@@ -5,7 +5,7 @@ paths:
 
 # Logging Rules
 
-> **Path-scoped — stamp the glob at install.** The `paths:` block above makes this rule load only when a matching file is read, not every session (`https://code.claude.com/docs/en/memory`). As shipped it carries a placeholder: replace `<ext>` with the project's source extension(s) — one entry per extension (e.g. `"**/*.py"`, `"**/*.ts"`). A placeholder glob matches nothing, so the rule would never load; the conventions' verification block flags an unfilled placeholder.
+> **Path-scoped.** The `paths:` block above makes this rule load only when a matching file is read, not every session (`https://code.claude.com/docs/en/memory`). The globs are stamped at install — one entry per source extension (e.g. `"**/*.py"`, `"**/*.ts"`); until stamped they are bracketed placeholders that match nothing, which the conventions' verification block flags. This callout describes the mechanism and stays as it reads after stamping.
 
 Operational rules for structured logging. Your `docs/STANDARDS.md` establishes the principle; this file is the implementation contract. When writing or modifying logging code, follow these rules — adapted to whatever logging stack your project uses.
 

@@ -30,7 +30,14 @@
 #           the shell was allowed, with the payload cwd still at the root (dated
 #           observation, 2026-09-07). The confirmed deny is a session launched
 #           from a subdirectory (the verification block's payload dry-run); the
-#           remedy there is to relaunch the session from the root.
+#           remedy there is to relaunch the session from the root. The hooks
+#           reference states the OPPOSITE of the observation above — "cwd follows
+#           Claude: … the new directory after Claude runs cd"
+#           (https://code.claude.com/docs/en/hooks § Reference scripts by path,
+#           read 2026-09-07). The two disagree; this guard judges whichever cwd
+#           the payload carries and is correct under either reading. RE-VERIFY
+#           TRIGGER: a dispatch made after `cd <subdir>` that is denied means the
+#           page's reading now holds — update this paragraph (#58, S3).
 # Path:     registered as ${CLAUDE_PROJECT_DIR}/.claude/hooks/… — handlers run
 #           in the current directory (https://code.claude.com/docs/en/hooks), so
 #           a bare relative path would not resolve from the very subdirectory

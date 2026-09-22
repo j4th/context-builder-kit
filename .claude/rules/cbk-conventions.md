@@ -231,7 +231,6 @@ Cascade events being append-only is structurally important: the cascade IS the a
 | Naming a branch | `<type>/<TEAM>-<N>-<short-slug>` |
 | Closing an issue from a PR | `Closes <TEAM>-N` (Linear) or `Closes #N` (GitHub) in PR body |
 | Adding an ADR | `adr-new` skill (auto-syncs indexes) |
-| Adding a `## Pre-flight checks` row to a frame | Append-only edit to the frame's `## Pre-flight checks` table |
 | Skipping CI on a docs-only commit | Append `[skip ci]` to commit message subject |
 | Mid-session gate trimming | See § HITL gate load-bearing heuristics |
 | Phase exit | Run the `## Phase exit checklist` from the relevant cascade skill |

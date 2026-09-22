@@ -87,8 +87,8 @@ Always-loaded rules as of this checklist:
 | `cbk-conventions.md` | filled | surface inventory, branch naming, close markers stamped from this scaffold |
 | `orchestration.md` | filled / path-scoped / deleted | <e.g. "filled — default posture recorded"> |
 | `tooling.md` | filled / path-scoped / deleted | <e.g. "deleted — no MCPs wired yet; restore from the kit when the first lands"> |
-| `logging.md` | stamped | `paths:` set to `**/*.<ext>` |
-| `testing.md` | stamped | `paths:` set to `**/*_test.<ext>`, `**/test/**` |
+| `logging.md` | stamped | `paths:` set to the project's source globs (the callout stays; it describes the mechanism) |
+| `testing.md` | stamped | `paths:` set to the project's test globs and directories (inline-test stacks: directories alone) |
 | `knowledge-backend.md` | kept / deleted | <"deleted with its hook and settings stanza — knowledge axis is none"> |
 
 One-time choices settled here (each has a kit default; a choice with no forcing surface is a choice the kit made for you):
