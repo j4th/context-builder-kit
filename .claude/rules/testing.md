@@ -8,7 +8,7 @@ paths:
 
 # Testing Rules
 
-> **Path-scoped — stamp the globs at install.** This rule loads only when a test file or a test directory is read (`https://code.claude.com/docs/en/memory`). Replace `<ext>` with the project's test-file extension(s) and drop the directory patterns the project does not use. A placeholder glob matches nothing; the conventions' verification block flags it. Anything a test-writing session needs *before* it opens a test file — the project's test-side trace-tag form, for one — is restated here rather than left in a rule this session never loads.
+> **Path-scoped.** This rule loads only when a test file or a test directory is read (`https://code.claude.com/docs/en/memory`). The globs are stamped at install — the project's test-file extension(s), and only the directory patterns it uses; until stamped they are placeholders the conventions' verification block flags. A stack whose unit tests live inline in source files (a `#[cfg(test)]` module) has no test-file extension: stamp the test directories alone and accept that inline modules reach this rule only through their directory. Anything a test-writing session needs *before* it opens a test file — the project's test-side trace-tag form, for one — is restated here rather than left in a rule this session never loads. This callout stays as it reads after stamping.
 
 Operational rules for tests. The principle (logic modules get real tests; boundary impls get conformance + mocks; tests are part of done) lives in your `docs/STANDARDS.md`; this file is the implementation contract — when, in what order, and to what shape.
 

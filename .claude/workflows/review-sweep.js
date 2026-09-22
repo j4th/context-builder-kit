@@ -113,7 +113,7 @@ Split them by the section's own dispatch rule: reviewers it says run UNCONDITION
 
 If the section is ambiguous, missing, or names a reviewer whose agent file does not exist under .claude/agents/, say so in "note" rather than guessing.`,
     { label: "roster:read-rule-file", phase: "Roster", model: "haiku", schema: ROSTER_SCHEMA }, // haiku: no effort dial — orchestration.md § Generation notes
-  );
+  ).catch(() => null); // a throw (a budget ceiling — orchestration.md § Fan-out discipline) degrades exactly like a null read below; every other agent() here sits inside a parallel() thunk, which the runtime catches (#58 item 8)
 
   if (roster === null || !Array.isArray(roster.crossCutting) || !Array.isArray(roster.domain)) {
     log("review-sweep: DEGRADED — the reviewer roster could not be read from pr-review.md (null or malformed); running the toolkit dimensions only. Project-reviewer coverage is DROPPED for this run: record it on the sweep's `## Review gate` line and dispatch the project reviewers directly.");
@@ -138,7 +138,10 @@ If the section is ambiguous, missing, or names a reviewer whose agent file does 
     const usable = domain.filter((d) => !unusable.includes(d));
     // Hints are directory prefixes (pr-review.md § Reviewer craft rules), so the match is anchored
     // at the path's start — a substring match would let src/schema/ claim test/src/schema/x.
-    const matched = usable.filter((d) => files.some((f) => d.pathHints.some((h) => f.startsWith(h)))).map((d) => d.name);
+    // Directory-boundary safe: `src/schema` must not claim `src/schema-extra/x` (#58 item 7). A hint
+    // is a directory prefix, never a segment anchor — enumerate directories rather than reaching for
+    // a regex the roster line cannot carry.
+    const matched = usable.filter((d) => files.some((f) => d.pathHints.some((h) => f === h || f.startsWith(h + "/")))).map((d) => d.name);
     const skipped = usable.filter((d) => !matched.includes(d.name)).map((d) => d.name);
     if (skipped.length) {
       log(`review-sweep: domain reviewers not path-matched by this diff: ${skipped.join(", ")}`);
@@ -178,10 +181,11 @@ const firstPass = await parallel(dimensions.map((dim) => () => findOnce(dim)));
 // clean verdict ({findings: []}) is a valid result, not a failure. The retry
 // pass escalates effort once — "did it not try hard enough?" is the question
 // effort answers (orchestration.md § The effort axis).
-const failedFirst = dimensions.filter((_d, i) => firstPass[i] === null);
-if (failedFirst.length) log(`review-sweep: ${failedFirst.length} find agent(s) returned nothing — retrying once at effort ${RETRY_EFFORT}: ${failedFirst.map((d) => d.key).join(", ")}`);
-const retried = await parallel(failedFirst.map((dim) => () => findOnce(dim, RETRY_EFFORT, true)));
-const results = dimensions.map((dim, i) => firstPass[i] ?? retried[failedFirst.indexOf(dim)] ?? null);
+const failedIdx = dimensions.map((_d, i) => i).filter((i) => firstPass[i] === null);
+if (failedIdx.length) log(`review-sweep: ${failedIdx.length} find agent(s) returned nothing — retrying once at effort ${RETRY_EFFORT}: ${failedIdx.map((i) => dimensions[i].key).join(", ")}`);
+const retried = await parallel(failedIdx.map((i) => () => findOnce(dimensions[i], RETRY_EFFORT, true)));
+const results = firstPass.slice();
+failedIdx.forEach((i, k) => { results[i] = retried[k] ?? null; }); // the index-list reindex, shared with finish-ab.js (#58 smaller item 6)
 
 const failedDimensions = dimensions.filter((_d, i) => results[i] === null).map((d) => d.key);
 if (failedDimensions.length > 0) {

@@ -227,7 +227,7 @@ Operator can edit, decline, or commit.
 
 These announcements are non-negotiable. Bypassing them silently — even for "obvious" reads or "trivial" writes — trains the operator to ignore the next ad-hoc surfacing, which is the next failure mode.
 
-**Hook enforcement layer.** Prose alone cannot stop a session where a broad permissions allowlist would auto-approve the write tool. The kit ships `.claude/hooks/require-knowledge-backend-ok.sh` (registered in `settings.json` against the knowledge-backend MCP's write-verb tool names — Notion's as the v1 reference) which returns a deterministic permission "ask" on every matched write: the forced permission prompt is the per-action approval, and read tools stay unmatched so read-primary behavior is unaffected.
+**Hook enforcement layer.** Prose alone cannot stop a session where a broad permissions allowlist would auto-approve the write tool. The kit ships `.claude/hooks/require-knowledge-backend-ok.sh` (registered in `settings.json` against the knowledge-backend MCP's mutating tool names — Notion's `create|update|move|duplicate|convert|delete|upload|spawn|send|stop` as the v1 reference, dated 2026-09-21; the matcher is a dated observation, re-verified when the MCP's tool list changes) which returns a deterministic permission "ask" on every matched write: the forced permission prompt is the per-action approval, and read tools stay unmatched so read-primary behavior is unaffected.
 
 ## Inheritance discipline
 

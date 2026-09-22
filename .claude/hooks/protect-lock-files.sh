@@ -22,6 +22,10 @@
 # Tier:     HARD-DENY (see the registry comment in .claude/settings.json).
 
 set -uo pipefail
+
+# Drain stdin before any early exit, or a piping caller's SIGPIPE masks this hook's own
+# exit code (cbk-conventions-reference.md § Hook authoring › The stdin / exit contract).
+input="$(cat)"
 # Note: deliberately NOT using `set -e` — we want to exit 0 (fail-open) on
 # environment defects rather than abort with cryptic stderr that blocks all
 # tool calls.
@@ -37,7 +41,6 @@ if ! command -v jq &>/dev/null; then
   exit 0
 fi
 
-input="$(cat)"
 tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"
 file_path="$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty')"
 
@@ -54,7 +57,7 @@ rel="${file_path#"$PROJECT_DIR/"}"
 
 # Match the common lock file shapes anywhere in the repo.
 case "$(basename "$rel")" in
-  uv.lock|pnpm-lock.yaml|package-lock.json|yarn.lock|Cargo.lock|Gemfile.lock|poetry.lock|composer.lock|mix.lock)
+  uv.lock|pnpm-lock.yaml|package-lock.json|yarn.lock|Cargo.lock|Gemfile.lock|poetry.lock|composer.lock|mix.lock|pubspec.lock)
     cat >&2 <<EOF
 BLOCKED: Lock files are package-manager-managed.
 File: $rel
@@ -65,11 +68,22 @@ To change a lock file, invoke the corresponding package manager:
   - package-lock.json    →  npm install
   - yarn.lock            →  yarn install
   - Cargo.lock           →  cargo update
+  - pubspec.lock         →  dart pub get  /  flutter pub get  (pub upgrade to move a resolution)
   - etc.
 
 Manual edits silently de-sync the lock file from the manifest and break
 reproducible builds. If you genuinely need to bypass this hook (rare), do
 it via a separate, explicit commit that the user has reviewed in advance.
+EOF
+    exit 2
+    ;;
+  *.lock)
+    cat >&2 <<EOF
+BLOCKED: $rel looks like a package-manager lock file (the *.lock fallback arm — the
+named ecosystems are listed above this arm in the hook; the next ecosystem is covered
+by construction rather than by an edit, #58 item 3).
+Run the package manager that owns it instead of editing it by hand. If this file is
+NOT a lock file, add its name to the hook's exemption comment and say so in the PR.
 EOF
     exit 2
     ;;

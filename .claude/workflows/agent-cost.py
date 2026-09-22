@@ -11,7 +11,7 @@ and excluded from the total — never folded in as zero.
 
 PRICE below is list price per MTok as of 2026-09-05 (platform.claude.com/docs/en/about-claude/models/overview
 § Compare models, Pricing row — quoted in .claude/rules/orchestration-reference.md § Generation notes — the
-sources, which the kit's verification block diffs against PRICE), with cache writes at 1.25x input (5-minute TTL) and cache reads at 0.1x input. Every cache write is priced at the
+sources, which the kit's verification block diffs against PRICE), with cache writes at 1.25x input (5-minute TTL) and cache reads at 0.1x input except on the top tier, where cache hits and refreshes are 0.025x (CACHE_READ). Every cache write is priced at the
 5-minute rate — the per-TTL breakdown inside `cache_creation` is not read. A 1-hour cache TTL prices writes
 at 2x; because the cache-write share differs by tier, that widens a write-heavy tier's ratio rather than
 cancelling out (on one measured run, 2026-09-01, it moved a pooled top-tier:workhorse ratio from 3.2x to
@@ -29,6 +29,9 @@ PRICE = {  # substring of the model id -> (input $/MTok, output $/MTok); verifie
     'sonnet': (2.0, 10.0),
     'haiku': (1.0, 5.0),
 }
+CACHE_READ = {'fable': 0.025}  # cache hits and refreshes on the top tier are 0.025x base input
+CACHE_READ_DEFAULT = 0.10      # every other tier: the standard 0.1x
+# platform.claude.com/docs/en/build-with-claude/prompt-caching § Pricing, read 2026-09-07 (#58 item 6).
 
 
 def tier(model):
@@ -79,8 +82,7 @@ def summarise(path):
         t['cw'] += u.get('cache_creation_input_tokens', 0)
         t['cr'] += u.get('cache_read_input_tokens', 0)
     model = ','.join(sorted(per_model)) or '?'
-    totals = {k: sum(t[k] for t in per_model.values()) for k in ('turns', 'inp', 'out', 'cw', 'cr')}
-    turns, inp, out, cw, cr = (totals[k] for k in ('turns', 'inp', 'out', 'cw', 'cr'))
+    turns, inp, out, cw, cr = (sum(t[k] for t in per_model.values()) for k in ('turns', 'inp', 'out', 'cw', 'cr'))
     cost = None if not per_model else 0.0  # no usage events at all: unpriced and named, never a free row
     for name, t in per_model.items():
         k = tier(name)
@@ -88,7 +90,7 @@ def summarise(path):
             cost = None  # one unpriced model leaves the whole row unpriced rather than partially counted
             break
         pi, po = PRICE[k]
-        cost += (t['inp'] * pi + t['cw'] * pi * 1.25 + t['cr'] * pi * 0.10 + t['out'] * po) / 1e6
+        cost += (t['inp'] * pi + t['cw'] * pi * 1.25 + t['cr'] * pi * CACHE_READ.get(k, CACHE_READ_DEFAULT) + t['out'] * po) / 1e6
     minutes = None
     if len(stamps) >= 2:
         minutes = round((parse_iso(max(stamps)) - parse_iso(min(stamps))).total_seconds() / 60, 1)

@@ -12,15 +12,24 @@
 # Advisory-only contract: exit 0 ALWAYS. Formatting failures surface on stderr
 # as non-fatal notes; they never block the tool call.
 # Tier:     ADVISORY (see the registry comment in .claude/settings.json).
+# Register: copy this object into hooks.PostToolUse in .claude/settings.json once the case
+#           arms are wired — never as a top-level key (cbk-conventions-reference.md § Hook
+#           authoring: a hook-shaped object outside `hooks` voids the whole settings file):
+#           { "matcher": "Edit|Write|MultiEdit",
+#             "hooks": [ { "type": "command",
+#                          "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/format-on-edit.sh" } ] }
 
 set -uo pipefail
+
+# Drain stdin before any early exit, or a piping caller's SIGPIPE masks this hook's own
+# exit code (cbk-conventions-reference.md § Hook authoring › The stdin / exit contract).
+input="$(cat)"
 # Note: deliberately NOT using `set -e` — see the advisory contract above.
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$PWD}"
 
 command -v jq &>/dev/null || { echo "format-on-edit: jq not installed; skipping (advisory)." >&2; exit 0; }
 
-input="$(cat)"
 tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"
 file_path="$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty')"
 

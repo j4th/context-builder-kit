@@ -17,7 +17,10 @@
 # Tier:     ASK-GATE (see the registry comment in .claude/settings.json).
 
 set -uo pipefail
-cat > /dev/null # consume stdin; the decision is unconditional for matched tools
+# Drain stdin first (cbk-conventions-reference.md § Hook authoring › The stdin / exit contract);
+# the decision is unconditional for matched tools, so the payload is read and not inspected.
+input="$(cat)"
+: "$input"
 cat <<'EOF'
 {
   "hookSpecificOutput": {

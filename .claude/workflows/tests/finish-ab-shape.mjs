@@ -16,7 +16,7 @@ async function run(args, { armResult, judgeResult }) {
     calls.push({ prompt, opts });
     return opts.phase === "Execute" ? armResult(opts, prompt) : judgeResult(opts, prompt);
   };
-  const parallel = async (thunks) => Promise.all(thunks.map((t) => t().catch(() => null)));
+  const parallel = async (thunks) => Promise.all(thunks.map((t) => t())); // a throwing mock is a harness bug, not a "null agent" (#58 item 10)
   const result = await runWorkflow(args, agent, parallel, (m) => logs.push(String(m)), () => {});
   return { result, logs, calls };
 }
@@ -123,6 +123,23 @@ const judgeOk = (opts) => {
   check(result.panel && result.panel.returned === 4 && !logs.some((l) => /dropped judges/.test(l)), `a retried verdict counts (got panel ${JSON.stringify(result.panel)})`);
 }
 
+// 8b. Two judges return nothing with mixed retry outcomes: the retried verdict lands on ITS judge index
+//     (the index-list reindex — judged[i] from retried[k]), the still-failing judge is dropped by name,
+//     and the panel counts three. One failure cannot tell i from k; two can.
+{
+  const seen = { 2: 0, 4: 0 };
+  const { result, logs, calls } = await run(base, { armResult: armOk, judgeResult: (opts, prompt) => {
+    const m = opts.label.match(/^judge:(\d+)@\w+(:retry)?$/); const j = Number(m[1]);
+    if (j === 2) { seen[2] += 1; return null; }
+    if (j === 4) { seen[4] += 1; return m[2] ? judgeOk(opts, prompt) : null; }
+    return judgeOk(opts, prompt);
+  } });
+  check(seen[2] === 2 && seen[4] === 2, `both failed judges are retried once (got ${JSON.stringify(seen)})`);
+  check(calls.some((c) => c.opts.label === "judge:4@xhigh:retry"), "the retry keeps judge 4's own order and effort");
+  check(result.panel && result.panel.returned === 3, `the retried verdict counts on its own index and the failed one does not (got panel ${JSON.stringify(result.panel)})`);
+  check(logs.some((l) => /dropped judges .*judge 2 \(Q>P\): no result/.test(l)) && !logs.some((l) => /dropped judges .*judge 4/.test(l)), `judge 2 is dropped by name and judge 4 is not (got: ${logs.filter((l) => /dropped/.test(l)).join(" | ")})`);
+}
+
 // 5. A judge whose ranking omits an arm is dropped by name and its votes are not counted; the surviving
 //    panel's order balance is re-checked and reported.
 {
@@ -133,6 +150,31 @@ const judgeOk = (opts) => {
   check(Array.isArray(result.droppedJudges) && result.droppedJudges.length === 1, "droppedJudges is returned");
 }
 
+// 11. Duplicate arm labels are refused before any dispatch (otherFile() picks the other arm by label).
+{
+  let err = null; let dispatched = 0;
+  const count = (opts) => { dispatched += 1; return armOk(opts); };
+  try { await run({ ...base, arms: [arms[0], { ...arms[1], arm: "A" }] }, { armResult: count, judgeResult: judgeOk }); } catch (e) { err = e; }
+  check(err && /arm labels must be distinct/.test(err.message), "duplicate arm labels throw");
+  check(dispatched === 0, "and nothing was dispatched first");
+}
+
+// 12. A well-formed judge with no `hallucinations` field counts zero flags instead of crashing.
+{
+  const noHall = (opts, prompt) => { const j = judgeOk(opts, prompt); delete j.hallucinations; return j; };
+  const { result } = await run(base, { armResult: armOk, judgeResult: noHall });
+  check(result.flags.P === 0 && result.flags.Q === 0, `missing hallucinations counts zero (got ${JSON.stringify(result.flags)})`);
+}
+
+// 13. A contradicted claim naming no arm id is counted as unattributed, for neither arm.
+{
+  const stray = (opts, prompt) => { const j = judgeOk(opts, prompt); j.hallucinations = [{ arm: "Z", claim_verbatim: "x", contradicting_source: "y" }]; return j; };
+  const { result, logs } = await run(base, { armResult: armOk, judgeResult: stray });
+  check(result.unattributedFlags === 4, `four judges × one stray entry = 4 unattributed (got ${result.unattributedFlags})`);
+  check(result.flags.P === 0 && result.flags.Q === 0, "stray entries count for neither arm");
+  check(logs.some((l) => /name no arm id/.test(l)), "the stray entries are logged");
+}
+
 check(meta.name === "finish-ab" && Array.isArray(meta.phases) && meta.phases.length === 2, "meta literal is well-formed");
 if (failures) { console.error(`finish-ab-shape: ${failures} failure(s)`); process.exit(1); }
-console.log("finish-ab-shape: 10 scenarios ok");
+console.log("finish-ab-shape: 14 scenarios ok");

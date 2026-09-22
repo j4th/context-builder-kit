@@ -21,6 +21,7 @@ the developer-facing parts into standards.md and contributing.md.*
 | **Hierarchy levels** | 3 issue levels (workstream → framing → rough-in)<, under the planner's initiative/project shell when planning = linear> |
 | **Cascade artifact layout** | <Flat (kit default) \| Nested> under `docs/cbk/` |
 | **Repo** | <URL> |
+| **Kit commit** | <context-builder-kit sha this `.claude/` was installed from — the base of the next sync> |
 | **Provisioned** | <date> |
 
 <Axis-conditional rows — include the ones the chosen axes need, delete the rest:>
@@ -126,6 +127,7 @@ comfortable, veteran>
 | **Hierarchy levels** | 3 issue levels (workstream → framing → rough-in) |
 | **Cascade artifact layout** | Flat (kit default) under `docs/cbk/` |
 | **Repo** | https://github.com/jforth/notes-cli |
+| **Kit commit** | e92e9c4 |
 | **Project board** | https://github.com/users/jforth/projects/4 |
 | **Provisioned** | 2026-04-11 |
 

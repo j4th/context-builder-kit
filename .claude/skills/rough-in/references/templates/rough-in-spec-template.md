@@ -253,7 +253,7 @@ with expected output, or a "the smoke test in CI passes" statement.
 `<command or observation>`
 
 <!--
-MEASUREMENT / SPIKE VARIANT — the signal names BOTH the run-and-revise loop
+MEASUREMENT/SPIKE VARIANT — the signal names BOTH the run-and-revise loop
 (rows filled from the operator's runs, harness fixes landing on the same branch
 until they are) AND the record's completeness check (the by-hand checker above,
 run after the last row lands); the draft PR is neither:

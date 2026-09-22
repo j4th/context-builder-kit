@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # PostToolUse hook (Edit|Write|MultiEdit matcher) — EXEMPLAR: a project copies
-# this hook, wires its analyzer into the case arms below, and registers it via
-# the `_example_PostToolUse_analyzer` stanza in settings.json.
+# this hook, wires its analyzer into the case arms below, and registers it with
+# the `Register:` stanza in this header (never as a top-level settings.json key).
 #
 # Runs the project's analyzer on the PACKAGE of every edited source file and
 # prints only its ERRORS, so a boundary violation surfaces at the edit rather
@@ -23,13 +23,25 @@
 # Allowed:  everything.
 # Path:     registered (once wired) as ${CLAUDE_PROJECT_DIR}/.claude/hooks/…
 # Tier:     ADVISORY.
+# Depends:  jq (the payload fields), git (the edited file's checkout) and the
+#           project's analyzer once the case arms are wired — absent, the hook
+#           skips: exit 0 with a stderr note; the check task is the backstop.
+# Register: copy this object into hooks.PostToolUse in .claude/settings.json once the case
+#           arms are wired — never as a top-level key (cbk-conventions-reference.md § Hook
+#           authoring: a hook-shaped object outside `hooks` voids the whole settings file):
+#           { "matcher": "Edit|Write|MultiEdit",
+#             "hooks": [ { "type": "command",
+#                          "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/analyze-on-edit.sh" } ] }
 
 set -uo pipefail
+
+# Drain stdin before any early exit, or a piping caller's SIGPIPE masks this hook's own
+# exit code (cbk-conventions-reference.md § Hook authoring › The stdin / exit contract).
+input="$(cat)"
 # Deliberately NOT `set -e` — see the advisory contract above.
 
 command -v jq &>/dev/null || { echo "analyze-on-edit: jq not installed; skipping (advisory)." >&2; exit 0; }
 
-input="$(cat)"
 tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"
 file_path="$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty')"
 cwd="$(printf '%s' "$input" | jq -r '.cwd // empty')"

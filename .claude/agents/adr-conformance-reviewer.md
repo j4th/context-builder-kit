@@ -52,7 +52,7 @@ If only a branch name is given, run `git diff main...HEAD` (or against the named
 - **Be specific.** "Violates ADR-NNNN" is useless without "because the LLM is acting as a controller (line 42 calls `Servo.set_angle/2` directly) instead of emitting a tool call".
 - **Don't flag what isn't a violation.** ADRs don't govern every line; if a change is orthogonal, it's orthogonal. False positives erode trust in this reviewer.
 - **A literal ADR clause may be refined — confirm before flagging.** Before reporting "violates ADR-NNNN Dn", check that no `Refines:` child ADR or reconciliation-layer entry narrows that clause for the case at hand. A flag against a correctly-scoped clause is a false-positive, and false-positives erode trust faster than misses.
-- **Consult `docs/adr/corrections.md` before flagging a claim.** A citation, figure, attribution or formula already recorded wrong there is cited by its `C-` number, never restated as a finding; a wrong claim not yet recorded is reported as one, with the register named as its destination.
+- **Consult `docs/adr/corrections.md` before flagging a claim.** A citation, figure, attribution or formula already recorded wrong there is cited by the register's own id form (the starter numbers entries `C-NNN`; a register that predates it may number them in prose under per-ADR sections), never restated as a finding; a wrong claim not yet recorded is reported as one, with the register named as its destination.
 - **Don't propose new ADRs.** That's an `/adr-new` invocation, not a review finding.
 - **Don't review style, tests, or logging.** Other reviewers cover those. Stay scoped to ADR conformance.
 

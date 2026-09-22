@@ -30,18 +30,33 @@
 #           the shell was allowed, with the payload cwd still at the root (dated
 #           observation, 2026-09-07). The confirmed deny is a session launched
 #           from a subdirectory (the verification block's payload dry-run); the
-#           remedy there is to relaunch the session from the root.
+#           remedy there is to relaunch the session from the root. The hooks
+#           reference states the OPPOSITE of the observation above — "cwd follows
+#           Claude: … the new directory after Claude runs cd"
+#           (https://code.claude.com/docs/en/hooks § Reference scripts by path,
+#           read 2026-09-07). The two disagree; this guard judges whichever cwd
+#           the payload carries and is correct under either reading. RE-VERIFY
+#           TRIGGER: a dispatch made after `cd <subdir>` that is denied means the
+#           page's reading now holds — update this paragraph (#58, S3).
 # Path:     registered as ${CLAUDE_PROJECT_DIR}/.claude/hooks/… — handlers run
 #           in the current directory (https://code.claude.com/docs/en/hooks), so
 #           a bare relative path would not resolve from the very subdirectory
 #           this guard exists to block.
 # Tier:     HARD-DENY.
+# Depends:  jq (the payload's tool_name and cwd) and git (the top-level of that
+#           cwd) — absent, the guard fails open: exit 0 with a stderr warning
+#           naming the backstop, detect-forked-agent-memory.sh (Stop tier,
+#           needs no jq).
 #
 # Hook receives JSON on stdin. Exit 2 + stderr blocks. Fail-open on
 # environment defects (missing jq, not a git checkout): exit 0 with a loud
 # stderr warning naming the surviving backstop, mirroring protect-main-branch.sh.
 
 set -uo pipefail
+
+# Drain stdin before any early exit, or a piping caller's SIGPIPE masks this hook's own
+# exit code (cbk-conventions-reference.md § Hook authoring › The stdin / exit contract).
+input="$(cat)"
 # Deliberately NOT `set -e` — fail-open on environment defects rather than
 # aborting with cryptic stderr that blocks every dispatch.
 
@@ -52,7 +67,6 @@ if ! command -v jq &>/dev/null; then
   exit 0
 fi
 
-input="$(cat)"
 tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"
 case "$tool_name" in
   Task|Agent|Workflow) ;;
