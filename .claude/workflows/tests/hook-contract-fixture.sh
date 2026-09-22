@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
 # Fixture for the kit's hooks: the two properties every hook must have regardless of what it
 # guards (cbk-conventions-reference.md § Hook authoring › The stdin / exit contract), asserted
-# structurally over every .claude/hooks/*.sh, plus one over-buffer behavioural probe per
-# decision site the kit ships. Runs against throwaway `git init` trees under mktemp, never the
-# real checkout, and never depends on the directory it is launched from. Run by the
-# verification block; also: bash .claude/workflows/tests/hook-contract-fixture.sh
+# structurally over every .claude/hooks/*.sh, plus behavioural probes: one over-buffer probe per
+# decision site the kit ships, the fork detector's prune rules and degrade path, and the lock-file
+# arms. Runs against throwaway `git init` trees under mktemp, never the real checkout, and never
+# depends on the directory it is launched from. Run by the verification block; also:
+# bash .claude/workflows/tests/hook-contract-fixture.sh
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 hooks="$here/../../hooks"
 MAINBRANCH="$hooks/protect-main-branch.sh"
 PRSTATE="$hooks/guard-pr-state.sh"
 STOP="$hooks/detect-forked-agent-memory.sh"
-for h in "$MAINBRANCH" "$PRSTATE" "$STOP"; do [ -x "$h" ] || { echo "hook-contract-fixture: $h is missing or not executable"; exit 1; }; done
+LOCKFILES="$hooks/protect-lock-files.sh"
+for h in "$MAINBRANCH" "$PRSTATE" "$STOP" "$LOCKFILES"; do [ -x "$h" ] || { echo "hook-contract-fixture: $h is missing or not executable"; exit 1; }; done
 d=$(mktemp -d)
 cleanup() { chmod -R u+rwX "$d" 2>/dev/null || true; rm -rf "$d"; }
 trap cleanup EXIT
@@ -87,5 +89,39 @@ jq -Rs '{stop_hook_active:true,pad:.}' "$d/padfile" > "$d/pay-stop"
 RC=0; ERR="$(CLAUDE_PROJECT_DIR="$repo" "$STOP" < "$d/pay-stop" 2>&1 >/dev/null)" || RC=$?
 want 0 "a second stop proceeds however long the payload is"
 says "still present after one fix attempt" "and warns instead of blocking again"
+
+# A first stop against the same tree exercises the prune's three safety rules and the review action's
+# staging copy — branches a payload can reach, so they are asserted here, not only in a PR-body table.
+# The tree adds: a memory tree under an ignored build directory (pruned — not a fork); the staging copy
+# (pruned unconditionally); a directory literally named `*` that the ignore rules name (escaped, or
+# `-path './*'` prunes the whole top level and the real fork is missed — rule 2); and the memory
+# directory ignored by bare name (never pruned — rule 1; and its collapsed ancestors are filtered by
+# check-ignore — rule 3). The real fork under pkg/a is named only when every rule holds: each rule
+# removed exits 0 with empty stderr (measured 2026-09-21).
+printf '/pkg/*/build/\n/\\*/\nagent-memory/\n' > "$repo/.gitignore"
+mkdir -p "$repo/pkg/b/build/.claude/agent-memory/y" "$repo/.claude-pr/.claude/agent-memory/z" "$repo/*/.claude/agent-memory/w"
+printf '{"stop_hook_active":false}' > "$d/pay-first"
+RC=0; ERR="$(CLAUDE_PROJECT_DIR="$repo" "$STOP" < "$d/pay-first" 2>&1 >/dev/null)" || RC=$?
+want 2 "a fork outside the root blocks the first stop"
+says "  ./pkg/a/.claude/agent-memory" "the block names the forked tree"
+! grep -q '^  \./pkg/b' <<<"$ERR" || { echo "FAIL: a tree under an ignored build directory was reported as a fork"; exit 1; }
+! grep -q '^  \./\.claude-pr' <<<"$ERR" || { echo "FAIL: the review action's staging copy was reported as a fork"; exit 1; }
+! grep -q '^  \./\*' <<<"$ERR" || { echo "FAIL: the ignored directory named * was reported as a fork"; exit 1; }
+# No scratch file for the scan's stderr: the walk runs unmonitored and says so — never a clean report.
+RC=0; ERR="$(TMPDIR=/nonexistent/x CLAUDE_PROJECT_DIR="$repo" "$STOP" < "$d/pay-first" 2>&1 >/dev/null)" || RC=$?
+want 2 "an unwritable scratch path degrades the walk to unmonitored and the fork still blocks"
+says "no scratch file" "and the degrade is named"
+
+# protect-lock-files is a HARD-DENY whose two arm shapes are on the diff: the named list (pubspec.lock
+# is its newest entry, with its own remediation) and the *.lock fallback; a non-lock edit passes.
+lockpay() { jq -n --arg f "$repo/$1" '{tool_name:"Edit",tool_input:{file_path:$f}}' > "$d/pay-lock"; }
+lockpay pubspec.lock;  RC=0; ERR="$(CLAUDE_PROJECT_DIR="$repo" "$LOCKFILES" < "$d/pay-lock" 2>&1 >/dev/null)" || RC=$?
+want 2 "an edit to pubspec.lock is denied by the named arm"
+says "dart pub get" "with the dart remediation"
+lockpay deps/foo.lock; RC=0; ERR="$(CLAUDE_PROJECT_DIR="$repo" "$LOCKFILES" < "$d/pay-lock" 2>&1 >/dev/null)" || RC=$?
+want 2 "an edit to an unlisted *.lock is denied by the fallback arm"
+says "fallback arm" "and the arm names itself"
+lockpay notes.md;      RC=0; ERR="$(CLAUDE_PROJECT_DIR="$repo" "$LOCKFILES" < "$d/pay-lock" 2>&1 >/dev/null)" || RC=$?
+want 0 "an edit to a non-lock file passes"
 
 echo "hook-contract-fixture: ok"
