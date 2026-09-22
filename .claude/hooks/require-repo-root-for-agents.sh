@@ -42,6 +42,10 @@
 # stderr warning naming the surviving backstop, mirroring protect-main-branch.sh.
 
 set -uo pipefail
+
+# Drain stdin before any early exit, or a piping caller's SIGPIPE masks this hook's own
+# exit code (cbk-conventions-reference.md § Hook authoring › The stdin / exit contract).
+input="$(cat)"
 # Deliberately NOT `set -e` — fail-open on environment defects rather than
 # aborting with cryptic stderr that blocks every dispatch.
 
@@ -52,7 +56,6 @@ if ! command -v jq &>/dev/null; then
   exit 0
 fi
 
-input="$(cat)"
 tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"
 case "$tool_name" in
   Task|Agent|Workflow) ;;

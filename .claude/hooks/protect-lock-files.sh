@@ -22,6 +22,10 @@
 # Tier:     HARD-DENY (see the registry comment in .claude/settings.json).
 
 set -uo pipefail
+
+# Drain stdin before any early exit, or a piping caller's SIGPIPE masks this hook's own
+# exit code (cbk-conventions-reference.md § Hook authoring › The stdin / exit contract).
+input="$(cat)"
 # Note: deliberately NOT using `set -e` — we want to exit 0 (fail-open) on
 # environment defects rather than abort with cryptic stderr that blocks all
 # tool calls.
@@ -37,7 +41,6 @@ if ! command -v jq &>/dev/null; then
   exit 0
 fi
 
-input="$(cat)"
 tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"
 file_path="$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty')"
 

@@ -24,6 +24,10 @@
 # Tier:     HARD-DENY (see the registry comment in .claude/settings.json).
 
 set -uo pipefail
+
+# Drain stdin before any early exit, or a piping caller's SIGPIPE masks this hook's own
+# exit code (cbk-conventions-reference.md § Hook authoring › The stdin / exit contract).
+input="$(cat)"
 # Deliberately NOT `set -e` — fail-open on environment defects rather than
 # aborting with cryptic stderr that blocks all Bash calls.
 
@@ -34,7 +38,6 @@ if ! command -v jq &>/dev/null; then
   exit 0
 fi
 
-input="$(cat)"
 tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"
 command="$(printf '%s' "$input" | jq -r '.tool_input.command // empty')"
 # The Bash tool's payload carries the call's working directory; the branch
@@ -54,7 +57,9 @@ PROJECT_DIR="${cwd:-${CLAUDE_PROJECT_DIR:-$PWD}}"
 # repo's branch — costs one wrongly BLOCKED call with a loud message the
 # operator can override by running the commit themselves; under-matching
 # would be a silent bypass, which is worse for a deny-tier guard.
-if ! printf '%s' "$command" | grep -Eq '(^|[;&|[:space:]])git([[:space:]]+[^[:space:]]+)*[[:space:]]+commit([[:space:]]|$)'; then
+# A here-string, never `printf … | grep`: a reader that exits on its first match makes
+# pipefail read a real match as NO MATCH (cbk-conventions-reference.md § Hook authoring).
+if ! grep -Eq '(^|[;&|[:space:]])git([[:space:]]+[^[:space:]]+)*[[:space:]]+commit([[:space:]]|$)' <<<"$command"; then
   exit 0
 fi
 

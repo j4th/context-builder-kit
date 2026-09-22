@@ -17,6 +17,10 @@
 
 set -uo pipefail
 
+# Drain stdin before any early exit, or a piping caller's SIGPIPE masks this hook's own
+# exit code (cbk-conventions-reference.md § Hook authoring › The stdin / exit contract).
+input="$(cat)"
+
 if ! command -v jq &>/dev/null; then
   echo "guard-pr-state: WARNING — jq not installed; PR-state guard DISABLED." >&2
   echo "                Until fixed, the only backstop is the prose rule in /finish and" >&2
@@ -24,7 +28,6 @@ if ! command -v jq &>/dev/null; then
   exit 0
 fi
 
-input="$(cat)"
 tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"
 command="$(printf '%s' "$input" | jq -r '.tool_input.command // empty')"
 
@@ -34,7 +37,9 @@ command="$(printf '%s' "$input" | jq -r '.tool_input.command // empty')"
 # Token-anchored + flag-tolerant: matches `gh pr merge`, `gh -R o/r pr ready`,
 # `gh pr -R o/r close 5`, etc. Over-matching (the phrase quoted inside another
 # command) costs one extra confirmation — acceptable for an ask-gate.
-if printf '%s' "$command" | grep -Eq '(^|[;&|[:space:]])gh([[:space:]]+[^[:space:]]+)*[[:space:]]+pr([[:space:]]+[^[:space:]]+)*[[:space:]]+(ready|merge|close|reopen)([[:space:]]|$|[;&|])'; then
+# A here-string, never `printf … | grep`: a reader that exits on its first match makes
+# pipefail read a real match as NO MATCH (cbk-conventions-reference.md § Hook authoring).
+if grep -Eq '(^|[;&|[:space:]])gh([[:space:]]+[^[:space:]]+)*[[:space:]]+pr([[:space:]]+[^[:space:]]+)*[[:space:]]+(ready|merge|close|reopen)([[:space:]]|$|[;&|])' <<<"$command"; then
   cat <<'EOF'
 {
   "hookSpecificOutput": {

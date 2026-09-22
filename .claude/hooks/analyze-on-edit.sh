@@ -31,11 +31,14 @@
 #                          "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/analyze-on-edit.sh" } ] }
 
 set -uo pipefail
+
+# Drain stdin before any early exit, or a piping caller's SIGPIPE masks this hook's own
+# exit code (cbk-conventions-reference.md § Hook authoring › The stdin / exit contract).
+input="$(cat)"
 # Deliberately NOT `set -e` — see the advisory contract above.
 
 command -v jq &>/dev/null || { echo "analyze-on-edit: jq not installed; skipping (advisory)." >&2; exit 0; }
 
-input="$(cat)"
 tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"
 file_path="$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty')"
 cwd="$(printf '%s' "$input" | jq -r '.cwd // empty')"
