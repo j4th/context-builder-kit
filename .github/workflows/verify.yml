@@ -1,0 +1,25 @@
+name: Verification block
+
+# Runs cbk-conventions-reference.md § Verification through its runner on every pull request to
+# main — no path filter, so it can be a required check (the required-checks trap in
+# cbk-conventions.md § `[skip ci]` rule). ubuntu-latest ships bash, jq, git, node and python3
+# (dated observation, 2026-09-21; the block names any tool it cannot find).
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    name: Verification block
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Run the block through its runner
+        run: bash .claude/workflows/tests/run-verification-block.sh

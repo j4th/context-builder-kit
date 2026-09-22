@@ -469,6 +469,8 @@ The kit's brownfield detection (run by scaffold's Stage 2 when knowledge backend
 
 Two audiences share one block. **Kit-repo checks** hold on the kit's own tree and on any target project's copy of `.claude/`; **project checks** hold only in a filled-in target project and skip themselves when `docs/cbk/scaffold.md` is absent. A red check is a defect in the check until proven otherwise: a suite with a permanently red line is a suite nobody runs, which is worse than no suite. Every check says what it catches. Run the block after major edits to cascade skills, to the rules, or to a project's filled-in copy of this file.
 
+**Run it** through `.claude/workflows/tests/run-verification-block.sh`: it performs the documented extraction and adds two fail-loud rails the block cannot carry for itself — an empty extraction is red (a plain `bash -e` on an empty file exits 0), and an exit 0 that never printed `verification: done` is red. The kit's CI runs it on every pull request; a target wires the same script as the body of a task its check command depends on (a check nobody re-runs is a belief with a date on it — #58, second application, item 7). The block stays fail-fast: every red is fixed, or the check is narrowed in the project's own copy with an inline comment saying why — a "recorded" red cannot reach the sentinels.
+
 ```bash
 # ═══ KIT-REPO CHECKS — must be green on the kit tree and in every target project ═══
 
@@ -490,7 +492,12 @@ absent grep -rnE "notion\.(so|site)/[0-9a-f]{16,}" .claude/skills/
 # Pre-refactor "opinionated-profile" vocabulary must not appear anywhere in kit content (the
 # constant + two axes refactor removed the concept); the pattern splits its literal so this
 # line never matches itself.
-absent grep -rn -i "opinionate[d] profile\|opinionated_profil[e]" .claude/ README.md .mcp.json.example
+# The example env file is an operand only where it exists: a target that commits `.mcp.json` instead
+# names that file here, and a project sub-block re-homed from a pre-split contract must split its own
+# retired-vocabulary literal (as this comment does: opinionate[d] profile) or this very line matches
+# it (#58, second application, item 1).
+mcpx=""; [ -f .mcp.json.example ] && mcpx=.mcp.json.example
+absent grep -rn -i "opinionate[d] profile\|opinionated_profil[e]" .claude/ README.md $mcpx
 
 # CLAUDE.md points at this file as a backticked mention — deliberately NOT an `@` import,
 # which would expand this whole file into every session at launch (memory docs).
@@ -595,21 +602,24 @@ absent grep -niE "(if|when) in doub[t],? (use|reach for)" .claude/rules/tooling.
 # The bootstrap checklist prompts for the orchestration posture (#34).
 grep -q 'Orchestration posture' .claude/skills/scaffold/references/bootstrap_checklist_template.md || { echo "the bootstrap checklist lacks the orchestration-posture row"; exit 1; }
 # Hook registry ⇔ files ⇔ table: every shipped guard is registered at least once and the advisory
-# exemplars stay unregistered; every command field in settings.json — registered or an exemplar
-# stanza — is in placeholder form, exists and is executable; every hook header carries its Tier:
-# line; the registry comment names every hook and all four tiers; and the conventions' two-views
-# paragraph (cbk-conventions.md § Mutation discipline) names every registered hook.
+# exemplars stay unregistered on the kit tree (a target asserts its own wiring in the project
+# sub-block, ADVISORY_WIRED); every command field in settings.json is in placeholder form, exists
+# and is executable; every hook header carries its Tier: line; the registry comment names every hook
+# and all four tiers; and the conventions' two-views paragraph (cbk-conventions.md § Mutation
+# discipline) names every registered hook.
 hookcomment=$(jq -r '._comment_hooks' .claude/settings.json)
-for h in .claude/hooks/*.sh; do b=$(basename "$h"); n=$(jq -r '[.hooks[][] | .hooks[] | .command] | map(select(endswith("'"$b"'"))) | length' .claude/settings.json); case "$b" in format-on-edit.sh|analyze-on-edit.sh) [ "$n" -eq 0 ] || { echo "advisory exemplar $b is registered"; exit 1; };; *) [ "$n" -ge 1 ] || { echo "$b is not registered"; exit 1; };; esac; grep -q "$b" <<<"$hookcomment" || { echo "registry comment does not name $b"; exit 1; }; grep -q '^# Tier:' "$h" || { echo "$b has no Tier: line in its header"; exit 1; }; done
+for h in .claude/hooks/*.sh; do b=$(basename "$h"); n=$(jq -r '[.hooks[][] | .hooks[] | .command] | map(select(endswith("'"$b"'"))) | length' .claude/settings.json); case "$b" in format-on-edit.sh|analyze-on-edit.sh) if [ ! -f docs/cbk/scaffold.md ]; then [ "$n" -eq 0 ] || { echo "advisory exemplar $b is registered (the kit tree ships it unregistered; a target declares ADVISORY_WIRED in its sub-block)"; exit 1; }; fi;; *) [ "$n" -ge 1 ] || { echo "$b is not registered"; exit 1; };; esac; grep -q "$b" <<<"$hookcomment" || { echo "registry comment does not name $b"; exit 1; }; grep -q '^# Tier:' "$h" || { echo "$b has no Tier: line in its header"; exit 1; }; done
 [ "$(jq -r '.. | objects | select(has("command")) | .command' .claude/settings.json | wc -l)" -ge 1 ] || { echo "settings.json carries no hook commands at all"; exit 1; }
 jq -r '.. | objects | select(has("command")) | .command' .claude/settings.json | sort -u | while read -r c; do case "$c" in '${CLAUDE_PROJECT_DIR}/'*) ;; *) echo "hook command is not in placeholder form (handlers run in the current directory): $c"; exit 1;; esac; c="${c/\$\{CLAUDE_PROJECT_DIR\}/.}"; [ -x "$c" ] || { echo "hook command missing or not executable: $c"; exit 1; }; done
 for t in HARD-DENY ASK-GATE ADVISORY STOP; do grep -q "$t" <<<"$hookcomment" || { echo "registry comment lacks the $t tier"; exit 1; }; done
 jq -r '[.hooks[][] | .hooks[] | .command][]' .claude/settings.json | sort -u | while read -r c; do b=$(basename "$c"); grep -q "$b" .claude/rules/cbk-conventions.md || { echo "cbk-conventions.md § Mutation discipline does not name the registered hook $b"; exit 1; }; done
 # The launch-root guard, on its branches (crafted payloads; read-only). Only exit 2 denies, so the
 # blocking case asserts 2 exactly; `|| rc=$?` keeps -e satisfied while the status stays testable.
-rc=0; printf '{"tool_name":"Agent","tool_input":{},"cwd":"%s/docs"}' "$PWD" | .claude/hooks/require-repo-root-for-agents.sh >/dev/null 2>&1 || rc=$?
-[ "$rc" -eq 2 ] || { echo "launch-root guard did not DENY a subdirectory dispatch (exit $rc; only 2 blocks)"; exit 1; }
-printf '{"tool_name":"Agent","tool_input":{},"cwd":"%s"}' "$PWD" | .claude/hooks/require-repo-root-for-agents.sh >/dev/null 2>&1 || { echo "launch-root guard blocked a root dispatch"; exit 1; }
+# stderr is kept and printed on failure: the hook's own reason is the diagnostic (#58 item 11).
+rc=0; err=$(printf '{"tool_name":"Agent","tool_input":{},"cwd":"%s/docs"}' "$PWD" | .claude/hooks/require-repo-root-for-agents.sh 2>&1 >/dev/null) || rc=$?
+[ "$rc" -eq 2 ] || { echo "launch-root guard did not DENY a subdirectory dispatch (exit $rc; only 2 blocks). The hook said:"; printf '  %s\n' "$err"; exit 1; }
+rc=0; err=$(printf '{"tool_name":"Agent","tool_input":{},"cwd":"%s"}' "$PWD" | .claude/hooks/require-repo-root-for-agents.sh 2>&1 >/dev/null) || rc=$?
+[ "$rc" -eq 0 ] || { echo "launch-root guard blocked a root dispatch (exit $rc). The hook said:"; printf '  %s\n' "$err"; exit 1; }
 # No reviewer-memory tree outside the root — asked of the Stop hook itself with a crafted payload,
 # so the exclusion list has one home (it exits 2 while a stray tree exists; the gate's own check).
 printf '{"stop_hook_active":false}' | CLAUDE_PROJECT_DIR="$PWD" .claude/hooks/detect-forked-agent-memory.sh || { echo "a reviewer-memory tree exists outside the root (detect-forked-agent-memory.sh blocked; its stderr above names the paths)"; exit 1; }
@@ -668,6 +678,11 @@ echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
 if [ -f docs/cbk/scaffold.md ]; then
+
+  # Advisory hooks the project wired (§ Hook authoring): name each registered one here, space-separated.
+  # Each named hook must be registered exactly once; each unnamed one zero times. Default: none wired.
+  ADVISORY_WIRED="${ADVISORY_WIRED:-}"
+  for b in format-on-edit.sh analyze-on-edit.sh; do n=$(jq -r '[.hooks[][] | .hooks[] | .command] | map(select(endswith("'"$b"'"))) | length' .claude/settings.json); case " $ADVISORY_WIRED " in *" $b "*) [ "$n" -eq 1 ] || { echo "advisory hook $b is declared wired but registered $n times"; exit 1; };; *) [ "$n" -eq 0 ] || { echo "advisory hook $b is registered but not declared in ADVISORY_WIRED"; exit 1; };; esac; done
 
   # Layout: the project's own artifacts follow the layout it chose. Flat is the default;
   # a project that chose the nested layout inverts this line.
