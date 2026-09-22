@@ -48,7 +48,7 @@ When invoked, **propose** every input below from what the operator already said 
    Then fill in: ADR number, title, status (`Accepted` for new decisions, `Proposed` if user wants HITL gate first), date (today, ISO format), deciders, related ADRs, the relation slots the inputs filled (`Supersedes:` / `Refines:` / `Extends:` / `Promotes:` — delete the unused lines), context, options considered, decision, consequences.
 
 3. **Update `docs/adr/README.md` index** — the canonical surface.
-   - Add the row to the index table in number order; the status cell carries the grain and the parent inline (`Accepted · Refines ADR-0007 (D2)`, `Accepted · Extends ADR-0003 (D1)`).
+   - Add the row to the index table in number order — **in the form the existing rows already use.** Read them first: which cell carries the relation grain and the parent (the kit's starter index puts it in the Status cell — `Accepted · Refines ADR-0007 (D2)` — while an index that predates the starter may carry it as a Title-cell parenthetical, with another separator, or in prose), and write the new row exactly that way. The separator is the index's convention, not this skill's; two real indexes already contradicted the pinned form two different ways (#58, 2026-09-07 comment).
    - If wholly superseding, mark the old ADR's status field in the index as `Superseded by ADR-${NNNN}` (don't edit the old ADR file itself; the index expresses supersession). A clause-scoped supersession annotates the parent's row (`Accepted · Dn superseded by ADR-${NNNN}`); a refine or extend leaves the parent's row as it was.
 
 4. **Update every other index the conventions name.** `.claude/rules/cbk-conventions.md` § ADR index sync is the one home for the target list — read it now and walk it; this skill states no count. The blueprint's § Stack decisions table is append-only and gets a one-line bullet **only when the ADR changes a stack decision**; a decision that is not about the stack does not touch it. Where a project keeps an open-questions list on an index surface, an ADR that resolves one removes it there.
@@ -70,10 +70,11 @@ When invoked, **propose** every input below from what the operator already said 
 
 **See also** `docs/adr/corrections.md` — a wrong *claim* in an accepted ADR (a citation, a figure, an attribution, a formula) is none of these grains; it is an append-only register entry, and the ADR stays as written.
 
-A new ADR connects to an existing one through one of two relationships. Both are recorded as header fields and both preserve the parent's immutability — neither ever edits the parent file.
+A new ADR connects to an existing one through one of the relationships below (`Supersedes:`, `Refines:`, `Extends:`, and the clause-scoped form of the first); a `Promotes:` slot connects to a frozen corpus, not to an ADR. All are header fields and all preserve the parent's immutability — none ever edits the parent file.
 
 - **`Supersedes: ADR-NNNN`** — the new ADR *replaces* the parent's decision. The parent's status becomes `Superseded by ADR-MMMM`; new code follows the new ADR. This is the relationship the interactive **Supersedes?** input captures, and the one Step 3's index-marking handles.
 - **`Refines: ADR-NNNN (Dn, …)`** — the new ADR *clause-level-clarifies or narrows* a specific decision `Dn` in the parent **without invalidating it**. The parent stays `Accepted`; both parent and child are consulted when evaluating conformance. Use this when implementation reveals that an accepted clause was written too generally and needs a scoped reading (e.g. "this rule applies only to <entity-type>"), not a reversal.
+- **`Promotes: <corpus path § heading>`** — the decision is lifted from a frozen pre-cascade corpus (consultation's frozen-corpus ingestion; `cbk-conventions.md` § Multi-surface facts names the corpus + errata pair). The corpus entry stays as written and the ADR becomes the decision's record home; the slot is the back-pointer. Not a relation to another ADR, so it carries no grain.
 
 **Clause-scoped supersession.** Supersession can also target a single clause rather than a whole ADR: `Supersedes: ADR-NNNN Dn` reverses only decision `Dn` of the parent while the parent's other clauses stand. The parent's status stays `Accepted` (it is not wholly superseded); the child's index row names the specific clause it replaces.
 

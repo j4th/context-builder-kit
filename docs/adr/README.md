@@ -24,7 +24,7 @@ The `/adr-new` Claude Code skill (`.claude/skills/adr-new/SKILL.md`) automates t
 | `Deprecated` | No longer recommended, but still in effect; new code should not assume it |
 | `Superseded by ADR-NNNN` | Replaced by a newer decision |
 
-The status cell carries the relation grain and the parent inline — `Accepted · Refines ADR-0007 (D2)`, `Accepted · Extends ADR-0003 (D1)`, `Accepted · D3 superseded by ADR-0012` — so a clause-scoped supersession annotates the parent's row while the parent file stays untouched.
+The status cell carries the relation grain and the parent inline — `Accepted · Refines ADR-0007 (D2)`, `Accepted · Extends ADR-0003 (D1)`, `Accepted · D3 superseded by ADR-0012` — so a clause-scoped supersession annotates the parent's row while the parent file stays untouched. A project whose index predates this starter keeps its own form — the cell and separator its rows already use — and `adr-new` reads the rows before writing one.
 
 ## Numbering convention
 
