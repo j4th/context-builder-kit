@@ -17,7 +17,7 @@ For Claude.ai's qualitative test loop (no subagents, no benchmarking): a real hu
 - Foundation docs produced in the documented order: CLAUDE.md → docs/ARCHITECTURE.md → docs/STANDARDS.md → CONTRIBUTING.md (or deferred per the solo-pre-v1.0 rule) → README update → docs/cbk/blueprint.md
 - ARCHITECTURE.md Decisions Log has one entry per stack decision with all four fields (Context, Options, Decision, Consequences) — alternatives are real, not strawmen
 - Working conventions from `scaffold.md` (branch naming, commit format, label taxonomy) appear in CONTRIBUTING.md (or equivalent) verbatim — no re-deriving
-- Tooling configs are produced: every command in CLAUDE.md maps to an actual task in the task runner config; every CI gate in STANDARDS.md maps to an actual job in the workflow file
+- Tooling configs are produced: every command in CLAUDE.md maps to an actual task in the task runner config; every CI gate in STANDARDS.md maps to an actual job in the workflow file; the task runner defines a verification task that `check` depends on, running `.claude/workflows/tests/run-verification-block.sh`, and it ran once before the HITL presentation with both sentinels printed
 - A handoff issue gets created with the version-pin inventory, the toolchain bootstrap command, and the bootstrap-exemption-end statement
 - `docs/cbk/ROADMAP.md` is emitted on this github-issues run (it would be on in-repo-markdown too, and not on linear); `docs/cbk/README.md` gets the blueprint row and phase note appended, never recreated
 - The cross-document critic ran only if the drafting fanned out; with one context drafting every doc, the skip is stated in the phase note, not silent

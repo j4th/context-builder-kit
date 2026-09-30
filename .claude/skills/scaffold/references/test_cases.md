@@ -19,7 +19,7 @@ For Claude.ai's qualitative test loop (no subagents, no benchmarking): a real hu
 - Stage 2 confirmed the licence the way it confirmed visibility (MIT offered as the solo default; "none yet" accepted as an answer) and seeded `LICENSE` and README § License; the label set created is the full axis structure (`cascade-depth:*`, `source:*`, the type set, `workstream:<slug>` per workstream, `meta`, the review-control labels), not a subset
 - The scaffold question about PRs named its consequence — the review workflows blueprint will or will not emit
 - Bootstrap checklist surfaces what's manual
-- The bootstrap checklist has four sections; section 4 lists every shipped template and path-scoped rule with a disposition (the manifest-and-lockfile entry in `cbk-conventions-reference.md`'s `paths:` included), and prints the always-loaded set first. `docs/adr/` exists with ADR-0000's header filled (no `YYYY-MM-DD`). The committed `cascade-rough-in.md` carries eight headings including `## Assumptions`.
+- The bootstrap checklist has four sections; section 4 lists every shipped template and path-scoped rule with a disposition (the manifest-and-lockfile entry in `cbk-conventions-reference.md`'s `paths:` included), and prints the always-loaded set first; the verification matrix's last row ran the runner after that pass and read both sentinels. `docs/adr/` exists with ADR-0000's header filled (no `YYYY-MM-DD`). The committed `cascade-rough-in.md` carries eight headings including `## Assumptions`.
 - The bootstrap checklist's rule-file disposition pass settled the reviewer agent-memory choice, wrote it to the "Reviewer agent-memory" row of § Surface inventory, and — for `project` — deleted the kit's `.claude/agent-memory/` gitignore line.
 
 **What failure looks like:**

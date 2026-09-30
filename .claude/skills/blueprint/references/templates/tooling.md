@@ -26,7 +26,7 @@ The set depends on stack decisions. Default set:
    - `Cargo.toml` aliases or `xtask` — for Rust projects (or fall through to mise/just)
    - Whichever the user chose during stack decisions
 
-   Must define at minimum: `setup`, `check`, `test`, `lint`, `dev` (or local equivalents).
+   Must define at minimum: `setup`, `check`, `test`, `lint`, `dev` (or local equivalents), and a **verification task** that `check` depends on, whose body is `bash .claude/workflows/tests/run-verification-block.sh` (`cbk-conventions-reference.md` § Verification › Run it). The runner needs `bash`, `git`, `awk` and `mktemp`; the block it runs also needs `jq`, `node` and `python3`, because it runs the kit's fixtures, so `setup` installs them or the stack decisions say where they come from. A host missing one of them runs the block red. In a filled target the runner requires both `verification: project sub-block complete` and `verification: done`. Name the task in CLAUDE.md's command list like every other.
 
 2. **CI pipeline** at `.github/workflows/<name>.yml`:
    - One workflow file (or split if there's a clear reason)
@@ -46,6 +46,7 @@ The set depends on stack decisions. Default set:
 ## Rules
 
 - **Every command in CLAUDE.md = actual task definition.** No exceptions.
+- **The verification block is a leg of `check`, never a command someone remembers.** It holds the `.claude/` tooling contract (the hook registry, the byte-parallel copies, the always-loaded budget, the project sub-block), and a check nobody re-runs is a belief with a date on it. Because `check` locally = the CI pipeline (the next rule), the CI job that runs `check` runs the block too. Run the task once before the HITL presentation; a red line is fixed before hand-off, not recorded.
 - **`check` locally = CI pipeline.** No surprises. If CI runs lint+typecheck+test, `check` runs lint+typecheck+test. If they diverge, local-vs-CI debugging becomes a recurring cost.
 - **`mise install` (or equivalent) gets a new contributor everything.** Setup should be one command. If it's not, the README's "Install" section becomes a multi-step ordeal.
 - **For pre-implementation projects**: produce config with placeholder tasks. Establishing the convention matters more than the implementation. A `test` task that runs `echo "no tests yet"` is fine for v0.1; the convention exists, the next phase fills it in.
@@ -208,7 +209,7 @@ Iterate until approved. Then commit each config file via GitHub MCP to its targe
 
 If the user invoked light mode:
 
-- **Task runner config has the minimum set**: setup, check, test. Skip lint/typecheck/dev/fix/etc. unless they were explicitly chosen during stack decisions.
+- **Task runner config has the minimum set**: setup, check, test, and the verification task `check` depends on (it keeps the `.claude/` contract checked, so light mode keeps it too). Skip lint/typecheck/dev/fix/etc. unless they were explicitly chosen during stack decisions.
 - **CI workflow has 1–3 jobs** instead of 5+
 - **Skip env template** unless the project clearly has env vars
 - **Surface a skipped review automation as a one-line notice**, never a silent omission

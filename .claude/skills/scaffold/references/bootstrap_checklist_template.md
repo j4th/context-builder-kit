@@ -68,6 +68,7 @@ Walk through each row. If anything fails, retry or fall back to manual instructi
 | Scaffold output readable | View <repo URL>/blob/main/docs/cbk/scaffold.md | File renders, Cascade metadata reads `Planning backend: github-issues` | ☐ |
 | Problem brief committed | View <repo URL>/blob/main/docs/cbk/problem_brief.md | File renders, contains problem statement and appetite | ☐ |
 | Branch protection (if configured) | Try to push directly to main from a clone | Push is rejected | ☐ |
+| Verification block runs | With the kit's `.claude/` in the clone and the rule-file disposition below done, from the clone's root: `bash .claude/workflows/tests/run-verification-block.sh` | Exits 0; the last two lines are `verification: project sub-block complete` and `verification: done` (a filled target owes both — `cbk-conventions-reference.md` § Verification › Run it). Blueprint wires the same script into `check`. | ☐ |
 ```
 
 Only include rows that are actually applicable. State 2 (no projects toolset) omits the project board row. State 4 (no MCP) puts everything in section 2 (manual instructions) and the verification matrix becomes longer.
