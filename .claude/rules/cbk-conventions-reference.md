@@ -1053,6 +1053,9 @@ for f in .claude/commands/finish-procedure.md .claude/skills/rough-in/references
 # The branch rule (D54): a PR that closes any issue keys its branch, the Quick reference names both forms, and the
 # github-issues key form is named.
 { grep -q 'Any issue a PR closes' .claude/rules/cbk-conventions.md && grep -q '^| Naming a branch |.*only for work no issue tracks' .claude/rules/cbk-conventions.md && grep -q 'bare issue number on github-issues' .claude/rules/cbk-conventions.md; } || { echo "cbk-conventions.md § Branch naming or its Quick reference row lacks the D54 branch rule"; exit 1; }
+# STANDARDS citations name headings the blueprint template emits (D53): Git Workflow, Testing Requirements, PR Review
+# Checklist, CI Pipeline, Unenforced invariants — never a heading a target's STANDARDS.md does not have.
+absent grep -rnE 'STANDARDS\.md`? § (Testing philosoph[y]|PR feedback loo[p]|PR review proces[s]|Commit and branch convention[s])' .claude/
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

@@ -57,7 +57,7 @@ When a constraint comes from a foundation doc, cite the doc and the section by n
 
 Examples:
 - *"The trait is pure — no async, no I/O, no network — per `docs/STANDARDS.md § Unenforced invariants`"*
-- *"Use the testing patterns from `docs/STANDARDS.md § Testing philosophy` — table-driven tests with named cases, no mocking of types we own"*
+- *"Use the testing patterns from `docs/STANDARDS.md § Testing Requirements` — table-driven tests with named cases, no mocking of types we own"*
 - *"Follow the conventions in `CLAUDE.md § Commands` — use `mise run test` not `cargo test` directly"*
 
 The citation makes the constraint findable and gives plan mode a hook to fetch additional detail if it needs the rationale. **Don't paraphrase the constraint** — paraphrasing introduces drift and the cited section becomes the source of truth, not the prompt's restatement.
