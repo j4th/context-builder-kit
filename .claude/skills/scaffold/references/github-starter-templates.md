@@ -182,6 +182,13 @@ on:
   push:
     branches: [main]
 
+# `bash --noprofile --norc -eo pipefail {0}` on every run: step. Unset, GitHub runs `bash -e {0}`, with no
+# pipefail (the shell table in https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax,
+# read 2026-09-30).
+defaults:
+  run:
+    shell: bash
+
 jobs:
   check:
     # `name:` is the check-run context a ruleset will require. Set it before the job
@@ -189,7 +196,7 @@ jobs:
     # orphans the required context (cbk-conventions-reference.md § Required-checks
     # trap, cause 3).
     name: check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # a named image: `ubuntu-latest` moves when GitHub re-points the label; bump in a reviewed PR
     steps:
       - run: echo "CI stub — blueprint wires the real gate"
 ```

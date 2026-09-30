@@ -59,6 +59,14 @@ concurrency:
   group: claude-review-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
+# Every run: step runs `bash --noprofile --norc -eo pipefail {0}`. With no shell set, GitHub runs `bash -e {0}`
+# instead, with no pipefail, so `cmd | tee log` passes when cmd fails. The shell table, of the unset case:
+# "Note that this runs a different command to when `bash` is specified explicitly"
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax, read 2026-09-30).
+defaults:
+  run:
+    shell: bash
+
 jobs:
   auto-review:
     name: Auto-review (inline + summary)
@@ -69,7 +77,11 @@ jobs:
       github.event.pull_request.user.login != 'dependabot[bot]' &&
       github.event.pull_request.user.login != 'renovate[bot]' &&
       github.event.pull_request.user.login != 'claude[bot]'
-    runs-on: ubuntu-latest
+    # A named image, never `ubuntu-latest`: "The `-latest` runner images are the latest stable images that
+    # GitHub provides" (https://docs.github.com/en/actions/reference/runners/github-hosted-runners, read
+    # 2026-09-30), so that label moves when GitHub re-points it and a runner change lands unreviewed. Bump
+    # the image in a reviewed PR.
+    runs-on: ubuntu-24.04
     # Constraint 3 — a job-level timeout: the action has no timeout input of its own.
     timeout-minutes: 30
     # Constraint 6 — permissions scoped to the job. `id-token: write` is required by the
@@ -94,15 +106,21 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -uo pipefail
-          # --repo because this step runs BEFORE checkout. Read the PR's labels first: the one
-          # benign case is the label already gone from this PR (a concurrent run took it);
-          # every other failure — including the label deleted from the repository's taxonomy,
-          # which would break re-triggering for everyone — is an error.
-          if gh pr view "$PR_NUMBER" --repo "$REPO" --json labels --jq '.labels[].name' | grep -qxF 'claude-review-again'; then
+          # --repo because this step runs BEFORE checkout. The PR's labels are read first and captured,
+          # so a failed read is an error, never "already removed". The one benign case is the label
+          # already gone from this PR: a concurrent run took it, or the label was deleted from the
+          # repository, which removes it everywhere — "Deleting a label will remove the label from
+          # issues and pull requests" (https://docs.github.com/en/issues/using-labels-and-milestones-to-track-work/managing-labels,
+          # read 2026-09-30) — and re-triggering then needs the label recreated. Every other failure
+          # is an error. The match is a here-string, never `… | grep -q`: under pipefail a match can
+          # read as no match once grep exits first (cbk-conventions-reference.md § Hook authoring).
+          names="$(gh pr view "$PR_NUMBER" --repo "$REPO" --json labels --jq '.labels[].name')" \
+            || { echo "::error::Could not read the PR's labels."; exit 1; }
+          if grep -qxF 'claude-review-again' <<<"$names"; then
             gh pr edit "$PR_NUMBER" --repo "$REPO" --remove-label claude-review-again \
               || { echo "::error::Failed to remove the claude-review-again label."; exit 1; }
           else
-            echo "Label already removed from this PR (benign concurrent run)."
+            echo "Label already removed from this PR (a concurrent run took it, or the label was deleted from the repository)."
           fi
 
       - name: Checkout PR HEAD
@@ -131,13 +149,14 @@ jobs:
         run: |
           set -uo pipefail
           labels="${LABELS_JSON:-[]}"
-          if printf '%s' "$labels" | grep -qF '"claude-deep-review"'; then
+          # Here-strings, never `printf … | grep -q`: under pipefail a match can read as no match.
+          if grep -qF '"claude-deep-review"' <<<"$labels"; then
             echo "model=[<top-tier or workhorse model id>]" >> "$GITHUB_OUTPUT"
             echo "effort=xhigh" >> "$GITHUB_OUTPUT"
             # `ultracode` as exercised on the deep path (a dated observation, 2026-09-06); re-verify the setting name after harness upgrades.
             echo "settings_arg=--settings '{\"ultracode\":true}'" >> "$GITHUB_OUTPUT"
             echo "disallow_arg=" >> "$GITHUB_OUTPUT"
-          elif printf '%s' "$labels" | grep -qF '"claude-fast-review"'; then
+          elif grep -qF '"claude-fast-review"' <<<"$labels"; then
             echo "model=[<mid-tier model id>]" >> "$GITHUB_OUTPUT"
             echo "effort=high" >> "$GITHUB_OUTPUT"
             echo "settings_arg=" >> "$GITHUB_OUTPUT"

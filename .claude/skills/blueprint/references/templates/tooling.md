@@ -65,12 +65,22 @@ on:
   pull_request:
     branches: [main]
 
+# `bash --noprofile --norc -eo pipefail {0}` on every run: step. Unset, GitHub runs `bash -e {0}`, with no
+# pipefail (the shell table in https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax,
+# read 2026-09-30).
+defaults:
+  run:
+    shell: bash
+
 jobs:
   <job-name-from-standards>:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # a named image: `ubuntu-latest` moves when GitHub re-points the label; bump in a reviewed PR
     steps:
-      - uses: actions/checkout@v4
-      - uses: <language-setup-action@version>
+      # Every `uses:` pinned to a full commit SHA with a trailing version comment, never a mutable tag, as the
+      # review templates pin theirs (cbk-conventions-reference.md § Dependency settle-window); the update
+      # bot's CI-actions entry bumps the pins.
+      - uses: actions/checkout@[full-commit-sha] # v[version]
+      - uses: <language-setup-action>@[full-commit-sha] # v[version]
       - run: <task-runner> <command-from-standards>
 ```
 

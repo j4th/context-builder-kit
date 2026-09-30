@@ -32,6 +32,12 @@ concurrency:
   group: claude-mention-${{ github.event.issue.number || github.event.pull_request.number }}
   cancel-in-progress: true
 
+# `bash --noprofile --norc -eo pipefail {0}` on every run: step, not GitHub's `bash -e {0}` default, which has
+# no pipefail (claude-review.yml's defaults comment carries the source).
+defaults:
+  run:
+    shell: bash
+
 jobs:
   claude:
     name: Claude responds to @mention
@@ -47,7 +53,9 @@ jobs:
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
       (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
-    runs-on: ubuntu-latest
+    # A named image, never `ubuntu-latest`, which moves when GitHub re-points it (claude-review.yml's runs-on
+    # comment carries the source). Bump the image in a reviewed PR.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - name: Skip if bot author or skip-claude label
@@ -61,7 +69,7 @@ jobs:
           ALL_LABELS="${ISSUE_LABELS_JSON:-[]} ${PR_LABELS_JSON:-[]}"
           if [[ "$ACTOR" == "claude[bot]" || "$ACTOR" == "dependabot[bot]" || "$ACTOR" == "renovate[bot]" ]]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-          elif printf '%s' "$ALL_LABELS" | grep -qF '"skip-claude"'; then
+          elif grep -qF '"skip-claude"' <<<"$ALL_LABELS"; then  # a here-string: under pipefail `printf … | grep -q` can read a match as none
             echo "skip=true" >> "$GITHUB_OUTPUT"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"

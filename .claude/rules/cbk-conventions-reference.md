@@ -853,6 +853,12 @@ for f in .claude/commands/intake.md .claude/commands/pr-respond.md; do [ -f "$f"
 for a in .claude/agents/*.md; do while IFS= read -r m; do [ -n "$m" ] || continue; f=${m#\`}; f=${f%%\`*}; [ -f ".claude/rules/$f" ] || continue; w=$(awk '{print $1 (NF>1 ? " "$2 : "")}' <<<"${m#*§ }"); awk -v w="$w" '{sub(/^#+ +([0-9]+\. +)?/, ""); sub(/^(- |[0-9]+\. |\| )?\*\*/, "")} index($0, w) == 1 {found=1} END {exit !found}' ".claude/rules/$f" || { echo "$a cites $f § ${m#*§ } — no heading or bold lead-in of $f begins '$w'"; exit 1; }; done <<<"$(grep -oE '`[a-z-]+\.md` § [^,;()`*→."—]+' "$a" || true)"; done
 absent grep -n "permit verbose \`debug\` everywhere except hot-path loop[s]" .claude/agents/logging-discipline-reviewer.md
 grep -qF 'https://code.claude.com/docs/en/commands' .claude/rules/simplification.md || { echo "simplification.md does not source what the /simplify pass covers"; exit 1; }
+# The workflows the kit emits (context-builder-kit#70): a named runner image, never the moving `-latest`
+# label; `shell: bash` set in each, so every run: step has pipefail (unset, GitHub runs `bash -e {0}`); and no
+# check piped into an early-exiting `grep -q`, which under pipefail can read a match as no match (§ Hook authoring).
+absent grep -rn 'runs-on: ubuntu-lates[t]' .claude/skills/
+for f in .claude/skills/blueprint/references/templates/claude-review.yml .claude/skills/blueprint/references/templates/claude.yml .claude/skills/blueprint/references/templates/tooling.md .claude/skills/scaffold/references/github-starter-templates.md; do grep -qE '^ *shell: bash$' "$f" || { echo "$f sets no 'shell: bash' (unset, GitHub runs bash -e {0}: no pipefail)"; exit 1; }; done
+absent grep -nE '^[^#]*[|][[:space:]]*grep -[A-Za-z]*q' .claude/skills/blueprint/references/templates/claude-review.yml .claude/skills/blueprint/references/templates/claude.yml
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
