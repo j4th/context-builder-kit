@@ -19,7 +19,16 @@ Not a prose doc — a guide for what config artifacts to produce. Tooling is the
 The set depends on stack decisions. Default set:
 
 1. **Task runner config** (one of):
-   - `mise.toml` — for projects using mise
+   - `mise.toml` — for projects using mise. mise runs an inline task under `sh -o errexit -c` unless told otherwise (the `unix_default_inline_shell_args` default, `https://github.com/jdx/mise/blob/main/settings.toml`, read 2026-09-30) — no `pipefail`, so `false | true` passes. The emitted file carries this block verbatim:
+
+     ```toml
+     [task_config]
+     # bash, errexit kept inside command substitutions (inherit_errexit), pipefail on.
+     # A task's own `shell` overrides this default, so no task sets one. Needs mise >= 2026.7.15.
+     shell = "bash -O inherit_errexit -c -o errexit -o pipefail"
+     ```
+
+     `task_config.shell` "sets a project-scoped default shell for tasks, with task-local and template `shell` still taking precedence" (the v2026.7.15 release notes, jdx/mise#11354, `https://github.com/jdx/mise/releases/tag/v2026.7.15`, read 2026-09-30). A mise older than that release predates the key, so pin mise at or above it wherever tasks run, a CI setup action's own pin included. Measured 2026-09-30 on mise 2026.8.16 with bash 5.2: the inline task `false | true; echo reached` exits 0 without the block and fails with it, and `inherit_errexit` is what makes `x=$(false; echo leaked)` fail instead of quietly assigning `leaked`.
    - `Makefile` — for traditional Unix projects
    - `justfile` — for projects using just
    - `package.json` scripts — for Node projects

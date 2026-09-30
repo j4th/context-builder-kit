@@ -1002,6 +1002,9 @@ absent grep -rniE "container base-image tag[s]?( are outside|, or a single)|base
 dbx=""; [ -f .github/dependabot.yml.example ] && dbx=.github/dependabot.yml.example
 for f in .claude/skills/scaffold/references/github-starter-templates.md $dbx; do for e in docker docker-compose; do grep -q "package-ecosystem: \"$e\"" "$f" || { echo "$f lacks the $e stub (§ Dependency settle-window)"; exit 1; }; done; awk '/package-ecosystem:/ { if (e != "" && !c) { print FILENAME ": no cooldown under " e; bad = 1 } e = $0; c = 0; next } /cooldown/ { c = 1 } /^```/ { if (e != "" && !c) { print FILENAME ": no cooldown under " e; bad = 1 } e = ""; c = 0 } END { if (e != "" && !c) { print FILENAME ": no cooldown under " e; bad = 1 } exit bad }' "$f" || { echo "an update-bot entry lacks its cooldown floor (§ Dependency settle-window › Inactive ecosystem stubs)"; exit 1; }; done
 absent grep -rn "docs\.github\.com …" .claude/ $dbx
+# mise inline tasks (context-builder-kit#70 item 5): blueprint's tooling template emits the [task_config] shell line
+# verbatim (bash with errexit, pipefail and inherit_errexit) and the mise release that introduced the key.
+{ grep -qF 'shell = "bash -O inherit_errexit -c -o errexit -o pipefail"' .claude/skills/blueprint/references/templates/tooling.md && grep -qF 'mise >= 2026.7.15' .claude/skills/blueprint/references/templates/tooling.md; } || { echo "blueprint templates/tooling.md lacks the mise [task_config] shell line or its version floor"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
