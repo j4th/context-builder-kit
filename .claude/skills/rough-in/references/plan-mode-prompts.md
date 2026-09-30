@@ -6,7 +6,7 @@ This is the reference rough-in consults most often during Step 5 (drafting indiv
 
 ## What `/finish` does with the spec
 
-`/finish {issue_number}` is the Claude Code slash command that picks up a rough-in sub-sub-issue and executes it. It will be defined in CLAUDE.md by the bootstrap-finish skill (the sixth and final in-chat skill, scoped to writing the finish section into CLAUDE.md once M1 of the first workstream has been built by hand). For now, the contract `/finish` will follow is:
+`/finish {issue_number}` is the Claude Code slash command that picks up a rough-in sub-sub-issue and executes it. It ships as `.claude/commands/finish.md` — rough-in provisions it at Step 5.5 from the bundled `references/finish-command.md` — and the part of its contract rough-in's specs feed is:
 
 1. **Read the issue body** via `issue_read get`
 2. **Identify the section structure** by parsing `## ` headings — anchor on the eight sections, in order (Context / Assumptions / Implementation / Acceptance criteria / Test plan / Done signal / Dependencies / PR contract)
@@ -291,10 +291,12 @@ This is the shape every Implementation section should aim for. Not every spec wi
 
 ## How the Implementation section relates to the other sections
 
-The Implementation section is the hottest, but the other five sections of the spec template each have a specific role and shouldn't duplicate Implementation content:
+The Implementation section is the hottest, but each of the other sections of the spec template has a specific role and shouldn't duplicate Implementation content:
 
 - **Context** orients the reader to where the issue sits in the cascade (workstream, framing, milestone, what came before, what comes next). It's the "why this issue exists" answer in one paragraph. Not the place for instructions.
+- **Assumptions** lists every gap the drafter filled, one `[ASSUMPTION: …]` line each with why it was made and what changes if it is wrong — or the explicit `- None — …` line. `/finish` confirms or corrects each at its plan gate. Never empty.
 - **Acceptance criteria** is a checklist of observable, verifiable outcomes the executor can tick off. It's where the executor proves the implementation is done. Not the place for instructions on how to get there.
+- **Test plan** names the regime and one test per criterion in the project's test-side tag form, quotable from the runner — the red-first scaffold `/finish` builds before the implementation. Not the place for the implementation itself.
 - **Done signal** is the single command or observation that means the issue is complete — usually a `cargo run -- X` or `pnpm test` invocation with expected output. The top-line check, distinct from the verification step embedded in Implementation.
 - **Dependencies** is the list of prior R-issues that must be closed before this issue can start. `/finish` reads this section before handing the body to plan mode and refuses to proceed if any dependency is open.
 - **PR contract** is the standard text for how to close the issue when implementation is complete. Same across every cascade rough-in spec — not customized per issue.
@@ -303,12 +305,14 @@ The Implementation section is the hottest, but the other five sections of the sp
 
 ## Section-anchoring discipline for `/finish`
 
-`/finish` identifies sections by their `## ` heading names. The standard six headings are:
+`/finish` identifies sections by their `## ` heading names. The eight headings, in order, are:
 
 ```
 ## Context
+## Assumptions
 ## Implementation
 ## Acceptance criteria
+## Test plan
 ## Done signal
 ## Dependencies
 ## PR contract
@@ -318,7 +322,7 @@ The Implementation section is the hottest, but the other five sections of the sp
 
 The cascade-rough-in.md template enforces this with an HTML comment block at the top of the file: *"The only hard rule: keep the section headings as written. /finish identifies sections by heading name, so renaming 'Implementation' to 'What to build' will break the slash command's anchoring."*
 
-When rough-in drafts a spec, it must use exactly these six heading names in exactly this order. If a milestone genuinely needs additional sections (e.g., a research-heavy issue might benefit from a `## Background` section), add them after the standard six rather than renaming or replacing standard sections.
+When rough-in drafts a spec, it must use exactly these eight heading names in exactly this order. If a milestone genuinely needs additional sections (e.g., a research-heavy issue might benefit from a `## Background` section), add them after the eight rather than renaming or replacing them.
 
 ## When the Implementation section gets long
 
@@ -352,8 +356,7 @@ The second-level headings within Implementation don't break `/finish` (which anc
 
 - **The Acceptance criteria section's discipline** — that's covered in `references/templates/rough-in-spec-template.md` and the cascade-rough-in.md template comments
 - **The PR contract section's standard text** — same; it's in the template
-- **`/finish`'s actual implementation** — that's bootstrap-finish's job, not rough-in's. Rough-in only needs to know `/finish`'s contract (read body, anchor on Implementation, verify dependencies, hand to plan mode).
+- **`/finish`'s actual implementation** — that's `.claude/commands/finish.md`, provisioned at Step 5.5, not rough-in's. Rough-in only needs to know `/finish`'s contract (read body, anchor on Implementation, verify dependencies, hand to plan mode).
 - **Plan mode's prompt-handling internals** — Claude Code's plan mode is a black box from rough-in's perspective. Rough-in produces well-shaped prompts and trusts plan mode to handle them well.
-- **The bootstrap-finish skill itself** — that's the sixth in-chat skill, scoped separately, built between M1 and M2 of the first workstream once execution data informs what `/finish` should do.
 
 If you're drafting an Implementation section and find yourself wanting to write instructions for `/finish` rather than for the executor, stop — the prompt is for the executor (Claude Code or human), not for the slash command. `/finish` is just the bridge.

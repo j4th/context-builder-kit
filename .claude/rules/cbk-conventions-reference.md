@@ -1077,6 +1077,10 @@ absent grep -rn "Refines vs Supersede[s]" .claude/
 for s in blueprint framing rough-in; do cmp -s .claude/skills/scaffold/references/backends.md .claude/skills/$s/references/backends.md || { echo "$s/references/backends.md drifted from scaffold's copy (the four copies are byte-identical)"; exit 1; }; done
 # Its board-automation rail is dated, and no skill names a sub-issue field the GraphQL schema lacks.
 absent grep -rn "as of current cascade versio[n]\|subIssueProgres[s]" .claude/skills/
+# The eight-section list, restated (V9.8): scaffold's SKILL.md, the four backends.md copies and rough-in's commit
+# reference carry the executor's list verbatim too, and no rough-in surface states a stale count ($L is set above).
+for f in .claude/skills/scaffold/SKILL.md .claude/skills/*/references/backends.md .claude/skills/rough-in/references/planning-backend-commit.md; do grep -qF "($L)" "$f" || { echo "$f does not carry the executor's section list ($L)"; exit 1; }; done
+absent grep -rniE "(six|seven) (standard )?(sections|headings)|other five sections|these six heading|six-section" .claude/skills/rough-in .claude/skills/scaffold/SKILL.md
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

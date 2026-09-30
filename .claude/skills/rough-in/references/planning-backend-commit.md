@@ -13,7 +13,7 @@ For each rough-in spec produced in Step 5, rough-in creates one **sub-sub-issue*
 | Field | Source | Example |
 |---|---|---|
 | Title | `[<workstream-slug>:F<#>:R<#>] <intent>` (slug + F-number inherited from the parent framing sub-issue's title via `issue_read`, R-number from rough-in sequence) | `[regex-pack:F1:R1] Define Verifier trait` |
-| Body | The full rough-in spec from Step 5, populated into the `cascade-rough-in.md` template (seven sections: Context / Implementation / Acceptance criteria / Test plan / Done signal / Dependencies / PR contract) | (full markdown body) |
+| Body | The full rough-in spec from Step 5, populated into the `cascade-rough-in.md` template, its eight sections (Context / Assumptions / Implementation / Acceptance criteria / Test plan / Done signal / Dependencies / PR contract) | (full markdown body) |
 | Parent | Framing capability sub-issue created by framing | `[regex-pack:F1] Verify one regex lesson end-to-end` |
 | Labels | `cascade-depth:roughed-in`, plus any inherited from the parent framing sub-issue | — |
 | Initial board Status | **Ready** (set by board automation rules, not directly by the cascade) | — |
@@ -29,7 +29,7 @@ Rough-in constructs each sub-sub-issue's body from the **`cascade-rough-in.md`**
 **Read order**:
 
 1. **Disk first**: query `get_file_contents` for `.github/ISSUE_TEMPLATE/cascade-rough-in.md` in the user's repo
-2. **If found**: use the disk template, populating the seven sections (Context / Implementation / Acceptance criteria / Test plan / Done signal / Dependencies / PR contract) from the spec drafted in Step 5. The disk copy is canonical even if it differs from the bundled fallback.
+2. **If found**: use the disk template, populating the eight sections (Context / Assumptions / Implementation / Acceptance criteria / Test plan / Done signal / Dependencies / PR contract) from the spec drafted in Step 5. The disk copy is canonical even if it differs from the bundled fallback.
 3. **If not found**: fall back to the bundled copy at `references/templates/rough-in-spec-template.md` in this skill bundle. Surface the disk-miss in the inheritance summary as a brownfield gap: *"Your repo doesn't have `.github/ISSUE_TEMPLATE/cascade-rough-in.md` — using the bundled fallback for now. I recommend re-running scaffold's Stage 2.5 step to commit the cascade issue templates so future runs read from disk."*
 4. **If disk and bundle differ**: always use disk, mention the divergence in the inheritance summary as informational
 
@@ -220,7 +220,7 @@ Some users will want the full per-step tool responses for debugging or curiosity
 
 ## What this step enables
 
-After this step runs successfully, `/finish` (Claude Code's finish phase, bootstrapped via the bootstrap-finish skill) has everything it needs to operate against any one sub-sub-issue:
+After this step runs successfully, `/finish` (Claude Code's finish phase, provisioned at Step 5.5) has everything it needs to operate against any one sub-sub-issue:
 
 - The sub-sub-issue exists on the planning backend, parented under the framing capability sub-issue, with the rough-in spec body shaped per `cascade-rough-in.md`
 - The slug + F-number + R-number is canonical and visible in the title prefix

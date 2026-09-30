@@ -22,13 +22,13 @@ These tests are not exhaustive — they cover the canonical happy path and the i
 - **Step 2 (Milestone selection)**: confirms the user wants M1 specifically, not M2 or any other milestone in F1. Detects this as a first rough-in (no prior rough-in events for this milestone in `README.md` index), proceeds without re-rough-in flow.
 - **Step 3 (Research)**: proposes a research depth based on inheritance signals — likely "shallow" or "standard" since regex-pack is the first cascade workstream and there's no prior cascade work to extend. Presents findings if any sub-tracks ran.
 - **Step 4 (Issue plan)**: produces 3-7 R-issues with titles, intents, dependencies, and a capstone marker if applicable. HITL gate.
-- **Step 5 (Spec drafting)**: drafts each spec individually using `cascade-rough-in.md` (read from disk first), populates the six sections, ensures each Implementation section meets the eight properties.
+- **Step 5 (Spec drafting)**: drafts each spec individually using `cascade-rough-in.md` (read from disk first), populates the eight sections, ensures each Implementation section meets the eight properties.
 - **Step 6 (Commit)**: presents the atomic transition (sub-sub-issues + README.md index update), HITL gate, executes the two-step `issue_write` + `sub_issue_write` for each spec, commits the README.md index entry, completes successfully.
 
 **Success criteria**:
 
 - All R-issues land on the planning backend with `cascade-depth:roughed-in` label, parented under the framing sub-issue
-- Each R-issue's body has the six standard sections with heading names preserved verbatim
+- Each R-issue's body has the eight sections the executor requires (`commands/finish.md` § Preconditions), with heading names preserved verbatim
 - Each Implementation section is in the 300-800 word range, second person, names specific files/signatures, cites cascade docs by section name
 - The slug + F-number in each R-issue title matches the parent framing sub-issue's title
 - The README.md index has an entry recording the rough-in event with the R-number range
@@ -85,7 +85,7 @@ These tests are not exhaustive — they cover the canonical happy path and the i
 - The markdown-only acknowledgment fires correctly
 - The slug + F-number inheritance works without a parent issue
 - The user is offered the file-location choice and rough-in respects the choice
-- The rough-in spec content lands in the chosen location with the six-section structure preserved
+- The rough-in spec content lands in the chosen location with the eight-section structure preserved
 - The README.md index has an entry recording the rough-in event
 - No planning-backend MCP operations were attempted
 - The pre-flight checks still ran (it's profile-agnostic)
