@@ -129,7 +129,7 @@ The highest-leverage tuning surface for AI code review (per Cloudflare's evidenc
 **Project may exclude additionally** (configure as the `pr-review-toolkit` configuration permits):
 
 - **Bot-author or dependabot PRs** — reviewing automated dependency bumps line-by-line is rarely worth the tokens.
-- **Docs-only PRs** — if the diff is entirely under `docs/` or `*.md`, skip the heavy review sweep; the simplify pass is enough. **Not automatically light where the docs are one-way doors** — a cascade artifact, an ADR, the conventions, a rule file: those are reviewed by a human and by the project-local reviewers, and the floor still runs.
+- **Docs-only PRs** — if the diff is entirely under `docs/` or `*.md`, the orchestrated sweep may be skipped, its gate line reading `skipped — docs-only diff`; the floor still runs, both skills invoked (§ The floor). **Not light where the docs are one-way doors** — a cascade artifact, an ADR, the conventions, a rule file: the sweep runs for its project-local reviewers, and a human reviews them too.
 - **Project-specific noise patterns** that emerge from the first month of running the toolkit. Add them here as you find them.
 
 ## Path-conditional aggressiveness

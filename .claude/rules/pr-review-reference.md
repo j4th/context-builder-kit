@@ -84,9 +84,9 @@ Apply commits over a red branch hide regressions. Run `mise run check` after eac
 
 If the human reviewed the draft PR, decided to leave a Surface item alone, and the next sweep flags it again with the same reasoning — that's fine to surface again, but **don't auto-apply it**. The human's call stands until they explicitly ask for the change.
 
-### ❌ Running review-toolkit on a docs-only PR
+### ❌ Running the full sweep on a docs-only PR
 
-If the diff is entirely under `docs/` or matches `*.md`, the toolkit's specialized agents have nothing to chew on. Skip the sweep; the simplify pass is sufficient. The exception — docs that are one-way doors — is stated once, in `pr-review.md` § What NOT to flag, and not restated here.
+If the diff is entirely under `docs/` or matches `*.md`, the sweep's toolkit dimensions and caller-named finders have little code to chew on: skip the sweep and record why on its gate line. The floor is not skipped — `/simplify` and `pr-review-toolkit:review-pr` both run, and waiving the toolkit is a break-glass call, never a docs-only default (`pr-review.md` § The floor). The exception — docs that are one-way doors — is stated once, in `pr-review.md` § What NOT to flag, and not restated here.
 
 ### ❌ Padding the hand-off summary with "looks good" prose
 

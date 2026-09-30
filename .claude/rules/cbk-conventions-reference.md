@@ -976,6 +976,9 @@ absent grep -n "which is not an edit of the descriptio[n]" .claude/commands/pr-r
 # The four-class rubric names its classes and its Apply variant, and an ADR conflict has one class, not two.
 grep -qF 'exactly one of four classes — Apply, Surface, Defer, Reject' .claude/rules/pr-review.md || { echo "pr-review.md § Triage rubric does not name its four classes and the Apply-with-care variant"; exit 1; }
 absent grep -n "Conflicts with an ADR or with the issue's intentional desig[n]" .claude/rules/pr-review.md
+# A docs-only PR may skip the sweep, never the floor: neither rule half says the simplify pass alone is enough.
+absent grep -nE "the simplify pass is (enoug[h]|sufficien[t])" .claude/rules/pr-review.md .claude/rules/pr-review-reference.md
+absent grep -n "Running review-toolkit on a docs-only P[R]" .claude/rules/pr-review-reference.md
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
