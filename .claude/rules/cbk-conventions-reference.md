@@ -607,8 +607,14 @@ for a in .claude/agents/*.md; do fm=$(sed -n '2,/^---$/p' "$a"); grep -q '^model
 # generation notes, the cost-terms section, and workflows.md's "Never delegate the decision" clause.
 { grep -q '^| Drafting a persistent cascade artifact' .claude/rules/orchestration.md && grep -q '^### Generation notes' .claude/rules/orchestration.md && grep -q '^## Cost terms and run hygiene' .claude/rules/orchestration-reference.md && grep -q 'Never delegate the decision' .claude/rules/workflows.md; } || { echo "the orchestration rule lost a P3 section"; exit 1; }
 # The list-price table has two copies — the cost reader's PRICE and the reference half's quoted pricing
-# row — and they must agree (both are dated; a price edit lands in both or fails here).
-diff <(grep -oE "'[a-z]+': \([0-9.]+, [0-9.]+\)" .claude/workflows/agent-cost.py | sed -E "s/'([a-z]+)': \(([0-9]+)\.0, ([0-9]+)\.0\)/\1 \2 \3/" | sort) <(grep -oE '[A-Z][a-z]+ [0-9.]+ \$[0-9]+/\$[0-9]+' .claude/rules/orchestration-reference.md | sed -E 's/^([A-Z][a-z]+) [0-9.]+ \$([0-9]+)\/\$([0-9]+)/\L\1 \2 \3/' | sort) || { echo "the list-price table drifted between agent-cost.py PRICE and orchestration-reference.md § Generation notes — the sources (every model the quoted row names must be a PRICE key with the same numbers)"; exit 1; }
+# bullet — and they must agree (both are dated; a price edit lands in both or fails here). Both are keyed by
+# model version ("Opus 5.5" ↔ 'claude-opus-5-5'), because a version can reprice its family
+# (context-builder-kit#69). An empty read on either side is red, never a vacuous pass. Lowercased with tr: sed's \L
+# is GNU-only (busybox sed prints "LOpus 5 25").
+pk=$(grep -oE "'claude-[a-z]+-[0-9-]+': \([0-9.]+, [0-9.]+\)" .claude/workflows/agent-cost.py | sed -E "s/'claude-([a-z]+-[0-9-]+)': \(([0-9]+)\.0, ([0-9]+)\.0\)/\1 \2 \3/" | sort -u)
+pr=$(grep -oE '[A-Z][a-z]+ [0-9.]+ \$[0-9]+/\$[0-9]+' .claude/rules/orchestration-reference.md | sed -E 's/^([A-Z][a-z]+) ([0-9.]+) \$([0-9]+)\/\$([0-9]+)/\1-\2 \3 \4/; s/\./-/g' | tr '[:upper:]' '[:lower:]' | sort -u)
+{ [ -n "$pk" ] && [ -n "$pr" ]; } || { echo "the list-price diff read nothing (PRICE: $(grep -c . <<<"$pk" || true) keys; quoted bullet: $(grep -c . <<<"$pr" || true) models) — a format changed; update this extraction"; exit 1; }
+diff <(printf '%s\n' "$pk") <(printf '%s\n' "$pr") || { echo "the list-price table drifted between agent-cost.py PRICE and orchestration-reference.md § Generation notes — the sources (every model version the quoted bullet names must be a PRICE key with the same numbers)"; exit 1; }
 # No self-check prose on a prompt surface (rules are excluded: they quote the pattern as a citation) and no
 # blanket tool default in tooling.md (C11). The literals split themselves so this line never matches.
 absent grep -rniE "double-chec[k]|use a subagent to verif[y]|verify your (own )?wor[k]" .claude/skills .claude/commands .claude/agents .claude/workflows
@@ -929,6 +935,13 @@ absent grep -n '\[[Rr]ecor[d] ' .claude/rules/orchestration-reference.md
 # Every docs page the orchestration reference quotes has a § Primary sources row — the rows are what "re-fetch before
 # re-citing" walks (context-builder-kit#69). An empty page read is red, never a vacuous pass.
 [ ! -f .claude/rules/orchestration-reference.md ] || { ps=$(awk '/^## Primary sources/{p=1} p' .claude/rules/orchestration-reference.md); body=$(awk '/^## Primary sources/{exit} {print}' .claude/rules/orchestration-reference.md); u=$(grep -oE '(code|platform)\.claude\.com/docs/en/[A-Za-z0-9/_.-]*[A-Za-z0-9_-]' <<<"$body" | sort -u); [ -n "$u" ] || { echo "no docs page read from orchestration-reference.md — the extraction broke"; exit 1; }; for x in $u; do grep -qF "| \`$x\`" <<<"$ps" || { echo "orchestration-reference.md quotes $x but § Primary sources has no row for it"; exit 1; }; done; }
+# The cache-read multipliers have two copies too: CACHE_READ (per version, beside CACHE_READ_DEFAULT) and the pricing
+# page's cache sentence quoted in the reference half ("On Claude <X> …, a cache hit costs N% of the standard input
+# price"; "A cache hit costs 10% …"). A family key once billed legacy Fable 5 at Fable 5.1's rate (context-builder-kit#69).
+ck=$(python3 -B -c "import re; s=open('.claude/workflows/agent-cost.py').read(); m=re.search(r'^CACHE_READ = \{(.*?)^\}', s, re.S | re.M); [print(k, float(v)) for k, v in sorted(re.findall(r\"'claude-([a-z]+-[0-9-]+)': ([0-9.]+)\", m.group(1) if m else ''))]; d=re.search(r'^CACHE_READ_DEFAULT = ([0-9.]+)', s, re.M); print('default', float(d.group(1))) if d else None") || { echo "the cache-read diff could not read agent-cost.py"; exit 1; }
+cr=$(python3 -B -c "import re; s=open('.claude/rules/orchestration-reference.md').read(); o={f\"{n.lower()}-{v.replace('.', '-')} {float(p)/100}\" for ms, p in re.findall(r'On ((?:Claude [A-Z][a-z]+ [0-9.]+(?:,? and |, )?)+), a cache hit costs ([0-9.]+)% of the standard input price', s) for n, v in re.findall(r'Claude ([A-Z][a-z]+) ([0-9.]+)', ms)}; m=re.search(r'A cache hit costs ([0-9.]+)% of the standard input price', s); o |= {f'default {float(m.group(1))/100}'} if m else set(); [print(x) for x in sorted(o)]") || { echo "the cache-read diff could not read orchestration-reference.md"; exit 1; }
+{ [ "$(grep -c . <<<"$ck" || true)" -ge 2 ] && [ "$(grep -c . <<<"$cr" || true)" -ge 2 ]; } || { echo "the cache-read diff read too little (CACHE_READ: $(tr '\n' ';' <<<"$ck") | quoted sentence: $(tr '\n' ';' <<<"$cr")) — a format changed; update this extraction"; exit 1; }
+diff <(printf '%s\n' "$ck" | sort) <(printf '%s\n' "$cr" | sort) || { echo "the cache-read multipliers drifted between agent-cost.py CACHE_READ and the pricing sentence quoted in orchestration-reference.md § Generation notes — the sources"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
