@@ -776,6 +776,21 @@ bash .claude/workflows/tests/hook-guards-fixture.sh || { echo "a guard regressed
 # detector's block, second stop, prune rules and ignore-driven pruning, and every could-not-look branch printing
 # WARNING — the partial scan included (a SKIP line when run as root). Needs git and jq; runs in throwaway trees.
 bash .claude/workflows/tests/hook-payloads-fixture.sh || { echo "require-repo-root-for-agents.sh or detect-forked-agent-memory.sh regressed on its fixture"; exit 1; }
+# Every backstop the mutation table, the hook registry or a hook header names exists — a `.github/workflows/*.yml`
+# file or a `scripts/*` file (context-builder-kit#60 comment, suggestion 1: a CI job named but never landed is how a
+# target's frozen corpus went two weeks with no backstop behind its hook). The checker is asked about bogus names
+# first, so it cannot pass by matching nothing, and a mutation section that names no checkable backstop is red.
+backstops() {  # backstops <text>: prints each workflow or script path the text names that does not exist; returns 1 if any
+  local miss=0 tok
+  while IFS= read -r tok; do [ -z "$tok" ] || [ -f "$tok" ] || { echo "  names $tok, which does not exist"; miss=1; }; done <<<"$(grep -oE '\.github/workflows/[A-Za-z0-9._-]+\.ya?ml|scripts/[A-Za-z0-9._/-]+\.(sh|py)' <<<"$1" | sort -u || true)"
+  return $miss
+}
+if backstops ".github/workflows/no-such-job.yml scripts/no-such-leg.sh" >/dev/null; then echo "backstops(): a bogus name passed — the checker is broken"; exit 1; fi
+mt=$(awk '/^## Mutation discipline/{p=1; next} p && /^## /{exit} p' .claude/rules/cbk-conventions.md)
+grep -qE '\.github/workflows/[A-Za-z0-9._-]+\.ya?ml' <<<"$mt" || { echo "cbk-conventions.md § Mutation discipline names no CI backstop in a checkable form (.github/workflows/<file>.yml)"; exit 1; }
+backstops "$mt
+$(jq -r '._comment_hooks' .claude/settings.json)
+$(cat .claude/hooks/*.sh)" || { echo "the mutation table, the hook registry or a hook header names a CI workflow or script that does not exist (above)"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
@@ -815,6 +830,16 @@ if [ -f docs/cbk/scaffold.md ]; then
   # lockfile check, the base branch's ruleset) the kit ships a bracketed slot, filled at scaffold's rule-file
   # disposition pass (§ Hook authoring). An unfilled slot prints a placeholder at the moment the guard is down.
   absent grep -nE 'Backstops?( until then)?: \[' .claude/hooks/*.sh
+
+  # A backstop named as a task-runner task exists in the runner's config (the kit sub-block checks workflow and script
+  # paths; a task name needs the project's runner). The mise arm is the exercised one, and it reads the `[tasks.<name>]`
+  # table form; for another runner, swap the two patterns (a `just <task>` name against the justfile's recipes) —
+  # unexercised.
+  if [ -f mise.toml ]; then
+    for tok in $(cat <(awk '/^## Mutation discipline/{p=1; next} p && /^## /{exit} p' .claude/rules/cbk-conventions.md) <(jq -r '._comment_hooks' .claude/settings.json) .claude/hooks/*.sh | grep -oE 'mise run [a-z][a-z0-9:_-]*' | sed 's/^mise run //' | sort -u || true); do
+      grep -qE "^\[tasks\.(\"$tok\"|$tok)\]" mise.toml || { echo "a backstop names 'mise run $tok', which is not a task in mise.toml"; exit 1; }
+    done
+  fi
 
   echo "verification: project sub-block complete"
 fi
