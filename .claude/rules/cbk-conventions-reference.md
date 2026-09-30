@@ -967,6 +967,9 @@ absent grep -n "keyed on file, line and normalized titl[e]" .claude/rules/pr-rev
 grep -q '^### ❌ Folding one review layer into another$' .claude/rules/pr-review-reference.md || { echo "pr-review-reference.md § Anti-patterns lacks 'Folding one review layer into another'"; exit 1; }
 # A family of directories has no prefix form: the rules a project reads when writing its roster line say to enumerate it (context-builder-kit#58 residue R10).
 { grep -qF 'has no prefix form: enumerate each one' .claude/rules/pr-review.md && grep -qF 'by prefix on a directory boundary' .claude/rules/pr-review-reference.md; } || { echo "the roster guidance for a family of directories is missing from pr-review.md's craft rule or pr-review-reference.md § Authoring"; exit 1; }
+# Rough-in: a change made at the gate is a new draft, verified again — stated in research-phase.md, pointed at from the
+# contract (the drafting read), and pinned by Test 9 (context-builder-kit#74 item 2).
+for f in research-phase contract test_cases; do grep -qF 'is a new draft' .claude/skills/rough-in/references/$f.md || { echo "rough-in references/$f.md does not treat a change made at the gate as a new draft"; exit 1; }; done
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

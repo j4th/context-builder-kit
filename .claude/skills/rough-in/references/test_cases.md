@@ -225,12 +225,14 @@ These tests are not exhaustive — they cover the canonical happy path and the i
 - The one gate carries the decision list; the framing-invited judgment call (which R-issue the blocking row becomes a dependency of) is made and its reason recorded
 - Step 5.5 reports "present and matching" for both files of the pair without a gate; Step 6 runs in the main loop after the gate
 - No inheritance summary, gate-question list or provisioning diff appears inside any spec body
+- When the operator's review at the gate reshapes the set (issues merged, a criterion moved or dropped, counts reshaped), the consolidated set is a new draft: one more fresh-context verifier attacks it, and its defects are fixed, before Step 6's one-way commit
 
 **Failure signals**:
 - A spec's Dependencies section names an open issue in prose that is not a dependency (the executor would refuse it)
 - A test tag that resolves to no numbered criterion
 - The drafter, not the main loop, attempts Step 5.5 or Step 6
 - The set is presented unverified, or "verification" is the drafter re-reading its own output
+- A consolidation made at the gate is committed on the strength of the verifier that ran before it
 
 ## Cross-test invariants
 
