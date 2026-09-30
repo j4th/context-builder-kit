@@ -873,6 +873,12 @@ bash .claude/workflows/tests/review-assert-fixture.sh || { echo "a review-workfl
 absent grep -n 'model id>[]]' .claude/skills/blueprint/references/templates/claude-review.yml .claude/skills/blueprint/references/templates/claude.yml
 absent grep -nE '(model=|--model |--fallback-model )best\b' .claude/skills/blueprint/references/templates/claude-review.yml .claude/skills/blueprint/references/templates/claude.yml
 for t in claude-review.yml claude.yml; do a=$(awk '/claude_args: [|]/{f=1; next} f && /^ *(--|\$\{\{)/{print; next} {f=0}' .claude/skills/blueprint/references/templates/$t); grep -q -- '^ *--effort ' <<<"$a" || { echo "templates/$t: claude_args passes no --effort (the default is per model)"; exit 1; }; done
+# What the reviewer is told (context-builder-kit#68): which configuration is the base branch's and where the PR's
+# own copies are; that it reads CI with gh pr checks and reports only commands it ran; how a prompt gate pairs
+# with the allowlist; how N is sized to the turn cap. Kit issues are cited qualified, never as a bare #N.
+for f in .claude/skills/blueprint/references/templates/claude-review.yml .claude/skills/blueprint/references/templates/claude.yml; do grep -qF '.claude-pr/' "$f" || { echo "$f does not say the PR's own configuration copies are under .claude-pr/"; exit 1; }; done
+for w in 'Report only commands you actually ran' 'gh pr checks` (this job grants' 'must match each subcommand independently' '[N — the note above claude_args]'; do grep -qF -- "$w" .claude/skills/blueprint/references/templates/claude-review.yml || { echo "templates/claude-review.yml lacks: $w"; exit 1; }; done
+absent grep -nE '(^|[[:space:](,;])#[0-9]{1,3}\b' .claude/skills/blueprint/references/templates/claude-review.yml .claude/skills/blueprint/references/templates/claude.yml
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

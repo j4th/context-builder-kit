@@ -13,6 +13,11 @@
 #   - the model by family alias, as claude-review.yml's Model naming paragraph says: the action's SHA
 #     is the model pin, the `Record the resolved model` step writes the model that ran to the job
 #     summary, and ANTHROPIC_MODEL is never set on the action step
+#   - on a PR the session reads the base branch's configuration: the action restores `.claude/`,
+#     `.mcp.json` and the root `CLAUDE.md` from the base before it starts and keeps the PR's copies
+#     under `.claude-pr/`; a nested `CLAUDE.md`, or an `AGENTS.md` the root one links to, reads at the
+#     PR head (claude-review.yml's restore GOTCHA carries the source). This file passes no prompt of
+#     its own; a prompt added here states those facts, as claude-review.yml's does
 #
 # Needs the `CLAUDE_CODE_OAUTH_TOKEN` Actions secret (`/install-github-app`).
 #

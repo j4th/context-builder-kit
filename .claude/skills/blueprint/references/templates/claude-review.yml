@@ -25,6 +25,14 @@
 # the positive path (a separate summary comment, and a tracker comment that carries the verdict)
 # and the validation-skip negative path.
 #
+# GOTCHA — on a PR the session reads the BASE branch's configuration. Before it starts, the action restores
+# `.claude`, `.mcp.json`, `CLAUDE.md` and a few other top-level paths from the base branch and keeps the PR's
+# copies under `.claude-pr/` "for review agents (not executed)" (`SENSITIVE_PATHS` and `restoreConfigFromBase`
+# in `src/github/operations/restore-config.ts` at the pinned SHA, read 2026-09-30). The list names top-level
+# paths only, so a nested `CLAUDE.md`, or an `AGENTS.md` the root `CLAUDE.md` links to, is not restored and
+# reads at the PR head: the restore closes settings, hooks and MCP servers, not every instructions file. The
+# prompt tells the reviewer so; CI, not this review, runs the PR's own hooks and fixtures.
+#
 # GOTCHA: the CI-skip marker on the HEAD commit at the draft→ready flip silently blocks
 # this workflow — end the branch on a non-marker commit before flipping
 # (cbk-conventions.md § [skip ci] rule, the auto-review trap).
@@ -166,7 +174,7 @@ jobs:
       - name: Fetch the base ref (so `git diff origin/<base>...HEAD` resolves)
         # `ref: head.sha` above checks out only the PR head; without this the reviewer's first diff
         # against the base fails ("no merge base") and it spends turns retrying fetches its allowlist
-        # refuses (#58 addendum, item 12). The ref name is read from an env var, never interpolated.
+        # refuses (context-builder-kit#58 addendum, item 12). The ref name is read from an env var, never interpolated.
         env:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: git fetch --no-tags origin "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
@@ -246,15 +254,31 @@ jobs:
             for, the one property a UI-looking edit can break>]. Read `CLAUDE.md` first
             [<and the nested CLAUDE.md of each tree the diff touches>].
 
+            ## The base branch's configuration, and this PR's
+
+            Before this session the action restored `.claude/`, `.mcp.json` and the root `CLAUDE.md`
+            from the base branch and kept this PR's copies under `.claude-pr/`. A `Read` of `.claude/…`
+            returns the base's copy, and a `.claude/` file this PR adds is not there at all: read this
+            PR's version under `.claude-pr/` (for example `.claude-pr/.claude/rules/pr-review.md`);
+            `gh pr diff` shows the change itself. A `CLAUDE.md` nested anywhere but under `.claude/` is
+            not on the restore list, so it reads as this PR's own version [<if the root CLAUDE.md is a
+            symlink to AGENTS.md, or the project's instructions live in another file not on the list:
+            say that file is not restored either, so it reads as this PR's own version>]. Where this PR
+            changes a rule you apply, review it against the rule as this PR states it, and say which
+            version you used. You run none of this PR's hooks or fixtures: CI's [<the CI job that runs
+            the project's check task>] is the check for a PR that changes them — read its result with
+            `gh pr checks`.
+
             ## What to do
 
             Enumerate every changed file (`gh pr diff ${{ github.event.pull_request.number }} --name-only`)
             and walk each one; read the surrounding file, not only the hunk, when context matters.
-            If the diff exceeds [N] changed files (a sync of vendored or kit-copied trees, a generated
-            bulk), you cannot walk every file inside the turn cap: review the authored set the PR body
-            names and every file that is not a byte-identical copy of its source, post the summary FIRST
-            with the list of files you did not read, and say so in the verdict line. A capped run that
-            posted nothing is the failure this clause prevents (#58 addendum, item 11).
+            If the diff exceeds [N — the note above claude_args] changed files (a sync of vendored or
+            kit-copied trees, a generated bulk), you cannot walk every file inside the turn cap: review the
+            authored set the PR body names and every file that is not a byte-identical copy of its source,
+            post the summary FIRST with the list of files you did not read, and say so in the verdict line.
+            A capped run that posted nothing is the failure this clause prevents (context-builder-kit#58
+            addendum, item 11).
 
             Then post, **in this order**:
 
@@ -302,11 +326,12 @@ jobs:
 
             One-line verdict: **APPROVE** / **APPROVE WITH NITS** / **REQUEST CHANGES** / **NEEDS DISCUSSION**.
             Then a counts table (Apply / Apply with care / Surface / Defer / Reject). Then three to
-            seven lines on the most important findings and any cross-cutting concern. CI status is
-            usually NOT readable from your token (`gh pr checks` fails with "Resource not accessible
-            by integration"); if it is, reference a failed check, otherwise say nothing about CI —
-            never report the permission error as a finding. End with one line on what is NOT in
-            scope of this review.
+            seven lines on the most important findings and any cross-cutting concern. Read CI with
+            `gh pr checks` (this job grants `checks: read`) and reference a failed check; if it fails
+            with "Resource not accessible by integration", the grant is missing — say so in one line,
+            never as a finding. Report only commands you actually ran: a command you never issued is
+            never reported as run, passed or refused. End with one line on what is NOT in scope of
+            this review.
 
             ## What to skip
 
@@ -324,6 +349,24 @@ jobs:
             and the inline-comment MCP tool for line-specific findings.
 
             Model in use: the `${{ steps.model.outputs.model }}` alias at effort ${{ steps.model.outputs.effort }} (an alias, not a model id; the job summary records the model that ran).
+          # A gate the project adds to the prompt (a check command the reviewer may run) gets its own
+          # --allowedTools entry below, and the two lists are edited together: a gate the prompt offers and
+          # the list refuses is a review that reports a refusal. Claude Code splits a compound command, and
+          # "A rule must match each subcommand independently"; a `cd` inside the working directory "is also
+          # read-only" (https://code.claude.com/docs/en/permissions § Compound commands, § Read-only commands,
+          # read 2026-09-30). Prefer one command per gate, and confirm a compound one on a real run. A gate
+          # that runs a `.claude/`-hosted fixture runs the BASE branch's copy on a PR that changes it (the
+          # header's restore GOTCHA): keep such fixtures out of the gates, or say in the prompt that the bot
+          # runs the base copy.
+          #
+          # The degrade clause's N is what the turn cap leaves after the posting calls. On Claude Code 2.1.286
+          # `--max-turns` counts round trips, not tool calls: five parallel `Read` calls in one response spent
+          # one turn (measured 2026-09-30 with `claude -p --max-turns 1` and `2`, `--output-format stream-json`;
+          # a target measured them per call on 2.1.274). A reviewer that reads one file per response spends a
+          # turn a file either way, so at one `Read` a file keep about a third of the cap for the `gh` calls,
+          # the inline comments and the summary: N = 40 against `--max-turns 60`. N and the cap move together:
+          # re-measure on the release your pinned action installs, and the action-bump PR re-checks both
+          # (orchestration.md § Generation notes).
           claude_args: |
             --model ${{ steps.model.outputs.model }}
             --fallback-model sonnet
