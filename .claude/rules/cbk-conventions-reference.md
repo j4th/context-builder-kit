@@ -814,6 +814,14 @@ for f in .claude/commands/finish.md .claude/commands/finish-procedure.md .claude
 # (https://code.claude.com/docs/en/hooks § Exec form and shell form, read 2026-09-30). An empty read is red.
 [ "$(jq '[.hooks[][] | .hooks[] | select(.type == "command")] | length' .claude/settings.json)" -ge 1 ] || { echo "settings.json: no command hooks read, so the exec-form check would pass vacuously"; exit 1; }
 shellform=$(jq -r '.hooks[][] | .hooks[] | select(.type == "command") | select(.command | contains("${CLAUDE_")) | select((.args | type) != "array") | .command' .claude/settings.json); [ -z "$shellform" ] || { echo "hook registration(s) in shell form (no \"args\" array); a project path with a space makes the guard fail open. Add \"args\": [] to: $shellform"; exit 1; }
+# enabledPlugins is keyed `<plugin>@<marketplace>`, the install id Claude Code writes there
+# (https://code.claude.com/docs/en/plugin-marketplaces § Keep the entry name and the manifest name the same, read
+# 2026-09-30); a bare name selects no plugin, and the floor's pr-review-toolkit:review-pr goes missing (V3.3). tooling.md
+# states the documented merge: list keys combine across settings files (https://code.claude.com/docs/en/settings
+# § Lists merge instead of overriding, read 2026-09-30).
+jq -e '[.enabledPlugins // {} | to_entries[] | select((.key | startswith("pr-review-toolkit@")) and .value == true)] | length >= 1' .claude/settings.json >/dev/null || { echo "settings.json does not enable pr-review-toolkit@<marketplace> (the review floor's toolkit half; a bare key enables nothing)"; exit 1; }
+bare=$(jq -r '.enabledPlugins // {} | keys[] | select(contains("@") | not)' .claude/settings.json); [ -z "$bare" ] || { echo "enabledPlugins key(s) without @<marketplace> enable nothing: $bare"; exit 1; }
+absent grep -n "silently replaces the committed on[e]" .claude/rules/tooling.md
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

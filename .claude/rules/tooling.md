@@ -81,7 +81,7 @@
 | Wire a server only you use | The user-level MCP config, never the project file | A personal server in the committed file is a dependency for everyone |
 | Add a server | The cascade phase that justifies it wires it — the planning MCP at scaffold, a docs MCP at blueprint, a domain MCP when a workstream needs it — and records it in `cbk-conventions.md` § Surface inventory | A server nobody's phase asked for is noise in every session's tool list |
 
-**Decision rule**: list-valued keys (`enabledPlugins`, `allow`, `deny`, hook arrays) are **never repeated** in the local settings file — the local file overrides by key, so a repeated list silently replaces the committed one instead of extending it; add to the committed list or not at all. A linter exclusion for an MCP or settings file is added only where nothing in it could be actioned (a generated file, a secrets template) — an exclusion is not an exemption (`cbk-conventions.md` § `[skip ci]` rule).
+**Decision rule**: a list key set in several settings files merges — "each file can add entries without removing another file's", except four model-list keys (`https://code.claude.com/docs/en/settings` § Lists merge instead of overriding, read 2026-09-30) — so the local file carries only its own additions. `enabledPlugins` is an object keyed `<plugin>@<marketplace>`; a local `false` is the documented per-machine opt-out (`https://code.claude.com/docs/en/settings-reference`, read 2026-09-30). A linter exclusion for an MCP or settings file is added only where nothing in it could be actioned (a generated file, a secrets template) — an exclusion is not an exemption (`cbk-conventions.md` § `[skip ci]` rule).
 
 ## [Stack surfaces — add a section per wired MCP]
 
