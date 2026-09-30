@@ -471,7 +471,7 @@ A target that recorded its **Kit commit** (scaffold's Cascade metadata table) sy
 
 ## Verification
 
-Two audiences share one block. **Kit-repo checks** hold on the kit's own tree and on any target project's copy of `.claude/`; **project checks** hold only in a filled-in target project and skip themselves when `docs/cbk/scaffold.md` is absent. A red check is a defect in the check until proven otherwise: a suite with a permanently red line is a suite nobody runs, which is worse than no suite. Every check says what it catches. Run the block after major edits to cascade skills, to the rules, or to a project's filled-in copy of this file.
+Two audiences share one block. **Kit-repo checks** hold on the kit's own tree and on any target project's copy of `.claude/`; **project checks** hold only in a filled-in target project and skip themselves when `docs/cbk/scaffold.md` is absent. A red check is a defect in the check until proven otherwise: a suite with a permanently red line is a suite nobody runs, which is worse than no suite. Every check says what it catches, and a check that could not look is red: a hook fails open by design when it cannot see, so a gate that reads only its exit code passes on nothing (the Stop-hook check reads the hook's stderr for that reason). Run the block after major edits to cascade skills, to the rules, or to a project's filled-in copy of this file.
 
 **Run it** through `.claude/workflows/tests/run-verification-block.sh`: it performs the documented extraction and adds three fail-loud rails the block cannot carry for itself — an empty extraction is red (a plain `bash -e` on an empty file exits 0); an exit 0 that never printed `verification: done` is red; and in a filled target (`docs/cbk/scaffold.md` exists) an exit 0 that never printed `verification: project sub-block complete` is red, because the done sentinel prints whether or not the project sub-block ran. The third rail keys on the same `docs/cbk/scaffold.md` as the project sub-block's guard, so a deleted or renamed scaffold file makes a target look like the kit's own tree, and that is not caught. `run-verification-block-fixture.sh` drives the three rails on synthetic blocks, and the block runs it, so the block guards the script that runs it. The kit's CI runs the runner on every pull request; a target wires the same script as the body of a task its check command depends on (a check nobody re-runs is a belief with a date on it — context-builder-kit#58, second application, item 7). The block stays fail-fast: every red is fixed, or the check is narrowed in the project's own copy with an inline comment saying why — a "recorded" red cannot reach the sentinels.
 
@@ -635,7 +635,20 @@ rc=0; err=$(printf '{"tool_name":"Agent","tool_input":{},"cwd":"%s"}' "$PWD" | .
 [ "$rc" -eq 0 ] || { echo "launch-root guard blocked a root dispatch (exit $rc). The hook said:"; printf '  %s\n' "$err"; exit 1; }
 # No reviewer-memory tree outside the root — asked of the Stop hook itself with a crafted payload,
 # so the exclusion list has one home (it exits 2 while a stray tree exists; the gate's own check).
-printf '{"stop_hook_active":false}' | CLAUDE_PROJECT_DIR="$PWD" .claude/hooks/detect-forked-agent-memory.sh || { echo "a reviewer-memory tree exists outside the root (detect-forked-agent-memory.sh blocked; its stderr above names the paths)"; exit 1; }
+stop_hook_clean() {  # stop_hook_clean <project dir> [git ceiling]: 0 only when the hook looked and found nothing
+  local rc=0 err
+  err=$(printf '{"stop_hook_active":false}' | CLAUDE_PROJECT_DIR="$1" GIT_CEILING_DIRECTORIES="${2:-${GIT_CEILING_DIRECTORIES:-}}" .claude/hooks/detect-forked-agent-memory.sh 2>&1 >/dev/null) || rc=$?
+  [ "$rc" -eq 0 ] || { echo "a reviewer-memory tree exists outside the root (detect-forked-agent-memory.sh exit $rc). The hook said:"; printf '  %s\n' "$err"; return 1; }
+  # Exit 0 with a WARNING is a hook that could not look: no checkout, an unenterable root, a partial scan, an
+  # unmonitored walk. A Stop hook fails open by design, so a stop is never blocked on a check it could not
+  # make; in a gate that state is red (context-builder-kit#73).
+  if grep -q 'WARNING' <<<"$err"; then echo "the Stop hook could not look (exit 0 with a WARNING). The hook said:"; printf '  %s\n' "$err"; return 1; fi
+}
+stop_hook_clean "$PWD" || exit 1
+# The check bites on a hook that could not look: outside a checkout the hook exits 0 with a WARNING. The
+# ceiling at the temp dir's parent keeps git from finding a checkout above it (a TMPDIR inside a work tree
+# would otherwise).
+nc=$(mktemp -d); if stop_hook_clean "$nc" "${nc%/*}" >/dev/null; then rmdir "$nc"; echo "the Stop-hook check passed a hook that could not look (exit 0 with a WARNING) — in a gate that is red"; exit 1; fi; rmdir "$nc"
 # Every shipped reviewer carries the same `## Writing memory` section (its one text); the copies are diffed.
 wm=$(awk '/^## Writing memory/{p=1} p' .claude/agents/adr-conformance-reviewer.md); [ -n "$wm" ] || { echo "## Writing memory is missing from adr-conformance-reviewer.md (an empty baseline would diff equal to another empty extract)"; exit 1; }
 for a in logging-discipline-reviewer cascade-rule-reviewer; do diff <(printf '%s\n' "$wm") <(awk '/^## Writing memory/{p=1} p' .claude/agents/$a.md) || { echo "## Writing memory drifted in $a"; exit 1; }; done
