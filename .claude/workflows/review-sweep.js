@@ -183,9 +183,14 @@ const plannedAgents = {
 };
 log(`review-sweep: planned agents — ${plannedAgents.roster} roster + ${plannedAgents.finders} finders + up to ${plannedAgents.retries} retries + up to ${plannedAgents.verifiers} verifiers = at most ${plannedAgents.max} (bounds ${MAX_PER_DIMENSION}/dimension, ${MAX_VERIFY} verified)`);
 
+// Read-only agents stay read-only (orchestration.md § Fan-out discipline): an agent that edited a tracked file and
+// restored it with its old mtime left a build tool judging a stale artifact fresh, so a finder or verifier that wants
+// to probe works on a copy (context-builder-kit#72 item 4). Every find and verify prompt carries the clause.
+const READ_ONLY = "Never modify the working tree — not even to restore a file afterwards. To probe (run code, try a patch), copy what you need into a scratch directory and give it its own build cache.";
+
 const findOnce = (dim, effort = FIND_EFFORT, retry = false) =>
   agent(
-    `Review the branch diff (git diff ${base}...HEAD), restricted to these changed files:\n${fileList}\n\n${dim.focus ? `Your review focus, from the caller: ${dim.focus}\nReport findings on this focus only.\n\n` : "Apply your standard review discipline. "}Respect the exclusion list in .claude/rules/pr-review.md § "What NOT to flag" — findings only on changed code, no theoretical risks without concrete preconditions. Report every finding you would defend against a reviewer actively trying to refute it, including medium and low confidence — deduplication and a severity-ranked bound happen before verification, and triage happens in the caller: do not classify. Rank most-severe first.`,
+    `Review the branch diff (git diff ${base}...HEAD), restricted to these changed files:\n${fileList}\n\n${dim.focus ? `Your review focus, from the caller: ${dim.focus}\nReport findings on this focus only.\n\n` : "Apply your standard review discipline. "}${READ_ONLY} Respect the exclusion list in .claude/rules/pr-review.md § "What NOT to flag" — findings only on changed code, no theoretical risks without concrete preconditions. Report every finding you would defend against a reviewer actively trying to refute it, including medium and low confidence — deduplication and a severity-ranked bound happen before verification, and triage happens in the caller: do not classify. Rank most-severe first.`,
     { label: `find:${dim.key}${retry ? ":retry" : ""}`, phase: "Find", ...(dim.agentType ? { agentType: dim.agentType } : {}), model: "sonnet", effort, schema: FINDINGS_SCHEMA },
   );
 
@@ -274,7 +279,7 @@ phase("Verify");
 const judged = await parallel(
   toVerify.map((finding) => () =>
     agent(
-      `Adversarially verify a review finding — your job is to REFUTE it. Finding (from ${finding.dimension}${finding.alsoFoundBy.length ? `, also flagged by ${finding.alsoFoundBy.join(", ")}` : ""}) at ${finding.file}${finding.line ? `:${finding.line}` : ""}:\n${finding.titles.length > 1 ? `${finding.titles.length} reports on this line — paraphrases of one defect, or several defects:\n` : ""}${finding.titles.map((t, i) => `- "${t}". Detail: ${finding.details[i]}`).join("\n")}\n\nRead the actual code and any governing rule/ADR it cites. Default to real=false when the failure scenario cannot be demonstrated, an existing guard/test/CI check already covers it, or the finding misreads the code. Confirm real=true only with concrete evidence${finding.titles.length > 1 ? ", and when you do, name in your reasoning which of the reports the evidence demonstrates" : ""}.`,
+      `Adversarially verify a review finding — your job is to REFUTE it. Finding (from ${finding.dimension}${finding.alsoFoundBy.length ? `, also flagged by ${finding.alsoFoundBy.join(", ")}` : ""}) at ${finding.file}${finding.line ? `:${finding.line}` : ""}:\n${finding.titles.length > 1 ? `${finding.titles.length} reports on this line — paraphrases of one defect, or several defects:\n` : ""}${finding.titles.map((t, i) => `- "${t}". Detail: ${finding.details[i]}`).join("\n")}\n\nRead the actual code and any governing rule/ADR it cites. Default to real=false when the failure scenario cannot be demonstrated, an existing guard/test/CI check already covers it, or the finding misreads the code. Confirm real=true only with concrete evidence${finding.titles.length > 1 ? ", and when you do, name in your reasoning which of the reports the evidence demonstrates" : ""}. ${READ_ONLY}`,
       { label: `verify:${finding.file}`, phase: "Verify", effort: "high", schema: VERDICT_SCHEMA, ...(params.verifyModel ? { model: params.verifyModel } : {}) },
     ).then((verdict) => ({ ...finding, verdict })),
   ),

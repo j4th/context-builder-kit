@@ -456,4 +456,18 @@ for (const roster of [null, { crossCutting: "not-an-array" }]) {
   n++;
 }
 
+// 27 — finders and verifiers are told never to modify the working tree: a probe runs on a copy (context-builder-kit#72
+//      item 4 — an agent edited a tracked file in place and restored it with its old mtime, and a build tool then
+//      judged a stale artifact fresh).
+{
+  const { calls } = await scenario("read-only prompts", {
+    args: { files: ["a"], finders: [{ key: "ratio-bounds", prompt: "Check every ratio." }] }, roster: rosterOK,
+    findings: { "code-review": { findings: [F("a", 1, "x", "high")] } }, verdict: real,
+  });
+  const dispatched = calls.filter((c) => c.label.startsWith("find:") || c.label.startsWith("verify:"));
+  assert.ok(dispatched.some((c) => c.label.startsWith("verify:")) && dispatched.some((c) => c.label === "find:ratio-bounds"));
+  for (const c of dispatched) assert.match(c.prompt, /never modify the working tree/i, `${c.label} carries the read-only clause`);
+  n++;
+}
+
 console.log(`review-sweep accounting: meta + body parse, ${n} scenarios OK`);
