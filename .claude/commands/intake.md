@@ -1,9 +1,11 @@
 ---
 description: Turn a raw, externally-sourced report — a GitHub issue, a planning-backend issue, or pasted text — into a fully-specified, `/finish`-able issue. Resolve the source, investigate to a root-cause hypothesis with file:line evidence, replicate with a verified failing test or deterministic repro, classify (bug → bug lane / small capability → enhancement lane via `/enrich` / large capability → framing / tooling → cascade), and generate the shaped issue (or, for the enhancement lane, a thin candidate) behind a HITL gate. Writes an issue to your planning backend by default; emits a GitHub issue body with --github. Does not land code — `/finish` is the sole code-writer. Expects one positional argument — the source reference.
 argument-hint: <github-#> | <KEY>-N | "<pasted text>" [--github]
+arguments: [source]
+disable-model-invocation: true
 ---
 
-You are being asked to turn an externally-sourced report into a fully-specified, `/finish`-able issue. The argument **$1** is the source: a GitHub issue number (`123` or `#123`), a planning-backend issue identifier (`<KEY>-N`), or a quoted freeform description. An optional `--github` flag switches the output from an issue in your planning backend (default) to a GitHub issue body.
+You are being asked to turn an externally-sourced report into a fully-specified, `/finish`-able issue. The source is **$source**: a GitHub issue number (`123` or `#123`), a planning-backend issue identifier (`<KEY>-N`), or a quoted freeform description (an unquoted description arrives as its first word only, so Step 1 parses the whole argument string, `$ARGUMENTS`). An optional `--github` flag switches the output from an issue in your planning backend (default) to a GitHub issue body.
 
 `/intake` is **rough-in for externally-sourced work** — the bottom-up entry to the cascade. It investigates and reproduces, then produces a spec; it does **not** implement the fix (that's `/finish`) and it **never lands code**. The routing and label conventions it follows are the ones your project records in `.claude/rules/cbk-conventions.md`.
 

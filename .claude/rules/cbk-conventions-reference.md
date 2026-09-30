@@ -801,6 +801,13 @@ absent grep -n "carries the four items as one ro[w]" .claude/skills/consultation
 vp=$(grep '^- \*\*Verify by payload\.\*\*' .claude/rules/cbk-conventions-reference.md)
 for f in hook-guards-fixture.sh hook-payloads-fixture.sh protected-paths-hook-fixture.sh hook-contract-fixture.sh; do grep -qF "$f" <<<"$vp" || { echo "§ Hook authoring › Verify by payload does not name $f"; exit 1; }; [ -f ".claude/workflows/tests/$f" ] || { echo "§ Hook authoring › Verify by payload names $f, which does not exist"; exit 1; }; done
 grep -q 'ADVISORY_WIRED' <<<"$(awk '/^## Hook authoring/{p=1; next} p && /^## /{exit} p' .claude/rules/cbk-conventions-reference.md)" || { echo "§ Hook authoring does not say that wiring an advisory hook also names it in ADVISORY_WIRED"; exit 1; }
+# Commands take their argument by name (V3.1): `$1` is the SECOND argument, and an indexed placeholder with no
+# argument at its position stays literal (https://code.claude.com/docs/en/skills § Available string substitutions,
+# read 2026-09-30). So each kit command declares `arguments:` and writes `$<name>`, is invoke-only because it opens
+# branches, issues or PRs, and /finish reads its break-glass flag from `$ARGUMENTS`. A literal dollar-digit in these
+# bodies is escaped (`\$1`). The bundled executor copies rough-in provisions are held to the same.
+for f in .claude/commands/finish.md .claude/commands/finish-procedure.md .claude/commands/enrich.md .claude/commands/intake.md .claude/commands/pr-respond.md .claude/skills/rough-in/references/finish-command.md .claude/skills/rough-in/references/finish-procedure.md; do [ -f "$f" ] || continue; if grep -nE '(^|[^\\])\$[0-9]' "$f"; then echo "$f uses a positional placeholder (\$1 is the SECOND argument): declare the name in arguments: and write \$<name>"; exit 1; fi; case "$f" in .claude/commands/*) fm=$(awk 'NR==1 && /^---$/ {f=1; next} f && /^---$/ {exit} f' "$f"); grep -q '^arguments: \[' <<<"$fm" || { echo "$f declares no arguments: frontmatter"; exit 1; }; grep -q '^disable-model-invocation: true$' <<<"$fm" || { echo "$f is model-invocable; it opens branches, issues or PRs, so set disable-model-invocation: true"; exit 1; };; esac; done
+{ grep -qF '$ARGUMENTS' .claude/commands/finish.md && grep -qF -- '--skip-review' .claude/commands/finish.md; } || { echo "commands/finish.md does not read --skip-review from \$ARGUMENTS (pr-review.md § Break-glass override)"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

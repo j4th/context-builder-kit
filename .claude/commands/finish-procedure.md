@@ -1,5 +1,7 @@
 ---
 description: The step-by-step procedure behind `/finish` — Steps 1–11 with their rationale, the partial-failure protocol and the surprises worth flagging. Read on demand when a step of `.claude/commands/finish.md` (the contract) is unclear; never a substitute for it. Invoked as a command this file runs nothing — it is the reference the executor consults.
+arguments: [issue]
+disable-model-invocation: true
 ---
 
 This is the procedure `.claude/commands/finish.md` was extracted from. The contract states what a finished issue is and the tests the result must pass; this file states how each step was run when the executor was procedure-shaped, and it is kept beside the contract so that "consult the procedure when a step is unclear" resolves in the same repo. Where the two differ, the contract governs and the difference is a defect to report.
@@ -10,19 +12,19 @@ The shape of a run: read and validate the issue (Steps 1–4), research it execu
 
 **Resolve the planning backend first** — from `docs/cbk/scaffold.md` § Cascade metadata (canonical), falling back to `.cascade/backends.toml`. The argument and the read mechanism follow the axis:
 
-- **`github-issues`**: `$1` is the GitHub issue number (`/finish 42`). Read issue #$1 via the github MCP (`github:issue_read` with `method: get`), or `gh issue view $1 --json number,title,body,labels,state,comments` if MCP isn't available.
-- **`linear`**: `$1` is the planner issue ID (`/finish <TEAM>-42`). Read it **via the planner's MCP** (`mcp__linear__get_issue` plus its comments call) — never a GitHub issue read against a planner ID. Wherever this document says `#$1`, read the planner ID; the close marker is `Closes $1` per `cbk-conventions.md` § Closes-keyword conventions.
+- **`github-issues`**: `$issue` is the GitHub issue number (`/finish 42`). Read issue #$issue via the github MCP (`github:issue_read` with `method: get`), or `gh issue view $issue --json number,title,body,labels,state,comments` if MCP isn't available.
+- **`linear`**: `$issue` is the planner issue ID (`/finish <TEAM>-42`). Read it **via the planner's MCP** (`mcp__linear__get_issue` plus its comments call) — never a GitHub issue read against a planner ID. Wherever this document says `#$issue`, read the planner ID; the close marker is `Closes $issue` per `cbk-conventions.md` § Closes-keyword conventions.
 - **`in-repo-markdown`**: there is no `/finish` on this axis (design-doc mode — the scaffold gate disclosed this; rough-in specs are executed by running Claude Code against the markdown directly). If invoked anyway, stop and say so.
 
 **Read the comments as well as the body** — comments carry provenance and roll-forward context (prior-run hand-offs, upstream shaping reasoning) that refines the spec without amending the body. Treat comments as *supporting context, not contract*: the body is the contract; comments inform how you read it.
 
 Verify:
 
-- The issue is **open**. If closed, stop and tell the user: *"Issue #$1 is already closed. If you want to re-execute it, either reopen the issue or run rough-in to create a new sub-sub-issue."*
+- The issue is **open**. If closed, stop and tell the user: *"Issue #$issue is already closed. If you want to re-execute it, either reopen the issue or run rough-in to create a new sub-sub-issue."*
 - The title matches one of the cascade issue formats: the standard rough-in `[<workstream-slug>:F<N>:R<M>] <intent>`, an intake-lane form — bug-lane `[<workstream-slug>:bug] <intent>` or enhancement-lane `[<workstream-slug>:enh] <intent>` (externally-sourced work shaped by `/intake` / `/enrich` that skips framing; see `.claude/rules/cbk-conventions.md` § Contribution intake) — or a roughed-in meta `[<workstream-slug>:meta] <intent>` (a cascade / tooling gap that reaches the executor directly or through its `[<slug>:<meta-tag>:R<#>]` children; the contract's Step 1 names the same four forms). `<workstream-slug>` is one of the workstream slugs locked in this project's blueprint (`docs/cbk/blueprint.md` § Workstreams) — or, for a meta, the cascade / tooling lane's tag (§ Contribution intake). If the title matches none of these, stop and ask whether this is actually a cascade issue or a different kind that got routed here by mistake.
 - The labels include `cascade-depth:roughed-in`. If not, same question — confirm with the user before proceeding.
 
-**Break-glass check.** Note whether the issue body or the operator's instructions carry a `<!-- skip-review-toolkit -->` marker (or an equivalent agreed marker). If present, Step 9's `pr-review-toolkit:review-pr` invocation is waived per `pr-review.md` § Break-glass override — the rest of Step 9 still runs, `/simplify` is never waived — and the skill's `## Review gate` line (Step 10) records the reason. The marker is read *here*, from a surface that exists at gate time — not from the PR body, which doesn't exist until Step 10.
+**Break-glass check.** Note whether the issue body or the operator's instructions carry a `<!-- skip-review-toolkit -->` marker (or an equivalent agreed marker), or whether `/finish` was invoked with `--skip-review` after the issue (`/finish 42 --skip-review`; the contract's item 4 reads it). If present, Step 9's `pr-review-toolkit:review-pr` invocation is waived per `pr-review.md` § Break-glass override — the rest of Step 9 still runs, `/simplify` is never waived — and the skill's `## Review gate` line (Step 10) records the reason. The marker is read *here*, from a surface that exists at gate time — not from the PR body, which doesn't exist until Step 10.
 
 ## Step 2: Parse the body section structure
 
@@ -46,7 +48,7 @@ Read the `## Dependencies` section. For each issue listed:
 - Query the issue state via the planning backend resolved in Step 1 (`github:issue_read` with `method: get` / `gh issue view <N>` on github-issues; `mcp__linear__get_issue` on linear)
 - Confirm the issue is **closed as completed** (GitHub: `state_reason: completed`; Linear: a `Done`-type state, not Canceled/Duplicate)
 
-If any dependency is open, or closed with a reason other than `completed`, **stop and refuse to proceed**. Tell the user: *"Issue #$1 depends on [list of unmet dependencies with their current states]. I can't proceed until those are resolved. Once they are, re-run `/finish $1` and I'll try again."*
+If any dependency is open, or closed with a reason other than `completed`, **stop and refuse to proceed**. Tell the user: *"Issue #$issue depends on [list of unmet dependencies with their current states]. I can't proceed until those are resolved. Once they are, re-run `/finish $issue` and I'll try again."*
 
 Do not offer to "proceed anyway" or "skip the dependency check." If the user wants to bypass a dependency, they need to update the issue body in a deliberate rough-in revision, not via `/finish` runtime patching.
 
@@ -56,7 +58,7 @@ If the Dependencies section says "None" or is empty, the check passes immediatel
 
 Before starting work, check for existing state that suggests this issue is already in progress or done:
 
-- Is there already an open PR carrying this issue's close marker in its description (`closes #$1`, or `Closes $1` for a planner ID — check both families)? If yes, stop and tell the user: *"PR #[pr-number] is already open against issue #$1. Do you want me to continue working on that PR, or is this a new attempt after the prior PR was closed?"* Wait for explicit direction.
+- Is there already an open PR carrying this issue's close marker in its description (`closes #$issue`, or `Closes $issue` for a planner ID — check both families)? If yes, stop and tell the user: *"PR #[pr-number] is already open against issue #$issue. Do you want me to continue working on that PR, or is this a new attempt after the prior PR was closed?"* Wait for explicit direction.
 - Is there a branch matching this repo's branch naming convention (`<type>/<short-description>`, see `CONTRIBUTING.md` § Branches) that looks like it was created for this issue? If yes, surface it and ask whether to continue on that branch or start fresh.
 
 This isn't comprehensive — Claude Code can't detect every in-progress state. But the common cases (open PR, existing branch) are cheap to check and save the user from duplicate work.
@@ -77,7 +79,7 @@ Research against the `## Implementation` anchor (primary) and the supporting sec
 - `## Test plan` — the tests the plan scaffolds red-first in Step 6 (the executable form of the acceptance criteria)
 - `## Done signal` — the verification command the plan ends on
 - `## Dependencies` — already verified; context if the plan references prior work
-- `## PR contract` — how the plan finishes (open draft PR with the axis's close marker — `closes #$1` on github-issues, `Closes $1` on linear — Conventional Commits title)
+- `## PR contract` — how the plan finishes (open draft PR with the axis's close marker — `closes #$issue` on github-issues, `Closes $issue` on linear — Conventional Commits title)
 - **Issue comments** (read in Step 1) — supporting context, not contract: provenance, prior-run hand-offs, and roll-forward notes that can sharpen the plan. Fold what's relevant; the body still governs.
 
 Research is **not** read-only here — execute what informs the plan:
@@ -173,7 +175,7 @@ The principle for Steps 8–9: **the executor handles findings the codebase need
 
 1. **Push the branch** with `git push -u origin <branch>`. If the push fails (auth, network, branch protection), stop and surface the failure per § Partial failure handling. Local commits without a remote ref means `gh pr create` will fail too — fix the push first.
 2. **Open the PR as a draft** via `gh pr create --draft`. PR title in Conventional Commits format (`<type>(<scope>)?: <subject>`). PR description includes:
-   - `Closes #$1` for GitHub issues, or `Closes <KEY>-N` for planning-backend-tracked issues with a GitHub integration that recognizes the magic word. Put the close marker in the **PR body**, not just the title — body is the durable surface; titles can be edited at squash-merge time.
+   - `Closes #$issue` for GitHub issues, or `Closes <KEY>-N` for planning-backend-tracked issues with a GitHub integration that recognizes the magic word. Put the close marker in the **PR body**, not just the title — body is the durable surface; titles can be edited at squash-merge time.
    - Citations to relevant ADRs, `frame-NN.md` milestones, or `.claude/rules/<topic>.md` files the implementation references.
    - A short summary of what changed and why.
    - A **`## Review gate`** block, written before `## Triage`, in the shape `.claude/rules/pr-review.md` § The floor states — one line each for `/simplify`, `pr-review-toolkit:review-pr` and the sweep, stating run-or-not with counts and dropped coverage; a waived skill on its line with the break-glass reason; the sweep's line transcribed from the record the workflow returns. A body without this block is treated as un-reviewed.
