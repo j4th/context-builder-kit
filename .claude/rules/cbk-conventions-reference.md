@@ -965,6 +965,8 @@ absent grep -n "keyed on file, line and normalized titl[e]" .claude/rules/pr-rev
 { grep -qF 'never a second floor and never a series of them' .claude/rules/pr-review.md && grep -qF '*not a second floor*' .claude/rules/pr-review.md; } || { echo "pr-review.md § The floor › Once lacks the one-verification-workflow rule"; exit 1; }
 # The review layers stay independent: the anti-pattern is recorded once, in the reference half (context-builder-kit#58 residue B).
 grep -q '^### ❌ Folding one review layer into another$' .claude/rules/pr-review-reference.md || { echo "pr-review-reference.md § Anti-patterns lacks 'Folding one review layer into another'"; exit 1; }
+# A family of directories has no prefix form: the rules a project reads when writing its roster line say to enumerate it (context-builder-kit#58 residue R10).
+{ grep -qF 'has no prefix form: enumerate each one' .claude/rules/pr-review.md && grep -qF 'by prefix on a directory boundary' .claude/rules/pr-review-reference.md; } || { echo "the roster guidance for a family of directories is missing from pr-review.md's craft rule or pr-review-reference.md § Authoring"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
