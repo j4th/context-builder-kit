@@ -859,6 +859,12 @@ grep -qF 'https://code.claude.com/docs/en/commands' .claude/rules/simplification
 absent grep -rn 'runs-on: ubuntu-lates[t]' .claude/skills/
 for f in .claude/skills/blueprint/references/templates/claude-review.yml .claude/skills/blueprint/references/templates/claude.yml .claude/skills/blueprint/references/templates/tooling.md .claude/skills/scaffold/references/github-starter-templates.md; do grep -qE '^ *shell: bash$' "$f" || { echo "$f sets no 'shell: bash' (unset, GitHub runs bash -e {0}: no pipefail)"; exit 1; }; done
 absent grep -nE '^[^#]*[|][[:space:]]*grep -[A-Za-z]*q' .claude/skills/blueprint/references/templates/claude-review.yml .claude/skills/blueprint/references/templates/claude.yml
+# When the review runs: the path filter re-includes one-way-door markdown last (evaluated as GitHub does, over
+# the template and any filled workflow); `concurrency` sits on the job, so a run the job's `if:` skips cannot cancel
+# a live one; a fork PR, which gets no secrets, is skipped rather than failed.
+python3 -B .claude/workflows/tests/review-trigger-fixture.py || { echo "the review workflow's path filter skips a PR it must review, or reviews one it must skip (the fixture names it)"; exit 1; }
+absent grep -n '^concurrency:' .claude/skills/blueprint/references/templates/claude-review.yml .claude/skills/blueprint/references/templates/claude.yml
+grep -qF 'github.event.pull_request.head.repo.full_name == github.repository' .claude/skills/blueprint/references/templates/claude-review.yml || { echo "templates/claude-review.yml has no fork guard in its job if:"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

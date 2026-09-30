@@ -42,22 +42,28 @@ name: Claude PR Auto-Review
 on:
   pull_request:
     types: [opened, ready_for_review, reopened, labeled]
-    # Docs-only and cascade-artifact PRs are not reviewed by the bot. This is NOT a
-    # required check, so a paths filter is safe here (unlike ci.yml — cbk-conventions-reference.md
-    # § Required-checks trap). A docs-only PR whose docs are one-way
-    # doors (ADRs, the conventions) is reviewed by a human, not skipped by everyone.
-    paths-ignore:
-      - 'docs/cbk/**'
-      - '**/*.md'
-      - '.gitignore'
-      - '.gitattributes'
-      - '.editorconfig'
-      - '.github/dependabot.yml'
-      # [add the project's other prose-only paths]
-
-concurrency:
-  group: claude-review-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+    # Docs-only PRs are not reviewed by the bot, but one-way-door markdown is: rules, skills, commands and
+    # agents under `.claude/`, and ADRs under `docs/adr/` (pr-review.md § What NOT to flag: "Not
+    # automatically light where the docs are one-way doors"). A cascade artifact under `docs/cbk/`, the other
+    # one-way door, stays skipped, as the prompt's hard skip has it, and a human reviews it. `paths-ignore`
+    # cannot re-include a path. GitHub: "use the `paths` filter prefixed with the `!` character to indicate
+    # which paths should be excluded", and "A matching positive pattern after a negative match will include
+    # the path again" (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax,
+    # read 2026-09-30). So the re-includes come LAST: one moved above `!**/*.md` silently skips every
+    # one-way-door PR again, and `.claude/workflows/tests/review-trigger-fixture.py` pins the order. This is
+    # NOT a required check, so a path filter is safe here (unlike ci.yml — cbk-conventions-reference.md
+    # § Required-checks trap). The cost is more review runs against the subscription quota the token draws on.
+    paths:
+      - '**'
+      - '!docs/cbk/**'
+      - '!**/*.md'
+      - '!.gitignore'
+      - '!.gitattributes'
+      - '!.editorconfig'
+      - '!.github/dependabot.yml'
+      # [add the project's other prose-only paths, each with a leading `!`, above the re-includes]
+      - '.claude/**'
+      - 'docs/adr/**'
 
 # Every run: step runs `bash --noprofile --norc -eo pipefail {0}`. With no shell set, GitHub runs `bash -e {0}`
 # instead, with no pipefail, so `cmd | tee log` passes when cmd fails. The shell table, of the unset case:
@@ -70,13 +76,27 @@ defaults:
 jobs:
   auto-review:
     name: Auto-review (inline + summary)
+    # A PR from a fork is skipped, not failed: "With the exception of `GITHUB_TOKEN`, secrets are not passed to
+    # the runner when a workflow is triggered from a forked repository", and that token is read-only there
+    # (https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows, read
+    # 2026-09-30). The action could not authenticate, and every outside contribution would get a red check. A
+    # human reviews a fork PR.
     if: |
+      github.event.pull_request.head.repo.full_name == github.repository &&
       (github.event.action != 'labeled' || github.event.label.name == 'claude-review-again') &&
       !github.event.pull_request.draft &&
       !contains(github.event.pull_request.labels.*.name, 'skip-claude') &&
       github.event.pull_request.user.login != 'dependabot[bot]' &&
       github.event.pull_request.user.login != 'renovate[bot]' &&
       github.event.pull_request.user.login != 'claude[bot]'
+    # `concurrency` sits on the job, not the workflow. A workflow-level group is entered by every run the
+    # trigger creates, including a `labeled` run this job's `if:` then skips, and with `cancel-in-progress` that
+    # run cancels the review in flight — runs that only skip were seen taking part in a workflow-level group in
+    # a target's run history (2026-09-30). A job its `if:` skips never starts, so it should never enter a
+    # job-level group: designed-unexercised (2026-09-30), re-check on the first `labeled` run after this lands.
+    concurrency:
+      group: claude-review-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     # A named image, never `ubuntu-latest`: "The `-latest` runner images are the latest stable images that
     # GitHub provides" (https://docs.github.com/en/actions/reference/runners/github-hosted-runners, read
     # 2026-09-30), so that label moves when GitHub re-points it and a runner change lands unreviewed. Bump
@@ -258,8 +278,9 @@ jobs:
             ## What to skip
 
             - Docs-only or cascade-artifact PRs (`docs/cbk/`, `*.md` only): post the one-line summary
-              `Docs-only PR — auto-review skipped per rule` and exit — unless the docs are one-way
-              doors (ADRs, the conventions), which a human reviews.
+              `Docs-only PR — auto-review skipped per rule` and exit — unless the markdown is under
+              `.claude/` or `docs/adr/`: rules, skills, commands, agents and ADRs are one-way doors,
+              and you review them like code.
             - Issues in unchanged code; speculative future-risk warnings with no concrete failing path;
               restating what a function name already says; library or framework swaps (blueprint's job);
               stylistic nits without a strong rationale (those are Reject, one line).

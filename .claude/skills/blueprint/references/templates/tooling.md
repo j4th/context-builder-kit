@@ -184,7 +184,7 @@ Output format:
 - [Whether to use inline comments or top-level summary]
 ```
 
-**Tool permissions and workflow-level config** (the question 6 sub-questions from the sanity pass) get baked into the workflow file alongside the prompt. For GitHub Actions specifically: `paths-ignore` for docs-only PRs, `concurrency` group with `cancel-in-progress`, `timeout-minutes` cap, `permissions:` block scoped to read-only contents + write pull-requests, `if:` filter for drafts/bots.
+**Tool permissions and workflow-level config** (the question 6 sub-questions from the sanity pass) get baked into the workflow file alongside the prompt. For GitHub Actions specifically: a `paths` filter that skips docs-only PRs but re-includes one-way-door markdown (`.claude/**`, `docs/adr/**`) last — `paths-ignore` cannot re-include, and `templates/claude-review.yml`'s trigger comment says why the order matters; a job-level `concurrency` group with `cancel-in-progress`, so a run the job's `if:` skips cannot cancel a live review; a `timeout-minutes` cap; a `permissions:` block scoped to read-only contents + write pull-requests; an `if:` filter for drafts, bots and fork PRs.
 
 **HITL gate for the review bot prompt**: present the generated prompt content inline before committing the workflow file. Lead with: *"Here's the review bot prompt synthesized from <N> practitioner sources and your STANDARDS.md / ARCHITECTURE.md / CLAUDE.md. The 'do not duplicate' list mirrors your CI gates, the 'things CI can't catch' list mirrors your Unenforced invariants table, the 'leave alone' list mirrors the sanity pass workarounds. Read it as if you're the bot — anything it should be told that I missed? Anything it should ignore that's in the list?"*
 

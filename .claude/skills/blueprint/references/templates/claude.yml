@@ -3,7 +3,7 @@
 # Ships beside claude-review.yml under the same scaffold PR/review answer.
 #
 # Fires when @claude is mentioned in a PR or issue comment, a review, or an issue body.
-#   - concurrency + cancel-in-progress so a rapid back-and-forth does not queue
+#   - job-level concurrency + cancel-in-progress so a rapid back-and-forth does not queue
 #   - skips bots and the `skip-claude` label (avoids @claude loops; the opt-out)
 #   - explicit --allowedTools (least privilege at the tool level)
 #   - the workhorse model at its default effort: mentions are interactive and quota-sensitive
@@ -28,10 +28,6 @@ on:
   issues:
     types: [opened, assigned]
 
-concurrency:
-  group: claude-mention-${{ github.event.issue.number || github.event.pull_request.number }}
-  cancel-in-progress: true
-
 # `bash --noprofile --norc -eo pipefail {0}` on every run: step, not GitHub's `bash -e {0}` default, which has
 # no pipefail (claude-review.yml's defaults comment carries the source).
 defaults:
@@ -53,6 +49,12 @@ jobs:
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
       (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+    # On the job, not the workflow: every comment and review event creates a run, and a workflow-level group
+    # would let a run this `if:` skips (a reply with no @claude, a comment the bot posts) cancel the response
+    # in flight (claude-review.yml's concurrency comment).
+    concurrency:
+      group: claude-mention-${{ github.event.issue.number || github.event.pull_request.number }}
+      cancel-in-progress: true
     # A named image, never `ubuntu-latest`, which moves when GitHub re-points it (claude-review.yml's runs-on
     # comment carries the source). Bump the image in a reviewed PR.
     runs-on: ubuntu-24.04
