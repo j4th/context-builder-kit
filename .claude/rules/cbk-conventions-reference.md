@@ -475,6 +475,16 @@ Two audiences share one block. **Kit-repo checks** hold on the kit's own tree an
 
 **Run it** through `.claude/workflows/tests/run-verification-block.sh`: it performs the documented extraction and adds three fail-loud rails the block cannot carry for itself — an empty extraction is red (a plain `bash -e` on an empty file exits 0); an exit 0 that never printed `verification: done` is red; and in a filled target (`docs/cbk/scaffold.md` exists) an exit 0 that never printed `verification: project sub-block complete` is red, because the done sentinel prints whether or not the project sub-block ran. The third rail keys on the same `docs/cbk/scaffold.md` as the project sub-block's guard, so a deleted or renamed scaffold file makes a target look like the kit's own tree, and that is not caught. `run-verification-block-fixture.sh` drives the three rails on synthetic blocks, and the block runs it, so the block guards the script that runs it. The kit's CI runs the runner on every pull request; a target wires the same script as the body of a task its check command depends on — blueprint's `templates/tooling.md` names that task, and scaffold's bootstrap checklist runs the script once in its verification matrix (a check nobody re-runs is a belief with a date on it — context-builder-kit#58, second application, item 7). The block stays fail-fast: every red is fixed, or the check is narrowed in the project's own copy with an inline comment saying why — a "recorded" red cannot reach the sentinels.
 
+**The bracket idiom has a cost.** An `absent` check writes the phrase it hunts with one letter bracketed (`opinionate[d] profile`), so the grep never matches its own line. A target that spellchecks `.claude/` reads each bracketed fragment as a typo. Exempt the idiom in this one file, never repo-wide: a blanket ignore pattern would also hide a real misspelling written the same way. In `typos` that is a `[type.<name>]` table whose `extend-glob` names this file and whose `extend-ignore-re` matches the idiom:
+
+```toml
+[type.cbk-block]
+extend-glob = ["cbk-conventions-reference.md"]
+extend-ignore-re = ["[A-Za-z_-]*\\[[A-Za-z]\\][A-Za-z]*"]
+```
+
+`extend-glob` is "File globs for matching `NAME`. This is required when defining new file types.", and a type table takes the `[default]` keys, `extend-ignore-re` among them (`https://github.com/crate-ci/typos/blob/master/docs/reference.md`, read 2026-09-30; the table above exercised against typos 1.50.3, which then still reports an idiom-shaped misspelling in any other file). The skills' other bracket uses (`R[i]`, `M[n]`) are index notation, not the idiom, and need no exemption (context-builder-kit#58, the declined spellchecker item's promised note).
+
 ```bash
 # ═══ KIT-REPO CHECKS — must be green on the kit tree and in every target project ═══
 
@@ -717,6 +727,10 @@ for f in $(grep -l '^paths:' .claude/rules/*.md); do awk '/^---$/{c++; next} c==
 # The templates wire the block into `check`: blueprint's tooling template names the runner as the body of the
 # verification task `check` depends on, and scaffold's bootstrap checklist runs it once (§ Verification › Run it).
 for f in .claude/skills/blueprint/references/templates/tooling.md .claude/skills/scaffold/references/bootstrap_checklist_template.md; do grep -q 'run-verification-block\.sh' "$f" || { echo "$f does not name .claude/workflows/tests/run-verification-block.sh (the template that wires the block into check)"; exit 1; }; done
+
+# The bracket idiom's cost is stated where the idiom lives (§ Verification): the spellchecker exemption scoped to
+# this one file. The pattern brackets its own letter so this line never matches itself.
+grep -q 'extend-glo[b] = \["cbk-conventions-reference.md"\]' .claude/rules/cbk-conventions-reference.md || { echo "§ Verification lacks the bracket idiom's file-scoped spellchecker exemption"; exit 1; }
 
 echo "verification: kit sub-block complete"
 
