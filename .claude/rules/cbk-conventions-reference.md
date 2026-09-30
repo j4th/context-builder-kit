@@ -1041,6 +1041,11 @@ while IFS= read -r l; do case "$l" in ''|'#'*) continue;; esac; grep -qF -- "\`$
 { grep -qF '.claude/workflows/*|*/.claude/workflows/*' .claude/hooks/format-on-edit.sh && grep -q -- '--force-exclude' .claude/hooks/format-on-edit.sh; } || { echo "format-on-edit.sh's floor does not skip .claude/workflows/, or its arms do not name the forcing flag"; exit 1; }
 for h in format-on-edit.sh analyze-on-edit.sh; do reg=$(awk '/^# Register:/{p=1} p && !/^#/{exit} p' .claude/hooks/$h); { grep -qF '"args": []' <<<"$reg" && grep -q 'ADVISORY_WIRED' <<<"$reg" && grep -q 'two-views paragraph' <<<"$reg"; } || { echo "$h: the Register: stanza lacks exec form or the three-edit wiring note"; exit 1; }; done
 grep -q 'Formatter and linter scope' .claude/skills/scaffold/references/bootstrap_checklist_template.md || { echo "the bootstrap checklist lacks the formatter-scope one-time choice"; exit 1; }
+# The executor quartet (V9.1): /finish admits five title forms, the procedure names the same five, and neither cites a
+# CONTRIBUTING or STANDARDS heading the kit's templates do not emit (D53; the literals split themselves).
+for f in .claude/commands/finish.md .claude/skills/rough-in/references/finish-command.md; do grep -qF '`[<slug>:<meta-tag>:R<#>] …`, with' "$f" || { echo "$f: Step 1 does not admit a meta's child as the fifth title form"; exit 1; }; done
+for f in .claude/commands/finish-procedure.md .claude/skills/rough-in/references/finish-procedure.md; do grep -q 'same five forms' "$f" || { echo "$f does not name the same five title forms as the contract's Step 1"; exit 1; }; done
+absent grep -nE 'CONTRIBUTING\.md` § Branche[s]|STANDARDS\.md` § (Step [0-9]|Commit and branch convention[s])' .claude/commands/finish.md .claude/commands/finish-procedure.md .claude/skills/rough-in/references/finish-command.md .claude/skills/rough-in/references/finish-procedure.md
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
