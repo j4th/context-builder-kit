@@ -834,6 +834,11 @@ for l in .claude/hooks/lib/*.sh; do [ -f "$l" ] || continue; grep -qF "$(basenam
 # .mcp.json.example on the kit tree.
 mcpf=.mcp.json; [ -f "$mcpf" ] || mcpf=.mcp.json.example
 if [ -f "$mcpf" ]; then for s in $(jq -r '.enabledMcpjsonServers // [] | .[]' .claude/settings.json); do jq -e --arg s "$s" '.mcpServers | has($s)' "$mcpf" >/dev/null || { echo "settings.json enabledMcpjsonServers names $s, which $mcpf does not declare"; exit 1; }; done; fi
+# The Explore override (V3.5) skips what the built-in Explore skips: a search brief is self-contained, so the agent
+# loads no CLAUDE.md hierarchy and no unscoped rules (`omitClaudeMd`, Claude Code v2.1.271+ —
+# https://code.claude.com/docs/en/sub-agents § What loads at startup, read 2026-09-30); its description, which
+# rides in every session's agent list, is its routing sentence (under 300 characters).
+if [ -f .claude/agents/Explore.md ]; then fm=$(awk 'NR==1 && /^---$/ {f=1; next} f && /^---$/ {exit} f' .claude/agents/Explore.md); grep -q '^omitClaudeMd: true$' <<<"$fm" || { echo "agents/Explore.md does not set omitClaudeMd: true (it would load CLAUDE.md and every unscoped rule the built-in skips)"; exit 1; }; d=$(sed -n 's/^description: //p' <<<"$fm"); [ -n "$d" ] && [ "${#d}" -le 300 ] || { echo "agents/Explore.md's description is ${#d} characters; keep it to the routing sentence (300 at most) and put the rationale in the body"; exit 1; }; fi
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
