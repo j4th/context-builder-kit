@@ -382,9 +382,13 @@ Moved from the contract's § Mutation discipline on 2026-09-07 (the section is c
 **ADR supersession has more than one grain.** The `docs/adr/*` row above shows whole-ADR supersession; two finer-grained relationships sit alongside it, both preserving the parent's immutability (neither edits the parent file):
 
 - **Refine** — `Refines: ADR-NNNN (Dn, …)` in the child's header narrows or clause-level-clarifies a specific decision `Dn` in the parent **without invalidating it**. The parent stays **Accepted**; both parent and child are consulted for conformance. Use when implementation reveals an accepted clause was written too generally and needs a scoped reading, not a reversal. The parent gains **no back-pointer** (it is immutable) and **no status change** — discoverability comes from the child's `Refines:` field plus the child's ADR-index row.
-- **Clause-scoped supersede** — `Supersedes: ADR-NNNN Dn` reverses only decision `Dn` of the parent while the parent's other clauses stand. The parent stays **Accepted** (it is not wholly superseded); the child's index row names the specific clause it replaces, and the parent's index row is annotated (`Accepted · Dn superseded by ADR-MMMM`) while the parent file stays untouched.
-- **Extend** — `Extends: ADR-NNNN (Dn, …)` adds an obligation beside a parent clause that **stays satisfied as written**. The parent stays **Accepted** and is not narrowed; the child adds a check the parent alone would not raise. **The disambiguation test:** a child that *removes a permitted reading* of the parent clause is a Refine; one that *adds an obligation beside a clause that stays satisfied* is an Extend. Both are asymmetric — the parent gains no back-pointer; the child's header field and its index row carry the relation, and the status cell carries grain and parent inline (`Accepted · Extends ADR-0003 (D1)`).
+- **Clause-scoped supersede** — `Supersedes: ADR-NNNN Dn` reverses only decision `Dn` of the parent while the parent's other clauses stand. The parent stays **Accepted** (it is not wholly superseded); the child's index row names the specific clause it replaces, and the parent's index row is annotated in the index's own form — the kit's starter index writes `Accepted · Dn superseded by ADR-MMMM` in the Status cell, and a target's index sets its own cell and separator (`adr-new` reads the existing rows first) — while the parent file stays untouched.
+- **Extend** — `Extends: ADR-NNNN (Dn, …)` adds an obligation beside a parent clause that **stays satisfied as written**. The parent stays **Accepted** and is not narrowed; the child adds a check the parent alone would not raise. **The disambiguation test:** a child that *removes a permitted reading* of the parent clause is a Refine; one that *adds an obligation beside a clause that stays satisfied* is an Extend. Both are asymmetric — the parent gains no back-pointer; the child's header field and its index row carry the relation, and in the kit's starter index the Status cell carries grain and parent inline (`Accepted · Extends ADR-0003 (D1)`); a target's index keeps its own form.
 - **Promote** — `Promotes: <corpus path> § <heading>` records a decision lifted from a frozen pre-cascade corpus (the consultation skill's `references/frozen_corpus_ingestion.md`); the corpus is the provenance, the ADR the binding form.
+
+**Refines may target non-decision clauses.** The over-general text isn't always a `Dn` decision — a refine can scope a parent's `§ Consequences` (or another named section) when that's where the statement being narrowed lives: `Refines: ADR-NNNN (§ Consequences — <what>)`. The same rules apply: parent untouched, both consulted.
+
+**Honest-disclosure refines.** When execution falsifies a rule an earlier ADR pre-committed to (a threshold, a protocol, an expected outcome), the deviation lands as a refining ADR whose body discloses all three parts — what was pre-committed, what reality showed, and what changes — never as a silent re-interpretation. The disclosure is the point: a pre-commitment only disciplines future decisions if deviations from it are visibly recorded.
 
 A wrong **claim** inside an accepted ADR — a citation, a figure, an attribution, a formula — is none of these grains: it goes to `docs/adr/corrections.md`, the append-only register, and the ADR stays as written.
 
@@ -1063,6 +1067,12 @@ absent grep -rnE "Deferred meta-issue[s]" .claude/skills/
 # template cites the event-entry shape in the rough-in skill, the one file that carries it.
 absent grep -n "Closes-keyword conventions / commit forma[t]" .claude/agents/cascade-rule-reviewer.md
 grep -q "the rough-in skill's \`references/planning-backend-commit.md\`" .claude/skills/framing/references/templates/frame-output-template.md || { echo "frame-output-template.md cites the event-entry shape in a file that lacks it"; exit 1; }
+# adr-new points at § ADR relation grains instead of restating it (context-builder-kit#66): the skill keeps its own
+# mechanics under ## Relation grains, the old heading is cited nowhere, and the two paragraphs only the skill carried
+# now live in the reference half.
+grep -q '^## Relation grains' .claude/skills/adr-new/SKILL.md || { echo "adr-new/SKILL.md lacks ## Relation grains (the pointer to § ADR relation grains)"; exit 1; }
+absent grep -rn "Refines vs Supersede[s]" .claude/
+{ grep -q 'Honest-disclosure refines' .claude/rules/cbk-conventions-reference.md && grep -q 'Refines may target non-decision clauses' .claude/rules/cbk-conventions-reference.md; } || { echo "§ ADR relation grains lacks the non-decision-clause or honest-disclosure refine"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
