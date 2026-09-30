@@ -1136,6 +1136,10 @@ for p in cbk-conventions pr-review; do r=.claude/rules/$p-reference.md; pre=$(gr
 grep -qF '| **Kit commit** | <vX.Y.Z (sha)' .claude/skills/scaffold/references/scaffold_output_template.md || { echo "scaffold_output_template.md's Kit commit row does not take the vX.Y.Z (sha) form"; exit 1; }
 if [ ! -f docs/cbk/scaffold.md ]; then grep -qF 'CHANGELOG.md' <<<"$(awk '/^## Syncing the kit$/{p=1;next} /^## /{p=0} p' .claude/rules/cbk-conventions-reference.md)" || { echo "cbk-conventions-reference.md § Syncing the kit does not name CHANGELOG.md's Sync notes"; exit 1; }; fi
 
+# Releases (V10): on the kit tree, CHANGELOG.md has a section for every tagged release, each with its Sync notes
+# (a target's CHANGELOG, if it has one, is its own).
+if [ ! -f docs/cbk/scaffold.md ]; then for v in 0.1.0 0.2.0 0.3.0 0.4.0 0.5.0 1.0.0; do awk -v v="$v" 'index($0, "## [" v "] ")==1{p=1;next} /^## \[/{p=0} p&&/^### Sync notes$/{f=1} END{exit !f}' CHANGELOG.md || { echo "CHANGELOG.md has no [$v] section with a ### Sync notes heading"; exit 1; }; done; fi
+
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
