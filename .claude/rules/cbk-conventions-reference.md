@@ -888,6 +888,9 @@ if grep -q '^## Automated review on the git host' .claude/rules/tooling.md; then
 for r in .claude/rules/*-reference.md; do [ -f "${r%-reference.md}.md" ] || { echo "$r ships without its contract ${r%-reference.md}.md"; exit 1; }; done
 [ ! -f .claude/rules/knowledge-backend.md ] || [ -f .claude/rules/knowledge-backend-reference.md ] || { echo "knowledge-backend.md ships without knowledge-backend-reference.md — the rule is a contract + reference pair, deleted together (D59)"; exit 1; }
 for c in .claude/rules/*.md; do case "$c" in *-reference.md) continue;; esac; r="${c%.md}-reference.md"; [ -f "$r" ] || continue; p=$(awk '/^## /{h=substr($0,4)} /^→ \*Moved to\* `/{t=$0; sub(/^→ \*Moved to\* `[^`]*` § /,"",t); sub(/ \*\(path-scoped.*$/,"",t); print (t==h ? "ok" : "under " h) "\t" t}' "$c"); [ -n "$p" ] || { echo "$c carries no Moved-to pointer into $r"; exit 1; }; while IFS=$'\t' read -r st t; do [ "$st" = ok ] || { echo "$c: the pointer to § $t sits $st"; exit 1; }; grep -qxF "## $t" "$r" || { echo "$c points at § $t, which $r does not carry"; exit 1; }; done <<<"$p"; done
+# Notion's native page verification is plan-gated, and the knowledge-backend rule says so where it requires the property
+# (knowledge-backend-reference.md § Wiki pattern + Verification, with its fallback). A none-axis target deleted the file.
+[ ! -f .claude/rules/knowledge-backend-reference.md ] || grep -q 'Business and Enterprise Plans' .claude/rules/knowledge-backend-reference.md || { echo "knowledge-backend-reference.md § Wiki pattern + Verification does not name Notion's plan-gated Verification property and its fallback"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

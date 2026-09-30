@@ -98,6 +98,8 @@ Every database-backed page must have:
 
 Unverified pages are how Notion becomes a graveyard. The kit's hub provisioning sets these properties up when it creates the relevant DB; ongoing maintenance is the operator's responsibility.
 
+**Notion's native Verification property is plan-gated.** Of verifying pages, Notion's help page says: "This feature is available on Business and Enterprise Plans." (`https://www.notion.com/help/wikis-and-verified-pages`, read 2026-09-30). On any other plan, carry the same two facts as ordinary properties: an **Owner** person property and a **Verify by** date property on the same 90 / 180 / 365-day cadence. Record which form the workspace uses in `cbk-conventions.md` § Knowledge backend — operator's specific choices.
+
 If the operator's existing DB doesn't have these properties, surface the gap and offer to extend the schema — don't force it. Workspace conventions can deviate; the rot risk is the operator's call to manage.
 
 ## Brownfield detection at scaffold
@@ -152,18 +154,18 @@ The eight-sub-page convention above is the **vocabulary the kit uses when offeri
 
 ## Notion MCP convention
 
-**Recommended MCP server**: Notion's official MCP (`notion.com/help/notion-mcp`).
+**Recommended MCP server**: Notion's official MCP (`https://www.notion.com/help/notion-mcp`).
 
 The kit assumes this MCP is configured when knowledge backend = Notion. If not configured, surface honestly at consultation/scaffold and either:
 
 - Walk the operator through MCP setup (per Notion's docs)
 - Fall back to paste-mode operation (consultation only — lower phases require MCP for opt-in fetches)
 
-**Why standardize**: Notion's official MCP is the reference implementation as of the v1 of this kit. It supports both read and write; integrates cleanly with Claude Code. Alternative Notion MCPs work, but the kit's recommended patterns reference behaviors that may differ. Note alternatives in the project's `cbk-conventions.md`.
+**Why standardize**: Notion's official MCP is the reference implementation as of the v1 of this kit. It reads and writes: Notion's help page describes connected AI apps that "create structured project pages in Notion" (`https://www.notion.com/help/notion-mcp`, read 2026-09-30), and the write tool names the kit's ask-gate matches are the dated observation in `knowledge-backend.md` § HITL announcement discipline. Alternative Notion MCPs work, but the kit's recommended patterns reference behaviors that may differ. Note alternatives in the project's `cbk-conventions.md`.
 
 ## Notion 3.3+ awareness (Feb 2026)
 
-Notion 3.3 introduced Custom Agents — agents that run 24/7 against workspace context. Implication for the kit: pages provisioned by the kit (and any companions later phases promote) should have:
+Notion 3.3 introduced Custom Agents — agents that run 24/7 against workspace context: "Just give them a job, set a trigger or schedule, and they'll get it done, 24/7." (`https://www.notion.com/releases/2026-02-24`, "Notion 3.3: Custom Agents", read 2026-09-30; re-read when a Notion release changes what an agent may do to a page). Implication for the kit: pages provisioned by the kit (and any companions later phases promote) should have:
 
 - Clear, structured titles (no jargon-heavy or session-specific phrasing)
 - Owner + Verification properties (already required by the Wiki pattern above)
@@ -187,7 +189,7 @@ Surface every failure with a concrete next action. Don't fail silently; don't re
 ## What this doc deliberately doesn't cover
 
 - **Specific Notion marketplace templates** — templates are starting points; the kit's hub structure IS the recommended template
-- **Notion pricing tiers / plan-specific features** — operator's concern, not the kit's
+- **Notion pricing tiers / plan-specific features** — operator's concern, not the kit's, with one exception the kit prescribes: native page verification is Business/Enterprise-only, and § Wiki pattern + Verification names the fallback
 - **Cross-knowledge-backend portability** (Confluence, Obsidian, etc.) — design once a second knowledge backend is actually supported, not before
 - **Automated hub-page provisioning beyond the hub row** — sub-pages are lazy-provisioned only
 - **Notion-side organization rules** — operator's call; the kit only needs the hub URL recorded in `cbk-conventions.md`
