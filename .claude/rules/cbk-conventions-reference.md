@@ -1092,6 +1092,9 @@ absent grep -rnE "github-only profil[e]|[Mm]arkdown-only profil[e]|profile: mark
 absent grep -rn 'methodology_register\.m[d]\|sdd\.m[d]\|full register lives outsid[e]\|full register is share[d]' .claude/
 # The CI-skip trap is sourced and names every spelling (V9.12): five bracket tokens and the trailer, with the dated page.
 for m in '[skip ci]' '[ci skip]' '[no ci]' '[skip actions]' '[actions skip]' 'skip-checks: true' 'skip-workflow-runs'; do grep -qF -- "$m" .claude/rules/cbk-conventions.md || { echo "cbk-conventions.md § [skip ci] rule does not name: $m"; exit 1; }; done
+# The Linear free-plan limits are dated at the page that states them (V9.13), not a stale seat count.
+grep -q 'linear.app/pricing' .claude/skills/scaffold/references/manual_steps.md || { echo "manual_steps.md: the Linear free-plan line cites no dated pricing page"; exit 1; }
+absent grep -n 'up to 10 user[s]' .claude/skills/scaffold/references/manual_steps.md
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
