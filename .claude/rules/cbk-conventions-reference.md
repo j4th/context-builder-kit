@@ -1098,6 +1098,9 @@ absent grep -n 'up to 10 user[s]' .claude/skills/scaffold/references/manual_step
 # Every label a flow applies is in scaffold's taxonomy (V9.14): the intake holding label and the supersede and rollback
 # marks are created with the rest, never on a repo that lacks them.
 for l in triage superseded transition-rollback; do grep -q "\`$l\`" .claude/skills/scaffold/references/github_only_profile.md || { echo "github_only_profile.md's label taxonomy lacks \`$l\` (a flow applies it)"; exit 1; }; done
+# Scaffold's reference and checklist agree with its SKILL.md (V9.15): three detection states, one heading each, Stage
+# 2.5's templates kept in light mode, and the gate count its own summary lists (the literals split themselves).
+absent grep -rnE "four detection state[s]|State [4] \(no MCP\)|because state [2]\)|Full automation \(GitHub MCP|Skip the \`\.github/\` issue template[s]|with five HITL gate[s]" .claude/skills/scaffold/
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

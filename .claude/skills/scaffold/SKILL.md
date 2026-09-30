@@ -18,7 +18,7 @@ If the user shows up wanting to scaffold but doesn't have any problem brief at a
 
 ## Light mode — when the user wants this lighter
 
-Scaffold's full flow (backend selection → discovery → audit → provisioning → output, with five HITL gates) is the **full** mode, not a requirement. A user who says *"just give me a repo and some labels"*, *"keep it minimal"*, *"I know what I'm doing"* should get **light** mode. The skill is opinionated, not dogmatic.
+Scaffold's full flow (backend selection → discovery → audit → provisioning → output, with six HITL gates) is the **full** mode, not a requirement. A user who says *"just give me a repo and some labels"*, *"keep it minimal"*, *"I know what I'm doing"* should get **light** mode. The skill is opinionated, not dogmatic.
 
 Light-mode patterns:
 
@@ -44,7 +44,7 @@ Two confirmation gates fire within Stage 1 depending on the planning choice:
 - **Three-level constraint conversation** when planning = `github-issues` — surface the 3-level constraint (vs Linear's 4) before proceeding.
 - **In-repo-markdown confirmation gate** when planning = `in-repo-markdown` — one-way-door warning; binary confirmation required.
 
-If knowledge = `notion`, Stage 2's follow-up runs the **brownfield Notion detection** from `.claude/rules/knowledge-backend.md` § "Brownfield detection at scaffold." Read-only; surfaces what exists; offers the three-option choice (create new hub row / designate existing / skip).
+If knowledge = `notion`, backend selection's Stage 2 follow-up runs the **brownfield Notion detection** from `.claude/rules/knowledge-backend.md` § "Brownfield detection at scaffold." Read-only; surfaces what exists; offers the three-option choice (create new hub row / designate existing / skip).
 
 The two axes generate 3 × 2 = 6 valid combinations. The kit composes these dynamically — there are no named preset profiles.
 

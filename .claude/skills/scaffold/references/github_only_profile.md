@@ -1,14 +1,12 @@
 # GitHub-only profile
 
-The fully-fleshed-out reference for scaffold's provisioning when the planning backend axis = `github-issues`. Covers what scaffold actually does in each of the four detection states (see SKILL.md), every fallback path, and the operations against the consolidated GitHub MCP toolset. Companion files: `linear_planning.md` (when planning = `linear`), `notion_knowledge.md` (when knowledge = `notion`).
+The fully-fleshed-out reference for scaffold's provisioning when the planning backend axis = `github-issues`. Covers what scaffold actually does in each of the three detection states (SKILL.md § The detection matrix), every fallback path, and the operations against the consolidated GitHub MCP toolset. Companion files: `linear_planning.md` (when planning = `linear`), `notion_knowledge.md` (when knowledge = `notion`).
 
 ## What this profile provisions
 
 A single GitHub repository that holds everything: code, planning (via GitHub Projects boards, repo Milestones, Issues), knowledge (markdown files in `docs/`), and conventions (markdown file at repo root or `.github/`). The cascade is **three-level**: project board → milestone → issue. Initiative-level artifacts (from blueprint) live as markdown documents, not as planning entities.
 
 ## Stage 2 — Resource provisioning by detection state
-
-### State 1 — Full automation (GitHub MCP + projects toolset + write scopes)
 
 ### State 1 — MCP + write scopes (the common case)
 
@@ -86,7 +84,7 @@ If the user has invoked light mode (see SKILL.md), collapse the provisioning flo
 - **One up-front confirmation**, listing exactly what will be created (via MCP) and what will need manual steps
 - **No per-step approval** during provisioning — run MCP steps, generate manual instructions in one batch, surface results together
 - **Skip the verification matrix** unless the user asks for it
-- **Skip the `.github/` issue templates** unless the brief implies they matter
+- **Skip the starter bug and feature forms** unless the brief implies they matter — never Stage 2.5's cascade issue templates, whose approval gate SKILL.md keeps in every rigor mode
 - **Conventions doc is one paragraph**, not a full template
 
 Even in light mode, the three-level constraint conversation still happens at least once (in one-sentence form). See `backend_selection.md`.

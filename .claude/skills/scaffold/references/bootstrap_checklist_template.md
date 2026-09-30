@@ -31,7 +31,7 @@ Resources provisioned via MCP, with links and a one-line description each. Forma
 - **Project board**: <project URL> — Board template, repo linked
 ```
 
-If a row is not applicable (e.g. no project board because state 2), omit it. Don't show empty rows.
+If a row is not applicable (e.g. no project board because the operator declined one), omit it. Don't show empty rows.
 
 ### 2. Manual instructions
 
@@ -71,7 +71,7 @@ Walk through each row. If anything fails, retry or fall back to manual instructi
 | Verification block runs | With the kit's `.claude/` in the clone and the rule-file disposition below done, from the clone's root: `bash .claude/workflows/tests/run-verification-block.sh` | Exits 0; the last two lines are `verification: project sub-block complete` and `verification: done` (a filled target owes both — `cbk-conventions-reference.md` § Verification › Run it). Blueprint wires the same script into `check`. | ☐ |
 ```
 
-Only include rows that are actually applicable. State 2 (no projects toolset) omits the project board row. State 4 (no MCP) puts everything in section 2 (manual instructions) and the verification matrix becomes longer.
+Only include rows that are actually applicable. Without the GitHub MCP (SKILL.md's third detection state), everything goes in section 2 (manual instructions) and the verification matrix becomes longer.
 
 **When a frozen corpus is designated** (`problem_brief.md` § Pre-cascade sources names one — the consultation skill's `references/frozen_corpus_ingestion.md`), the matrix gains one row per item of its enforcement set, so no item is ticked off with the others. Omit these rows when no corpus is designated:
 
