@@ -699,6 +699,10 @@ absent grep -rn "framing\.md inde[x]\|framing\.md even[t]" .claude/skills/rough-
 # every session, and every non-fork subagent loads the set again. Print the always-loaded
 # set and its size so the standing cost is a number, not a discovery.
 total=0; for f in .claude/rules/*.md; do head -1 "$f" | grep -q '^---$' || { s=$(wc -c < "$f"); total=$((total+s)); echo "always-loaded: $f ($s bytes)"; }; done; echo "always-loaded total: $total bytes"
+# Above 140,000 bytes the budget line warns and never fails: the number is a signal to path-scope, split or delete
+# a rule, not a gate (cbk-conventions.md § Rule loading and the instruction budget). The WARN prefix is what a
+# release's budget check greps for.
+[ "$total" -le 140000 ] || echo "WARN: always-loaded total $total bytes is above the 140000-byte budget line — path-scope, split or delete a rule (cbk-conventions.md § Rule loading and the instruction budget)"
 
 # The runner's three rails hold on synthetic blocks, the runner copied into throwaway checkouts at its real
 # path (§ Verification › Run it): the block guards the script that runs it.
