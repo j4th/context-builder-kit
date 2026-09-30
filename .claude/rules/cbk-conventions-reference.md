@@ -959,6 +959,8 @@ for f in .claude/rules/pr-review.md .claude/workflows/review-sweep.js; do grep -
 # Dedup keys on file and line, and a merged finding is triaged by the report its verifier named (context-builder-kit#72 item 2).
 { grep -qF 'keyed on file and line (and on the normalized title only when a finding names no line)' .claude/rules/pr-review.md && grep -qF 'the caller triages that report' .claude/rules/pr-review.md; } || { echo "pr-review.md invariant (3) does not key dedup on file and line, or does not triage a merged finding by the report its verifier named"; exit 1; }
 absent grep -n "keyed on file, line and normalized titl[e]" .claude/rules/pr-review.md
+# An interrupted floor or sweep is re-run fresh, and reviewer memory it wrote is discarded (context-builder-kit#72 item 5).
+{ grep -qF 'An interrupted or stopped floor or sweep is re-run fresh' .claude/rules/pr-review.md && grep -qF 'memory an interrupted run wrote is discarded' .claude/rules/pr-review.md; } || { echo "pr-review.md does not say an interrupted floor or sweep is re-run fresh with its reviewer memory discarded"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
