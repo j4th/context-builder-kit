@@ -218,7 +218,7 @@ For Linear projects, two team-level workflow settings (`Settings > Team > Workfl
 - **(a) Auto-complete parent when all sub-issues complete** — **enable**. Matches cascade semantics: parent F-issue closes when all R-issues close; parent workstream issue closes when all F-issues close.
 - **(b) Auto-complete sub-issues when parent completes** — **leave off**. The cascade may create rough-in R-issues in advance with `blockedBy` chains; auto-completing them when the parent closes would prematurely close work that's still open.
 
-For GitHub-only projects, sub-issue rollup is a Projects v2 view configuration rather than a closure-cascading setting; the equivalent is just rendering the parent/child tree on a board view.
+On github-issues, nothing cascades closure up the tree: GitHub closes no parent when its sub-issues close (observed on a real application, 2026-09-05 to 2026-09-07; the sub-issues page documents no parent closure — `https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/adding-sub-issues`, read 2026-09-30), and a Projects v2 board only renders the parent/child tree. So each closure has an owner: the milestone's capstone PR names the `[<slug>:F<#>]` framing issue in its close markers (`commands/finish.md`, item 8), and the operator closes the workstream parent by hand when its last milestone closes.
 
 ## Dependency settle-window — supply-chain discipline
 
@@ -1046,6 +1046,10 @@ grep -q 'Formatter and linter scope' .claude/skills/scaffold/references/bootstra
 for f in .claude/commands/finish.md .claude/skills/rough-in/references/finish-command.md; do grep -qF '`[<slug>:<meta-tag>:R<#>] …`, with' "$f" || { echo "$f: Step 1 does not admit a meta's child as the fifth title form"; exit 1; }; done
 for f in .claude/commands/finish-procedure.md .claude/skills/rough-in/references/finish-procedure.md; do grep -q 'same five forms' "$f" || { echo "$f does not name the same five title forms as the contract's Step 1"; exit 1; }; done
 absent grep -nE 'CONTRIBUTING\.md` § Branche[s]|STANDARDS\.md` § (Step [0-9]|Commit and branch convention[s])' .claude/commands/finish.md .claude/commands/finish-procedure.md .claude/skills/rough-in/references/finish-command.md .claude/skills/rough-in/references/finish-procedure.md
+# The capstone close marker (V9.2): on github-issues nothing closes a milestone for you, so the executor's contract and
+# its procedure both name the framing issue in a capstone PR's close markers.
+for f in .claude/commands/finish.md .claude/skills/rough-in/references/finish-command.md; do grep -q 'GitHub closes no parent when its sub-issues close' "$f" || { echo "$f: item 8 does not name the milestone issue in a capstone PR's close markers"; exit 1; }; done
+for f in .claude/commands/finish-procedure.md .claude/skills/rough-in/references/finish-procedure.md; do grep -q "capstone PR (its milestone's last R-issue)" "$f" || { echo "$f: Step 10 does not name the capstone close marker"; exit 1; }; done
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
