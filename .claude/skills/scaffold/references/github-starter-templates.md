@@ -1,6 +1,6 @@
 # GitHub starter templates
 
-The `.github/` starter files scaffold pushes on the **github-issues** planning axis. `github_only_profile.md` § State 1 step 2 cites this file; `bootstrap_checklist_template.md` lists what landed.
+The starter files scaffold pushes on the **github-issues** planning axis: the `.github/` bodies, plus the root `.gitattributes` counter-line and the `.gitignore` harness block. `github_only_profile.md` § State 1 steps 1 and 2 cite this file; `bootstrap_checklist_template.md` lists what landed.
 
 > **Provenance.** Scaffold promised these files for two harvest passes and cited `references/scaffold_output_template.md` for them — where they never existed; a repo-wide grep for their content returned nothing, so step 2 was an instruction to copy files that were not there. This file holds the literal bodies. Do not re-point the citation without checking the target actually holds them.
 
@@ -292,4 +292,25 @@ Ships only when the repo has a lockfile the settle window audits. The git host m
 # Counter-line per audited lockfile the host would collapse (linguist's generated
 # list is per-name; check it — the line is harmless where the name is not listed).
 <lockfile> linguist-generated=false
+```
+
+## `.gitignore` — the harness block
+
+Appended to the stack `.gitignore` scaffold writes, after every stack section — always, whether or not the brief gave a stack hint. The rules are `cbk-conventions-reference.md` § .gitignore anchoring: every entry is anchored, so a same-named path deeper in the tree stays visible (each line below matches its path and not, say, `docs/.claude/worktrees/x` or `src/__pycache__/a.pyc`), and the commit that adds the block states those pin assertions in its body. The last line re-includes the hook helpers, which an unanchored `lib/` in a stack section above it would otherwise hide from `git add`; it must stay below every stack section. The verification block pins this fence with `git check-ignore` in a throwaway repository.
+
+```
+### Claude Code harness — per-host state and staging copies, never source ###
+# Personal settings. Claude Code keeps the file out of git only when it wrote it; a hand-made one needs this line.
+/.claude/settings.local.json
+# Reviewer memory in the `local` scope (the `project` scope, /.claude/agent-memory/, is committed).
+/.claude/agent-memory-local/
+# Worktrees Claude Code creates (--worktree, isolated subagents) and finish-ab's headless arms.
+/.claude/worktrees/
+# The review action's staging copy of the PR's .claude/, .mcp.json and CLAUDE.md; a local reproduction leaves it.
+/.claude-pr/
+# Bytecode from the kit's Python under .claude/workflows/ — a by-hand import or a test writes it.
+/.claude/workflows/**/__pycache__/
+/.claude/workflows/**/*.py[cod]
+# The hook helpers stay tracked even under a stack section's unanchored `lib/`. Keep this line last.
+!/.claude/hooks/lib/
 ```

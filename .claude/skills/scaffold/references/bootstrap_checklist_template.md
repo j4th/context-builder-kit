@@ -17,7 +17,7 @@ Resources provisioned via MCP, with links and a one-line description each. Forma
 ```markdown
 ## ✅ Completed (via MCP)
 
-- **Repository**: <repo URL> — created with README, a `.gitignore` anchored per `cbk-conventions-reference.md` § .gitignore anchoring, and the licence the operator confirmed (`cbk-conventions.md` § Licensing; "none yet" is a valid answer)
+- **Repository**: <repo URL> — created with README, a `.gitignore` anchored per `cbk-conventions-reference.md` § .gitignore anchoring and ending with the harness block (`github-starter-templates.md` § `.gitignore` — the harness block), and the licence the operator confirmed (`cbk-conventions.md` § Licensing; "none yet" is a valid answer)
 - **Issue templates**: bug report and feature request templates added under `.github/ISSUE_TEMPLATE/`
 - **PR template**: added at `.github/pull_request_template.md`
 - **Scaffold output doc**: committed at `<repo>/docs/cbk/scaffold.md`

@@ -21,6 +21,7 @@ For Claude.ai's qualitative test loop (no subagents, no benchmarking): a real hu
 - Bootstrap checklist surfaces what's manual
 - The bootstrap checklist has four sections; section 4 lists every shipped template and path-scoped rule with a disposition (the manifest-and-lockfile entry in `cbk-conventions-reference.md`'s `paths:` included), and prints the always-loaded set first; the verification matrix's last row ran the runner after that pass and read both sentinels. `docs/adr/` exists with ADR-0000's header filled (no `YYYY-MM-DD`). The committed `cascade-rough-in.md` carries eight headings including `## Assumptions`.
 - The bootstrap checklist's rule-file disposition pass settled the reviewer agent-memory choice, wrote it to the "Reviewer agent-memory" row of § Surface inventory, and — for `project` — deleted the kit's `.claude/agent-memory/` gitignore line.
+- The committed `.gitignore` ends with the harness block from `github-starter-templates.md`, below the stack section, and the commit that added it states the block's pin assertions in its body.
 
 **What failure looks like:**
 - Skill skips the three-level constraint conversation
