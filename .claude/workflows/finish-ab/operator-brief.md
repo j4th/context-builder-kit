@@ -2,17 +2,21 @@
 
 > **Template.** Fill the bracketed spots for the run and pass this file's directory as `args.scratch`. Every gate the executor would stop at is converted here into a recorded decision — never removed.
 
-You are executing issue **[#<N>]** — `[<title>]` — in the repository `[<owner/name>]`, **inside a git worktree of your own** (your current working directory). This is one arm of a two-arm experiment; the branch you produce is throwaway and will never merge. Work exactly as if it were real, except for the rules below.
+You are executing issue **[#<N>]** — `[<title>]` — in the repository `[<owner/name>]`, **inside a git worktree of your own** (your current working directory). This is one arm of an experiment with two to four arms; the branch you produce is throwaway and will never merge. Work exactly as if it were real, except for the rules below.
 
 ## What non-interactive means here
 
 - **No human answers you.** Where the flow stops for the operator (the plan gate, a question, a permission), make the call you would propose, write it down, and continue. Record every such call in your final return under `gate_calls`.
 - **The plan gate is a file.** Plan mode is unavailable to you. Write the plan to `PLAN.md` at the worktree root, treat it as approved, and proceed. The plan must still carry every `[ASSUMPTION:]` line of the issue as a confirm-or-correct item with your resolution.
-- **Never run the product.** [Name the commands that would touch shared hardware, a device, a live service or the network — two arms share one machine.] Building and testing (`[the project's build command]`, `[the project's test command]`, `[the check task]`) are allowed and expected. Every acceptance criterion that needs a real run is **operational** for this experiment: leave it honestly open in the PR body and hand-off, with what the operator must do.
+- **Never run the product.** [Name the commands that would touch shared hardware, a device, a live service or the network — the arms share one machine.] Building and testing (`[the project's build command]`, `[the project's test command]`, `[the check task]`) are allowed and expected. Every acceptance criterion that needs a real run is **operational** for this experiment: leave it honestly open in the PR body and hand-off, with what the operator must do.
 - **No remote writes.** Do not push, do not open a PR, do not create, edit, comment on or label any issue, do not run any `gh` write command. Reading with `gh` is fine. Write the PR body you would have submitted, complete, to `PR_BODY.md` at the worktree root.
-- **The review floor is available to you** — invoke `/simplify` and `pr-review-toolkit:review-pr` as skills, exactly as the instructions you were given require, and triage their findings. The project's review **workflow** cannot run from inside a dispatched agent; record that on the sweep's line of the `## Review gate` block as skipped, with that reason. Do not claim any invocation you did not make.
-- **Stay in your worktree.** Do not edit, create or delete anything outside your current working directory. Do not touch the main checkout, the scratch directory of the session that launched you, or the other arm.
+- **The review floor is available to you** — invoke `/simplify` and `pr-review-toolkit:review-pr` as skills, exactly as the instructions you were given require, and triage their findings. Do not claim any invocation you did not make. [Keep the sentence for this run's mode and delete the other.] [**A workflow arm** (the finish-ab workflow dispatched you as an agent): you have no Agent tool, so each skill runs without its own agent fan-out — record it as invoked, not covered, naming the dimensions it dropped (`.claude/rules/pr-review.md` § The floor) — and the project's review **workflow** cannot run from inside a dispatched agent: record that on the sweep's line of the `## Review gate` block as skipped, with that reason.] [**A headless arm** (`run-arms-headless.py` started you as a top-level `claude -p` session): the skills fan out as they normally do; run the project's review workflow as the instructions require if this session can launch it, and if it cannot, record it on the sweep's line as skipped, with the reason the attempt gave.]
+- **Stay in your worktree.** Do not edit, create or delete anything outside your current working directory. Do not touch the main checkout, the scratch directory of the session that launched you, or any other arm.
 - **Commit on your own branch** (create it from the worktree's current commit, named per the project's convention), never on the base branch.
+
+## The issue, verbatim
+
+[Headless arms run under `--strict-mcp-config` (`run-arms-headless.py`): no MCP server loads unless the run's `mcp_config` names a read-only one, so an arm cannot read an issue that lives behind one — a Linear planning backend, say. Paste the issue's body and every comment here, verbatim, and the arms read it here. On a github-issues project `gh issue view` still works and this section can go.]
 
 ## Standing decisions you inherit (do not re-decide)
 

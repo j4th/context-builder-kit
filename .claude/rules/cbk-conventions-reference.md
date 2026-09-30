@@ -947,6 +947,12 @@ diff <(printf '%s\n' "$ck" | sort) <(printf '%s\n' "$cr" | sort) || { echo "the 
 # server), the MCP allowlist, the per-worktree setup and the once-per-arm check task, against a fake `claude` in a
 # throwaway repository; a ResourceWarning in the runner's output fails it. Needs git and python3; spends nothing.
 bash .claude/workflows/tests/run-arms-headless-fixture.sh || { echo "run-arms-headless.py regressed on its fixture"; exit 1; }
+# The A/B's rubric and brief state no arm count — finish-ab takes two to four arms, and one filled rubric serves
+# replicates of different widths (context-builder-kit#69) — and they carry the headless run's pieces: the rubric reads
+# the runner's check log, quotes a verdict rule's measures verbatim and leaves contamination to the launching session;
+# the brief carries the issue verbatim for arms that cannot reach an MCP-hosted issue.
+absent grep -nE "[Tt]wo executor[s]|two-ar[m]|rank the tw[o]|either worktre[e]|two arms shar[e]" .claude/workflows/finish-ab/judge-rubric.md .claude/workflows/finish-ab/operator-brief.md
+{ grep -q "runner's log" .claude/workflows/finish-ab/judge-rubric.md && grep -q 'The measures, per arm' .claude/workflows/finish-ab/judge-rubric.md && grep -q 'Replay runs' .claude/workflows/finish-ab/judge-rubric.md && grep -q '^## The issue, verbatim' .claude/workflows/finish-ab/operator-brief.md; } || { echo "the finish-ab rubric or brief lost the runner's log, the measures section, the replay clause or § The issue, verbatim"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
