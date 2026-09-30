@@ -923,6 +923,9 @@ grep -q '2\.1\.154' .claude/rules/simplification.md || { echo "simplification.md
 # resolves (the rough-in skill's references/research-phase.md; context-builder-kit#68). No citing site restates a count.
 grep -q '^4\. \*\*Check which binary a tool resolves' .claude/skills/rough-in/references/research-phase.md || { echo "rough-in research-phase.md § Grounding existence claims lacks rule 4 (which binary a tool resolves to)"; exit 1; }
 absent grep -rn 'three-rule statemen[t]\|discipline has three rule[s]\|the three rules i[n]' .claude/rules .claude/skills
+# A path-scoped reference half ships no square-bracket template slot: the disposition pass never visits it, so a slot
+# there is never filled (context-builder-kit#65). The contracts keep theirs; the project sub-block refuses them unfilled.
+absent grep -n '\[[Rr]ecor[d] ' .claude/rules/orchestration-reference.md
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
@@ -973,6 +976,9 @@ if [ -f docs/cbk/scaffold.md ]; then
     done
   fi
 
+  # Template slots (context-builder-kit#65): no rule keeps an unfilled "Record …" slot — the orchestration posture, the
+  # agent-team adoption row. Fill it or delete the rule at the disposition pass. The pattern splits its literal.
+  absent grep -n '\[[Rr]ecor[d] ' .claude/rules/*.md
   echo "verification: project sub-block complete"
 fi
 echo "verification: done"

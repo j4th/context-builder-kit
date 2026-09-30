@@ -84,7 +84,7 @@ The terms the contract half's § Fan-out discipline points at; all fetched 2026-
 - `.claude/workflows/finish-ab/` — executors and judges at the workhorse tier, effort named per call; the judge panel reads every arm in every position equally often, and the script refuses an unbalanced panel before dispatch.
 - `.claude/workflows/agent-cost.py` — per-agent tokens and list-price cost from a run's transcripts, priced per answering model; the source of every cost figure above from 2026-09-02 on.
 
-[Record the project's own pins here as they are made, with dates and the reason — e.g. "a reviewer promoted to the workhorse tier after observed misses on <date>". An empty list means no pins beyond the exemplars — a valid state, not a gap.]
+A project records its own pins as dated bullets under a heading it adds below this paragraph, each with the date and the reason — for example, a reviewer promoted to the workhorse tier after observed misses. No such heading, or an empty one, means no pins beyond the exemplars: a valid state, not a gap.
 
 ## When to update this file
 
