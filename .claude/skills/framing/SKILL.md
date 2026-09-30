@@ -75,6 +75,7 @@ Auto-checkable list that fires after the final gate, before declaring framing co
 - [ ] `docs/cbk/README.md` appended with the frame's row (status `Active`) and its phase note, in the frame's commit
 - [ ] If the project runs a contribution-intake lane (cbk-conventions): no candidate it filed under this workstream remains un-reconciled — each was promoted to an F-issue or closed as superseded
 - [ ] The verification pass ran and its defects were fixed or consciously kept (recorded in the gate)
+- [ ] Every call this run exercised that `references/backends.md` flags as individually unexercised has been restamped in the same commit
 
 ## Backend-axis-aware behavior
 

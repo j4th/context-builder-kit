@@ -95,6 +95,7 @@ Auto-checkable list that fires after the final gate, before declaring rough-in c
 - [ ] The executor pair's provisioning state known: present and matching, drift resolved by the operator, or cold-start committed
 - [ ] Planning ops and the markdown half landed atomically, or partial state was surfaced cleanly; the frame's events row and the index note are in (and the roadmap flip, where the project keeps one)
 - [ ] The verification pass ran and its defects were fixed or consciously kept (recorded in the gate)
+- [ ] Every call this run exercised that `references/backends.md` flags as individually unexercised has been restamped in the same commit
 
 ## Backend-axis-aware behavior
 

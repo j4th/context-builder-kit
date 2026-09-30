@@ -373,7 +373,7 @@ Example shape (rough-in's checklist):
 
 The checklist runs auto-checkable; surfacing only failures. Per [GitHub Spec Kit's `⚠️ CRITICAL: No user story work can begin until this phase is complete` pattern](https://github.com/github/spec-kit/blob/main/spec-driven.md), modified for the cascade's gate-trim posture.
 
-Every phase-exit checklist the kit ships (scaffold, blueprint, framing) carries one standing item: **if this run exercised a call that a reference file flags as individually unexercised, restamp it in the same commit** — drop the flag, date the run generically ("a second real run, <date>"), and update the file's § Exercise status. A flag with a re-check trigger nobody fires is a rail that outlives its evidence.
+Every phase-exit checklist the kit ships (scaffold, blueprint, framing, rough-in) carries one standing item: **if this run exercised a call that a reference file flags as individually unexercised, restamp it in the same commit** — drop the flag, date the run generically ("a second real run, <date>"), and update the file's § Exercise status. A flag with a re-check trigger nobody fires is a rail that outlives its evidence.
 
 ## ADR relation grains
 
@@ -1105,6 +1105,8 @@ absent grep -rnE "four detection state[s]|State [4] \(no MCP\)|because state [2]
 # per workstream, 2–7 at the outside (framing's contract) — the test case and the milestone template agree.
 absent grep -n "produces 3-7 R-issue[s]" .claude/skills/rough-in/references/test_cases.md
 absent grep -n "3-5 milestones per projec[t]" .claude/skills/framing/references/templates/milestone-template.md
+# The restamp standing item is on every phase-exit checklist the conventions say carries it (V9.17).
+for s in scaffold blueprint framing rough-in; do grep -q 'flags as individually unexercised has been restamped in the same commit' .claude/skills/$s/SKILL.md || { echo "$s/SKILL.md's phase-exit checklist lacks the restamp standing item"; exit 1; }; done
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
