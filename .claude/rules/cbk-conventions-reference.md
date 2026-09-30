@@ -1140,6 +1140,14 @@ if [ ! -f docs/cbk/scaffold.md ]; then grep -qF 'CHANGELOG.md' <<<"$(awk '/^## S
 # (a target's CHANGELOG, if it has one, is its own).
 if [ ! -f docs/cbk/scaffold.md ]; then for v in 0.1.0 0.2.0 0.3.0 0.4.0 0.5.0 1.0.0; do awk -v v="$v" 'index($0, "## [" v "] ")==1{p=1;next} /^## \[/{p=0} p&&/^### Sync notes$/{f=1} END{exit !f}' CHANGELOG.md || { echo "CHANGELOG.md has no [$v] section with a ### Sync notes heading"; exit 1; }; done; fi
 
+# Releases (V10): on the kit tree, README.md's inventory names every command, agent, hook, sourced hook helper and rule
+# the kit ships, and its install pins the newest release CHANGELOG.md records.
+if [ ! -f docs/cbk/scaffold.md ]; then
+  for f in .claude/commands/*.md .claude/agents/*.md .claude/hooks/*.sh .claude/hooks/lib/*.sh .claude/rules/*.md; do [ -e "$f" ] || continue; grep -qF -- "── $(basename "$f") " README.md || { echo "README.md's inventory tree does not name $f"; exit 1; }; done
+  newest=$(awk 'match($0, /^## \[[0-9]+\.[0-9]+\.[0-9]+\]/){print substr($0, 5, RLENGTH-5); exit}' CHANGELOG.md)
+  grep -qx "KIT_VERSION=v$newest" README.md || { echo "README.md's install does not pin v$newest, the newest release in CHANGELOG.md"; exit 1; }
+fi
+
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
