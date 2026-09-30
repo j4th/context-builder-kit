@@ -142,7 +142,7 @@ Do not call `gh pr ready`. Do not merge. Do not auto-add review-trigger labels. 
 
 ## What `/pr-respond` does NOT do
 
-- **Does not modify the PR title or description body** (except by posting the NEW top-level summary comment in Step 7, which is not an edit of the description). If a reviewer asks for description changes, surface and ask whether to make them.
+- **Does not modify the PR title, and edits the description body only by appending the round block** (`## Triage — round N`, Step 7). It never rewrites the original `## Review gate` and `## Triage` blocks, and Step 7's summary is a comment, not a description edit. If a reviewer asks for any other description change, surface and ask whether to make it.
 - **Does not flip the PR from draft → ready or ready → draft.**
 - **Does not merge the PR.**
 - **Does not request another reviewer or add review-trigger labels.**

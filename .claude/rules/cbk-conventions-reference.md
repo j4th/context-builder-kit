@@ -970,6 +970,9 @@ grep -q '^### ❌ Folding one review layer into another$' .claude/rules/pr-revie
 # Rough-in: a change made at the gate is a new draft, verified again — stated in research-phase.md, pointed at from the
 # contract (the drafting read), and pinned by Test 9 (context-builder-kit#74 item 2).
 for f in research-phase contract test_cases; do grep -qF 'is a new draft' .claude/skills/rough-in/references/$f.md || { echo "rough-in references/$f.md does not treat a change made at the gate as a new draft"; exit 1; }; done
+# /pr-respond's NOT-list agrees with its Step 7: the body is edited only by appending the round block (context-builder-kit#64).
+grep -qF 'edits the description body only by appending the round block' .claude/commands/pr-respond.md || { echo "pr-respond.md's NOT-list contradicts Step 7's round-block append"; exit 1; }
+absent grep -n "which is not an edit of the descriptio[n]" .claude/commands/pr-respond.md
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
