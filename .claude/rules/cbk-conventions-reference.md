@@ -912,6 +912,9 @@ absent grep -n "the harness's task lis[t]" .claude/rules/workflows.md
 # Why /finish implements inline, and the rules for anyone who delegates implementation, are stated where dispatch is
 # decided (workflows.md § Subagent dispatch; context-builder-kit#69).
 grep -q 'Delegating implementation' .claude/rules/workflows.md || { echo "workflows.md § Subagent dispatch lacks the delegating-implementation clause (context-builder-kit#69)"; exit 1; }
+# The floor names every context without an Agent tool — the spawn-depth limit and a workflow agent at any depth (probe P2,
+# 2026-09-30) — so a skill run there is recorded as invoked, not covered (pr-review.md § The floor; context-builder-kit#69).
+grep -q 'a workflow agent has none at any depth' .claude/rules/pr-review.md || { echo "pr-review.md § The floor does not name the workflow agent among the contexts with no Agent tool (probe P2)"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
