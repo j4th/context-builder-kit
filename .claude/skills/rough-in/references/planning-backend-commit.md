@@ -134,12 +134,12 @@ For re-rough-ins, the gate also lists the prior sub-sub-issues that will be supe
 
 In `in-repo-markdown` planning, the slug + F-number is inherited from the workstream's row in `blueprint.md § Workstreams` and the framing's milestone entry in `frame-NN.md`, not from a parent issue title (because there isn't one). This is the one place where `in-repo-markdown` planning's slug-derivation differs from `github-issues` planning, and it works because both share the same slug-naming convention in the markdown.
 
-The HITL gate in markdown-only mode mentions only the markdown commit half:
+The HITL gate on in-repo-markdown planning mentions only the markdown commit half:
 
 > "About to commit rough-in for `<workstream-slug>:F<#>:M<#>`:
 > - Markdown: append rough-in spec sections to `docs/cbk/frame-NN.md` § Rough-in M<#> (or to a new `frame-NN-M<#>-rough-in.md` file, your choice)
 > - Markdown: append entry to `docs/cbk/README.md` index recording this rough-in event
-> - Planning backend: none (markdown-only profile)
+> - Planning backend: in-repo-markdown (no planning operations)
 >
 > Approve the markdown commits?"
 

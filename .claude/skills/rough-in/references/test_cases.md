@@ -62,27 +62,27 @@ These tests are not exhaustive — they cover the canonical happy path and the i
 - The R-issue specs reference M1's established patterns by inlining them, not by requiring `/finish` to chase context
 - The R-numbering continues sequentially (e.g., if M1 created R1-R4, M2 might start at R5 or restart at R1 depending on how rough-in handles cross-milestone R-numbering — the discipline is per-milestone, so M2 starts at R1)
 
-## Test 3 — Markdown-only profile rough-in
+## Test 3 — In-repo-markdown planning rough-in
 
 **Setup**:
-- A repo where scaffold landed in markdown-only profile (`scaffold.md` has `profile: markdown-only`)
+- A repo where scaffold chose in-repo-markdown planning (`scaffold.md` § Cascade metadata records `Planning backend` as `in-repo-markdown`)
 - No GitHub Project board, no parent Issues on the planning backend, no framing sub-issues — the cascade lives entirely as markdown in `docs/cbk/`
 - A `frame-01.md` exists at `docs/cbk/` with the milestones list, including the M1 to be roughed-in
-- `.github/ISSUE_TEMPLATE/cascade-rough-in.md` exists (scaffold commits the templates regardless of profile)
-- The user has explicitly chosen markdown-only at scaffold's confirmation gate
+- No `.github/ISSUE_TEMPLATE/cascade-rough-in.md` is expected — scaffold skips planning provisioning on this axis — so rough-in drafts from its bundled `references/templates/rough-in-spec-template.md`
+- The user has explicitly chosen in-repo-markdown at scaffold's confirmation gate
 
 **Prompt**: *"Rough in M1 of the regex pack."*
 
 **Expected behaviors**:
 
-- **Step 1**: reads scaffold.md, detects `profile: markdown-only`, surfaces the markdown-only acknowledgment in the inheritance gate (parallel to blueprint's markdown-only acknowledgment): *"This is markdown-only profile — I'll skip the planning-backend half of every commit. The rough-in specs will land as markdown content rather than as GitHub sub-sub-issues. Sound right?"*
+- **Step 1**: reads scaffold.md, detects `Planning backend: in-repo-markdown`, surfaces the in-repo-markdown acknowledgment in the inheritance gate (parallel to blueprint's in-repo-markdown acknowledgment): *"This is in-repo-markdown planning — I'll skip the planning-backend half of every commit. The rough-in specs will land as markdown content rather than as GitHub sub-sub-issues. Sound right?"*
 - **Step 2**: inherits the slug + F-number from the framing's milestone entry in `frame-01.md` directly (not from a parent issue title because there isn't one).
 - **Steps 3-5**: same as Test 1 — research, issue plan, spec drafting all profile-agnostic.
 - **Step 6**: presents the markdown-only commit gate with the file location choice (append to frame-01.md vs new per-milestone rough-in markdown file). User picks. Rough-in commits the markdown content and the README.md index entry. No planning-backend operations.
 
 **Success criteria**:
 
-- The markdown-only acknowledgment fires correctly
+- The in-repo-markdown acknowledgment fires correctly
 - The slug + F-number inheritance works without a parent issue
 - The user is offered the file-location choice and rough-in respects the choice
 - The rough-in spec content lands in the chosen location with the eight-section structure preserved

@@ -1084,6 +1084,9 @@ absent grep -rniE "(six|seven) (standard )?(sections|headings)|other five sectio
 # One acceptance-criteria form (V9.9): both rough-in templates default to numbered [R<#>.AC<m>] criteria outside their
 # comments, as the rough-in contract requires; a commented variant alone does not count.
 for f in .claude/skills/rough-in/references/templates/rough-in-spec-template.md .claude/skills/scaffold/references/issue-templates/cascade-rough-in.md; do awk '/<!--/{c=1} !c{print} /-->/{c=0}' "$f" | grep -qF '[R<#>.AC1]' || { echo "$f: the default acceptance criteria are not numbered [R<#>.AC<m>] (the rough-in contract's form)"; exit 1; }; done
+# One name per axis value (V9.10): scaffold records `Planning backend: in-repo-markdown` and there are no named
+# profiles, so nothing keys on a profile field or names a retired profile (the literals split themselves).
+absent grep -rnE "github-only profil[e]|[Mm]arkdown-only profil[e]|profile: markdown-onl[y]|profile fiel[d] is" .claude/
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

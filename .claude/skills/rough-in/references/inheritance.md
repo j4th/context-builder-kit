@@ -21,7 +21,7 @@ Rough-in is the fifth phase of the cascade. It inherits from four upstream artif
    - The Interface commitments table (for any commitments this milestone satisfies or relies on)
    - The Open questions section (some may need resolution during rough-in's research phase)
 
-5. **The framing sub-issue on the planning backend** (via `issue_read` in github-only profile) — for the slug inheritance, the F-number, and any comments posted after framing committed (which may contain user notes or decisions that aren't in frame-NN.md yet).
+5. **The framing sub-issue on the planning backend** (via `issue_read` on github-issues planning) — for the slug inheritance, the F-number, and any comments posted after framing committed (which may contain user notes or decisions that aren't in frame-NN.md yet).
 
 6. **`docs/ARCHITECTURE.md`**, **`docs/STANDARDS.md`**, **`CLAUDE.md`** — foundation docs for architectural constraints, testing philosophy, and command conventions. Rough-in's specs cite these by section name, so rough-in must know which sections exist and what's in them.
 

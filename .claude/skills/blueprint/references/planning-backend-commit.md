@@ -95,11 +95,11 @@ Blueprint's existing final commit gate now mentions both halves of the transitio
 
 In `in-repo-markdown` planning, **the handoff content stays in `blueprint.md` itself** as a § Manual setup section instead of being hoisted into a GitHub handoff issue. Same content shape (the rough setup layout), same trip-wire discipline for cleanup tracking, just lives in the markdown file rather than as a separate GitHub artifact. The operator reads it from `blueprint.md` and works through the steps; updates to setup state go in commits to `blueprint.md` (or, after framing runs, in commits to `README.md` index or the relevant `frame-NN.md`), not in a separate handoff issue.
 
-The HITL gate in markdown-only mode mentions only the markdown commit half:
+The HITL gate on in-repo-markdown planning mentions only the markdown commit half:
 
 > "About to commit blueprint:
 > - Markdown: `docs/cbk/blueprint.md` (and any updated foundation docs)
-> - Planning backend: none (markdown-only profile)
+> - Planning backend: in-repo-markdown (no planning operations)
 >
 > No planning operations to run, no Issues to create, no atomic transition needed beyond the markdown commit itself.
 >

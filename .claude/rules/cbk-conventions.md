@@ -97,7 +97,7 @@ PR body close markers depend on which planning backend the project picked at sca
 - **Linear-tracked issues** (linear planning): `Closes <TEAM>-N` in the PR **body** (not just the title — body is the durable surface; titles can be edited at squash-merge time without affecting the close marker)
 - **GitHub-tracked issues** (github-issues planning, or any GitHub-tracked sub-issue): `Closes #N` in the PR body
 - **Both can coexist** in the same PR body if the PR closes one of each.
-- **Markdown-only projects**: there are no issue-tracker entities to close; the cascade-event log entries are updated by hand.
+- **In-repo-markdown planning**: there are no issue-tracker entities to close; the cascade-event log entries are updated by hand.
 
 Linear's recognized close-markers (case-insensitive): `close/closes/closed/closing`, `fix/fixes/fixed/fixing`, `resolve/resolves/resolved/resolving`, `complete/completes/completed/completing`, `implements`. See [Linear's GitHub integration docs](https://linear.app/docs/github-integration). Non-closing link-only markers: `ref`, `references`, `part of`, `related to`, `contributes to`, `towards`. GitHub recognizes a similar but smaller set.
 

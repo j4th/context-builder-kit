@@ -103,11 +103,11 @@ For re-framings, the gate also lists the prior sub-issues that will be supersede
 
 The cascade still uses the same naming conventions inside `frame-NN.md` § Milestones (capability headings prefixed `[<slug>:F<#>]`, depends-on lines, acceptance signals, etc.) so the hierarchy is grep-able even without an Issue tree to render it. Re-framing detection still uses the cascade-event model (frame-NN.md numbering, supersedes via the status field in the markdown) — the planning-backend supersede operations are no-ops because there's nothing to close not-planned.
 
-The HITL gate in markdown-only mode mentions only the markdown commit half:
+The HITL gate on in-repo-markdown planning mentions only the markdown commit half:
 
 > "About to commit framing for `<workstream-slug>`:
 > - Markdown: `docs/cbk/frame-NN.md` + append to `docs/cbk/README.md` index
-> - Planning backend: none (markdown-only profile)
+> - Planning backend: in-repo-markdown (no planning operations)
 >
 > No planning operations to run, no sub-issues to create, no atomic transition needed beyond the markdown commit itself.
 >

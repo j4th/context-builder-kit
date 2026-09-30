@@ -270,13 +270,13 @@ Every operation can fail. Skills handle three failure classes distinctly:
 
 - **Transient** (network, rate limit) — retry with backoff.
 - **Permission** (auth, scope) — surface to user with the exact missing permission and a remediation step.
-- **Semantic** (the backend can't represent what was asked) — surface as a known limitation, not a bug. The github-only profile has fewer semantic gaps than initially feared because GitHub's sub-issue support (GA'd 2025) gives us native parent-child trees; the remaining gap is Projects v2 board field manipulation, which is handled via board automation rules instead of cascade-direct field setting.
+- **Semantic** (the backend can't represent what was asked) — surface as a known limitation, not a bug. GitHub Issues planning has fewer semantic gaps than initially feared because GitHub's sub-issue support (GA'd 2025) gives us native parent-child trees; the remaining gap is Projects v2 board field manipulation, which is handled via board automation rules instead of cascade-direct field setting.
 
 ## What's deliberately *not* in the interface
 
 **OAuth and account creation, billing, branch protection, SSO, workflow state customization** — always manual. Scaffold provides instructions; the interface assumes credentials already exist.
 
-**Project board creation itself** — the github-only profile assumes the Projects v2 board exists before scaffold runs, with the four standard automation rules configured (auto-add on Issue creation, auto-close on PR merge, etc.). Scaffold provides setup instructions for the board; the cascade does not create it.
+**Project board creation itself** — github-issues planning assumes the Projects v2 board exists before scaffold runs, with the four standard automation rules configured (auto-add on Issue creation, auto-close on PR merge, etc.). Scaffold provides setup instructions for the board; the cascade does not create it.
 
 **Code execution, test running, PR review** — these belong to the Claude Code finish skill, which uses native Claude Code tools rather than this interface. The finish skill *reads* from this interface (to pull issue/milestone context) but does not *write* through it for code operations — it commits, pushes, and opens PRs via standard git and the GitHub MCP server directly.
 
