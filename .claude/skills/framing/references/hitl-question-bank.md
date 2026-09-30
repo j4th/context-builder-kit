@@ -2,7 +2,7 @@
 
 Categorized questions for HITL clarification rounds during framing. Pick the ones where inheritance leaves genuine ambiguity. Aim for 3–5 questions per gate, covering at least 2 categories per round. Adapted from blueprint's hitl-question-bank.md with framing-specific sections for project selection, milestone shape, interface commitments, and acceptance criteria.
 
-**Citation discipline**: where a question references a specific pattern, name the source. Pattern names come from `methodology_register.md`; cite vertical slicing as Patton, walking skeleton as Cockburn, tracer bullets as Hunt & Thomas, spike solutions as Beck. Unsourced pattern recommendations are a bug.
+**Citation discipline**: where a question references a specific pattern, name the source. Pattern names come from their primary sources; cite vertical slicing as Patton, walking skeleton as Cockburn, tracer bullets as Hunt & Thomas, spike solutions as Beck. Unsourced pattern recommendations are a bug.
 
 ## Inheritance verification (Step 1, before any decisions)
 

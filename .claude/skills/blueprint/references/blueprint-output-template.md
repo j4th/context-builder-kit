@@ -64,7 +64,7 @@ for context, alternatives, and consequences.>
 ### Methodology
 
 **Top-level**: <Shape Up | Scrum | Kanban | other> — <one-sentence justification tied to inherited context>
-- Source: <citation from methodology register>
+- Source: <primary source — author, work, chapter>
 
 **Planning patterns**:
 - <vertical slicing | walking skeleton | tracer bullets | etc.> — <one-sentence why>

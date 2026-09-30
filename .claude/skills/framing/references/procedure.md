@@ -45,7 +45,7 @@ When framing hits token pressure, surface it explicitly and give the user the ch
 
 Two research sub-tracks, both running in every rigor mode at the depth the user confirmed:
 
-**3a. Implementation patterns** — when the project is greenfield or entering new technical territory, search for reference implementations, library tradeoffs, and established patterns. When the architecture docs already specify the approach, validate currency and surface gotchas. Cite from `methodology_register.md` when the cascade's shared knowledge has an answer for the pattern question (vertical slicing, walking skeleton, tracer bullets, spike solutions, YAGNI). If a prior framing established a pattern this project will inherit, surface the inheritance explicitly — never silently reuse.
+**3a. Implementation patterns** — when the project is greenfield or entering new technical territory, search for reference implementations, library tradeoffs, and established patterns. When the architecture docs already specify the approach, validate currency and surface gotchas. Cite the pattern's primary source when one answers the pattern question (vertical slicing, walking skeleton, tracer bullets, spike solutions, YAGNI). If a prior framing established a pattern this project will inherit, surface the inheritance explicitly — never silently reuse.
 
 **3c. Resolve open technical questions** — library choices that affect milestone boundaries, pattern choices that affect build sequence, interface decisions that affect downstream consumers, methodology-specific decisions that flow from blueprint's selection but get instantiated here.
 

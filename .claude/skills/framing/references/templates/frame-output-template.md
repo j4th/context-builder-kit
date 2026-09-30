@@ -10,7 +10,7 @@ This template is read by Step 4 (refined definition) and Step 5 (milestones) whe
 |---|---|
 | `docs/cbk/blueprint.md` § "Workstreams" | The verbatim row for the project being framed — goes in the header link |
 | `docs/cbk/blueprint.md` § "Stack decisions" | Decisions that constrain this project's approach — go in Key Constraints |
-| `docs/cbk/blueprint.md` § "Methodology" | The methodology blueprint picked — informs milestone shape per `methodology_register.md` |
+| `docs/cbk/blueprint.md` § "Methodology" | The methodology blueprint picked — informs milestone shape per the methodology's primary source |
 | `docs/cbk/scaffold.md` quality bar | Affects acceptance criteria strictness — goes in Approach |
 | `docs/cbk/frame-N.md` (each prior framing) | Interface Commitments table verbatim — goes in "Builds on" section |
 | Research phase output (Step 3) | Approach section, Open questions section |

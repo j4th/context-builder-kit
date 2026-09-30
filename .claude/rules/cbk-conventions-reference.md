@@ -1087,6 +1087,9 @@ for f in .claude/skills/rough-in/references/templates/rough-in-spec-template.md 
 # One name per axis value (V9.10): scaffold records `Planning backend: in-repo-markdown` and there are no named
 # profiles, so nothing keys on a profile field or names a retired profile (the literals split themselves).
 absent grep -rnE "github-only profil[e]|[Mm]arkdown-only profil[e]|profile: markdown-onl[y]|profile fiel[d] is" .claude/
+# The methodology register is not a file (V9.11): the kit ships two excerpts and cites every pattern by its primary
+# source, so no skill tells an agent to read a register file or an SDD file the kit does not ship.
+absent grep -rn 'methodology_register\.m[d]\|sdd\.m[d]\|full register lives outsid[e]\|full register is share[d]' .claude/
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

@@ -161,7 +161,7 @@ Detailed question banks, failure modes, and the detect-then-confirm phrasings ar
 
 The second substantive step. Pick a methodology from the register based on team shape, appetite, and quality bar — all of which blueprint inherited from scaffold.
 
-The methodology register lives outside this skill (it's shared across all six cascade phases). The blueprint-relevant entries are summarized in `references/methodology-selection.md`, which contains:
+The methodology register is not a shipped file — it is the named methodologies each cited by primary source. The blueprint-relevant entries are summarized in `references/methodology-selection.md`, which contains:
 
 - The decision tree for picking a default based on inherited context
 - Per-methodology pros/cons relative to the project at hand
