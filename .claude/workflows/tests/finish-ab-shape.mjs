@@ -2,9 +2,11 @@
 // Stub harness for finish-ab.js. No agent is dispatched: the script is loaded through load-workflow.mjs and run
 // with stubbed agent()/parallel()/log()/phase(); the panel guard (two to four arms, a Latin square), the planned-count
 // log, the arm-isolation instruction, executed mode, the base/brief/rubric arguments, the runner's check log in the
-// judges' prompt, the judges' read-only clause and the rank arithmetic are asserted — the scenarios that shipped
-// before context-builder-kit#69 and that issue's, unioned and renumbered so no two share a number.
-// Run: node .claude/workflows/tests/finish-ab-shape.mjs
+// judges' prompt, the judges' read-only clause, the rank arithmetic and the arm schema's agreement with
+// run-arms-headless.py are asserted — the scenarios that shipped before context-builder-kit#69 and that issue's,
+// unioned and renumbered so no two share a number. Run: node .claude/workflows/tests/finish-ab-shape.mjs
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { loadWorkflow } from "./load-workflow.mjs";
 
 const { meta, run: runWorkflow } = loadWorkflow(new URL("../finish-ab/finish-ab.js", import.meta.url));
@@ -272,6 +274,29 @@ const judgeFor = (panel) => (opts) => { const order = panel[Number(opts.label.ma
   }
 }
 
+// 19. The arm schema has two hand-kept copies — finish-ab.js's ARM_SCHEMA (a workflow arm) and run-arms-headless.py's
+//     (a headless arm) — because a workflow script gets no fs to share a module. They must describe the same result:
+//     the same properties, and the same required list except `dispatched`, which the headless copy requires (a
+//     headless arm can dispatch subagents) and the workflow copy does not (a workflow agent has no Agent tool).
+{
+  const { calls } = await run(base, { armResult: armOk, judgeResult: judgeOk });
+  const js = calls.find((c) => c.opts.phase === "Execute").opts.schema;
+  // fileURLToPath, never URL.pathname: .pathname percent-encodes a space in the checkout's path, and python3 then opens
+  // a file that does not exist (a kit installed under "…/a b/…" would go red here).
+  const pyPath = fileURLToPath(new URL("../finish-ab/run-arms-headless.py", import.meta.url));
+  let py = null;
+  try {
+    py = JSON.parse(execFileSync("python3", ["-B", "-c", "import importlib.util, json, sys\nspec = importlib.util.spec_from_file_location('r', sys.argv[1]); m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)\nprint(json.dumps(m.ARM_SCHEMA))", pyPath], { encoding: "utf8" }));
+  } catch (e) { check(false, `run-arms-headless.py's ARM_SCHEMA could not be read (${e.message.split("\n")[0]})`); }
+  if (py) {
+    const keys = (o) => Object.keys(o.properties).sort().join(",");
+    check(keys(js) === keys(py), `the two ARM_SCHEMA copies name the same properties (js: ${keys(js)} | py: ${keys(py)})`);
+    const req = (o) => o.required.filter((k) => k !== "dispatched").sort().join(",");
+    check(req(js) === req(py), `the two ARM_SCHEMA copies require the same fields apart from dispatched (js: ${req(js)} | py: ${req(py)})`);
+    check(py.required.includes("dispatched") && !js.required.includes("dispatched"), "dispatched is required by the headless copy only, as both copies' comments say");
+  }
+}
+
 // 20. Headless arms whose runner ran the check task once: every judge is given each arm's log and exit and told to read
 //     it, not re-run the whole gate — eighteen parallel per-judge gates on one machine would have measured the machine
 //     (context-builder-kit#69). With no runner log the judge runs the gate itself, as the rubric says.
@@ -300,4 +325,4 @@ const judgeFor = (panel) => (opts) => { const order = panel[Number(opts.label.ma
 
 check(meta.name === "finish-ab" && Array.isArray(meta.phases) && meta.phases.length === 2, "meta literal is well-formed");
 if (failures) { console.error(`finish-ab-shape: ${failures} failure(s)`); process.exit(1); }
-console.log("finish-ab-shape: 23 scenarios ok");
+console.log("finish-ab-shape: 24 scenarios ok");

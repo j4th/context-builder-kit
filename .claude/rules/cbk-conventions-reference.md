@@ -942,6 +942,11 @@ ck=$(python3 -B -c "import re; s=open('.claude/workflows/agent-cost.py').read();
 cr=$(python3 -B -c "import re; s=open('.claude/rules/orchestration-reference.md').read(); o={f\"{n.lower()}-{v.replace('.', '-')} {float(p)/100}\" for ms, p in re.findall(r'On ((?:Claude [A-Z][a-z]+ [0-9.]+(?:,? and |, )?)+), a cache hit costs ([0-9.]+)% of the standard input price', s) for n, v in re.findall(r'Claude ([A-Z][a-z]+) ([0-9.]+)', ms)}; m=re.search(r'A cache hit costs ([0-9.]+)% of the standard input price', s); o |= {f'default {float(m.group(1))/100}'} if m else set(); [print(x) for x in sorted(o)]") || { echo "the cache-read diff could not read orchestration-reference.md"; exit 1; }
 { [ "$(grep -c . <<<"$ck" || true)" -ge 2 ] && [ "$(grep -c . <<<"$cr" || true)" -ge 2 ]; } || { echo "the cache-read diff read too little (CACHE_READ: $(tr '\n' ';' <<<"$ck") | quoted sentence: $(tr '\n' ';' <<<"$cr")) — a format changed; update this extraction"; exit 1; }
 diff <(printf '%s\n' "$ck" | sort) <(printf '%s\n' "$cr" | sort) || { echo "the cache-read multipliers drifted between agent-cost.py CACHE_READ and the pricing sentence quoted in orchestration-reference.md § Generation notes — the sources"; exit 1; }
+# The headless finish-ab runner (run-arms-headless.py): refusals before anything is created, the recorded session,
+# cost as the latest total, the failure, resume and cap paths, the dry-run argv (deny list, strict MCP config naming no
+# server), the MCP allowlist, the per-worktree setup and the once-per-arm check task, against a fake `claude` in a
+# throwaway repository; a ResourceWarning in the runner's output fails it. Needs git and python3; spends nothing.
+bash .claude/workflows/tests/run-arms-headless-fixture.sh || { echo "run-arms-headless.py regressed on its fixture"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
