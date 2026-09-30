@@ -130,13 +130,14 @@ _Concrete, instructional content here. Cite docs by section name when constraint
 
 <!--
 Observable, verifiable outcomes. Each one is a checkbox so the implementer
-can tick them off as they go. Avoid "the tests pass" — name the specific
+can tick them off as they go, numbered [R<#>.AC<m>] and citing the
+[F<#>.AC<n>] it discharges. Avoid "the tests pass" — name the specific
 test, command, or observation that proves the criterion.
 -->
 
-- [ ] _Specific outcome 1_
-- [ ] _Specific outcome 2_
-- [ ] _Specific outcome 3_
+- [ ] [R<#>.AC1] _Specific outcome 1 — what proves it_ (discharges [F<#>.AC<n>])
+- [ ] [R<#>.AC2] _Specific outcome 2 — what proves it_ (discharges [F<#>.AC<n>])
+- [ ] [R<#>.AC3] _Specific outcome 3 — what proves it_ (discharges [F<#>.AC<n>])
 
 ## Test plan
 

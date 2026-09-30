@@ -196,13 +196,13 @@ Acceptance criteria in framing F-issues carry inline IDs of the form `[F<N>.AC<M
 - [F3.AC3] <Demonstrable-capability criterion> ...
 ```
 
-`F<N>` is workstream-unique and continues across frames (§ Title-prefix scheme), so a trace ID never collides with an earlier frame's. Nested criteria (`[F3.AC2.1]`) are permitted when a criterion decomposes. Rough-in R-issues then reference these IDs in their own `## Acceptance criteria` and `## Test plan` sections:
+`F<N>` is workstream-unique and continues across frames (§ Title-prefix scheme), so a trace ID never collides with an earlier frame's. Nested criteria (`[F3.AC2.1]`) are permitted when a criterion decomposes. Rough-in R-issues number their own criteria `[R<#>.AC<m>]` and cite these IDs from them, in `## Acceptance criteria` and `## Test plan`:
 
 ```markdown
 ## Acceptance criteria
 
-- [F3.AC1] <how this R-issue satisfies AC1>
-- [F3.AC2] `<test command>` passes (covers F3.AC2 — <criterion summary>)
+- [ ] [R2.AC1] <how this R-issue satisfies it> (discharges [F3.AC1])
+- [ ] [R2.AC2] `<test command>` passes (discharges [F3.AC2] — <criterion summary>)
 ```
 
 **Why trace IDs**: closes the framing → rough-in → test round-trip auditability. Without them, the link from "what M3 promised" → "what R-issue X implemented" → "what test verifies it" is implicit. With them, test-runner output cites `F3.AC2` and the framing F-issue body shows where it landed. Adopted from Kiro's `_Requirements: 1.1, 3.2_` pattern, simplified to a single bracketed ID inline rather than a separate trailing field.
@@ -1081,6 +1081,9 @@ absent grep -rn "as of current cascade versio[n]\|subIssueProgres[s]" .claude/sk
 # reference carry the executor's list verbatim too, and no rough-in surface states a stale count ($L is set above).
 for f in .claude/skills/scaffold/SKILL.md .claude/skills/*/references/backends.md .claude/skills/rough-in/references/planning-backend-commit.md; do grep -qF "($L)" "$f" || { echo "$f does not carry the executor's section list ($L)"; exit 1; }; done
 absent grep -rniE "(six|seven) (standard )?(sections|headings)|other five sections|these six heading|six-section" .claude/skills/rough-in .claude/skills/scaffold/SKILL.md
+# One acceptance-criteria form (V9.9): both rough-in templates default to numbered [R<#>.AC<m>] criteria outside their
+# comments, as the rough-in contract requires; a commented variant alone does not count.
+for f in .claude/skills/rough-in/references/templates/rough-in-spec-template.md .claude/skills/scaffold/references/issue-templates/cascade-rough-in.md; do awk '/<!--/{c=1} !c{print} /-->/{c=0}' "$f" | grep -qF '[R<#>.AC1]' || { echo "$f: the default acceptance criteria are not numbered [R<#>.AC<m>] (the rough-in contract's form)"; exit 1; }; done
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
