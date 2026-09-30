@@ -881,6 +881,13 @@ for w in 'Report only commands you actually ran' 'gh pr checks` (this job grants
 absent grep -nE '(^|[[:space:](,;])#[0-9]{1,3}\b' .claude/skills/blueprint/references/templates/claude-review.yml .claude/skills/blueprint/references/templates/claude.yml
 # tooling.md's § Automated review, where the project kept it, states constraint 1 as the template does.
 if grep -q '^## Automated review on the git host' .claude/rules/tooling.md; then grep -qF 'cannot review any PR that changes it' .claude/rules/tooling.md || { echo "tooling.md § Automated review says the workflow cannot review only the PR that introduces it"; exit 1; }; fi
+# Contract + reference pairs (cbk-conventions.md § Rule loading and the instruction budget): every reference half has its
+# contract; the knowledge-backend contract ships with its reference half (a knowledge axis of none deletes both, D59); and
+# every "Moved to" pointer sits under a heading of its own name that its reference half carries, so a heading renamed in
+# one half only is red (context-builder-kit#65). A pair with no pointer is red, never a vacuous pass.
+for r in .claude/rules/*-reference.md; do [ -f "${r%-reference.md}.md" ] || { echo "$r ships without its contract ${r%-reference.md}.md"; exit 1; }; done
+[ ! -f .claude/rules/knowledge-backend.md ] || [ -f .claude/rules/knowledge-backend-reference.md ] || { echo "knowledge-backend.md ships without knowledge-backend-reference.md — the rule is a contract + reference pair, deleted together (D59)"; exit 1; }
+for c in .claude/rules/*.md; do case "$c" in *-reference.md) continue;; esac; r="${c%.md}-reference.md"; [ -f "$r" ] || continue; p=$(awk '/^## /{h=substr($0,4)} /^→ \*Moved to\* `/{t=$0; sub(/^→ \*Moved to\* `[^`]*` § /,"",t); sub(/ \*\(path-scoped.*$/,"",t); print (t==h ? "ok" : "under " h) "\t" t}' "$c"); [ -n "$p" ] || { echo "$c carries no Moved-to pointer into $r"; exit 1; }; while IFS=$'\t' read -r st t; do [ "$st" = ok ] || { echo "$c: the pointer to § $t sits $st"; exit 1; }; grep -qxF "## $t" "$r" || { echo "$c points at § $t, which $r does not carry"; exit 1; }; done <<<"$p"; done
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
