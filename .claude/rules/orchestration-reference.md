@@ -9,14 +9,14 @@ paths:
 
 > **Path-scoped.** Loads when a workflow, an agent definition, or this rule pair is read. `orchestration.md` (always loaded) keeps a pointer heading for every section here. Sections were moved verbatim on 2026-09-06. See `cbk-conventions.md` § Rule loading and the instruction budget.
 
-## The three surfaces + resolution order
+## The dispatch surfaces + resolution order
 
 1. **Agent definitions** — `model:` / `effort:` frontmatter in `.claude/agents/*.md`.
 2. **Ad-hoc subagents** — the Agent tool's per-invocation `model` param.
 3. **Workflow stages** — `agent(prompt, {model, effort})` per call.
-4. **Skills** — `model:` and `effort:` frontmatter, honoured for the rest of the turn ("The override applies for the rest of the current turn and is not saved to settings"); `context: fork` runs the skill in a subagent (`agent:` picks the type); `${CLAUDE_EFFORT}` substitutes the active level into the skill body (`code.claude.com/docs/en/skills` § Frontmatter reference and its substitution table, fetched 2026-09-05).
+4. **Skills** — `model:` and `effort:` frontmatter, honoured for the rest of the turn ("The override applies for the rest of the current turn and isn't saved to settings"); `context: fork` runs the skill in a subagent (`agent:` picks the type); `${CLAUDE_EFFORT}` substitutes the active level into the skill body (`code.claude.com/docs/en/skills` § Frontmatter reference and its substitution table, fetched 2026-09-30).
 
-Resolution (highest wins) — **a dated rail, 2026-09-05**: the per-invocation param → the definition's frontmatter → `CLAUDE_CODE_SUBAGENT_MODEL` → the main-conversation model, all checked against the org's model allowlist (an excluded value is skipped and the agent runs on the inherited model). This order dates from v2.1.251 — "Before v2.1.251, `CLAUDE_CODE_SUBAGENT_MODEL` came first in this order and overrode both the per-invocation parameter and the frontmatter, including `model: inherit`" (`code.claude.com/docs/en/sub-agents` § Choose a model) — and third-party guides still print the old order; verify against the version you run. `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` (v2.1.257+) applies one model "to every subagent, teammate, and workflow agent" (§ Run every subagent on one model) — the structural lever when the ceiling rule must be enforced rather than followed. The per-invocation override is the escape hatch: a frontmatter-pinned cheap agent can be promoted for one hard call without editing its definition. Re-verify this order against the platform's current [sub-agents doc](https://code.claude.com/docs/en/sub-agents) after harness upgrades — subagent defaults have moved across versions (this order, the background-vs-foreground default, thinking inheritance, override persistence).
+Resolution (highest wins) — **a dated rail, re-read 2026-09-30**: the per-invocation param → the definition's frontmatter → `CLAUDE_CODE_SUBAGENT_MODEL` → the main-conversation model, all checked against the org's model allowlist (an excluded value is skipped and the agent runs on the inherited model). This order dates from v2.1.251 — "Before v2.1.251, `CLAUDE_CODE_SUBAGENT_MODEL` came first in this order and overrode both the per-invocation parameter and the frontmatter, including `model: inherit`" (`code.claude.com/docs/en/sub-agents` § Choose a model) — and third-party guides still print the old order; verify against the version you run. `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` (v2.1.257+) applies one model "to every subagent, teammate, and workflow agent" (§ Run every subagent on one model) — the structural lever when the ceiling rule must be enforced rather than followed. The per-invocation override is the escape hatch: a frontmatter-pinned cheap agent can be promoted for one hard call without editing its definition. Re-verify this order against the platform's current [sub-agents doc](https://code.claude.com/docs/en/sub-agents) after harness upgrades — subagent defaults have moved across versions (this order, the background-vs-foreground default, thinking inheritance, override persistence).
 
 ## Generation notes — the sources
 
@@ -78,7 +78,7 @@ The terms the contract half's § Fan-out discipline points at; all fetched 2026-
 ## When to update this file
 
 - The model lineup or pricing changes — re-verify against the platform docs and restamp the dated observations. **The lineup moves faster than this file does**; check the aliases, not just the prices.
-- A harness version bump changes subagent defaults — re-read § The three surfaces and § Fan-out discipline against the current sub-agents doc after an upgrade.
+- A harness version bump changes subagent defaults — re-read § The dispatch surfaces + resolution order and `orchestration.md` § Fan-out discipline against the current sub-agents doc after an upgrade.
 - Real usage shows a tier mis-assignment (a reviewer needs the workhorse tier) — record the promotion and why in § Applied instances.
 - A model change — re-sweep the per-role table in `orchestration.md` § Generation notes, matched by observed thinking length, and restamp its date.
 - **Every normative claim added here carries a resolvable source.** No quotation lands without a URL or authoritative local doc path; absence claims ("X is not supported") get a primary-source check first.

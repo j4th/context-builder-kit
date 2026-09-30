@@ -897,6 +897,9 @@ for c in .claude/rules/*.md; do case "$c" in *-reference.md) continue;; esac; r=
 # Effort defaults are per model and per surface, and the Agent tool takes no effort parameter (orchestration.md § The role
 # ladder, § The effort axis; context-builder-kit#69, context-builder-kit#74): the retired "API default is high" claim is red.
 [ ! -f .claude/rules/orchestration.md ] || { absent grep -n 'The API default is `hig[h]`' .claude/rules/orchestration.md; grep -q 'takes no effort parameter' .claude/rules/orchestration.md || { echo "orchestration.md § The role ladder does not say the Agent tool takes no effort parameter (context-builder-kit#74)"; exit 1; }; }
+# The dispatch surfaces carry no count their list can outgrow: the heading is "The dispatch surfaces + resolution order"
+# in both halves and every citation follows it (context-builder-kit#65; the pointer check above catches a one-sided rename).
+absent grep -rn 'three surfaces + resolution orde[r]\|§ The three surfaces an[d]' .claude/
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
