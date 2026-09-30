@@ -903,6 +903,9 @@ absent grep -rn 'three surfaces + resolution orde[r]\|§ The three surfaces an[d
 # Fan-out discipline names the workflow concurrency variable, the teammate trap on the agent-team row, and read-only
 # agents (orchestration.md § The dispatch-mechanism decision, § Fan-out discipline; context-builder-kit#69, context-builder-kit#72).
 [ ! -f .claude/rules/orchestration.md ] || { grep -q 'CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS' .claude/rules/orchestration.md && grep -q 'launches as a teammate' .claude/rules/orchestration.md && grep -q 'Read-only agents stay read-only' .claude/rules/orchestration.md; } || { echo "orchestration.md lacks the workflow concurrency variable, the teammate trap, or the read-only-agents bullet"; exit 1; }
+# A delegated agent's text-only end of turn is a report, never proof the work is done (orchestration.md § Anti-patterns;
+# context-builder-kit#69).
+[ ! -f .claude/rules/orchestration.md ] || grep -q 'text-only end of turn' .claude/rules/orchestration.md || { echo "orchestration.md § Anti-patterns lacks the text-only end-of-turn row (context-builder-kit#69)"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
