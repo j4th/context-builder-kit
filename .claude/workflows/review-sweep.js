@@ -188,9 +188,21 @@ log(`review-sweep: planned agents — ${plannedAgents.roster} roster + ${planned
 // to probe works on a copy (context-builder-kit#72 item 4). Every find and verify prompt carries the clause.
 const READ_ONLY = "Never modify the working tree — not even to restore a file afterwards. To probe (run code, try a patch), copy what you need into a scratch directory and give it its own build cache.";
 
+// A finder's brief is complete and ends on the think-first line. Finders are pinned `sonnet`, which resolves to
+// Sonnet 5.5 on the Anthropic API and to an older Sonnet on some other providers
+// (https://code.claude.com/docs/en/model-config, read 2026-09-30). The Sonnet 5.5 prompting guide
+// (https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5-5, read
+// 2026-09-30): "At `low` and `medium`, on long agentic tasks, it's more likely to stop and check in with the user
+// before it finishes", and on a JSON answer to a task that needs working out "the model often answers without
+// thinking first, particularly at `low` and `medium` effort". Finders run at FIND_EFFORT (`medium`) and answer in a
+// schema. A subagent cannot get an answer to a check-in (workflows.md § Subagent dispatch), so the brief says so;
+// with adaptive thinking the guide puts its remedy line at the end of a system prompt, and a finder's brief is the
+// only prompt this script writes for it, so the line ends that brief.
+const FIND_TAIL = "You cannot ask the caller anything, and nobody will answer a check-in: finish the review of every listed file before you return. Think the problem through before you answer.";
+
 const findOnce = (dim, effort = FIND_EFFORT, retry = false) =>
   agent(
-    `Review the branch diff (git diff ${base}...HEAD), restricted to these changed files:\n${fileList}\n\n${dim.focus ? `Your review focus, from the caller: ${dim.focus}\nReport findings on this focus only.\n\n` : "Apply your standard review discipline. "}${READ_ONLY} Respect the exclusion list in .claude/rules/pr-review.md § "What NOT to flag" — findings only on changed code, no theoretical risks without concrete preconditions. Report every finding you would defend against a reviewer actively trying to refute it, including medium and low confidence — deduplication and a severity-ranked bound happen before verification, and triage happens in the caller: do not classify. Rank most-severe first.`,
+    `Review the branch diff (git diff ${base}...HEAD), restricted to these changed files:\n${fileList}\n\n${dim.focus ? `Your review focus, from the caller: ${dim.focus}\nReport findings on this focus only.\n\n` : "Apply your standard review discipline. "}${READ_ONLY} Respect the exclusion list in .claude/rules/pr-review.md § "What NOT to flag" — findings only on changed code, no theoretical risks without concrete preconditions. Report every finding you would defend against a reviewer actively trying to refute it, including medium and low confidence — deduplication and a severity-ranked bound happen before verification, and triage happens in the caller: do not classify. Rank most-severe first. ${FIND_TAIL}`,
     { label: `find:${dim.key}${retry ? ":retry" : ""}`, phase: "Find", ...(dim.agentType ? { agentType: dim.agentType } : {}), model: "sonnet", effort, schema: FINDINGS_SCHEMA },
   );
 

@@ -470,4 +470,21 @@ for (const roster of [null, { crossCutting: "not-an-array" }]) {
   n++;
 }
 
+// 28 — every finder's brief is complete and ends on the Sonnet 5.5 guide's think-first line: a finder at medium effort
+//      cannot get an answer to a check-in, and on a JSON answer it may skip thinking (the guide's remedy line, verbatim).
+{
+  let attempt = 0;
+  const { calls } = await scenario("finder tail", {
+    args: { files: ["a"], finders: [{ key: "ratio-bounds", prompt: "Check every ratio." }] }, roster: rosterOK,
+    findings: { "code-review": () => { attempt += 1; return attempt === 1 ? null : { findings: [] }; } }, verdict: () => null,
+  });
+  const finds = calls.filter((c) => c.label.startsWith("find:"));
+  assert.ok(finds.some((c) => c.label.endsWith(":retry")) && finds.some((c) => c.label === "find:ratio-bounds"), "the scenario reaches a retry and a caller finder");
+  for (const c of finds) {
+    assert.ok(c.prompt.includes("nobody will answer a check-in"), `${c.label} says a check-in gets no answer`);
+    assert.ok(c.prompt.endsWith("Think the problem through before you answer."), `${c.label} ends on the think-first line`);
+  }
+  n++;
+}
+
 console.log(`review-sweep accounting: meta + body parse, ${n} scenarios OK`);
