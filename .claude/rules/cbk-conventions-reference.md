@@ -1090,6 +1090,8 @@ absent grep -rnE "github-only profil[e]|[Mm]arkdown-only profil[e]|profile: mark
 # The methodology register is not a file (V9.11): the kit ships two excerpts and cites every pattern by its primary
 # source, so no skill tells an agent to read a register file or an SDD file the kit does not ship.
 absent grep -rn 'methodology_register\.m[d]\|sdd\.m[d]\|full register lives outsid[e]\|full register is share[d]' .claude/
+# The CI-skip trap is sourced and names every spelling (V9.12): five bracket tokens and the trailer, with the dated page.
+for m in '[skip ci]' '[ci skip]' '[no ci]' '[skip actions]' '[actions skip]' 'skip-checks: true' 'skip-workflow-runs'; do grep -qF -- "$m" .claude/rules/cbk-conventions.md || { echo "cbk-conventions.md § [skip ci] rule does not name: $m"; exit 1; }; done
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
