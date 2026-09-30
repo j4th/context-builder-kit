@@ -53,8 +53,8 @@ this and how do they coordinate?">
 
 **Branch naming**: `<type>/<team-id>-<issue-number>-<short-description>`
 (per `cbk-conventions.md` § Branch naming; `<type>` is the Conventional Commits type;
-issue-less maintenance uses `<type>/<short-description>` with the PR-body statement
-"operator-directed maintenance; no cascade issue")
+maintenance no issue tracks uses `<type>/<short-description>` with the PR-body statement
+"operator-directed maintenance; no cascade issue"; a PR that closes any issue keeps its key in the branch)
 Examples:
 - `<example-1>`
 - `<example-2>`

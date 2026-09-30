@@ -1050,6 +1050,9 @@ absent grep -nE 'CONTRIBUTING\.md` § Branche[s]|STANDARDS\.md` § (Step [0-9]|C
 # its procedure both name the framing issue in a capstone PR's close markers.
 for f in .claude/commands/finish.md .claude/skills/rough-in/references/finish-command.md; do grep -q 'GitHub closes no parent when its sub-issues close' "$f" || { echo "$f: item 8 does not name the milestone issue in a capstone PR's close markers"; exit 1; }; done
 for f in .claude/commands/finish-procedure.md .claude/skills/rough-in/references/finish-procedure.md; do grep -q "capstone PR (its milestone's last R-issue)" "$f" || { echo "$f: Step 10 does not name the capstone close marker"; exit 1; }; done
+# The branch rule (D54): a PR that closes any issue keys its branch, the Quick reference names both forms, and the
+# github-issues key form is named.
+{ grep -q 'Any issue a PR closes' .claude/rules/cbk-conventions.md && grep -q '^| Naming a branch |.*only for work no issue tracks' .claude/rules/cbk-conventions.md && grep -q 'bare issue number on github-issues' .claude/rules/cbk-conventions.md; } || { echo "cbk-conventions.md § Branch naming or its Quick reference row lacks the D54 branch rule"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

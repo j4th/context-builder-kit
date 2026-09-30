@@ -58,7 +58,7 @@ Two rules keep scoping honest. **A section a task needs before it reads any trig
 Pattern: `<type>/<TEAM>-<N>-<short-slug>`
 
 - `<type>` is one of the [Conventional Commits](https://www.conventionalcommits.org/) types: `feat`, `fix`, `chore`, `refactor`, `docs`, `test`, `perf`, `style`, `build`, `ci`
-- `<TEAM>-<N>` is the planning-backend issue ID in lowercase (e.g. `abc-27` if the team prefix is ABC). For markdown-only projects, this collapses to `<short-slug>` only.
+- `<TEAM>-<N>` is the planning-backend issue key in lowercase (e.g. `abc-27` if the team prefix is ABC; the bare issue number on github-issues). On in-repo-markdown planning, this collapses to `<short-slug>` only.
 - `<short-slug>` is a kebab-case description of the work, ~3-6 words
 
 Example shapes:
@@ -70,7 +70,7 @@ Example shapes:
 
 `/finish` already creates branches in this shape; this convention codifies what was already happening.
 
-**The issue-less branch.** Operator-directed maintenance that no cascade issue tracks — a dependency bump the bot did not open, a docs sweep, a hook fix — takes the form `<type>/<short-slug>` with no issue segment, and its PR body carries the statement **"operator-directed maintenance; no cascade issue"** as its first line. The scope fence is § Contribution intake: anything that adds behaviour, fixes a reported bug, or touches a workstream's code is a cascade issue (`/intake`, `/enrich`, or framing), never an issue-less branch. Such a PR still carries the `## Review gate` block; what stands in for the floor is written as *not run* with the reason ("not run — docs-only sweep, no code changed"), never left blank and never described as run.
+**The issue-less branch.** Operator-directed maintenance that no issue tracks — a dependency bump the bot did not open, a docs sweep, a hook fix — takes the form `<type>/<short-slug>` with no issue segment, and its PR body carries the statement **"operator-directed maintenance; no cascade issue"** as its first line. **Any issue a PR closes — cascade or not — puts its key in the branch**, so branch, close marker and issue agree; an issue-less branch carries no close marker. The scope fence is § Contribution intake: anything that adds behaviour, fixes a reported bug, or touches a workstream's code is a cascade issue (`/intake`, `/enrich`, or framing), never an issue-less branch. Such a PR still carries the `## Review gate` block; what stands in for the floor is written as *not run* with the reason ("not run — docs-only sweep, no code changed"), never left blank and never described as run.
 
 Create the branch and make the first commit in **separate tool calls**: the default-branch guard judges a compound command on the branch at entry, so `git switch -c … && git commit …` is blocked even though the commit would have been legal by the time it ran.
 
@@ -228,7 +228,7 @@ Cascade events being append-only is structurally important: the cascade IS the a
 | Updating the cascade-events index | `docs/cbk/README.md` — see § Mutation discipline (its row names the creator and the appenders) |
 | Flipping the roadmap row | `docs/cbk/ROADMAP.md` — see § Mutation discipline (its row names who flips it and when) |
 | Naming a planning-backend issue | `[<workstream-slug>:F<#>:R<#>] <intent>` |
-| Naming a branch | `<type>/<TEAM>-<N>-<short-slug>` |
+| Naming a branch | `<type>/<TEAM>-<N>-<short-slug>` when the PR closes an issue; `<type>/<short-slug>` only for work no issue tracks |
 | Closing an issue from a PR | `Closes <TEAM>-N` (Linear) or `Closes #N` (GitHub) in PR body |
 | Adding an ADR | `adr-new` skill (auto-syncs indexes) |
 | Skipping CI on a docs-only commit | Append `[skip ci]` to commit message subject |
