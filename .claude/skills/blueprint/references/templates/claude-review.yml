@@ -19,10 +19,11 @@
 # with no summary comment is a failure to investigate; a red run whose review posted is a
 # pass (cbk-conventions.md § Deliverable trap). The prompt makes the summary an explicit
 # `gh pr comment` and names it first, and the last step asserts it landed: the action runs
-# with continue-on-error so the job's verdict is the assertion's — red only when no summary
-# comment from the review app appeared after the job started, with a one-line notice posted
-# to the PR so the failure is visible there. Designed-unexercised as of 2026-09-06: verify on
-# the first PR after this file lands and restamp this line.
+# with continue-on-error so the job's verdict is the assertion's — red only when no comment from
+# the review app carrying a verdict was written or edited after the job started, with a notice
+# posted to the PR that says why. Exercised in two targets by 2026-09-29 (context-builder-kit#67):
+# the positive path (a separate summary comment, and a tracker comment that carries the verdict)
+# and the validation-skip negative path.
 #
 # GOTCHA: the CI-skip marker on the HEAD commit at the draft→ready flip silently blocks
 # this workflow — end the branch on a non-marker commit before flipping
@@ -189,6 +190,7 @@ jobs:
           fi
 
       - name: Auto-review
+        id: review
         # continue-on-error: the assertion step below decides the job's verdict (constraint 4).
         continue-on-error: true
         uses: anthropics/claude-code-action@[full-commit-sha] # v[version] — [newest release clearing the settle window as of <date>]
@@ -301,22 +303,57 @@ jobs:
             ${{ steps.model.outputs.disallow_arg }}
 
       - name: Assert the review posted (constraint 4 — the artifact decides)
-        if: always()
+        # Three fixes over the first form (context-builder-kit#67):
+        #   - pages are fetched once and slurped (`--paginate`, then `jq -s`): `gh api --paginate --jq`
+        #     runs the filter once per page, so past 30 comments a posted review read as missing;
+        #   - the summary is matched by its verdict marker, on `updated_at` since the job started: the
+        #     action's tracker comment alone must not satisfy it, and an edit in place is a landing. A
+        #     tracker that ends with the review's own text carries the verdict, and that is a landed
+        #     review (observed in a target, 2026-09-24). The marker is the prompt's verdict line: a
+        #     project that edits that vocabulary edits the `test(...)` pattern below with it;
+        #   - `!cancelled()`, never `always()`: a run superseded through `concurrency` is not a failure.
+        # Why no session started is read from the checkout, not from the action. Its validation-skip flag
+        # is not a declared output, and its `conclusion` output is declared only from v1.0.188, while
+        # `execution_file` is declared at every tag from v1.0.0 on (action.yml at each tag, read 2026-09-30). An empty
+        # `execution_file` means no model session; then a diff of this file against the PR's base tells a
+        # validation skip (the file changed) from an auth or setup failure (unchanged). The diff is against
+        # the PR's base SHA: on a PR into a branch other than the default, that may not be the copy the
+        # action validates against, and the notice can misname the cause. Every value arrives through env:,
+        # never interpolated. `.claude/workflows/tests/review-assert-fixture.sh` runs this body.
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
           STARTED_AT: ${{ steps.start.outputs.at }}
           REVIEW_LOGIN: "[<the review app's login, e.g. claude[bot]>]"
+          SESSION_RAN: ${{ steps.review.outputs.execution_file != '' }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -uo pipefail
-          n="$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
-                --jq "[.[] | select(.user.login == \"$REVIEW_LOGIN\") | select(.created_at >= \"$STARTED_AT\")] | length")" || n=0
-          if [ "${n:-0}" -ge 1 ]; then
-            echo "Review posted ($n comment(s) since $STARTED_AT)."
-          else
-            gh pr comment "$PR_NUMBER" --repo "$REPO" --body "Auto-review did not post a summary — see $RUN_URL. Re-trigger with the \`claude-review-again\` label." || true
-            echo "::error::No review comment from $REVIEW_LOGIN since $STARTED_AT — the deliverable did not land (cbk-conventions.md § Deliverable trap)."
+          if ! comments="$(gh api "repos/$REPO/issues/$PR_NUMBER/comments?per_page=100" --paginate)"; then
+            echo "::error::Could not list the PR's comments, so whether the review posted is unknown — see the log above."
             exit 1
           fi
+          if ! n="$(jq -s --arg login "$REVIEW_LOGIN" --arg start "$STARTED_AT" '[.[][] | select(.user.login == $login and .updated_at >= $start and (.body | test("APPROVE|REQUEST CHANGES|NEEDS DISCUSSION")))] | length' <<<"$comments")"; then
+            echo "::error::Could not read the PR's comments as JSON, so whether the review posted is unknown."
+            exit 1
+          fi
+          if [ "$n" -ge 1 ]; then
+            echo "Review summary posted: $n comment(s) from $REVIEW_LOGIN with a verdict since $STARTED_AT."
+            exit 0
+          fi
+          if [ "$SESSION_RAN" = "true" ]; then
+            why="The review session ran but no summary with a verdict landed — see $RUN_URL. Re-trigger with the \`claude-review-again\` label."
+          else
+            rc=0; git diff --quiet "$BASE_SHA" HEAD -- .github/workflows/claude-review.yml || rc=$?
+            case "$rc" in
+              0) why="The review did not run: no model session started, and this PR leaves .github/workflows/claude-review.yml unchanged, so this is an auth or setup failure, not a validation skip — see $RUN_URL. Fix the cause, then re-trigger with the \`claude-review-again\` label." ;;
+              1) why="The review was skipped by claude-code-action's workflow validation: this PR changes .github/workflows/claude-review.yml, and the action skips a workflow that differs from the copy it validates against (its log says \"Exiting due to workflow validation skip\"). Re-triggering cannot fix that — review this PR another way; see $RUN_URL." ;;
+              *) why="The review did not run: no model session started, and whether this PR changes .github/workflows/claude-review.yml could not be read (git diff exited $rc) — see $RUN_URL." ;;
+            esac
+          fi
+          gh pr comment "$PR_NUMBER" --repo "$REPO" --body "Auto-review: no summary posted. $why" || echo "::warning::Could not post the notice to the PR either."
+          echo "::error::No review summary since $STARTED_AT — the deliverable did not land (cbk-conventions.md § Deliverable trap). $why"
+          exit 1

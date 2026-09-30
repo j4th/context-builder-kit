@@ -865,6 +865,9 @@ absent grep -nE '^[^#]*[|][[:space:]]*grep -[A-Za-z]*q' .claude/skills/blueprint
 python3 -B .claude/workflows/tests/review-trigger-fixture.py || { echo "the review workflow's path filter skips a PR it must review, or reviews one it must skip (the fixture names it)"; exit 1; }
 absent grep -n '^concurrency:' .claude/skills/blueprint/references/templates/claude-review.yml .claude/skills/blueprint/references/templates/claude.yml
 grep -qF 'github.event.pull_request.head.repo.full_name == github.repository' .claude/skills/blueprint/references/templates/claude-review.yml || { echo "templates/claude-review.yml has no fork guard in its job if:"; exit 1; }
+# The review workflow's own steps, run on synthetic data with a fake gh: "Assert the review posted" (slurped pages,
+# the verdict marker on updated_at, !cancelled(), the no-session notice keyed on execution_file and a diff).
+bash .claude/workflows/tests/review-assert-fixture.sh || { echo "a review-workflow step the fixture runs regressed (it names the case)"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
