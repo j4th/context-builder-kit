@@ -1148,6 +1148,13 @@ if [ ! -f docs/cbk/scaffold.md ]; then
   grep -qx "KIT_VERSION=v$newest" README.md || { echo "README.md's install does not pin v$newest, the newest release in CHANGELOG.md"; exit 1; }
 fi
 
+# Releases (V10): on the kit tree, CLAUDE.md names the gate, the release record and the harvest audit, and the
+# kit-only front door (README.md, CLAUDE.md) cites no issue by a bare number.
+if [ ! -f docs/cbk/scaffold.md ]; then
+  for w in 'run-verification-block.sh' 'CHANGELOG.md' 'refute-by-default'; do grep -qF -- "$w" CLAUDE.md || { echo "CLAUDE.md does not name $w (its gate, its release record and its harvest audit)"; exit 1; }; done
+  absent grep -nE '(^|[[:space:](,;])#[0-9]{1,3}([^0-9]|$)' README.md CLAUDE.md
+fi
+
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
