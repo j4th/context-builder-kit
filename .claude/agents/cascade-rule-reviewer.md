@@ -42,7 +42,7 @@ If only a branch name is given, run `git diff main...HEAD` (or against the named
    - **PR title not Conventional Commits** → `cbk-conventions.md` § Closes-keyword conventions / commit format
    - **`[skip ci]` on a code / test / workflow / task-runner commit** → `cbk-conventions.md` § `[skip ci]` rule
    - **Knowledge-backend write reference in a non-cascade-skill code path** → `knowledge-backend.md` § HITL announcement discipline
-   - **Code that mirrors / re-stores cascade artifacts or ADRs** → `knowledge-backend.md` § no cascade-artifact / ADR mirroring
+   - **Code that mirrors / re-stores cascade artifacts or ADRs** → `knowledge-backend.md` § The code-adjacent split — canonical (its **Never** list)
 
 2. **Read each intersecting rule.** Don't skim. The "principles" + "operational rules" + "anti-patterns" sections name the contract.
 

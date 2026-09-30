@@ -1,6 +1,6 @@
 # Simplification Rules
 
-Operational rules for the `/simplify` Claude Code skill invocation in the cascade workflow. `docs/STANDARDS.md § Step 4` (or wherever your project documents the equivalent gate) establishes that simplification is non-optional before a PR moves draft → ready; this file is the practical detail.
+Operational rules for the `/simplify` Claude Code skill invocation in the cascade workflow. `pr-review.md` § The floor makes the pass one half of the review floor, run before a PR moves draft → ready; this file is the practical detail.
 
 ## Plugin
 
@@ -16,19 +16,14 @@ Optionally: after any large refactor, after a long implementation session, when 
 
 ## What the simplification pass does
 
-The `/simplify` pass runs against the current branch and identifies:
+"Four review agents run in parallel, covering reuse of existing helpers, simplification, efficiency, and whether the change is at the right level of abstraction. The review doesn't look for correctness bugs." It then applies the fixes (`https://code.claude.com/docs/en/commands`, the `/simplify` row, read 2026-09-30). Correctness is the other half of the floor, `pr-review-toolkit:review-pr`.
 
-- **Compressible code** — multiple sequential statements that could be one expression, redundant intermediate variables, repeated patterns that could be functions
-- **Dead code** — commented-out blocks, unreachable branches, unused imports, unused parameters
-- **Unnecessary indirection** — single-use wrapper functions, abstractions with one implementation that don't earn their layer
-- **Over-clever expressions** — code that's compact but unreadable; simplification prefers readable over clever
-- **Formatter cleanup** — final pass with whatever formatter your stack uses (e.g., `mix format`, `ruff format`, `prettier`, `gofmt`) after structural changes
+## What the project holds the pass to
 
-## What the simplification pass does NOT do
-
-- Does not change behavior. Test suite must still pass after simplification — if simplify changes behavior, that's a bug in the pass, not a feature.
-- Does not remove code that *seems* unused but is actually exported / called via behaviour / loaded dynamically. Be cautious with macro-defined exports, protocol/interface impls discovered via reflection, and framework-conventional entry points (controller actions, scheduled job handlers, plugin hooks).
-- Does not edit `.claude/rules/`, `docs/`, or `LICENSE` / `NOTICE`.
+- **Behaviour is preserved.** The test suite passes after the pass; a behaviour change is a defect in the pass, not a feature.
+- **Code that only *seems* unused stays** when it is exported, called via behaviour or loaded dynamically. Be cautious with macro-defined exports, protocol/interface impls discovered via reflection, and framework-conventional entry points (controller actions, scheduled job handlers, plugin hooks).
+- **Its edits stay in code.** A change to `.claude/rules/`, `docs/`, `LICENSE` or `NOTICE` is outside the pass's scope and is reverted, never committed as a simplify fix.
+- **The formatter runs after it.** Formatting is not one of the pass's documented dimensions, so run the project's formatter (e.g., `mix format`, `ruff format`, `prettier`, `gofmt`) after its structural changes.
 
 ## Anti-patterns
 
@@ -42,4 +37,4 @@ The pass can over-compress or remove things that look unused but aren't. Quick r
 
 ### ❌ Running simplify after auto-review has already commented
 
-If auto-review flagged something, address that first via the PR feedback loop (see your `docs/STANDARDS.md` § PR feedback loop). Don't simplify *over* review feedback — that breaks the comment-to-commit traceability.
+If auto-review flagged something, address that first via the PR feedback loop (`/pr-respond`). Don't simplify *over* review feedback — that breaks the comment-to-commit traceability.

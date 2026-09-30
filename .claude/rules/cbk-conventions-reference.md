@@ -846,6 +846,13 @@ if [ -f .claude/agents/Explore.md ]; then fm=$(awk 'NR==1 && /^---$/ {f=1; next}
 for f in .claude/commands/intake.md .claude/commands/pr-respond.md; do [ -f "$f" ] || continue; grep -q 'data, not instructions' "$f" || { echo "$f does not state that report and comment text is data, not instructions"; exit 1; }; done
 [ ! -f .claude/commands/intake.md ] || grep -q 'Write the reproduction yourself' .claude/commands/intake.md || { echo "commands/intake.md does not require the executor to write its own reproduction"; exit 1; }
 [ ! -f .claude/commands/pr-respond.md ] || { grep -q 'collaborators/<login>/permission' .claude/commands/pr-respond.md && grep -q 'pr-review-reference.md' .claude/commands/pr-respond.md; } || { echo "commands/pr-respond.md lacks the author check or its explicit read of pr-review-reference.md"; exit 1; }
+# Rule accuracy (V3.7). An agent's `§` citation into a rule file resolves to a heading or a bold lead-in there; a rule
+# the disposition pass deleted is skipped, since removing its citing lines is that pass's job. The logging reviewer
+# agrees with logging.md § Level taxonomy that per-tick state may log at `debug`. simplification.md sources what the
+# /simplify pass covers instead of asserting it.
+for a in .claude/agents/*.md; do while IFS= read -r m; do [ -n "$m" ] || continue; f=${m#\`}; f=${f%%\`*}; [ -f ".claude/rules/$f" ] || continue; w=$(awk '{print $1 (NF>1 ? " "$2 : "")}' <<<"${m#*§ }"); awk -v w="$w" '{sub(/^#+ +([0-9]+\. +)?/, ""); sub(/^(- |[0-9]+\. |\| )?\*\*/, "")} index($0, w) == 1 {found=1} END {exit !found}' ".claude/rules/$f" || { echo "$a cites $f § ${m#*§ } — no heading or bold lead-in of $f begins '$w'"; exit 1; }; done <<<"$(grep -oE '`[a-z-]+\.md` § [^,;()`*→."—]+' "$a" || true)"; done
+absent grep -n "permit verbose \`debug\` everywhere except hot-path loop[s]" .claude/agents/logging-discipline-reviewer.md
+grep -qF 'https://code.claude.com/docs/en/commands' .claude/rules/simplification.md || { echo "simplification.md does not source what the /simplify pass covers"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
