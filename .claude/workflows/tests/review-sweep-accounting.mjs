@@ -428,4 +428,32 @@ for (const roster of [null, { crossCutting: "not-an-array" }]) {
   n++;
 }
 
+// 26 — dedup keys on file + line: paraphrases of one defect from three dimensions share ONE verify slot, whose prompt
+//      lists every title and asks the verifier to name the report its evidence proves; the strongest severity and
+//      every co-reporter are kept (context-builder-kit#72 item 2). Line-less findings keep the title in the key, so
+//      two different line-less findings in one file stay two.
+{
+  const { out, calls } = await scenario("paraphrased duplicates", {
+    args: { files: ["a"], maxPerDimension: 3, maxVerify: 8 }, roster: rosterOK,
+    findings: {
+      "code-review": { findings: [F("a", 7, "Unknown config key is skipped, not refused", "medium")] },
+      "silent-failures": { findings: [F("a", 7, "An unrecognised config key is silently ignored", "high")] },
+      "adr-conformance-reviewer": { findings: [F("a", 7, "config key naming no setting is not rejected", "low"), F("a", undefined, "no line one", "low"), F("a", undefined, "no line two", "low")] },
+    },
+    verdict: real,
+  });
+  const onSeven = calls.filter((c) => c.label.startsWith("verify:") && c.prompt.includes("at a:7"));
+  assert.equal(onSeven.length, 1, `paraphrases on one line take one verify slot (got ${onSeven.length})`);
+  for (const t of ["Unknown config key is skipped", "An unrecognised config key", "config key naming no setting"]) {
+    assert.ok(onSeven[0].prompt.includes(t), `the verify prompt lists every reported title: ${t}`);
+  }
+  assert.ok(/name[^.]*which of the reports/.test(onSeven[0].prompt), "a merged finding's verifier is asked to name the report its evidence demonstrates");
+  const merged = out.confirmed.find((f) => f.line === 7);
+  assert.equal(merged.severity, "high", "the strongest severity is kept");
+  assert.equal(merged.titles.length, 3, "every distinct title is carried");
+  assert.deepEqual(merged.alsoFoundBy.slice().sort(), ["adr-conformance-reviewer", "silent-failures"], "every co-reporter once, never the original");
+  assert.equal(out.confirmed.filter((f) => f.line === undefined).length, 2, "two different line-less findings stay two");
+  n++;
+}
+
 console.log(`review-sweep accounting: meta + body parse, ${n} scenarios OK`);

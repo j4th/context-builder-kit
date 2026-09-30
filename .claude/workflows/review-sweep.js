@@ -215,18 +215,24 @@ results.forEach((r, i) => {
   for (const f of r.findings ?? []) raw.push({ ...f, dimension: dimensions[i].key });
 });
 
-// Same file:line:title from more than one dimension is ONE finding that keeps
-// the STRONGEST severity reported and records who converged — convergence is
-// signal for triage, never a penalty (pr-review.md § Three invariants, (3)).
+// Findings on the same file:line are ONE finding that keeps the STRONGEST
+// severity reported, every distinct title and detail, and who converged —
+// convergence is signal for triage, never a penalty (pr-review.md § Three
+// invariants, (3)). The key has no title: dimensions paraphrase one defect, and a
+// title in the key spent a verify slot per paraphrase (a real sweep refuted one
+// finding three times — context-builder-kit#72 item 2). A finding with no line
+// keeps its title in the key, or every line-less finding in a file would merge.
+const norm = (t) => (t ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 const seen = new Map();
 for (const f of raw) {
-  const key = `${f.file}:${f.line ?? "?"}:${(f.title ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()}`;
+  const key = f.line != null ? `${f.file}:${f.line}` : `${f.file}:?:${norm(f.title)}`;
   const prior = seen.get(key);
   if (prior) {
-    prior.alsoFoundBy.push(f.dimension);
+    if (f.dimension !== prior.dimension && !prior.alsoFoundBy.includes(f.dimension)) prior.alsoFoundBy.push(f.dimension);
+    if (!prior.titles.some((t) => norm(t) === norm(f.title))) { prior.titles.push(f.title); prior.details.push(f.detail); }
     if ((rank[f.severity] ?? 3) < (rank[prior.severity] ?? 3)) prior.severity = f.severity;
   } else {
-    seen.set(key, { ...f, alsoFoundBy: [] });
+    seen.set(key, { ...f, titles: [f.title], details: [f.detail], alsoFoundBy: [] });
   }
 }
 const deduped = [...seen.values()].sort(
@@ -258,6 +264,9 @@ if (overflow.length > 0) {
 log(`review-sweep: carrying ${toVerify.length} of ${deduped.length} deduplicated finding(s) into verification (${dimensions.length} finders ran)`);
 
 // ---- Verify ----
+// A merged finding's verifier sees every report on its line and, when it confirms, names the one its evidence
+// demonstrates: one verdict now covers every paraphrase, and the caller triages by the report named, the others
+// standing as unverified (pr-review.md § Three invariants, (3)).
 // Verify agents inherit the session model — the ceiling (orchestration.md § The
 // ceiling rule: spawned agents match or tier down, never up). A caller in a
 // top-tier session may pass verifyModel to tier the verifiers DOWN.
@@ -265,7 +274,7 @@ phase("Verify");
 const judged = await parallel(
   toVerify.map((finding) => () =>
     agent(
-      `Adversarially verify a review finding — your job is to REFUTE it. Finding (from ${finding.dimension}${finding.alsoFoundBy.length ? `, also flagged by ${finding.alsoFoundBy.join(", ")}` : ""}): "${finding.title}" at ${finding.file}${finding.line ? `:${finding.line}` : ""}. Detail: ${finding.detail}\n\nRead the actual code and any governing rule/ADR it cites. Default to real=false when the failure scenario cannot be demonstrated, an existing guard/test/CI check already covers it, or the finding misreads the code. Confirm real=true only with concrete evidence.`,
+      `Adversarially verify a review finding — your job is to REFUTE it. Finding (from ${finding.dimension}${finding.alsoFoundBy.length ? `, also flagged by ${finding.alsoFoundBy.join(", ")}` : ""}) at ${finding.file}${finding.line ? `:${finding.line}` : ""}:\n${finding.titles.length > 1 ? `${finding.titles.length} reports on this line — paraphrases of one defect, or several defects:\n` : ""}${finding.titles.map((t, i) => `- "${t}". Detail: ${finding.details[i]}`).join("\n")}\n\nRead the actual code and any governing rule/ADR it cites. Default to real=false when the failure scenario cannot be demonstrated, an existing guard/test/CI check already covers it, or the finding misreads the code. Confirm real=true only with concrete evidence${finding.titles.length > 1 ? ", and when you do, name in your reasoning which of the reports the evidence demonstrates" : ""}.`,
       { label: `verify:${finding.file}`, phase: "Verify", effort: "high", schema: VERDICT_SCHEMA, ...(params.verifyModel ? { model: params.verifyModel } : {}) },
     ).then((verdict) => ({ ...finding, verdict })),
   ),

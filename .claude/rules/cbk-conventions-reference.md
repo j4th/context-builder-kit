@@ -956,6 +956,9 @@ absent grep -nE "[Tt]wo executor[s]|two-ar[m]|rank the tw[o]|either worktre[e]|t
 # Review conventions (harvest 5, V7): a caller-named finder is {key, prompt?, agentType?} on both surfaces that state it,
 # the rule and the workflow's meta (context-builder-kit#72 item 1).
 for f in .claude/rules/pr-review.md .claude/workflows/review-sweep.js; do grep -qF '{key, prompt?, agentType?}' "$f" || { echo "$f does not state the caller-finder shape {key, prompt?, agentType?}"; exit 1; }; done
+# Dedup keys on file and line, and a merged finding is triaged by the report its verifier named (context-builder-kit#72 item 2).
+{ grep -qF 'keyed on file and line (and on the normalized title only when a finding names no line)' .claude/rules/pr-review.md && grep -qF 'the caller triages that report' .claude/rules/pr-review.md; } || { echo "pr-review.md invariant (3) does not key dedup on file and line, or does not triage a merged finding by the report its verifier named"; exit 1; }
+absent grep -n "keyed on file, line and normalized titl[e]" .claude/rules/pr-review.md
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
