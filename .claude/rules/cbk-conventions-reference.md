@@ -891,6 +891,9 @@ for c in .claude/rules/*.md; do case "$c" in *-reference.md) continue;; esac; r=
 # Notion's native page verification is plan-gated, and the knowledge-backend rule says so where it requires the property
 # (knowledge-backend-reference.md § Wiki pattern + Verification, with its fallback). A none-axis target deleted the file.
 [ ! -f .claude/rules/knowledge-backend-reference.md ] || grep -q 'Business and Enterprise Plans' .claude/rules/knowledge-backend-reference.md || { echo "knowledge-backend-reference.md § Wiki pattern + Verification does not name Notion's plan-gated Verification property and its fallback"; exit 1; }
+# The ladder and the price steps follow the current lineup (orchestration.md § The ceiling rule, § Generation notes;
+# context-builder-kit#69): the Opus 5 ladder or the old step order is red. A target that deleted the template skips it.
+[ ! -f .claude/rules/orchestration.md ] || { grep -q 'Opus 5.5 first' .claude/rules/orchestration.md && grep -qF '2× / 2× / 2.5×' .claude/rules/orchestration.md; } || { echo "orchestration.md carries the Opus 5 ladder or the old price steps (§ The ceiling rule, § Generation notes)"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
