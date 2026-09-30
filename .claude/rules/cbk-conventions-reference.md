@@ -868,6 +868,11 @@ grep -qF 'github.event.pull_request.head.repo.full_name == github.repository' .c
 # The review workflow's own steps, run on synthetic data with a fake gh: "Assert the review posted" (slurped pages,
 # the verdict marker on updated_at, !cancelled(), the no-session notice keyed on execution_file and a diff).
 bash .claude/workflows/tests/review-assert-fixture.sh || { echo "a review-workflow step the fixture runs regressed (it names the case)"; exit 1; }
+# The review bots name the model by family alias, never an id placeholder and never `best`, and every claude_args
+# passes --effort, because the default effort is per model (context-builder-kit#67).
+absent grep -n 'model id>[]]' .claude/skills/blueprint/references/templates/claude-review.yml .claude/skills/blueprint/references/templates/claude.yml
+absent grep -nE '(model=|--model |--fallback-model )best\b' .claude/skills/blueprint/references/templates/claude-review.yml .claude/skills/blueprint/references/templates/claude.yml
+for t in claude-review.yml claude.yml; do a=$(awk '/claude_args: [|]/{f=1; next} f && /^ *(--|\$\{\{)/{print; next} {f=0}' .claude/skills/blueprint/references/templates/$t); grep -q -- '^ *--effort ' <<<"$a" || { echo "templates/$t: claude_args passes no --effort (the default is per model)"; exit 1; }; done
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

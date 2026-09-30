@@ -15,7 +15,11 @@
 #   - no session and this PR changing the workflow fails with the validation-skip notice, posted to the PR; no
 #     session with the workflow unchanged fails with the auth-or-setup notice instead;
 #   - structure: the step's condition is `${{ !cancelled() }}`, the job's first step records the start time, the
-#     step reads it, and SESSION_RAN is keyed on the execution_file of the step with `id: review`.
+#     step reads it, and SESSION_RAN is keyed on the execution_file of the step with `id: review`;
+#   - "Record the resolved model", in both review templates: the step runs on `always()` when its action step wrote an
+#     execution_file, with continue-on-error; on a synthetic execution file its job-summary line names the model the
+#     session started on, its Claude Code version, every model that answered, and the alias and effort requested;
+#     claude.yml's requested alias and effort equal the --model and --effort its claude_args pass.
 # Each body runs the way GitHub runs a `shell: bash` step: bash --noprofile --norc -eo pipefail.
 # Hermetic: mktemp trees only. Needs bash, git (2.28+, for `init -b`), jq.
 # Run: bash .claude/workflows/tests/review-assert-fixture.sh
@@ -128,4 +132,41 @@ for wf in "${wfs[@]}"; do
   says "auth or setup" "$rel: the no-session notice names auth or setup"
   if grep -qF "workflow validation" "$t/posted"; then echo "FAIL: $rel: an unchanged workflow was reported as a validation skip"; exit 1; fi
 done
-echo "review-assert-fixture: $n cases ok (${#wfs[@]} workflow(s), 5 structural checks each)"
+# ── "Record the resolved model", in both templates: what the step writes to the job summary. Whether GitHub shows
+# that line is designed-unexercised (the step's own comment says so); this pins what the step writes.
+printf '%s\n' '[{"type":"system","subtype":"init","model":"claude-opus-5-5","claude_code_version":"2.1.285"},{"type":"assistant"},{"type":"result","subtype":"success","modelUsage":{"claude-opus-5-5":{},"claude-haiku-4-5":{}}}]' > "$t/exec.json"
+printf '%s\n' '[{"type":"system","subtype":"init","model":"claude-opus-5-5","claude_code_version":"2.1.285"}]' > "$t/exec-noresult.json"
+tdir="$root/.claude/skills/blueprint/references/templates"
+for pair in claude-review.yml:review claude.yml:claude; do
+  f=${pair%%:*}; id=${pair#*:}; wf="$tdir/$f"; rel=${wf#"$root"/}
+  step=$(awk '/- name: Record the resolved model$/{f=1; print; next} f && /^ *- name: /{exit} f' "$wf")
+  [ -n "$step" ] || { echo "FAIL: $rel has no 'Record the resolved model' step"; exit 1; }
+  grep -qF "if: always() && steps.$id.outputs.execution_file != ''" <<<"$step" || { echo "FAIL: $rel: the record step does not run on always() when steps.$id wrote an execution_file"; exit 1; }
+  grep -q '^ *continue-on-error: true$' <<<"$step" || { echo "FAIL: $rel: the record step is informational and must carry continue-on-error: true"; exit 1; }
+  grep -qF "EXECUTION_FILE: \${{ steps.$id.outputs.execution_file }}" <<<"$step" || { echo "FAIL: $rel: the record step does not read steps.$id's execution_file"; exit 1; }
+  body=$(extract_run_block "$wf" "Record the resolved model")
+  [ -n "$body" ] || { echo "FAIL: $rel: the record step has no run: body"; exit 1; }
+  printf '%s\n' "$body" > "$t/record.sh"
+  for ex in exec exec-noresult; do
+    : > "$t/summary"
+    rc=0; env EXECUTION_FILE="$t/$ex.json" GITHUB_STEP_SUMMARY="$t/summary" REQUESTED=opus EFFORT=high \
+      bash --noprofile --norc -eo pipefail "$t/record.sh" > "$t/out" 2>&1 || rc=$?
+    n=$((n + 1))
+    [ "$rc" -eq 0 ] || { echo "FAIL: $rel: the record step exited $rc on $ex.json"; sed 's/^/  | /' "$t/out"; exit 1; }
+    case "$ex" in
+      exec) want='started `claude-opus-5-5` on Claude Code `2.1.285`, used `claude-haiku-4-5, claude-opus-5-5` (requested the `opus` alias at effort `high`)' ;;
+      *) want='used `none recorded`' ;;
+    esac
+    grep -qF -- "$want" "$t/summary" || { echo "FAIL: $rel: on $ex.json the job-summary line lacks '$want'"; sed 's/^/  | /' "$t/summary"; exit 1; }
+  done
+done
+# claude.yml names its alias and effort twice, in claude_args and in the record step's env: the two must agree.
+cy="$tdir/claude.yml"
+args=$(awk '/claude_args: [|]/{f=1; next} f && /^ *(--|\$\{\{)/{print; next} {f=0}' "$cy")
+m=$(awk '$1 == "--model" {print $2; exit}' <<<"$args"); e=$(awk '$1 == "--effort" {print $2; exit}' <<<"$args")
+rec=$(awk '/- name: Record the resolved model$/{f=1; next} f' "$cy")
+rq=$(awk '$1 == "REQUESTED:" {print $2; exit}' <<<"$rec"); ef=$(awk '$1 == "EFFORT:" {print $2; exit}' <<<"$rec")
+if [ -z "$m" ] || [ "$m" != "$rq" ] || [ -z "$e" ] || [ "$e" != "$ef" ]; then
+  echo "FAIL: claude.yml's record step names '$rq' at '$ef', but its claude_args run '$m' at '$e'"; exit 1
+fi
+echo "review-assert-fixture: $n cases ok (${#wfs[@]} workflow(s), 5 structural checks each; the record step in both templates)"

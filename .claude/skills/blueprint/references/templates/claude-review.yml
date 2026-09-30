@@ -29,6 +29,19 @@
 # this workflow — end the branch on a non-marker commit before flipping
 # (cbk-conventions.md § [skip ci] rule, the auto-review trap).
 #
+# Model naming — by family alias, never by id and never `best`: `opus` by default and on the deep path,
+# `sonnet` on the fast path and as the fallback. `best` resolves to Fable "where Fable is available to you,
+# otherwise the same model as `opus`" (https://code.claude.com/docs/en/model-config § Model aliases, read
+# 2026-09-30), so an escalation through it would be silent. An alias resolves inside the Claude Code release
+# the pinned action installs (`claudeCodeVersion` in its `src/entrypoints/run.ts`), so the action's commit SHA
+# is the model pin: Dependabot's github-actions bump is the model bump, and a new model needs no edit here.
+# The `Record the resolved model` step writes the model that ran to the job summary. Never set
+# ANTHROPIC_MODEL on the action step: the action hands it to the SDK as the explicit model, and
+# `model: options.model || modelFromClaudeArgs` lets it win over `--model` (`src/entrypoints/run.ts` and
+# `base-action/src/parse-sdk-options.ts` at the pinned SHA, read 2026-09-30). The action-bump PR re-checks
+# what is sized to the model rather than to the alias: each branch's `--effort`, `--max-turns`, and the
+# prompt's degrade N (the note above claude_args; orchestration.md § Generation notes).
+#
 # Needs the `CLAUDE_CODE_OAUTH_TOKEN` Actions secret (`/install-github-app` in Claude Code).
 #
 # Constraint 2 — SAFETY: no author-controlled input (title, body, commits, branch name,
@@ -165,6 +178,10 @@ jobs:
         # `claude-deep-review-wip` label cannot false-trigger the heavy path.
         # Constraint 7 — no orphanable sub-dispatch: the default and fast paths keep the
         # review in one session (`--disallowedTools Agent`); only the deep path fans out.
+        # Every branch names its effort, because the default is per model: "Opus 5.5 and Sonnet 5.5
+        # default to `medium`" (https://code.claude.com/docs/en/model-config § Adjust effort level, read
+        # 2026-09-30), so an unnamed effort drops whenever the alias moves. That makes the fast branch's
+        # `high` load-bearing wherever `sonnet` resolves to Sonnet 5.5.
         env:
           LABELS_JSON: ${{ toJSON(github.event.pull_request.labels.*.name) }}
         run: |
@@ -172,18 +189,32 @@ jobs:
           labels="${LABELS_JSON:-[]}"
           # Here-strings, never `printf … | grep -q`: under pipefail a match can read as no match.
           if grep -qF '"claude-deep-review"' <<<"$labels"; then
-            echo "model=[<top-tier or workhorse model id>]" >> "$GITHUB_OUTPUT"
+            # `opus`, or `fable` for a project that deliberately escalates its hardest reviews. Before choosing
+            # `fable`: "Fable 5.1 requires Claude Code v2.1.257 or later", so an older pinned action cannot run
+            # it; and "in an Agent SDK application that doesn't show the prompt, Claude Code never asks for
+            # consent" before billing Fable to usage credits (both https://code.claude.com/docs/en/model-config,
+            # read 2026-09-30) — this action is one (its package.json depends on @anthropic-ai/claude-agent-sdk).
+            # Never `best`: the header's Model naming says why.
+            echo "model=opus" >> "$GITHUB_OUTPUT"
             echo "effort=xhigh" >> "$GITHUB_OUTPUT"
-            # `ultracode` as exercised on the deep path (a dated observation, 2026-09-06); re-verify the setting name after harness upgrades.
+            # `ultracode` turns on dynamic workflows and sets no effort: "Turning ultracode on or off with
+            # `/effort` or the `ultracode` setting leaves the effort level unchanged" (the same page, from
+            # Claude Code 2.1.284), so `xhigh` above is named, not implied.
             echo "settings_arg=--settings '{\"ultracode\":true}'" >> "$GITHUB_OUTPUT"
             echo "disallow_arg=" >> "$GITHUB_OUTPUT"
           elif grep -qF '"claude-fast-review"' <<<"$labels"; then
-            echo "model=[<mid-tier model id>]" >> "$GITHUB_OUTPUT"
+            echo "model=sonnet" >> "$GITHUB_OUTPUT"
+            # A pin pending a Sonnet 5.5 effort sweep, not a calibrated level: "Its levels are recalibrated,
+            # so a level doesn't produce the same amount of thinking as the same level on Claude Sonnet 5"
+            # (https://platform.claude.com/docs/en/build-with-claude/effort, read 2026-09-30), and Claude Code
+            # runs Sonnet 5.5 at `medium` when no effort is named (this step's comment above). `high` holds
+            # until a sweep on this project's own reviews moves it; the action bump that moves `sonnet`
+            # re-checks it.
             echo "effort=high" >> "$GITHUB_OUTPUT"
             echo "settings_arg=" >> "$GITHUB_OUTPUT"
             echo "disallow_arg=--disallowedTools Agent" >> "$GITHUB_OUTPUT"
           else
-            echo "model=[<workhorse model id>]" >> "$GITHUB_OUTPUT"
+            echo "model=opus" >> "$GITHUB_OUTPUT"
             echo "effort=high" >> "$GITHUB_OUTPUT"
             echo "settings_arg=" >> "$GITHUB_OUTPUT"
             echo "disallow_arg=--disallowedTools Agent" >> "$GITHUB_OUTPUT"
@@ -292,15 +323,41 @@ jobs:
             `gh pr view ${{ github.event.pull_request.number }}` for metadata, `gh pr diff` for the diff,
             and the inline-comment MCP tool for line-specific findings.
 
-            Model in use: ${{ steps.model.outputs.model }} (effort: ${{ steps.model.outputs.effort }})
+            Model in use: the `${{ steps.model.outputs.model }}` alias at effort ${{ steps.model.outputs.effort }} (an alias, not a model id; the job summary records the model that ran).
           claude_args: |
             --model ${{ steps.model.outputs.model }}
-            --fallback-model [<mid-tier model id>]
+            --fallback-model sonnet
             --effort ${{ steps.model.outputs.effort }}
             ${{ steps.model.outputs.settings_arg }}
             --max-turns 60
             --allowedTools "Read,Grep,Glob,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh pr checks:*),Bash(gh run view:*),Bash(gh run list:*),mcp__github_inline_comment__create_inline_comment"
             ${{ steps.model.outputs.disallow_arg }}
+
+      - name: Record the resolved model
+        # The alias says which family was asked for; this says which model ran. The action writes the session's
+        # SDK messages to `execution_file` as a JSON array (`writeExecutionFile` in
+        # `base-action/src/execution-file.ts`, read 2026-09-30). Its `init` message carries the `model` the
+        # session started on and the `claude_code_version` it ran, and the `result` message's `modelUsage` holds
+        # "per-model totals for every model call made through the query pipeline"
+        # (https://code.claude.com/docs/en/agent-sdk/typescript, read 2026-09-30). `always()`, because a failed
+        # review is the run whose model matters most; continue-on-error, because this step is informational
+        # and must never redden a review that posted. What it appends is "shown on the workflow run summary
+        # page" (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands § Adding a
+        # job summary, read 2026-09-30). The step ran green in a target's review run on 2026-09-29, but the
+        # rendered line was not read back, so its display stays designed-unexercised: restamp this line when a
+        # run page shows it.
+        # `.claude/workflows/tests/review-assert-fixture.sh` runs this body on synthetic execution files.
+        if: always() && steps.review.outputs.execution_file != ''
+        continue-on-error: true
+        env:
+          EXECUTION_FILE: ${{ steps.review.outputs.execution_file }}
+          REQUESTED: ${{ steps.model.outputs.model }}
+          EFFORT: ${{ steps.model.outputs.effort }}
+        run: |
+          started=$(jq -r '[.[] | select(.type == "system" and .subtype == "init") | .model][0] // "unknown"' "$EXECUTION_FILE")
+          version=$(jq -r '[.[] | select(.type == "system" and .subtype == "init") | .claude_code_version][0] // "unknown"' "$EXECUTION_FILE")
+          used=$(jq -r '[.[] | select(.type == "result") | (.modelUsage // {}) | keys[]] | unique | join(", ")' "$EXECUTION_FILE")
+          echo "Review model: started \`$started\` on Claude Code \`$version\`, used \`${used:-none recorded}\` (requested the \`$REQUESTED\` alias at effort \`$EFFORT\`)" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Assert the review posted (constraint 4 — the artifact decides)
         # Three fixes over the first form (context-builder-kit#67):

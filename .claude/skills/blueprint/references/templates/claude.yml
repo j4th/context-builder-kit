@@ -6,7 +6,13 @@
 #   - job-level concurrency + cancel-in-progress so a rapid back-and-forth does not queue
 #   - skips bots and the `skip-claude` label (avoids @claude loops; the opt-out)
 #   - explicit --allowedTools (least privilege at the tool level)
-#   - the workhorse model at its default effort: mentions are interactive and quota-sensitive
+#   - the `opus` alias at `high` effort, named rather than left to the default: mentions are
+#     interactive and quota-sensitive, and "Opus 5.5 and Sonnet 5.5 default to `medium`"
+#     (https://code.claude.com/docs/en/model-config § Adjust effort level, read 2026-09-30), so an
+#     unnamed effort would move whenever the alias does
+#   - the model by family alias, as claude-review.yml's Model naming paragraph says: the action's SHA
+#     is the model pin, the `Record the resolved model` step writes the model that ran to the job
+#     summary, and ANTHROPIC_MODEL is never set on the action step
 #
 # Needs the `CLAUDE_CODE_OAUTH_TOKEN` Actions secret (`/install-github-app`).
 #
@@ -84,6 +90,7 @@ jobs:
           fetch-depth: 1
 
       - name: Run Claude Code
+        id: claude
         if: steps.gate.outputs.skip == 'false'
         uses: anthropics/claude-code-action@[full-commit-sha] # v[version]
         with:
@@ -93,7 +100,23 @@ jobs:
             actions: read
             checks: read
           claude_args: |
-            --model [<workhorse model id>]
-            --fallback-model [<mid-tier model id>]
+            --model opus
+            --fallback-model sonnet
+            --effort high
             --max-turns 60
             --allowedTools "Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh pr checks:*),Bash(gh run view:*),Bash(gh run list:*),mcp__github_inline_comment__create_inline_comment"
+
+      - name: Record the resolved model
+        # The same step as claude-review.yml's; its comment carries the sources. Every value arrives through
+        # env:, never interpolated into the command.
+        if: always() && steps.claude.outputs.execution_file != ''
+        continue-on-error: true
+        env:
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+          REQUESTED: opus     # the --model and --effort in claude_args above; review-assert-fixture.sh keeps them equal
+          EFFORT: high
+        run: |
+          started=$(jq -r '[.[] | select(.type == "system" and .subtype == "init") | .model][0] // "unknown"' "$EXECUTION_FILE")
+          version=$(jq -r '[.[] | select(.type == "system" and .subtype == "init") | .claude_code_version][0] // "unknown"' "$EXECUTION_FILE")
+          used=$(jq -r '[.[] | select(.type == "result") | (.modelUsage // {}) | keys[]] | unique | join(", ")' "$EXECUTION_FILE")
+          echo "Mention model: started \`$started\` on Claude Code \`$version\`, used \`${used:-none recorded}\` (requested the \`$REQUESTED\` alias at effort \`$EFFORT\`)" >> "$GITHUB_STEP_SUMMARY"
