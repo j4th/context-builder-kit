@@ -736,6 +736,23 @@ grep -q 'extend-glo[b] = \["cbk-conventions-reference.md"\]' .claude/rules/cbk-c
 # named runner image (a -latest label moves under the gate). Kit tree only: a target does not install verify.yml.
 [ -f docs/cbk/scaffold.md ] || { grep -qx '    shell: bash' .github/workflows/verify.yml && grep -qx '    runs-on: ubuntu-24.04' .github/workflows/verify.yml; } || { echo ".github/workflows/verify.yml lacks defaults.run.shell: bash or runs-on: ubuntu-24.04"; exit 1; }
 
+# The ADR-immutability job's own run: body on a throwaway repository (context-builder-kit#60,
+# context-builder-kit#61): a modified ADR with an ASCII, non-ASCII or spaced name, a deletion, a rename and a
+# mode change fail it; a new ADR, the README, the corrections register and a nested non-ADR pass; a branch
+# behind a base that gained an ADR passes (the diff runs from the merge base); an unreadable base SHA and no
+# merge base fail closed. Needs git.
+bash .claude/workflows/tests/adr-ci-body-fixture.sh || { echo "adr-immutability-check.yml's body regressed on its fixture"; exit 1; }
+# The job's shape the fixture cannot see: the parse-nothing pathspec and the merge-base diff, a blobless checkout
+# that stays blobless only while --no-renames holds, bash with pipefail, a named runner image; and no workflow or
+# workflow template reads a process substitution into mapfile, whose failure `set -e` never sees (context-builder-kit#61).
+# The flags are read from the step's commands with its comments stripped, and the keys as whole lines, because the
+# job's own comments name every one of them. Unconditional: the job ships in the drop-in set, so a target keeps the
+# pins, or narrows this check in its own copy with a comment saying why (a self-hosted runner, say).
+. .claude/workflows/tests/extract-run-block.sh
+adrcmd=$(extract_run_block .github/workflows/adr-immutability-check.yml "Detect modified or deleted ADR files" | grep -v '^[[:space:]]*#' || true)
+for w in ":(glob)docs/adr/" "--diff-filter=a" "--no-renames" '"$BASE_SHA...$HEAD_SHA"'; do grep -qF -- "$w" <<<"$adrcmd" || { echo "adr-immutability-check.yml's run: body lacks: $w"; exit 1; }; done
+for l in "    shell: bash" "    runs-on: ubuntu-24.04" "          filter: blob:none"; do grep -qxF -- "$l" .github/workflows/adr-immutability-check.yml || { echo "adr-immutability-check.yml lacks the line:$l"; exit 1; }; done
+absent grep -rnE 'mapfile[^<]*<[[:space:]]*<\(' .github/workflows .claude/skills/blueprint/references/templates
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
