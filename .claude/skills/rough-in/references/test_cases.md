@@ -206,6 +206,7 @@ These tests are not exhaustive — they cover the canonical happy path and the i
 - Every drafter/researcher prompt embeds the repo-wide-verification rule verbatim (no single-package existence greps)
 - Any verifier/harmonizer pass preferentially spot-checks **negative** claims ("X does not exist") over positive anchors
 - Drafts cite the run's existing grounding output for facts it already covers instead of re-deriving them
+- A claim about a tool's behaviour names the binary it was checked against, resolved from inside the code's own execution context (`command -v` or `type -a` from a child script, never `type -P`)
 
 **Failure signals**:
 - A spec instructs the executor to *create* something whose absence evidence is a single-directory grep

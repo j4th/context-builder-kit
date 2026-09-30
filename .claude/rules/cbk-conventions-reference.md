@@ -919,6 +919,10 @@ grep -q 'a workflow agent has none at any depth' .claude/rules/pr-review.md || {
 # context-builder-kit#69): the 2.1.154 cleanup-only entry is named and the old spot check is gone.
 absent grep -n 'as of 2\.1\.26[3]' .claude/rules/simplification.md
 grep -q '2\.1\.154' .claude/rules/simplification.md || { echo "simplification.md § Plugin does not carry /simplify's changelog history (2.1.63, 2.1.147, 2.1.152, 2.1.154)"; exit 1; }
+# Grounding existence claims has four rules; rule 4 checks a tool's behaviour against the binary the code's own context
+# resolves (the rough-in skill's references/research-phase.md; context-builder-kit#68). No citing site restates a count.
+grep -q '^4\. \*\*Check which binary a tool resolves' .claude/skills/rough-in/references/research-phase.md || { echo "rough-in research-phase.md § Grounding existence claims lacks rule 4 (which binary a tool resolves to)"; exit 1; }
+absent grep -rn 'three-rule statemen[t]\|discipline has three rule[s]\|the three rules i[n]' .claude/rules .claude/skills
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
