@@ -11,6 +11,10 @@
 # the per-action OK. `git push` and `gh pr create` are deliberately unmatched
 # (/finish legitimately runs both).
 #
+# Not seen: a PR-state change the command spells indirectly — `eval`, a
+#           variable holding `gh`, a `gh` alias, `gh api` against the pulls
+#           endpoint — and one made in the web UI. No mechanical backstop exists:
+#           the per-action OK is the operator's.
 # Tier:     ASK-GATE (see the registry comment in .claude/settings.json).
 # Depends:  jq (the payload) — absent, the guard fails open: exit 0 with a stderr
 #           warning that says no mechanical backstop exists. A payload jq cannot
@@ -54,10 +58,14 @@ command="$(printf '%s' "$input" | jq -r '.tool_input.command // empty')"
 
 # Token-anchored + flag-tolerant: matches `gh pr merge`, `gh -R o/r pr ready`,
 # `gh pr -R o/r close 5`, etc. Over-matching (the phrase quoted inside another
-# command) costs one extra confirmation — acceptable for an ask-gate.
+# command) costs one extra confirmation — acceptable for an ask-gate. The
+# anchors are negated classes, as in protect-main-branch.sh: `gh` may follow
+# anything that cannot continue a word (`bash -c "gh pr merge 5"`,
+# `(gh pr merge 5)`, `$(gh pr merge 5)`, `/usr/bin/gh`), and the verb anything
+# but a word character, `.` or `-` (measured 2026-09-30; the fixture holds the cases).
 # A here-string, never `printf … | grep`: a reader that exits on its first match makes
 # pipefail read a real match as NO MATCH (cbk-conventions-reference.md § Hook authoring).
-if grep -Eq '(^|[;&|[:space:]])gh([[:space:]]+[^[:space:]]+)*[[:space:]]+pr([[:space:]]+[^[:space:]]+)*[[:space:]]+(ready|merge|close|reopen)([[:space:]]|$|[;&|])' <<<"$command"; then
+if grep -Eq '(^|[^[:alnum:]_.-])gh([[:space:]]+[^[:space:]]+)*[[:space:]]+pr([[:space:]]+[^[:space:]]+)*[[:space:]]+(ready|merge|close|reopen)([^[:alnum:]_.-]|$)' <<<"$command"; then
   cat <<'EOF'
 {
   "hookSpecificOutput": {

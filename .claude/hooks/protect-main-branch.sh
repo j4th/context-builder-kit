@@ -7,11 +7,18 @@
 # diverges (e.g. after a squash-merge) — and hooks enforce non-negotiables
 # more reliably than instructions.
 #
-# Blocked:  Bash tool calls whose command contains a token-anchored `git`
-#           followed (any number of option tokens later) by a `commit` token,
-#           while the call's working directory is on main or master.
-# Allowed:  everything else — commits on feature branches, and all
-#           non-commit git commands on main.
+# Blocked:  Bash tool calls whose command contains `git` — at the start, or
+#           after any character that cannot continue a word (a space, `;`, `&`,
+#           `|`, `(`, `$(`, a backtick, a quote, the `/` of /usr/bin/git) —
+#           followed, any number of option tokens later, by a `commit` token that
+#           no word character, `.` or `-` continues, while the call's working
+#           directory is on main or master; and a payload jq cannot read.
+# Allowed:  everything else — commits on feature branches, non-commit git
+#           commands on main, `git commit-tree`, and a `commit.*` config key.
+# Not seen: a commit the command spells indirectly — `eval`, a variable holding
+#           `git`, a git alias, a script that commits. A pattern guard reads the
+#           text, not what runs; the base branch's ruleset, where one exists,
+#           refuses such a commit when it is pushed.
 # Timing:   the guard reads the branch BEFORE the command runs, so a compound
 #           command that creates a branch and commits in one call is judged on
 #           main and blocked. Create the branch and make the first commit in
@@ -70,10 +77,16 @@ PROJECT_DIR="${cwd:-${CLAUDE_PROJECT_DIR:-$PWD}}"
 # unrelated git call, or a `git -C <other-repo> commit` judged against this
 # repo's branch — costs one wrongly BLOCKED call with a loud message the
 # operator can override by running the commit themselves; under-matching
-# would be a silent bypass, which is worse for a deny-tier guard.
+# would be a silent bypass, which is worse for a deny-tier guard. Both anchors
+# are negated classes: `git` may follow anything that cannot continue a word,
+# so `bash -c "git commit …"`, `(git commit …)`, `$(git commit …)` and
+# `/usr/bin/git commit` are caught; `commit` may be followed by anything but a
+# word character, `.` or `-`, so `git commit;` and `git commit&&…` are caught
+# while `git commit-tree` and `git config commit.gpgsign …` are not (each
+# measured 2026-09-30; the fixture holds the cases).
 # A here-string, never `printf … | grep`: a reader that exits on its first match makes
 # pipefail read a real match as NO MATCH (cbk-conventions-reference.md § Hook authoring).
-if ! grep -Eq '(^|[;&|[:space:]])git([[:space:]]+[^[:space:]]+)*[[:space:]]+commit([[:space:]]|$)' <<<"$command"; then
+if ! grep -Eq '(^|[^[:alnum:]_.-])git([[:space:]]+[^[:space:]]+)*[[:space:]]+commit([^[:alnum:]_.-]|$)' <<<"$command"; then
   exit 0
 fi
 
@@ -90,8 +103,8 @@ BLOCKED: git commit on '$branch'.
 Branch-first is the rule (cbk-conventions.md § Branch naming; /finish creates
 the branch before any code lands). Create the feature branch, then re-run the
 commit:
-  git switch -c <type>/<team>-<n>-<short-slug>        # cascade issue
-  git switch -c <type>/<short-slug>                   # operator-directed maintenance, no issue
+  git switch -c <type>/<team>-<n>-<short-slug>        # an issue this PR closes
+  git switch -c <type>/<short-slug>                   # work no issue tracks
 
 If this block is genuinely wrong (rare), the operator can run the commit
 themselves outside Claude Code.

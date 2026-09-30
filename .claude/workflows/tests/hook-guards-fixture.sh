@@ -78,6 +78,15 @@ RUN_CWD="$d/on-feat" run "$MAIN" "$(jq -cn '{tool_name:"Bash", tool_input:{comma
 # A commit with nothing after it — the end-of-command form, reached after && or alone.
 run "$MAIN" "$(bash_payload 'git add -A && git commit' "$d/on-main")"; want 2 "a bare commit at the end of the command is still a commit"
 run "$MAIN" "$(bash_payload 'git commit' "$d/on-main")";             want 2 "a bare commit alone is a commit"
+# Both anchors are negated classes: a commit reached through a subshell, a quoted `-c` string, an absolute path or a
+# trailing separator is still a commit; `commit-tree` and a `commit.*` key are not.
+for c in 'bash -c "git commit -m x"' "sh -c 'git commit -m x'" '(git commit -m x)' '$(git commit -m x)' \
+         '`git commit -m x`' '/usr/bin/git commit -m x' 'git commit;' 'git commit&&true' 'true;git commit'; do
+  run "$MAIN" "$(bash_payload "$c" "$d/on-main")"; want 2 "a commit on main is denied: $c"
+done
+for c in 'git commit-tree HEAD^{tree} -m x' 'git -c commit.gpgsign=false log' 'git config commit.gpgsign true' 'git log --grep=commit'; do
+  run "$MAIN" "$(bash_payload "$c" "$d/on-main")"; want 0 "not a commit: $c"
+done
 # Fail-open branches name what still stands.
 run "$MAIN" "$(bash_payload 'git commit -m x' "$d/plain")";          want 0 "a directory that is not a checkout fails open"
 says "not a git repo" "the non-checkout warning says why"; says "Backstop" "the non-checkout warning names a backstop"
@@ -93,6 +102,12 @@ for c in 'gh pr merge 7 --squash' 'gh pr ready 7' 'gh pr close 7' 'gh pr reopen 
          'gh -R o/r pr merge 7' 'gh pr --repo o/r ready 7' 'git push && gh pr merge 7' \
          'gh pr merge' 'gh pr ready' 'git push && gh pr merge'; do  # the bare forms act on the current branch's PR
   run "$PRS" "$(bash_payload "$c" "$d/on-feat")"; asks "a PR-state change asks: $c"
+done
+for c in 'bash -c "gh pr merge 5"' '(gh pr merge 5)' '$(gh pr merge 5)' '/usr/bin/gh pr merge 5' '(gh pr merge)' 'gh pr close 5;echo done'; do
+  run "$PRS" "$(bash_payload "$c" "$d/on-feat")"; asks "a PR-state change asks: $c"
+done
+for c in 'gh pr view 7 --json mergeable' 'gh pr list --state merged'; do
+  run "$PRS" "$(bash_payload "$c" "$d/on-feat")"; silent "no decision for: $c"
 done
 for c in 'gh pr create --draft' 'gh pr view 7' 'gh pr list' 'gh pr checks 7' 'gh issue close 7'; do
   run "$PRS" "$(bash_payload "$c" "$d/on-feat")"; silent "no decision for: $c"
