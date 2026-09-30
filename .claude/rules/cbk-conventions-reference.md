@@ -504,8 +504,9 @@ mcpx=""; [ -f .mcp.json.example ] && mcpx=.mcp.json.example
 absent grep -rn -i "opinionate[d] profile\|opinionated_profil[e]" .claude/ README.md $mcpx
 
 # CLAUDE.md points at this file as a backticked mention — deliberately NOT an `@` import,
-# which would expand this whole file into every session at launch (memory docs).
-grep -q "cbk-conventions" CLAUDE.md
+# which would expand this whole file into every session at launch (memory docs). Blueprint writes a target's
+# CLAUDE.md, so a scaffolded target owes the mention once docs/cbk/blueprint.md exists; the kit tree always does.
+if [ ! -f docs/cbk/scaffold.md ] || [ -f docs/cbk/blueprint.md ]; then grep -q "cbk-conventions" CLAUDE.md || { echo "CLAUDE.md is missing or does not mention cbk-conventions (a backticked mention, never an @ import)"; exit 1; }; fi
 
 # Producer templates emit the two-axis vocabulary (positive checks).
 grep -n "Planning backend" .claude/skills/scaffold/references/scaffold_output_template.md
@@ -707,6 +708,11 @@ total=0; for f in .claude/rules/*.md; do head -1 "$f" | grep -q '^---$' || { s=$
 # The runner's three rails hold on synthetic blocks, the runner copied into throwaway checkouts at its real
 # path (§ Verification › Run it): the block guards the script that runs it.
 bash .claude/workflows/tests/run-verification-block-fixture.sh || { echo "run-verification-block.sh lost a rail (the fixture names the case)"; exit 1; }
+
+# Every rule whose `paths:` block ships a placeholder has a row in scaffold's rule-file disposition table, so the
+# pass that stamps it asks about it: a placeholder no row names reaches a target unstamped and fails the project
+# sub-block's stamped-globs check on the target's first run. The closed set is diffed here because the tree can.
+for f in $(grep -l '^paths:' .claude/rules/*.md); do awk '/^---$/{c++; next} c==1' "$f" | grep -q '<' || continue; grep -q "^| \`$(basename "$f")\` |" .claude/skills/scaffold/references/bootstrap_checklist_template.md || { echo "$f ships a paths: placeholder, but scaffold's rule-file disposition table has no row for it"; exit 1; }; done
 
 echo "verification: kit sub-block complete"
 

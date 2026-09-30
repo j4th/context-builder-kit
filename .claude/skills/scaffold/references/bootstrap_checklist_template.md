@@ -74,7 +74,7 @@ Only include rows that are actually applicable. State 2 (no projects toolset) om
 
 ### 4. Rule-file disposition
 
-The kit's `.claude/rules/` ships three template rules that carry bracketed placeholders (`cbk-conventions.md`, `orchestration.md`, `tooling.md`) and two path-scoped rules whose `paths:` globs are placeholders (`logging.md`, `testing.md`). Nothing else in the cascade ever asks about them, so this section does: print the always-loaded set with its size first (the loop in `cbk-conventions-reference.md` § Verification), then require an explicit disposition per file. A row with no disposition is a defect, not a default — a real run reached dozens of merged PRs with `[Record the project's posture here]` still in an always-loaded rule.
+The kit's `.claude/rules/` ships three template rules that carry bracketed placeholders (`cbk-conventions.md`, `orchestration.md`, `tooling.md`) and three path-scoped rules whose `paths:` block carries a placeholder glob (`logging.md`, `testing.md`, and the manifest-and-lockfile entry in `cbk-conventions-reference.md`). Nothing else in the cascade ever asks about them, so this section does: print the always-loaded set with its size first (the loop in `cbk-conventions-reference.md` § Verification), then require an explicit disposition per file. A row with no disposition is a defect, not a default — a real run reached dozens of merged PRs with `[Record the project's posture here]` still in an always-loaded rule.
 
 ```markdown
 ## 📐 Rule-file disposition
@@ -89,6 +89,7 @@ Always-loaded rules as of this checklist:
 | `tooling.md` | filled / path-scoped / deleted | <e.g. "deleted — no MCPs wired yet; restore from the kit when the first lands"> |
 | `logging.md` | stamped | `paths:` set to the project's source globs (the callout stays; it describes the mechanism) |
 | `testing.md` | stamped | `paths:` set to the project's test globs and directories (inline-test stacks: directories alone) |
+| `cbk-conventions-reference.md` | stamped | the bracketed `paths:` entry replaced with the project's manifest and lockfile globs (e.g. `**/pyproject.toml`, `**/uv.lock`); left bracketed, it fails the verification block's stamped-globs check |
 | `knowledge-backend.md` | kept / deleted | <"deleted with its hook and settings stanza — knowledge axis is none"> |
 
 One-time choices settled here (each has a kit default; a choice with no forcing surface is a choice the kit made for you):

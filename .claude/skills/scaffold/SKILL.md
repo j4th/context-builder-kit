@@ -312,7 +312,7 @@ Auto-checkable, fires after gate 6 and before scaffold declares itself complete.
 - [ ] The Cascade metadata rows in `docs/cbk/scaffold.md` agree with `.cascade/backends.toml` (the verification block's axis-mirror check passes)
 - [ ] `docs/adr/` exists with the three starters and ADR-0000's header is filled: `grep -n "YYYY-MM-DD\|<project owner" docs/adr/0000-*.md` prints nothing
 - [ ] On the github-issues and linear axes, the four cascade issue templates are on disk under `.github/ISSUE_TEMPLATE/`, and `cascade-rough-in.md` carries the eight headings including `## Assumptions`
-- [ ] The bootstrap checklist's rule-file disposition table has a disposition for every shipped template and path-scoped rule; `logging.md` and `testing.md` carry stamped globs (no `<ext>` left)
+- [ ] The bootstrap checklist's rule-file disposition table has a disposition for every shipped template and path-scoped rule; `logging.md`, `testing.md` and `cbk-conventions-reference.md` carry stamped globs (no `<ext>` and no bracketed manifest entry left)
 - [ ] Every call this run exercised that a reference file flags as individually unexercised has been restamped in the same commit (`references/linear_planning.md` § Exercise status names the flags)
 
 ## Reference files
