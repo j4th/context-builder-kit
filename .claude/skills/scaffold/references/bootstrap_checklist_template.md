@@ -73,6 +73,17 @@ Walk through each row. If anything fails, retry or fall back to manual instructi
 
 Only include rows that are actually applicable. State 2 (no projects toolset) omits the project board row. State 4 (no MCP) puts everything in section 2 (manual instructions) and the verification matrix becomes longer.
 
+**When a frozen corpus is designated** (`problem_brief.md` § Pre-cascade sources names one — the consultation skill's `references/frozen_corpus_ingestion.md`), the matrix gains one row per item of its enforcement set, so no item is ticked off with the others. Omit these rows when no corpus is designated:
+
+```markdown
+| Corpus hook | Pipe an Edit payload naming a corpus file into the corpus guard | Exit 2; the message names the errata companion | ☐ |
+| Corpus CI job | Open a throwaway PR that edits one corpus file | The job fails, and its check is one of the ruleset's required contexts | ☐ |
+| Corpus CI job's closures | Read the job against the closure list in `frozen_corpus_ingestion.md` § The enforcement set scaffold registers | Every closure is implemented; the ones the job's own fixture drives are named | ☐ |
+| Corpus `.gitattributes` | `git check-attr linguist-documentation <corpus path>/<any file>` | The attribute reads `false` | ☐ |
+| Corpus editor settings | Open a corpus file in the editor and save it unchanged | `git status` shows no change (no whitespace trim, no final newline added) | ☐ |
+| Corpus formatter skip | Run the docs formatter's check over the corpus path | It rewrites nothing | ☐ |
+```
+
 ### 4. Rule-file disposition
 
 The kit's `.claude/rules/` ships three template rules that carry bracketed placeholders (`cbk-conventions.md`, `orchestration.md`, `tooling.md`) and three path-scoped rules whose `paths:` block carries a placeholder glob (`logging.md`, `testing.md`, and the manifest-and-lockfile entry in `cbk-conventions-reference.md`). Nothing else in the cascade ever asks about them, so this section does: print the always-loaded set with its size first (the loop in `cbk-conventions-reference.md` § Verification), then require an explicit disposition per file. A row with no disposition is a defect, not a default — a real run reached dozens of merged PRs with `[Record the project's posture here]` still in an always-loaded rule.

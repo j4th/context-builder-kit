@@ -67,7 +67,7 @@ For Claude.ai's qualitative test loop (no subagents, no benchmarking): a real hu
 **What success looks like:**
 - The incoming-context step takes the directory branch (`references/frozen_corpus_ingestion.md`), not the Notion modes: every file is read in full, and the brief's `## Pre-cascade sources` names the corpus path with one bullet per file consulted and the passages quoted where wording is inherited
 - Nothing under `planning/` is edited; a defect found while reading goes to a lazily created `planning/<slug>-errata.md` entry (dated, "amends; never edits"), and the brief cites the entry
-- The brief's `## Handoff notes for later phases` addresses scaffold by name (land the corpus at the recorded path, register the enforcement set) and blueprint by name (which decisions may be promoted, with the `Promotes:` form)
+- The brief's `## Handoff notes for later phases` addresses scaffold by name (land the corpus at the recorded path, register the enforcement set — the corpus guard, the CI job with its closures, and the other items, each a verification row of its own) and blueprint by name (which decisions may be promoted, with the `Promotes:` form)
 - The four-step interview still runs, informed by the corpus, not replaced by it
 
 **What failure looks like:**

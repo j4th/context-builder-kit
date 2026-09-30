@@ -791,6 +791,11 @@ grep -qE '\.github/workflows/[A-Za-z0-9._-]+\.ya?ml' <<<"$mt" || { echo "cbk-con
 backstops "$mt
 $(jq -r '._comment_hooks' .claude/settings.json)
 $(cat .claude/hooks/*.sh)" || { echo "the mutation table, the hook registry or a hook header names a CI workflow or script that does not exist (above)"; exit 1; }
+# The frozen-corpus recipe (context-builder-kit#60): the enforcement set lists the CI job's closures and builds the job on
+# the ADR job's parse-nothing body; the bootstrap checklist carries one verification row per item, never one for all.
+{ grep -q "The CI job's closures" .claude/skills/consultation/references/frozen_corpus_ingestion.md && grep -qF ':(glob)' .claude/skills/consultation/references/frozen_corpus_ingestion.md; } || { echo "frozen_corpus_ingestion.md lacks the CI job's closure list or the parse-nothing body"; exit 1; }
+for r in 'Corpus hook |' 'Corpus CI job |' "Corpus CI job's closures |" 'Corpus `.gitattributes` |' 'Corpus editor settings |' 'Corpus formatter skip |'; do grep -qF "| $r" .claude/skills/scaffold/references/bootstrap_checklist_template.md || { echo "the bootstrap checklist lacks the corpus verification row: $r"; exit 1; }; done
+absent grep -n "carries the four items as one ro[w]" .claude/skills/consultation/references/frozen_corpus_ingestion.md
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
