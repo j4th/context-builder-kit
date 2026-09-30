@@ -973,6 +973,9 @@ for f in research-phase contract test_cases; do grep -qF 'is a new draft' .claud
 # /pr-respond's NOT-list agrees with its Step 7: the body is edited only by appending the round block (context-builder-kit#64).
 grep -qF 'edits the description body only by appending the round block' .claude/commands/pr-respond.md || { echo "pr-respond.md's NOT-list contradicts Step 7's round-block append"; exit 1; }
 absent grep -n "which is not an edit of the descriptio[n]" .claude/commands/pr-respond.md
+# The four-class rubric names its classes and its Apply variant, and an ADR conflict has one class, not two.
+grep -qF 'exactly one of four classes — Apply, Surface, Defer, Reject' .claude/rules/pr-review.md || { echo "pr-review.md § Triage rubric does not name its four classes and the Apply-with-care variant"; exit 1; }
+absent grep -n "Conflicts with an ADR or with the issue's intentional desig[n]" .claude/rules/pr-review.md
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
