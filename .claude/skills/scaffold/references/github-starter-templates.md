@@ -264,13 +264,20 @@ updates:
   # ── Inactive stubs carry the floor ────────────────────────────────────────
   # An ecosystem the repo does not use yet stays commented out WITH its cooldown,
   # so enabling it later is an uncomment, never a re-derivation of the policy.
+  # Images: `docker` reads a Dockerfile's FROM lines, `docker-compose` a compose
+  # file's image: keys. Neither reads COPY --from=<image>, and the cooldown has a
+  # publication date only from Docker Hub — the note below this block.
   # - package-ecosystem: "docker"
+  #   directory: "/"
+  #   schedule: { interval: "monthly" }
+  #   cooldown: { default-days: 7 }
+  # - package-ecosystem: "docker-compose"
   #   directory: "/"
   #   schedule: { interval: "monthly" }
   #   cooldown: { default-days: 7 }
 ```
 
-**Not covered by any bot, and therefore not exempt:** toolchain and single-binary pins (`mise.toml` `[tools]`, `.tool-versions`, `rust-toolchain.toml`, a bare `.nvmrc`), container base-image tags, standalone binaries. They install the compilers that build everything else. Apply the same floor by hand, record the settle evidence in the commit (`"<version> is the newest build clearing the 7-day window as of <date>"`), and name the tracking mechanism (an open question in the frame, or a project automation) — silent exemption is how the highest-privilege dependency surface in the repo ends up unaudited (`cbk-conventions-reference.md` § Dependency settle-window).
+**Not covered by Dependabot, and therefore not exempt:** toolchain and single-binary pins (`mise.toml` `[tools]`, `.tool-versions`, a bare `.nvmrc`) and standalone binaries — they install the compilers that build everything else — plus an image referenced only by `COPY --from=<image>` and a dev container's image. Apply the same floor by hand, record the settle evidence in the commit (`"<version> is the newest build clearing the 7-day window as of <date>"`), and name the tracking mechanism (an open question in the frame, or a project automation) — silent exemption is how the highest-privilege dependency surface in the repo ends up unaudited. An image in a Dockerfile `FROM` or a compose `image:` **is** covered, by the two stubs above; route a `COPY --from` image through a named `FROM <image> AS <stage>` and `docker` maintains it too. Where the image's registry is not Docker Hub, the bump arrives with no cooldown date, so read the image's publication date before merging it. The rule and its sources are `cbk-conventions-reference.md` § Dependency settle-window; blueprint's `templates/tooling.md` sanity question 6b restates it.
 
 ## `.gitattributes`
 
