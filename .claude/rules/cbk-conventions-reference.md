@@ -894,6 +894,9 @@ for c in .claude/rules/*.md; do case "$c" in *-reference.md) continue;; esac; r=
 # The ladder and the price steps follow the current lineup (orchestration.md § The ceiling rule, § Generation notes;
 # context-builder-kit#69): the Opus 5 ladder or the old step order is red. A target that deleted the template skips it.
 [ ! -f .claude/rules/orchestration.md ] || { grep -q 'Opus 5.5 first' .claude/rules/orchestration.md && grep -qF '2× / 2× / 2.5×' .claude/rules/orchestration.md; } || { echo "orchestration.md carries the Opus 5 ladder or the old price steps (§ The ceiling rule, § Generation notes)"; exit 1; }
+# Effort defaults are per model and per surface, and the Agent tool takes no effort parameter (orchestration.md § The role
+# ladder, § The effort axis; context-builder-kit#69, context-builder-kit#74): the retired "API default is high" claim is red.
+[ ! -f .claude/rules/orchestration.md ] || { absent grep -n 'The API default is `hig[h]`' .claude/rules/orchestration.md; grep -q 'takes no effort parameter' .claude/rules/orchestration.md || { echo "orchestration.md § The role ladder does not say the Agent tool takes no effort parameter (context-builder-kit#74)"; exit 1; }; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
