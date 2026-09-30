@@ -1073,6 +1073,10 @@ grep -q "the rough-in skill's \`references/planning-backend-commit.md\`" .claude
 grep -q '^## Relation grains' .claude/skills/adr-new/SKILL.md || { echo "adr-new/SKILL.md lacks ## Relation grains (the pointer to § ADR relation grains)"; exit 1; }
 absent grep -rn "Refines vs Supersede[s]" .claude/
 { grep -q 'Honest-disclosure refines' .claude/rules/cbk-conventions-reference.md && grep -q 'Refines may target non-decision clauses' .claude/rules/cbk-conventions-reference.md; } || { echo "§ ADR relation grains lacks the non-decision-clause or honest-disclosure refine"; exit 1; }
+# The four backends.md copies are one file in four skills: byte-identical, so a restamp lands in all four or fails here.
+for s in blueprint framing rough-in; do cmp -s .claude/skills/scaffold/references/backends.md .claude/skills/$s/references/backends.md || { echo "$s/references/backends.md drifted from scaffold's copy (the four copies are byte-identical)"; exit 1; }; done
+# Its board-automation rail is dated, and no skill names a sub-issue field the GraphQL schema lacks.
+absent grep -rn "as of current cascade versio[n]\|subIssueProgres[s]" .claude/skills/
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

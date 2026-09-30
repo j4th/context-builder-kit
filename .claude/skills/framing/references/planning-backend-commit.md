@@ -204,7 +204,7 @@ When the user picks option 1, the recovery runs **the exact same atomic transiti
 
 - **Does not update existing meta-issues from the old framing** (they may have stale labels or parent linkage from the pre-recovery state). Those are a separate recovery pass and should be handled as a `## Meta-issue cleanup` step after the framing capability sub-issues land. The HITL gate for the recovery should mention if meta-issues need follow-up cleanup so the user knows to look.
 - **Does not rewrite frame-NN.md's prose sections** beyond an optional recovery note at the top. Specifically, if frame-NN.md has a wrong handoff sentence or other content that would benefit from updating, the recovery does not fix it — that's a separate edit and should go through the normal "framing markdown edit" path, not the atomic transition.
-- **Does not retroactively set Projects v2 Status fields** on the new sub-issues (the MCP surface for Projects v2 field manipulation is limited). The user sets those manually after the recovery completes, same as with a fresh framing run.
+- **Does not retroactively set Projects v2 Status fields** on the new sub-issues (the GitHub MCP server's tool list carried no project-board tools when observed on 2026-09-06 — the board-automation gap in `references/backends.md`). The user sets those manually after the recovery completes, same as with a fresh framing run.
 
 ## What this step enables
 
