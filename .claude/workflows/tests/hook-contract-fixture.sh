@@ -5,7 +5,9 @@
 # .claude/hooks/lib/*.sh helper too (a helper never drains stdin, so check 1 skips it) — plus
 # behavioural probes: one over-buffer probe per
 # decision site the kit ships, the fork detector's prune rules and degrade path, and the lock-file
-# arms. Runs against throwaway `git init` trees under mktemp, never the real checkout, and never
+# arms; every branch a payload can reach is driven by the family fixtures beside it —
+# hook-guards-fixture.sh, hook-payloads-fixture.sh and protected-paths-hook-fixture.sh.
+# Runs against throwaway `git init` trees under mktemp, never the real checkout, and never
 # depends on the directory it is launched from. Run by the verification block; also:
 # bash .claude/workflows/tests/hook-contract-fixture.sh
 set -euo pipefail
