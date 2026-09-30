@@ -909,6 +909,9 @@ absent grep -rn 'three surfaces + resolution orde[r]\|§ The three surfaces an[d
 # The triad's second leg is a tracked checklist: the task tools are not offered on current models by default, so no rule
 # leans on "the harness's task list" (workflows.md § The triad; context-builder-kit#69).
 absent grep -n "the harness's task lis[t]" .claude/rules/workflows.md
+# Why /finish implements inline, and the rules for anyone who delegates implementation, are stated where dispatch is
+# decided (workflows.md § Subagent dispatch; context-builder-kit#69).
+grep -q 'Delegating implementation' .claude/rules/workflows.md || { echo "workflows.md § Subagent dispatch lacks the delegating-implementation clause (context-builder-kit#69)"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
