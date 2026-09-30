@@ -175,7 +175,7 @@ The methodology register is not a shipped file — it is the named methodologies
 
 ## Foundation document production
 
-Blueprint produces six prose foundation docs plus tooling configs. The order is **most critical first**, so the user can correct the highest-leverage docs before lower-leverage ones inherit from them.
+Blueprint produces six prose foundation docs — seven on the `github-issues` and `in-repo-markdown` axes, where `docs/cbk/ROADMAP.md` joins them — plus tooling configs. The order is **most critical first**, so the user can correct the highest-leverage docs before lower-leverage ones inherit from them.
 
 | Order | Doc | Location | Why this order |
 |---|---|---|---|
@@ -266,7 +266,7 @@ Blueprint has seven HITL gates in **full mode**, four in **standard mode**, and 
 1. **After inheritance check** — user confirms the inheritance summary is accurate
 2. **After stack decisions** — user approves the full stack decision set
 3. **After methodology selection** — user confirms the methodology choice
-4. **After each foundation doc** — user reviews and approves before commit (six iterations through this gate, one per doc)
+4. **After each foundation doc** — user reviews and approves before commit (one iteration per doc in the table above except `docs/cbk/blueprint.md`, which gate 6 reviews — `ROADMAP.md` included where the axis produces it)
 5. **After tooling configs** — user reviews CI workflow, task runner config, .env.example
 6. **After blueprint.md** — user approves the cascade artifact
 7. **After handoff issue draft** — user reviews the version-pin inventory and checklist before blueprint creates the issue in the tracker
@@ -286,7 +286,7 @@ Each gate is an explicit "approve to proceed" moment. Iterate within a gate as m
 
 When blueprint is complete, framing inherits:
 
-- **Six foundation docs** at known locations, all reviewed and committed
+- **Six foundation docs** (seven with `docs/cbk/ROADMAP.md` on the `github-issues` and `in-repo-markdown` axes) at known locations, all reviewed and committed
 - **Tooling configs** in `.github/workflows/` and the appropriate task runner location
 - **`docs/cbk/blueprint.md`** containing stack decisions, methodology selection, success criteria, workstreams, dependencies, not-in-scope, and open questions
 - **`docs/cbk/ROADMAP.md`** on the `github-issues` and `in-repo-markdown` axes — framing reads it as an input and appends its rows in the same atomic commit as the frame

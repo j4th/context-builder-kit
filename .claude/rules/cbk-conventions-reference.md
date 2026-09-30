@@ -1107,6 +1107,10 @@ absent grep -n "produces 3-7 R-issue[s]" .claude/skills/rough-in/references/test
 absent grep -n "3-5 milestones per projec[t]" .claude/skills/framing/references/templates/milestone-template.md
 # The restamp standing item is on every phase-exit checklist the conventions say carries it (V9.17).
 for s in scaffold blueprint framing rough-in; do grep -q 'flags as individually unexercised has been restamped in the same commit' .claude/skills/$s/SKILL.md || { echo "$s/SKILL.md's phase-exit checklist lacks the restamp standing item"; exit 1; }; done
+# Blueprint counts its docs the way its own table does (V9.18): six, plus ROADMAP.md on two axes; gate 4 does not
+# re-review blueprint.md, which gate 6 owns.
+grep -q 'seven on the `github-issues` and `in-repo-markdown` axes' .claude/skills/blueprint/SKILL.md || { echo "blueprint/SKILL.md counts six foundation docs where its table lists seven on two axes"; exit 1; }
+absent grep -n "six iterations through this gate, one per do[c]" .claude/skills/blueprint/SKILL.md
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
