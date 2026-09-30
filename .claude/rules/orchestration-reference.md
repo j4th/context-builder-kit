@@ -7,7 +7,7 @@ paths:
 
 # Orchestration — the reference half
 
-> **Path-scoped.** Loads when a workflow, an agent definition, or this rule pair is read. `orchestration.md` (always loaded) keeps a pointer heading for every section here. Sections were moved verbatim on 2026-09-06. See `cbk-conventions.md` § Rule loading and the instruction budget.
+> **Path-scoped.** Loads when a workflow, an agent definition, or this rule pair is read. `orchestration.md` (always loaded) keeps a pointer heading for every section here. Sections were moved verbatim on 2026-09-06, and every quotation was re-fetched on 2026-09-30. See `cbk-conventions.md` § Rule loading and the instruction budget.
 
 ## The dispatch surfaces + resolution order
 
@@ -20,7 +20,7 @@ Resolution (highest wins) — **a dated rail, re-read 2026-09-30**: the per-invo
 
 ## Generation notes — the sources
 
-The verbatim quotations behind `orchestration.md` § Generation notes and § The effort axis, fetched 2026-09-05 unless dated otherwise; re-fetch before re-citing.
+The verbatim quotations behind `orchestration.md` § Generation notes, § The effort axis and § Fan-out discipline, re-fetched raw on 2026-09-30 (a docs page's `.md` form where the site serves one) and matched with `grep -F` after straightening typographic quotes and stripping markdown links (context-builder-kit#69); re-fetch before re-citing.
 
 - **The ladder** (fetched 2026-09-30) — "If you're unsure which model to use, start with Claude Opus 5.5 for most workloads. Use Claude Fable 5.1 for demanding reasoning and long-horizon agentic work, or when your evals on Claude Opus 5.5 at higher effort still fall short" (`platform.claude.com/docs/en/about-claude/models/overview` § Compare models); the same page lists Opus 5 under "Legacy models (still available)". Pricing row, per MTok in/out: Fable 5.1 $10/$50, Opus 5 $5/$25, Sonnet 5 $2/$10, Haiku 4.5 $1/$5 (same page). "You pay for completed tasks, though, so compare models on cost per completed task" (`platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence` § Compare models on cost per task); the same section: "For most agent workloads, start with Claude Opus 5.5 at its default effort (`medium`)" and "On the SWE-bench Pro subset, Opus 5.5 at its default matched Fable 5.1 at its default for about a fifth of the cost per solved task". An advisor is no cheaper than effort: "a Claude Opus 5.5 executor at `high` with a Claude Fable 5.1 advisor scored 90.1% at $2.92 per attempt. That is 1.7 points over Opus 5.5 alone at `high`" and it came "for about 2.1 times the money"; "It lands about on Opus 5.5's own effort curve, so the advisor buys about what more effort does" (§ Advisor strategy: escalate hard decisions). On the synthesis slot's effort: "Claude Fable 5.1 scored nearly the same at `low`, `medium`, and `high` while the cost per task rose from $4.66 to $7.12" (§ Tune effort, on DeepResearch Bench II).
 - **Price steps** (`platform.claude.com/docs/en/about-claude/pricing` § Model pricing, fetched 2026-09-30) — the steps up the ladder are 2× / 2× / 2.5×: per MTok of input, Haiku 4.5 at $1, Sonnet 5.5 at $2, Opus 5.5 at $4 and Fable 5.1 at $10. Sonnet 5's footnote: "The previously scheduled increase to $3/$15 per million input/output tokens on September 1, 2026 will not occur."
@@ -58,14 +58,14 @@ The verbatim quotations behind `orchestration.md` § Generation notes and § The
 
 ## Cost terms and run hygiene
 
-The terms the contract half's § Fan-out discipline points at; all fetched 2026-09-05.
+The terms the contract half's § Fan-out discipline points at; all re-fetched 2026-09-30 unless dated otherwise.
 
-- **What every subagent pays.** A non-fork subagent loads "every level of the CLAUDE.md hierarchy the main conversation loads, including `~/.claude/CLAUDE.md`, project rules, `CLAUDE.local.md`, and managed policy files. The built-in Explore and Plan agents skip this" (`code.claude.com/docs/en/sub-agents` § What loads at startup). The always-loaded byte count the conventions' verification block prints is paid per agent launched.
+- **What every subagent pays.** A non-fork subagent loads "every level of the CLAUDE.md hierarchy the main conversation loads, including `~/.claude/CLAUDE.md`, project rules, `CLAUDE.local.md`, managed policy files, and any `AGENTS.md` files loaded as project instructions. The built-in Explore and Plan agents skip this" (`code.claude.com/docs/en/sub-agents` § What loads at startup). The always-loaded byte count the conventions' verification block prints is paid per agent launched.
 - **What a wave shares.** "Two agents that run with the same model, effort level, agent type, tools, output schema, and working directory build the same tools-and-system-prompt prefix, so an agent that starts after a matching sibling's response has begun reads that sibling's cache" (`code.claude.com/docs/en/workflows` § Prompt caching in a fan-out). Vary the prompt across a wave, not the pins.
 - **Background is the interactive default.** "Where fork mode is on, as it is by default in an interactive session, Claude Code runs the subagent in the background, forks and non-fork subagents alike, and Claude can't ask for the foreground" (`sub-agents` § Run subagents in foreground or background; the interactive default needs v2.1.232+ per § Turn fork mode on or off). Request every independent dispatch in one turn.
 - **Junk structured output is a script-side problem.** A schema-bound agent that returns nothing, or a shape the script did not expect, is filtered and logged by the script — `review-sweep.js`'s roster degrade and its finder retry, and `finish-ab.js`'s dropped-arm log and judge retry, are the exemplars; the retry pass, not the prompt, is the remedy.
-- **A suspended host stalls a fan-out silently.** Record the run id from the tool result; after a sleep or a kill, resume — the docs page describes the `/workflows` panel route (`workflows` § Resume after a pause: select the run, press `p`, or ask for a relaunch of the same script; completed agents return cached results), and the Workflow tool's own description offers `resumeFromRunId` beside `scriptPath` (read off the live tool description, 2026-09-06 — a contractual detail to re-read, not a page claim). A run that cannot be resumed is re-launched on the unfinished slice, never on the whole set.
-- **Hooks see dispatches.** `PreToolUse` matches `Agent` and `Workflow` and can `allow` / `deny` / `ask` / `defer`, or rewrite the call through `updatedInput` ("Replaces the entire input object, so include unchanged fields alongside modified ones"); a hook's `ask` "also forces a permission prompt in auto mode" (`code.claude.com/docs/en/hooks` § PreToolUse decision control, v2.1.211+). The kit's launch-root guard is the exemplar.
+- **A suspended host stalls a fan-out silently.** Record the run id from the tool result; after a sleep or a kill, resume — the docs page describes the `/workflows` panel route (`workflows` § Resume after a pause: select the run, press `p`, or ask for a relaunch of the same script; on a relaunch, agents that finished before the failed one return cached results, and the failed agent and every agent started after it run again), and the Workflow tool's own description offers `resumeFromRunId` beside `scriptPath` (read off the live tool description, 2026-09-30 — a contractual detail to re-read, not a page claim). A run that cannot be resumed is re-launched on the unfinished slice, never on the whole set.
+- **Hooks see dispatches.** `PreToolUse` matches `Agent` and `Workflow` and can `allow` / `deny` / `ask` / `defer`, or rewrite the call through `updatedInput` ("Replaces the entire input object, so include unchanged fields alongside modified ones"); a hook's `ask` "also forces a permission prompt in auto mode" (`code.claude.com/docs/en/hooks` § PreToolUse decision control; the auto-mode floor is the 2.1.211 changelog fix, "a hook `ask` now floors the decision at a prompt"). The kit's launch-root guard is the exemplar.
 
 ## Applied instances in this project
 
@@ -89,31 +89,45 @@ A project records its own pins as dated bullets under a heading it adds below th
 ## When to update this file
 
 - The model lineup or pricing changes — re-verify against the platform docs and restamp the dated observations. **The lineup moves faster than this file does**; check the aliases, not just the prices.
-- A harness version bump changes subagent defaults — re-read § The dispatch surfaces + resolution order and `orchestration.md` § Fan-out discipline against the current sub-agents doc after an upgrade.
+- A harness version bump changes subagent defaults — re-read § The dispatch surfaces + resolution order and `orchestration.md` § Fan-out discipline against the current sub-agents doc after an upgrade. Recent ones: v2.1.271 lowered the `medium` workflow-size guideline from under 15 agents to under 10; v2.1.280 moved `opus` to Opus 5.5 (a new price, a `medium` default, thinking always on); v2.1.284 moved `sonnet` to Sonnet 5.5 (recalibrated levels, `medium` in Claude Code) and stopped ultracode forcing `xhigh`.
+- Before a re-sweep after a model change, run `/doctor prompt-audit` (Claude Code 2.1.283 or later) over the rules, skills, agents and commands: the changelog says it audits "your CLAUDE.md files, skills, agents and commands for prompting patterns written for older models". Keep what it flags only where a measurement says the older pattern still wins.
 - Real usage shows a tier mis-assignment (a reviewer needs the workhorse tier) — record the promotion and why in § Applied instances.
 - A model change — re-sweep the per-role table in `orchestration.md` § Generation notes, matched by observed thinking length, and restamp its date.
 - **Every normative claim added here carries a resolvable source.** No quotation lands without a URL or authoritative local doc path; absence claims ("X is not supported") get a primary-source check first.
 
 ## Primary sources
 
-Verified 2026-09-05 by the harvest's research run; **re-fetch before re-citing** rather than trusting the summary. The contract half cites these pages by short name — the effort page, the models overview, the cost page (`optimizing-for-cost-and-intelligence`), the Opus 5 / Sonnet 5 / Fable 5.1 guides, sub-agents, workflows, costs, model-config, the model-and-effort blog — and each resolves to a row below.
+Verified 2026-09-30 (context-builder-kit#69): every quotation in this file re-fetched raw that day and matched with `grep -F`. **Re-fetch before re-citing** rather than trusting the summary. The contract half cites these pages by short name — the effort page, the models overview, the pricing page, the cost page (`optimizing-for-cost-and-intelligence`), the deprecations page, the Opus 5 / Opus 5.5 / Sonnet 5 / Sonnet 5.5 / Fable 5.1 guides, sub-agents, workflows, costs, model-config, the model-and-effort blog — and each resolves to a row below.
 
 | Source | What it grounds |
 |---|---|
-| `code.claude.com/docs/en/sub-agents` | Resolution order (v2.1.251), `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` (v2.1.257), the Explore cap, `effort` frontmatter inheritance, the concurrent-subagent limit (v2.1.217), what loads at startup, background default (v2.1.232) |
-| `code.claude.com/docs/en/workflows` | Workflow caps, the `Large workflow` warning, `workflowSizeGuideline`, prompt caching in a fan-out |
+| `code.claude.com/docs/en/sub-agents` | Resolution order (v2.1.251), `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` (v2.1.257), the Explore cap, `effort` frontmatter inheritance, the per-invocation `model` parameter, the concurrent-subagent limit (v2.1.217) and its ultracode exemption, the depth-limit sentence, a named subagent becoming a teammate, what loads at startup, background default (v2.1.232) |
+| `code.claude.com/docs/en/workflows` | Workflow caps, `CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS` (v2.1.269), the `Large workflow` warning and what replaces or hides it, `workflowSizeGuideline` and its sizes, prompt caching in a fan-out |
 | `code.claude.com/docs/en/costs` | Agent-team token multiple |
+| `code.claude.com/docs/en/agent-teams` | Teams experimental and off by default |
 | `code.claude.com/docs/en/skills` | Skill `model` / `effort` / `context: fork`, `${CLAUDE_EFFORT}` |
 | `code.claude.com/docs/en/hooks` | `PreToolUse` decisions, `updatedInput`, `ask` in auto mode |
-| `code.claude.com/docs/en/model-config` | Aliases (`opus`, `fable`) |
-| `platform.claude.com/docs/en/build-with-claude/effort` | The `high` default, set-it-explicitly, the levels table, Opus 5 recommendations, the supported-model list |
-| `platform.claude.com/docs/en/about-claude/models/overview` | The lineup, the pricing row, the documented ladder |
-| `platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence` | Cost per completed task; re-running failures at higher effort |
+| `code.claude.com/docs/en/model-config` | Aliases by provider and their version history (`opus` at v2.1.280, `sonnet` at v2.1.284); the Claude Code effort default per model; which settings scopes bind; the models with the dial; ultracode leaves the effort level unchanged |
+| `code.claude.com/docs/en/worktrees` | Subagent worktrees branch from the default branch unless `worktree.baseRef` is `"head"` |
+| `code.claude.com/docs/en/headless` | A resumed run reports the conversation's whole total |
+| `code.claude.com/docs/en/cli-reference` | `--max-budget-usd` does not count restored spend |
+| `code.claude.com/docs/en/permissions` | A `git push` deny rule does not match `git -C . push` |
+| `platform.claude.com/docs/en/build-with-claude/effort` | The per-model API default, set-it-explicitly, the levels table, Opus 5, Opus 5.5 and Sonnet 5.5 recommendations, `between_tools` |
+| `platform.claude.com/docs/en/about-claude/models/overview` | The lineup, the Opus 5.5-first ladder, Opus 5 as legacy, thinking by model |
+| `platform.claude.com/docs/en/about-claude/pricing` | The list prices and cache-read rates `agent-cost.py` mirrors, the price steps, Sonnet 5's cancelled increase |
+| `platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence` | Cost per completed task; Opus 5.5 at its default against Fable 5.1; the advisor result; Fable 5.1 flat across effort on a research benchmark; re-running failures at higher effort; when delegation doesn't pay |
+| `platform.claude.com/docs/en/about-claude/model-deprecations` | Haiku 4.5 not retired sooner than 2026-10-15 |
 | `platform.claude.com/docs/en/build-with-claude/task-budgets` | Not supported on Claude Code |
 | `platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5` | Over-verification; controlling subagent spawning; the deterministic caps |
+| `platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5-5` | Opus 5 patterns remain the starting point; `medium` against Opus 5 at `high`; § Unattended agentic runs |
 | `platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5` | Raise effort before prompting around it; match by thinking length |
+| `platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5-5` | Check-ins at `low` and `medium`; JSON answers without thinking; the remedy line |
 | `platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5-1` | Effort names across models; long outputs at `high` |
 | `platform.claude.com/docs/en/models/fable-5-1/whats-new-fable-5-1` | Searches less at `low` |
 | `platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices` | Specificity matched to fragility; 500-line SKILL.md; test with every model |
+| The Claude Code changelog (`raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md`), the entries cited from 2.1.63 to 2.1.286 | The 2.1.212 rails and 2.1.224; the task tools (2.1.233, 2.1.268); workflows (2.1.269, 2.1.271); `/simplify`'s history (2.1.63, 2.1.147, 2.1.152, 2.1.154, in `simplification.md`); `/doctor prompt-audit` (2.1.283); the auto-mode default (2.1.283, 2.1.284); ultracode no longer `xhigh` (2.1.284) |
+| `claude-code-action`'s `base-action/action.yml` at each release tag | Which action release installs which Claude Code, so which model an alias resolves to |
 | `claude.com/blog/claude-model-and-effort-level-in-claude-code` (2026-07-07) | The effort-vs-model heuristic; asks rather than digs at lower effort |
 | `anthropic.com/engineering/multi-agent-research-system` (2025-06-13, 4-series) | The lead-plus-cheaper-workers result (90.2%); the 4× and 15× multiples |
+| `anthropic.com/engineering/harness-design-long-running-apps` (2026-03-24) | A separate evaluator is worth its cost only beyond what the model does reliably solo |
+| `blog.fsck.com/2026/09/21/superpowers-6.4/` (2026-09-21; a practitioner's measurement) | Native execution against subagent-driven development |

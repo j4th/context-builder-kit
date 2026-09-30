@@ -926,6 +926,9 @@ absent grep -rn 'three-rule statemen[t]\|discipline has three rule[s]\|the three
 # A path-scoped reference half ships no square-bracket template slot: the disposition pass never visits it, so a slot
 # there is never filled (context-builder-kit#65). The contracts keep theirs; the project sub-block refuses them unfilled.
 absent grep -n '\[[Rr]ecor[d] ' .claude/rules/orchestration-reference.md
+# Every docs page the orchestration reference quotes has a § Primary sources row — the rows are what "re-fetch before
+# re-citing" walks (context-builder-kit#69). An empty page read is red, never a vacuous pass.
+[ ! -f .claude/rules/orchestration-reference.md ] || { ps=$(awk '/^## Primary sources/{p=1} p' .claude/rules/orchestration-reference.md); body=$(awk '/^## Primary sources/{exit} {print}' .claude/rules/orchestration-reference.md); u=$(grep -oE '(code|platform)\.claude\.com/docs/en/[A-Za-z0-9/_.-]*[A-Za-z0-9_-]' <<<"$body" | sort -u); [ -n "$u" ] || { echo "no docs page read from orchestration-reference.md — the extraction broke"; exit 1; }; for x in $u; do grep -qF "| \`$x\`" <<<"$ps" || { echo "orchestration-reference.md quotes $x but § Primary sources has no row for it"; exit 1; }; done; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
