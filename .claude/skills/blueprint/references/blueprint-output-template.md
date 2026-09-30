@@ -176,7 +176,7 @@ stays in this doc, one-time setup commands move to the issue tracker.]
 [For each credential type the project uses, document:
 - What it is (PAT, App, API key, etc.)
 - What it's used for (CI auth, local MCP, deployment, etc.)
-- Where it lives (env var, secret store, gitignored config file)
+- Where it lives (env var, secret store — never a committed file; a committed `.mcp.json` names a credential only as a `${VAR}` reference)
 - Rotation cadence and trigger
 - The minimum scopes required]
 
@@ -184,8 +184,8 @@ stays in this doc, one-time setup commands move to the issue tracker.]
 
 | | **GitHub App** | **Fine-grained PAT** |
 |---|---|---|
-| Used by | `claude-code-action` in CI | Local GitHub MCP |
-| Lives where | Repo secret + App install | `.mcp.json` (gitignored) |
+| Used by | `claude-code-action` in CI | The local `gh` CLI, and any MCP server that takes a token |
+| Lives where | Repo secret + App install | An environment variable exported in the shell; the committed `.mcp.json` references it as `${VAR}` |
 | Authenticates as | App identity (bot) | The user |
 | Rotation | App: re-install if compromised; secret: every 180d | Every 90d |
 ]

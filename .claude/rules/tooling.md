@@ -77,7 +77,7 @@
 
 | You want to … | Reach for | Why |
 |---|---|---|
-| Wire a server the project depends on | The committed `.mcp.json`, with credentials as **environment-variable references** (`${GITHUB_TOKEN}`), plus a committed `.env.example` naming every variable | The config is reviewable and shared; the secrets are not. The kit's `.mcp.json.example` is the starting shape |
+| Wire a server the project depends on | The committed `.mcp.json`, with credentials as **environment-variable references** (`${GITHUB_TOKEN}`), plus a committed `.env.example` naming every variable; a stdio server at an exact version past the settle window (`cbk-conventions-reference.md` § Dependency settle-window) | The config is reviewable and shared; the secrets are not. The kit's `.mcp.json.example` is the starting shape |
 | Wire a server only you use | The user-level MCP config, never the project file | A personal server in the committed file is a dependency for everyone |
 | Add a server | The cascade phase that justifies it wires it — the planning MCP at scaffold, a docs MCP at blueprint, a domain MCP when a workstream needs it — and records it in `cbk-conventions.md` § Surface inventory | A server nobody's phase asked for is noise in every session's tool list |
 

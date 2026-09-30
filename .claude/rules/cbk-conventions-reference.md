@@ -251,6 +251,8 @@ Two invariants keep the window honest; violate either and the policy inverts fro
 
 The same coverage fact is stated in blueprint's `templates/tooling.md` sanity question 6b and in `github-starter-templates.md` § `.github/dependabot.yml`; an edit sweeps all three in one commit (`cbk-conventions.md` § Multi-surface facts).
 
+**An MCP server is a dependency.** A stdio server launched by `npx`, `uvx` or `bunx` runs network-fetched code at every session start, outside every lockfile and every update bot. It takes an exact version at least `<N>` days old — never `@latest`, never unpinned — bumped by hand, with its settled age in the commit body and the tracking mechanism this section names. A hosted server (`"type": "http"`) cannot be pinned: its vendor changes it, so it is wired from the vendor's own documented endpoint or not at all. Credentials in `.mcp.json` are `${VAR}` references, never literals. The kit's `.mcp.json.example` is written this way, and the verification block checks the shape of whichever of it and a committed `.mcp.json` the tree holds; `tooling.md` § MCP configuration points here.
+
 **Inactive ecosystem stubs carry the floor too.** A commented-out or scheduled-off ecosystem entry in the update-bot config ships *with* its cooldown block, so uncommenting it never produces a bare entry (the starter `dependabot.yml` is written this way).
 
 **Metadata-only lockfile diffs are discarded.** A lockfile change whose diff is only registry metadata (integrity re-hashes, resolved-URL churn, a tool's own version stamp) with no version change is not committed — regenerate it from the manifest and keep the tree still; a reviewer reading a lockfile diff should see only versions moving.
@@ -1005,6 +1007,18 @@ absent grep -rn "docs\.github\.com …" .claude/ $dbx
 # mise inline tasks (context-builder-kit#70 item 5): blueprint's tooling template emits the [task_config] shell line
 # verbatim (bash with errexit, pipefail and inherit_errexit) and the mise release that introduced the key.
 { grep -qF 'shell = "bash -O inherit_errexit -c -o errexit -o pipefail"' .claude/skills/blueprint/references/templates/tooling.md && grep -qF 'mise >= 2026.7.15' .claude/skills/blueprint/references/templates/tooling.md; } || { echo "blueprint templates/tooling.md lacks the mise [task_config] shell line or its version floor"; exit 1; }
+# .mcp.json shape (context-builder-kit#70 item 6, D58), read from the project's .mcp.json, or from .mcp.json.example
+# where there is none (the kit tree), the same choice as the enabledMcpjsonServers check above: every url entry names
+# its type (Claude Code skips one without), every npx / uvx / bunx server runs an exact version (never @latest, never
+# unpinned — § Dependency settle-window), and no env or header value is a <placeholder> or a literal token:
+# credentials are ${VAR} references only.
+mcps=.mcp.json; [ -f "$mcps" ] || mcps=$mcpx
+if [ -n "$mcps" ]; then
+  [ "$(jq '.mcpServers | length' "$mcps")" -ge 1 ] || { echo "$mcps: no mcpServers read — the checks below would pass vacuously"; exit 1; }
+  bad=$(jq -r '.mcpServers | to_entries[] | select(.value.url != null and .value.type == null) | .key' "$mcps"); [ -z "$bad" ] || { echo "$mcps: a url entry with no type is skipped by Claude Code:" $bad; exit 1; }
+  bad=$(jq -r '.mcpServers | to_entries[] | select(.value.command == "npx" or .value.command == "uvx" or .value.command == "bunx") | select(([.value.args[]? | select(startswith("-") | not)][0] // "") | test("(@|==)[0-9]+(\\.[0-9]+)+$") | not) | .key' "$mcps"); [ -z "$bad" ] || { echo "$mcps: a stdio server not pinned to an exact version:" $bad; exit 1; }
+  bad=$(jq -r '.mcpServers | to_entries[] | select([(.value.env // {}), (.value.headers // {})][] | to_entries[] | .value | tostring | test("^<.*>$|ghp_|github_pat_|gho_|lin_api_|ctx7sk|sk-ant-")) | .key' "$mcps" | sort -u); [ -z "$bad" ] || { echo "$mcps: a literal credential or <placeholder> where a \${VAR} reference belongs:" $bad; exit 1; }
+fi
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
