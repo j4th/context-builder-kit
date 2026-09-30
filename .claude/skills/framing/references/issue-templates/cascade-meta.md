@@ -17,7 +17,7 @@ they:
   - need a decision before a milestone can be roughed-in (type: decision)
   - need to land independently of the milestone sequence (type: infrastructure)
 
-Rough-in's mandatory pre-flight check reads the Deferred meta-issues
+Rough-in's mandatory pre-flight check reads the Pre-flight checks
 table from frame-NN.md and verifies any meta-issue with `Blocks: M_n
 start` is resolved before decomposing M_n. So filling in the Blocks
 field accurately matters — it's what rough-in checks against.
@@ -96,4 +96,4 @@ Citations to the cascade docs that surfaced this meta-issue. Usually
 the framing that produced it.
 -->
 
-- [`docs/cbk/frame-NN.md` § Deferred meta-issues](../blob/main/docs/cbk/frame-NN.md)
+- [`docs/cbk/frame-NN.md` § Pre-flight checks](../blob/main/docs/cbk/frame-NN.md)

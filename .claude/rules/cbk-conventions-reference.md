@@ -1056,6 +1056,13 @@ for f in .claude/commands/finish-procedure.md .claude/skills/rough-in/references
 # STANDARDS citations name headings the blueprint template emits (D53): Git Workflow, Testing Requirements, PR Review
 # Checklist, CI Pipeline, Unenforced invariants — never a heading a target's STANDARDS.md does not have.
 absent grep -rnE 'STANDARDS\.md`? § (Testing philosoph[y]|PR feedback loo[p]|PR review proces[s]|Commit and branch convention[s])' .claude/
+# The retired frame section (context-builder-kit#63): frames emit § Pre-flight checks, and no skill cites the old section
+# by its plural name — any citation, not only a heading (the singular "Deferred meta-issue" is an issue type and stays).
+absent grep -rnE "Deferred meta-issue[s]" .claude/skills/
+# Section pointers that resolve: the reviewer's PR-title pointer names a heading the conventions have, and the frame
+# template cites the event-entry shape in the rough-in skill, the one file that carries it.
+absent grep -n "Closes-keyword conventions / commit forma[t]" .claude/agents/cascade-rule-reviewer.md
+grep -q "the rough-in skill's \`references/planning-backend-commit.md\`" .claude/skills/framing/references/templates/frame-output-template.md || { echo "frame-output-template.md cites the event-entry shape in a file that lacks it"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
@@ -1109,6 +1116,10 @@ if [ -f docs/cbk/scaffold.md ]; then
   # Template slots (context-builder-kit#65): no rule keeps an unfilled "Record …" slot — the orchestration posture, the
   # agent-team adoption row. Fill it or delete the rule at the disposition pass. The pattern splits its literal.
   absent grep -n '\[[Rr]ecor[d] ' .claude/rules/*.md
+  # A committed cascade-meta issue template is a byte copy of scaffold's: it cites § Pre-flight checks, never the retired
+  # plural section (context-builder-kit#63 — re-copy it from the kit when this fires).
+  [ ! -f .github/ISSUE_TEMPLATE/cascade-meta.md ] || absent grep -n "Deferred meta-issue[s]" .github/ISSUE_TEMPLATE/cascade-meta.md
+
   echo "verification: project sub-block complete"
 fi
 echo "verification: done"

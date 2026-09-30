@@ -37,7 +37,7 @@ Framing constructs each sub-issue's body from one of two templates depending on 
 
 **Population pattern for capability sub-issues** (`cascade-framing.md`): five sections to populate from the milestone's row in `frame-NN.md` § Milestones — Capability statement, Rough issues, Acceptance signal, Dependencies, Interface commitments. Plus a Links section that cites the relevant frame-NN.md section verbatim.
 
-**Population pattern for meta-issues** (`cascade-meta.md`): five sections to populate from the row in `frame-NN.md` § Deferred meta-issues — Type (gate/decision/infrastructure), Subject, Depends on, Blocks, Resolution criteria. Plus a Links section that cites `frame-NN.md § Deferred meta-issues`. The Blocks section is load-bearing for rough-in's pre-flight check, so populate it precisely — rough-in pattern-matches against `M_n start` strings here.
+**Population pattern for meta-issues** (`cascade-meta.md`): five sections to populate from the row in `frame-NN.md` § Pre-flight checks — Type (gate/decision/infrastructure), Subject, Depends on, Blocks, Resolution criteria. Plus a Links section that cites `frame-NN.md § Pre-flight checks`. The Blocks section is load-bearing for rough-in's pre-flight check, so populate it precisely — rough-in pattern-matches against `M_n start` strings here.
 
 Section heading names from both templates are preserved verbatim — do not rename, reorder, or omit sections that the templates provide. Adding additional sections after the template-provided ones is permitted if the capability or meta-issue has content that doesn't fit the standard sections.
 
