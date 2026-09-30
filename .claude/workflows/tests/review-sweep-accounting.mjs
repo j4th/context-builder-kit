@@ -36,7 +36,7 @@ async function scenario(name, { args, roster, findings, verdict }) {
     throw new Error(`unexpected label ${label}`);
   };
   // A thunk that THROWS is a bug in this harness's own mock and must fail the test; the runtime
-  // resolves a failed agent to null without throwing, so null is modelled by returning null (#58 item 10).
+  // resolves a failed agent to null without throwing, so null is modelled by returning null (context-builder-kit#58 item 10).
   const parallel = async (thunks) => Promise.all(thunks.map((t) => t()));
   const out = await run(args, agent, parallel, (m) => logs.push(m), () => {});
   const buckets = [...out.confirmed, ...out.refuted, ...out.unverified].map((f) => `${f.file}:${f.line}:${f.title}`);
@@ -387,6 +387,7 @@ for (const roster of [null, { crossCutting: "not-an-array" }]) {
   const out = await run({ files: ["a"] }, agent, parallel, (m) => logs.push(m), () => {});
   assert.deepEqual(out.reviewers, []);
   assert.ok(out.droppedCoverage.some((d) => d.includes("roster read failed")), "a throwing roster read is dropped coverage, not an aborted run");
+  assert.ok(logs.some((l) => l.includes("budget ceiling")), "the degrade path logs WHY the roster read threw, not only that it degraded (context-builder-kit#72 item 3)");
   assert.ok(typeof out.gateLine === "string" && out.gateLine.length > 0, "the run still returns its gate line");
   n++;
 }
