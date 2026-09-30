@@ -1095,6 +1095,9 @@ for m in '[skip ci]' '[ci skip]' '[no ci]' '[skip actions]' '[actions skip]' 'sk
 # The Linear free-plan limits are dated at the page that states them (V9.13), not a stale seat count.
 grep -q 'linear.app/pricing' .claude/skills/scaffold/references/manual_steps.md || { echo "manual_steps.md: the Linear free-plan line cites no dated pricing page"; exit 1; }
 absent grep -n 'up to 10 user[s]' .claude/skills/scaffold/references/manual_steps.md
+# Every label a flow applies is in scaffold's taxonomy (V9.14): the intake holding label and the supersede and rollback
+# marks are created with the rest, never on a repo that lacks them.
+for l in triage superseded transition-rollback; do grep -q "\`$l\`" .claude/skills/scaffold/references/github_only_profile.md || { echo "github_only_profile.md's label taxonomy lacks \`$l\` (a flow applies it)"; exit 1; }; done
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
