@@ -134,7 +134,7 @@
 | `Write` | Create a new file or full rewrite |
 | `Bash` | Run a shell command (git, the task runner, gh) |
 | `Glob` / `Grep` | Find files / search contents |
-| Task-tracking tools | Track multi-step work — see [`workflows.md`](workflows.md) |
+| Task-tracking tools, or a checklist file where the model is not offered them | Track multi-step work — see [`workflows.md`](workflows.md) § A tracked checklist vs in-head |
 | `AskUserQuestion` | Surface a decision the operator owns; never preview-and-confirm trivial ops |
 | `WebFetch` / `WebSearch` | Fetch a specific URL / general web search |
 

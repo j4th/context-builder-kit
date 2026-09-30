@@ -906,6 +906,9 @@ absent grep -rn 'three surfaces + resolution orde[r]\|§ The three surfaces an[d
 # A delegated agent's text-only end of turn is a report, never proof the work is done (orchestration.md § Anti-patterns;
 # context-builder-kit#69).
 [ ! -f .claude/rules/orchestration.md ] || grep -q 'text-only end of turn' .claude/rules/orchestration.md || { echo "orchestration.md § Anti-patterns lacks the text-only end-of-turn row (context-builder-kit#69)"; exit 1; }
+# The triad's second leg is a tracked checklist: the task tools are not offered on current models by default, so no rule
+# leans on "the harness's task list" (workflows.md § The triad; context-builder-kit#69).
+absent grep -n "the harness's task lis[t]" .claude/rules/workflows.md
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

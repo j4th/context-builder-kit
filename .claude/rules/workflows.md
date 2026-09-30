@@ -6,15 +6,15 @@
 >
 > The principle: **patterns are conditional, not universal.** TDD adds value when the spec is clear and the domain is deterministic; it adds friction when the work is exploratory or UI-visual. Subagents preserve context when the search would bloat the main session; they waste tokens when the search would fit in five messages. Match the pattern to the work, not the other way around.
 
-## The triad: plan-mode + task-tracking + subagent dispatch
+## The triad: plan mode + a tracked checklist + subagent dispatch
 
 The high-leverage workflow shape for work that spans more than one file or one session:
 
 1. **Plan mode** separates planning from execution. Read-only; the agent can read, search, dispatch research subagents, and ask questions — but cannot write, edit, or modify state. Forces alignment with the operator *before* code lands.
-2. **Task-tracking** (the harness's task list) decomposes the plan into discrete trackable units. Each task is a step toward done. You can't add unbounded work — the task list IS the work surface.
+2. **A tracked checklist** decomposes the plan into discrete trackable units: the harness's task tools where the model is offered them, otherwise the plan file or a checklist file the agent updates, as the Opus 5.5 guide suggests. Each item is a step toward done. You can't add unbounded work — the checklist IS the work surface. From Claude Code 2.1.233 the task tools are not offered on Opus 4.8, Sonnet 5, Fable 5, Mythos 5 or any newer model unless `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` is set (`orchestration-reference.md` § Generation notes — the sources).
 3. **Subagent dispatch** (a search agent for fast codebase scans, a planning agent for design alternatives, general-purpose for complex multi-step research) offloads work that would bloat the main session. Run synchronous for sequential dependencies, asynchronous for truly parallel work.
 
-The triad works because: plan mode prevents wrong directions; task-tracking enforces discipline (visible scope, completion gating); subagents preserve context (main session stays clean for synthesis + execution). For cascade work, the triad maps onto `/finish` directly — the issue body feeds executable research then a plan-mode gate; the task list is the in-session decomposition; subagents handle the deep research the rough-in spec implicitly assumes.
+The triad works because: plan mode prevents wrong directions; the checklist enforces discipline (visible scope, completion gating); subagents preserve context (main session stays clean for synthesis + execution). For cascade work, the triad maps onto `/finish` directly — the issue body feeds executable research then a plan-mode gate; the checklist is the in-session decomposition; subagents handle the deep research the rough-in spec implicitly assumes.
 
 ## When to enter plan mode
 
@@ -106,7 +106,7 @@ Subagents (search, planning, general-purpose, project-local reviewers) offload w
 
 **Ground the fan-out.** Any existence/absence claim a dispatched researcher asserts is verified repo-wide, verifiers preferentially attack negative claims, and drafters cite the run's grounding corpus — the full three-rule statement lives in the rough-in skill's `references/research-phase.md` § Grounding existence claims.
 
-## Task-tracking vs in-head
+## A tracked checklist vs in-head
 
 **Track tasks** when:
 
@@ -122,7 +122,7 @@ Subagents (search, planning, general-purpose, project-local reviewers) offload w
 - Tasks where the steps are sequential and obvious
 - Trivial work where tracking would be ceremony, not signal
 
-After completing a tracked task, **mark it completed immediately**. Don't batch updates. The task list is a live status surface for the operator; lag = confusion.
+After completing a tracked item, **mark it completed immediately**, in the task tools or in the file. Don't batch updates. The checklist is a live status surface for the operator; lag = confusion.
 
 ## Narrate-during-iteration
 
