@@ -14,7 +14,8 @@
 # the "launch from the root" instruction that preceded them.
 #
 # Blocked:  Task, Agent and Workflow tool calls whose working directory is not
-#           the git top-level of the checkout it sits in.
+#           the git top-level of the checkout it sits in; and a payload jq cannot
+#           read, whose working directory cannot be checked.
 # Allowed:  everything else — including a launch from a worktree's own root,
 #           which is that checkout's top-level.
 # Matcher:  `Task|Agent|Workflow` — `Agent` and `Workflow` are the names the
@@ -24,20 +25,18 @@
 #           rename degrades to a no-op rather than silence.
 # Timing:   the guard reads the payload's `cwd` (a common field on every hook
 #           event — https://code.claude.com/docs/en/hooks-guide § How hooks
-#           work) BEFORE the tool runs. That field is the SESSION's working
-#           directory — where Claude Code was launched — not the Bash tool's
-#           persisted shell directory: a real dispatch made after `cd docs` in
-#           the shell was allowed, with the payload cwd still at the root (dated
-#           observation, 2026-09-07). The confirmed deny is a session launched
-#           from a subdirectory (the verification block's payload dry-run); the
-#           remedy there is to relaunch the session from the root. The hooks
-#           reference states the OPPOSITE of the observation above — "cwd follows
-#           Claude: … the new directory after Claude runs cd"
+#           work) BEFORE the tool runs. That field follows the Bash tool's `cd`
+#           — "the new directory after Claude runs `cd`"
 #           (https://code.claude.com/docs/en/hooks § Reference scripts by path,
-#           read 2026-09-07). The two disagree; this guard judges whichever cwd
-#           the payload carries and is correct under either reading. RE-VERIFY
-#           TRIGGER: a dispatch made after `cd <subdir>` that is denied means the
-#           page's reading now holds — update this paragraph (#58, S3).
+#           read 2026-09-30) — and a logging-hook probe on Claude Code 2.1.286
+#           showed it (2026-09-30): a Bash call and an Agent dispatch made after
+#           `cd docs` both carried <root>/docs. So a dispatch made after a `cd`
+#           into a subdirectory is denied, and the remedy is to `cd` back to the
+#           root as its own command. The 2026-09-07 observation that the field
+#           stayed at the session's launch directory is retired
+#           (context-builder-kit#58, S3). RE-VERIFY TRIGGER: a dispatch made after
+#           `cd <subdir>` that is allowed means the field stopped following `cd` —
+#           re-run the probe and update this paragraph.
 # Path:     registered as ${CLAUDE_PROJECT_DIR}/.claude/hooks/… — handlers run
 #           in the current directory (https://code.claude.com/docs/en/hooks), so
 #           a bare relative path would not resolve from the very subdirectory
@@ -46,7 +45,9 @@
 # Depends:  jq (the payload's tool_name and cwd) and git (the top-level of that
 #           cwd) — absent, the guard fails open: exit 0 with a stderr warning
 #           naming the backstop, detect-forked-agent-memory.sh (Stop tier,
-#           needs no jq).
+#           needs no jq). A payload jq cannot read is not an environment defect:
+#           it is refused (cbk-conventions-reference.md § Hook authoring).
+#           Fixture: .claude/workflows/tests/hook-payloads-fixture.sh.
 #
 # Hook receives JSON on stdin. Exit 2 + stderr blocks. Fail-open on
 # environment defects (missing jq, not a git checkout): exit 0 with a loud
@@ -65,6 +66,14 @@ if ! command -v jq &>/dev/null; then
   echo "                              Backstop: detect-forked-agent-memory.sh (Stop tier) needs no jq and still" >&2
   echo "                              catches a stray agent-memory tree before the hand-off; git status shows it untracked." >&2
   exit 0
+fi
+
+# A payload jq cannot read is refused: this hook runs on Task|Agent|Workflow only, so the call is
+# still a dispatch, and where it launches from cannot be checked.
+if ! jq -e 'type == "object"' >/dev/null 2>&1 <<<"$input"; then
+  echo "BLOCKED: require-repo-root-for-agents could not read the tool payload (not parseable JSON, or not an object)," >&2
+  echo "so it cannot tell where this dispatch launches from. A lone UTF-16 surrogate escape in the tool input does this — remove it and retry." >&2
+  exit 2
 fi
 
 tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"

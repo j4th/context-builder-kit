@@ -61,9 +61,10 @@ fi
 
 tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"
 command="$(printf '%s' "$input" | jq -r '.tool_input.command // empty')"
-# The Bash tool's payload carries the call's working directory; the branch
-# check must use it (not a fixed project dir), or a commit run from a
-# worktree / nested repo is judged against the wrong repo's branch.
+# The payload's `cwd` is the directory the Bash tool is in — it follows `cd`
+# (probe, 2026-09-30; require-repo-root-for-agents.sh § Timing) — so a commit
+# run from a worktree or a nested repo is judged against that checkout's
+# branch, not a fixed project dir. Precedence: cwd, CLAUDE_PROJECT_DIR, $PWD.
 cwd="$(printf '%s' "$input" | jq -r '.cwd // empty')"
 PROJECT_DIR="${cwd:-${CLAUDE_PROJECT_DIR:-$PWD}}"
 
