@@ -1101,6 +1101,10 @@ for l in triage superseded transition-rollback; do grep -q "\`$l\`" .claude/skil
 # Scaffold's reference and checklist agree with its SKILL.md (V9.15): three detection states, one heading each, Stage
 # 2.5's templates kept in light mode, and the gate count its own summary lists (the literals split themselves).
 absent grep -rnE "four detection state[s]|State [4] \(no MCP\)|because state [2]\)|Full automation \(GitHub MCP|Skip the \`\.github/\` issue template[s]|with five HITL gate[s]" .claude/skills/scaffold/
+# The count ranges have one statement each (V9.16): 2–6 R-issues per milestone (rough-in's contract) and 3–6 milestones
+# per workstream, 2–7 at the outside (framing's contract) — the test case and the milestone template agree.
+absent grep -n "produces 3-7 R-issue[s]" .claude/skills/rough-in/references/test_cases.md
+absent grep -n "3-5 milestones per projec[t]" .claude/skills/framing/references/templates/milestone-template.md
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

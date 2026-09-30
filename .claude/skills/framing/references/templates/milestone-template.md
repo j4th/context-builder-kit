@@ -182,7 +182,7 @@ Default to Claude-Code-implementable unless the issue clearly involves something
 
 **The honest test is the demonstrable-capability test, not the count.** Each milestone should pass one specific question: *"Can I show this to someone and have them see a meaningful change in what the system can do?"* If yes, it's a milestone. If the answer is *"well, after this the code will be slightly better factored"* or *"after this we'll have added the next layer of the data model,"* it's not a milestone — it's a step inside one and should be folded.
 
-Typical framings produce **3-5 milestones per project**, but that range is a secondary signal, not a prescription. A small, tightly-scoped project might legitimately have 2 milestones (walking skeleton + completion). A large, multi-surface project might legitimately have 6 milestones spanning infrastructure, feature slices, integration, and hardening. The range catches obvious calibration problems; it doesn't prescribe the right count for well-shaped projects.
+Typical framings produce **3-6 milestones per workstream** (2-7 at the outside — `references/contract.md`), but that range is a secondary signal, not a prescription. A small, tightly-scoped workstream might legitimately have 2 milestones (walking skeleton + completion). A large, multi-surface workstream might legitimately have 6-7 milestones spanning infrastructure, feature slices, integration, and hardening. The range catches obvious calibration problems; it doesn't prescribe the right count for well-shaped projects.
 
 **Outside the 2-7 range signals a problem** in the same spirit as before, with softer edges:
 

@@ -21,7 +21,7 @@ These tests are not exhaustive — they cover the canonical happy path and the i
 - **Step 1 (Inheritance + meta-issues check)**: rough-in reads all required inputs, presents a verbatim inheritance summary including the parent issue's slug + F-number inherited from `[regex-pack:F1]`. Runs the pre-flight checks, finds the empty section, treats as passed. HITL gate before proceeding.
 - **Step 2 (Milestone selection)**: confirms the user wants M1 specifically, not M2 or any other milestone in F1. Detects this as a first rough-in (no prior rough-in events for this milestone in `README.md` index), proceeds without re-rough-in flow.
 - **Step 3 (Research)**: proposes a research depth based on inheritance signals — likely "shallow" or "standard" since regex-pack is the first cascade workstream and there's no prior cascade work to extend. Presents findings if any sub-tracks ran.
-- **Step 4 (Issue plan)**: produces 3-7 R-issues with titles, intents, dependencies, and a capstone marker if applicable. HITL gate.
+- **Step 4 (Issue plan)**: produces 2-6 R-issues with titles, intents, dependencies, and a capstone marker if applicable. HITL gate.
 - **Step 5 (Spec drafting)**: drafts each spec individually using `cascade-rough-in.md` (read from disk first), populates the eight sections, ensures each Implementation section meets the eight properties.
 - **Step 6 (Commit)**: presents the atomic transition (sub-sub-issues + README.md index update), HITL gate, executes the two-step `issue_write` + `sub_issue_write` for each spec, commits the README.md index entry, completes successfully.
 
