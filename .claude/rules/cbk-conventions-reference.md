@@ -1115,6 +1115,8 @@ absent grep -n "six iterations through this gate, one per do[c]" .claude/skills/
 # pointer heading in its contract or is named in the half's preamble as added since the split. The heading list is fed
 # as a here-string, so a failing heading's exit 1 ends the block from its own shell.
 for p in cbk-conventions pr-review; do r=.claude/rules/$p-reference.md; pre=$(grep -m1 '^> \*\*Path-scoped' "$r"); while IFS= read -r h; do [ -n "$h" ] || continue; grep -qxF "## $h" .claude/rules/$p.md || grep -qF "§ $h" <<<"$pre" || { echo "$r § $h has no pointer heading in $p.md and is not named in its preamble"; exit 1; }; done <<<"$(awk '/^```/{f=!f; next} !f && /^## /{sub(/^## /, ""); print}' "$r")"; done
+# Kit tree only: no foreign project's identifiers in the kit's examples (V9.20) — examples are invented, generic names.
+[ -f docs/cbk/scaffold.md ] || absent grep -rn -i 'tuito[r]\|anubi[s]\|per-Pilo[t]\|Servo\.set_angl[e]' .claude/
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

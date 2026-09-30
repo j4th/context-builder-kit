@@ -24,13 +24,13 @@ Create a new ADR. ADRs are **immutable** (ADR-0000) — superseding writes a new
 
 When invoked, **propose** every input below from what the operator already said and the tree (the conversation, the issue, the frame, the existing ADR index), present the filled set in one exchange, and ask only for what cannot be inferred — never one question at a time, and never a bare form. The operator corrects the proposal; the corrected set is the input.
 
-1. **Slug** — kebab-case noun phrase, max 8 words. Used in the filename. Example: `vector-store-as-anubis-tool`.
-2. **Title** — full title for the ADR header, sentence case. Example: `Vector store as an Anubis tool, not an MCP server`.
+1. **Slug** — kebab-case noun phrase, max 8 words. Used in the filename. Example: `vector-store-as-agent-tool`.
+2. **Title** — full title for the ADR header, sentence case. Example: `Vector store as an agent tool, not an MCP server`.
 3. **Supersedes?** — if yes, the ADR number being superseded (e.g., `0019`), or `ADR-NNNN Dn` for one clause.
    **Refines?** — if yes, the parent and the clauses narrowed, in `ADR-NNNN (Dn, …)` form.
    **Extends?** — if yes, the parent and the clauses an obligation is added beside, same form (`cbk-conventions-reference.md` § ADR relation grains has the disambiguation test).
    **Promotes?** — if the decision is lifted from a frozen pre-cascade corpus, the corpus path and heading.
-4. **Configurable / Hot-swappable** — for the configurability index row, where the project keeps one. Format: `yes (per-Pilot) | no (config-time)`. Use `n/a` for non-component decisions.
+4. **Configurable / Hot-swappable** — for the configurability index row, where the project keeps one. Format: `yes (per-tenant) | no (config-time)`. Use `n/a` for non-component decisions.
 5. **One-line summary** — for the README index and the Decisions log table.
 
 ## Steps

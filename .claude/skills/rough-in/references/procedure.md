@@ -117,7 +117,7 @@ Define the `Verifier` trait as the load-bearing abstraction every pack will impl
 Regime: conformance-first (this is the trait declaration; concrete-impl conformance lands in R2). The trait file itself has nothing to TDD against until R2 has an impl, so the R1 test plan is a compile-and-doc smoke check rather than red-first unit tests.
 
 - `cargo check --workspace` passes (trait declaration compiles)
-- `cargo doc --no-deps` succeeds and the rendered output for `tuitor_engine::verifier::Verifier` includes the docstring referencing `docs/ARCHITECTURE.md § "The Verifier trait"`
+- `cargo doc --no-deps` succeeds and the rendered output for `core_engine::verifier::Verifier` includes the docstring referencing `docs/ARCHITECTURE.md § "The Verifier trait"`
 
 ## Technical detail
 
