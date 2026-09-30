@@ -915,6 +915,10 @@ grep -q 'Delegating implementation' .claude/rules/workflows.md || { echo "workfl
 # The floor names every context without an Agent tool — the spawn-depth limit and a workflow agent at any depth (probe P2,
 # 2026-09-30) — so a skill run there is recorded as invoked, not covered (pr-review.md § The floor; context-builder-kit#69).
 grep -q 'a workflow agent has none at any depth' .claude/rules/pr-review.md || { echo "pr-review.md § The floor does not name the workflow agent among the contexts with no Agent tool (probe P2)"; exit 1; }
+# /simplify's identity is its changelog history, not one machine's spot check (simplification.md § Plugin;
+# context-builder-kit#69): the 2.1.154 cleanup-only entry is named and the old spot check is gone.
+absent grep -n 'as of 2\.1\.26[3]' .claude/rules/simplification.md
+grep -q '2\.1\.154' .claude/rules/simplification.md || { echo "simplification.md § Plugin does not carry /simplify's changelog history (2.1.63, 2.1.147, 2.1.152, 2.1.154)"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

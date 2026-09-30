@@ -4,7 +4,7 @@ Operational rules for the `/simplify` Claude Code skill invocation in the cascad
 
 ## Plugin
 
-`/simplify` is a Claude Code skill, not a project dependency — bundled with Claude Code as of 2.1.263 (2026-09-06, verified against the installed CLI bundle; re-verify after harness upgrades), or plugin-installed if your harness ships it that way. The skill owns the actual simplification logic; this file documents how the project uses it.
+`/simplify` is a Claude Code skill, not a project dependency — bundled with Claude Code, or plugin-installed if your harness ships it that way. The skill owns the actual simplification logic; this file documents how the project uses it. Its history, from the Claude Code changelog (`https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md`, read 2026-09-30): added as a bundled command in 2.1.63; in 2.1.147 "Renamed `/simplify` to `/code-review`", and "The old cleanup-and-fix behavior has been removed"; back in 2.1.152 as a call to `/code-review --fix`; and from 2.1.154 "`/simplify` now runs a cleanup-only review (reuse, simplification, efficiency, altitude) and applies the fixes". No entry through 2.1.286 changes it again. A harness whose `/simplify` differs is checked against this history before the floor relies on it.
 
 **Install / update**: nothing to install when it ships bundled; otherwise per Claude Code plugin documentation, with the plugin ID recorded in `.claude/settings.json` `enabledPlugins`. This rules file exists so the project doesn't lose track of the dependency either way.
 
