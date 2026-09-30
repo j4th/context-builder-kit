@@ -22,9 +22,9 @@ assert.ok(Array.isArray(meta.phases) && meta.phases.length === 3, "meta.phases d
 async function scenario(name, { args, roster, findings, verdict }) {
   const logs = [];
   const calls = [];
-  const agent = async (_prompt, opts = {}) => {
+  const agent = async (prompt, opts = {}) => {
     const label = opts.label ?? "";
-    calls.push({ label, opts });
+    calls.push({ label, opts, prompt });
     if (label.startsWith("roster:")) return roster;
     if (label.startsWith("find:")) {
       const key = label.slice(5).replace(/:retry$/, "");
@@ -406,6 +406,25 @@ for (const roster of [null, { crossCutting: "not-an-array" }]) {
   });
   assert.ok(out.confirmed.some((f) => f.line === 5), "the three-way shared finding is charged to the reporter with no other finding and verified");
   assert.ok(out.confirmed.some((f) => f.title === "cr only") && out.confirmed.some((f) => f.title === "adr only"), "neither loaded reporter loses its own unique finding to the shared one");
+  n++;
+}
+
+// 25 — a caller-named finder may carry its own prompt and no agentType: a targeted concern with no defined agent
+//      rides in the sweep (context-builder-kit#72 item 1). A finder with neither is dropped coverage, never
+//      dispatched blind.
+{
+  const { out, calls } = await scenario("prompt-carrying finder", {
+    args: { files: ["a"], finders: [{ key: "ratio-bounds", prompt: "Check that every ratio the diff computes stays within [0, 1]." }, { key: "empty-finder" }] },
+    roster: rosterOK, findings: { "ratio-bounds": { findings: [F("a", 4, "ratio above one", "high")] } }, verdict: real,
+  });
+  const c = calls.find((x) => x.label === "find:ratio-bounds");
+  assert.ok(c, "the prompt-carrying finder is dispatched");
+  assert.equal(c.opts.agentType, undefined, "no agentType: the default workflow agent runs it");
+  assert.ok(c.prompt.includes("every ratio the diff computes"), "the caller's focus reaches the finder's prompt");
+  assert.ok(out.confirmed.some((f) => f.title === "ratio above one" && f.dimension === "ratio-bounds"), "its finding is attributed to the finder");
+  assert.ok(!calls.some((x) => x.label.startsWith("find:empty-finder")), "a finder with neither prompt nor agentType is not dispatched");
+  assert.ok(out.droppedCoverage.some((d) => d.includes("empty-finder")), "and it is named as dropped coverage");
+  assert.ok(out.gateLine.includes("empty-finder"), "so the gate line names it");
   n++;
 }
 

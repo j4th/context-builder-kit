@@ -2,7 +2,7 @@ export const meta = {
   name: "review-sweep",
   description: "The focused review that runs beside pr-review-toolkit:review-pr: project reviewers always, plus the finders this diff needs — deduplicated, bounded, adversarially verified. Supplements, never substitutes.",
   whenToUse:
-    "Runs BESIDE pr-review-toolkit:review-pr, after /simplify, when a multi-agent orchestration surface is available. The governing rule is .claude/rules/pr-review.md § The orchestrated sweep supplements; it never substitutes: the floor is the two skills actually invoked and this workflow discharges neither; it is sized to the diff, never to the session's effort setting; it reads the reviewer roster from pr-review.md at runtime and degrades to the toolkit dimensions when that read fails; it bounds at dedup and verify (3 per dimension, 8 verified by default), logs the planned agent count before the find stage, returns anything a bound drops as unverified, and returns its own gate line. The caller scouts the diff and passes {base, files, reviewers?, finders?, maxPerDimension?, maxVerify?, findEffort? (default medium), retryEffort? (default high), verifyModel?} — always pass files; verify agents inherit the session model unless verifyModel names a lower tier. Triage stays with the caller: this workflow finds and verifies; it never classifies.",
+    "Runs BESIDE pr-review-toolkit:review-pr, after /simplify, when a multi-agent orchestration surface is available. The governing rule is .claude/rules/pr-review.md § The orchestrated sweep supplements; it never substitutes: the floor is the two skills actually invoked and this workflow discharges neither; it is sized to the diff, never to the session's effort setting; it reads the reviewer roster from pr-review.md at runtime and degrades to the toolkit dimensions when that read fails; it bounds at dedup and verify (3 per dimension, 8 verified by default), logs the planned agent count before the find stage, returns anything a bound drops as unverified, and returns its own gate line. The caller scouts the diff and passes {base, files, reviewers?, finders? ([{key, prompt?, agentType?}] — a defined agent, a targeted concern stated as a prompt, or both), maxPerDimension?, maxVerify?, findEffort? (default medium), retryEffort? (default high), verifyModel?} — always pass files; verify agents inherit the session model unless verifyModel names a lower tier. Triage stays with the caller: this workflow finds and verifies; it never classifies.",
   phases: [
     { title: "Roster", detail: "read the authoritative reviewer roster from pr-review.md (degrades on failure)", model: "haiku" },
     { title: "Find", detail: "toolkit dimensions + intersecting project reviewers + caller-named finders; effort medium, retry high", model: "sonnet" },
@@ -160,7 +160,15 @@ log(`review-sweep: project reviewers — ${reviewers.join(", ") || "(none)"}`);
 
 // ---- Find ----
 phase("Find");
-const finders = (params.finders ?? []).map((f) => ({ key: f.key, agentType: f.agentType }));
+// A caller-named finder is {key, prompt?, agentType?}: a defined agent, a targeted concern stated as a prompt that
+// the default workflow agent reviews against (a ratio bound, a timing invariant), or both. One with neither has
+// nothing to review with: dropped coverage, named on the gate line, never dispatched blind (context-builder-kit#72
+// item 1).
+const finders = [];
+for (const f of params.finders ?? []) {
+  if (f && f.key && (f.prompt || f.agentType)) finders.push({ key: f.key, agentType: f.agentType, focus: f.prompt });
+  else droppedCoverage.push(`${(f && f.key) || "(unnamed)"} (caller finder with neither prompt nor agentType)`);
+}
 const dimensions = [...TOOLKIT_DIMENSIONS, ...reviewers.map((name) => ({ key: name, agentType: name })), ...finders];
 const fileList = files.join("\n");
 // The planned count is logged BEFORE the find stage (the one roster agent, when
@@ -177,8 +185,8 @@ log(`review-sweep: planned agents — ${plannedAgents.roster} roster + ${planned
 
 const findOnce = (dim, effort = FIND_EFFORT, retry = false) =>
   agent(
-    `Review the branch diff (git diff ${base}...HEAD), restricted to these changed files:\n${fileList}\n\nApply your standard review discipline. Respect the exclusion list in .claude/rules/pr-review.md § "What NOT to flag" — findings only on changed code, no theoretical risks without concrete preconditions. Report every finding you would defend against a reviewer actively trying to refute it, including medium and low confidence — deduplication and a severity-ranked bound happen before verification, and triage happens in the caller: do not classify. Rank most-severe first.`,
-    { label: `find:${dim.key}${retry ? ":retry" : ""}`, phase: "Find", agentType: dim.agentType, model: "sonnet", effort, schema: FINDINGS_SCHEMA },
+    `Review the branch diff (git diff ${base}...HEAD), restricted to these changed files:\n${fileList}\n\n${dim.focus ? `Your review focus, from the caller: ${dim.focus}\nReport findings on this focus only.\n\n` : "Apply your standard review discipline. "}Respect the exclusion list in .claude/rules/pr-review.md § "What NOT to flag" — findings only on changed code, no theoretical risks without concrete preconditions. Report every finding you would defend against a reviewer actively trying to refute it, including medium and low confidence — deduplication and a severity-ranked bound happen before verification, and triage happens in the caller: do not classify. Rank most-severe first.`,
+    { label: `find:${dim.key}${retry ? ":retry" : ""}`, phase: "Find", ...(dim.agentType ? { agentType: dim.agentType } : {}), model: "sonnet", effort, schema: FINDINGS_SCHEMA },
   );
 
 const firstPass = await parallel(dimensions.map((dim) => () => findOnce(dim)));

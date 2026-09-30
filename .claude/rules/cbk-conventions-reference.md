@@ -953,6 +953,9 @@ bash .claude/workflows/tests/run-arms-headless-fixture.sh || { echo "run-arms-he
 # the brief carries the issue verbatim for arms that cannot reach an MCP-hosted issue.
 absent grep -nE "[Tt]wo executor[s]|two-ar[m]|rank the tw[o]|either worktre[e]|two arms shar[e]" .claude/workflows/finish-ab/judge-rubric.md .claude/workflows/finish-ab/operator-brief.md
 { grep -q "runner's log" .claude/workflows/finish-ab/judge-rubric.md && grep -q 'The measures, per arm' .claude/workflows/finish-ab/judge-rubric.md && grep -q 'Replay runs' .claude/workflows/finish-ab/judge-rubric.md && grep -q '^## The issue, verbatim' .claude/workflows/finish-ab/operator-brief.md; } || { echo "the finish-ab rubric or brief lost the runner's log, the measures section, the replay clause or § The issue, verbatim"; exit 1; }
+# Review conventions (harvest 5, V7): a caller-named finder is {key, prompt?, agentType?} on both surfaces that state it,
+# the rule and the workflow's meta (context-builder-kit#72 item 1).
+for f in .claude/rules/pr-review.md .claude/workflows/review-sweep.js; do grep -qF '{key, prompt?, agentType?}' "$f" || { echo "$f does not state the caller-finder shape {key, prompt?, agentType?}"; exit 1; }; done
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
