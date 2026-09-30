@@ -979,6 +979,9 @@ absent grep -n "Conflicts with an ADR or with the issue's intentional desig[n]" 
 # A docs-only PR may skip the sweep, never the floor: neither rule half says the simplify pass alone is enough.
 absent grep -nE "the simplify pass is (enoug[h]|sufficien[t])" .claude/rules/pr-review.md .claude/rules/pr-review-reference.md
 absent grep -n "Running review-toolkit on a docs-only P[R]" .claude/rules/pr-review-reference.md
+# The review rule's STANDARDS citations name no heading the blueprint template does not emit (D53): the gate is
+# pr-review.md § The floor, which every target carries (review/consistency/40).
+absent grep -nE 'STANDARDS\.md`? § (Step [0-9]|PR review proces[s])' .claude/rules/pr-review.md .claude/rules/pr-review-reference.md
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

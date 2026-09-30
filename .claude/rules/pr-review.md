@@ -1,6 +1,6 @@
 # PR Review Rules
 
-Operational rules for the `pr-review-toolkit:review-pr` invocation in the cascade workflow. `docs/STANDARDS.md § Step 7` (or wherever your project documents the equivalent gate) establishes that automated review runs before any PR moves draft → ready; this file is the practical detail — the triage rubric, what *not* to flag, and the project-local agents that dispatch alongside.
+Operational rules for the `pr-review-toolkit:review-pr` invocation in the cascade workflow. Automated review runs before any PR moves draft → ready, and § The floor below is that gate; the rest of this file is the practical detail — the triage rubric, what *not* to flag, and the project-local agents that dispatch alongside.
 
 ## Plugin
 

@@ -143,4 +143,4 @@ This rules file is load-bearing the moment `/finish`'s review pass dispatches `p
 - The break-glass mechanism gets used more than ~5% of the time — that's a signal the rubric is mis-calibrated, not the override mechanism. Investigate.
 - The `## Review gate` block's shape changes — edit its one home (`pr-review.md` § The floor) and check that `/finish` Step 10 still cites it rather than carrying a copy.
 
-The corresponding entry in `docs/STANDARDS.md` § PR review process points here for the operational detail; that file states the principle, this file states the contract.
+The gate's principle is stated in `pr-review.md` § The floor, a heading every target carries; this half holds the operational detail behind it.
