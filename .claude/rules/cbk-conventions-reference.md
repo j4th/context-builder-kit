@@ -732,6 +732,10 @@ for f in .claude/skills/blueprint/references/templates/tooling.md .claude/skills
 # this one file. The pattern brackets its own letter so this line never matches itself.
 grep -q 'extend-glo[b] = \["cbk-conventions-reference.md"\]' .claude/rules/cbk-conventions-reference.md || { echo "§ Verification lacks the bracket idiom's file-scoped spellchecker exemption"; exit 1; }
 
+# The kit's own CI pins an explicit bash (pipefail, where GitHub's unset shell runs `bash -e` without it) and a
+# named runner image (a -latest label moves under the gate). Kit tree only: a target does not install verify.yml.
+[ -f docs/cbk/scaffold.md ] || { grep -qx '    shell: bash' .github/workflows/verify.yml && grep -qx '    runs-on: ubuntu-24.04' .github/workflows/verify.yml; } || { echo ".github/workflows/verify.yml lacks defaults.run.shell: bash or runs-on: ubuntu-24.04"; exit 1; }
+
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

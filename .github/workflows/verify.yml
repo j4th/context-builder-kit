@@ -2,8 +2,7 @@ name: Verification block
 
 # Runs cbk-conventions-reference.md § Verification through its runner on every pull request to
 # main — no path filter, so it can be a required check (the required-checks trap in
-# cbk-conventions.md § `[skip ci]` rule). ubuntu-latest ships bash, jq, git, node and python3
-# (dated observation, 2026-09-21; the block names any tool it cannot find).
+# cbk-conventions.md § `[skip ci]` rule).
 
 on:
   pull_request:
@@ -11,10 +10,22 @@ on:
   push:
     branches: [main]
 
+# An explicit bash runs `bash --noprofile --norc -eo pipefail {0}`; an unset shell runs `bash -e {0}`,
+# with no pipefail (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
+# § jobs.<job_id>.steps[*].shell, read 2026-09-30).
+defaults:
+  run:
+    shell: bash
+
 jobs:
   verify:
     name: Verification block
-    runs-on: ubuntu-latest
+    # A named image, because a -latest label "may see changes in the OS version" while GitHub migrates it
+    # (https://github.com/actions/runner-images README § Latest Migration Process, read 2026-09-30); bump
+    # it in a reviewed PR. Ubuntu 24.04 ships bash, git, jq, node and python3 (that repository's
+    # images/ubuntu/Ubuntu2404-Readme.md, read 2026-09-30); a missing tool prints `command not found`
+    # and turns the run red.
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
