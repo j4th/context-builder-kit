@@ -483,7 +483,7 @@ The kit's brownfield detection (run by scaffold's Stage 2 when knowledge backend
 
 ## Syncing the kit
 
-A target that recorded its **Kit commit** (scaffold's Cascade metadata table) syncs to a newer kit as a three-way merge, not a hand-reconciliation: for every file, `git merge-file <ours> <kit@install-sha> <kit@target-sha>` — base is the kit at the install sha, ours the project's copy, theirs the new kit. On a real application 47 of 48 files the project had customized auto-resolved (pure kit drift, derivable from the base); the conflict hunks were the two big rule files, where the kit's generalized text and the project's filled text both had to survive (#58, second application, item 10). The file-by-file table — classify each file as copy / add / merge / keep, then note what each merge must preserve — is the reusable artifact; write it before the branch. Two traps: a project sub-block re-homed into this file from a pre-split contract must split its own retired-vocabulary literals (or the block's `absent` check matches it), and byte-identity for `copy` rows is asserted against the target sha, so a fix a project needs ahead of the kit is filed upstream and carried as a named exception, never silently patched into a copy. Record the new sha in the table when the sync merges.
+A target that recorded its **Kit commit** (scaffold's Cascade metadata table) syncs to a newer kit as a three-way merge, not a hand-reconciliation: for every file, `git merge-file <ours> <kit@install-sha> <kit@target-sha>` — base is the kit at the install sha, ours the project's copy, theirs the new kit. On a real application 47 of 48 files the project had customized auto-resolved (pure kit drift, derivable from the base); the conflict hunks were the two big rule files, where the kit's generalized text and the project's filled text both had to survive (context-builder-kit#58, second application, item 10). The file-by-file table — classify each file as copy / add / merge / keep, then note what each merge must preserve — is the reusable artifact; write it before the branch. Two traps: a project sub-block re-homed into this file from a pre-split contract must split its own retired-vocabulary literals (or the block's `absent` check matches it), and byte-identity for `copy` rows is asserted against the target sha, so a fix a project needs ahead of the kit is filed upstream and carried as a named exception, never silently patched into a copy. Record the new sha in the table when the sync merges.
 
 ## Verification
 
@@ -525,7 +525,7 @@ absent grep -rnE "notion\.(so|site)/[0-9a-f]{16,}" .claude/skills/
 # The example env file is an operand only where it exists: a target that commits `.mcp.json` instead
 # names that file here, and a project sub-block re-homed from a pre-split contract must split its own
 # retired-vocabulary literal (as this comment does: opinionate[d] profile) or this very line matches
-# it (#58, second application, item 1).
+# it (context-builder-kit#58, second application, item 1).
 mcpx=""; [ -f .mcp.json.example ] && mcpx=.mcp.json.example
 absent grep -rn -i "opinionate[d] profile\|opinionated_profil[e]" .claude/ README.md $mcpx
 
@@ -549,7 +549,7 @@ absent grep -rn "initiative\.md" .claude/ README.md
 grep -q "^## Rough-in events" .claude/skills/framing/references/templates/frame-output-template.md
 grep -q "^## Pre-flight checks" .claude/skills/framing/references/templates/frame-output-template.md
 grep -q "^## Assumptions" .claude/skills/rough-in/references/templates/rough-in-spec-template.md
-# Resolved pair (#37): adr-new no longer names index surfaces of its own — the conventions' § ADR index sync is the
+# Resolved pair (context-builder-kit#37): adr-new no longer names index surfaces of its own — the conventions' § ADR index sync is the
 # one home for the sync targets — so the two sections the architecture template does not emit are not cited there.
 absent grep -n "Configurability summar[y]\|§ Open question[s]" .claude/skills/adr-new/SKILL.md
 # Decision records (P4): the Extends grain and the relation slots on every surface that reads them; the corrections
@@ -639,7 +639,7 @@ absent grep -rniE "double-chec[k]|use a subagent to verif[y]|verify your (own )?
 absent grep -rnE "SKILL\.md\`? *(§ )?Ste[p] [0-9]|Step [0-9][^\n]{0,20} in SKILL\.m[d]" .claude/rules .claude/skills .claude/commands
 for s in .claude/skills/*; do for f in $s/SKILL.md $s/references/contract.md $s/references/procedure.md; do [ -f "$f" ] || continue; grep -oE "([a-z-]+ skill's )?\`references/[A-Za-z0-9_./-]+\.md\`" "$f" | sort -u | while read -r m; do case "$m" in *" skill's "*) d=.claude/skills/${m%% skill\'s *}; r=${m#* skill\'s };; *) d=$s; r=$m;; esac; r=${r//\`/}; [ -f "$d/$r" ] || { echo "$f cites $r, which does not exist under $d"; exit 1; }; done; done; done
 absent grep -niE "(if|when) in doub[t],? (use|reach for)" .claude/rules/tooling.md
-# The bootstrap checklist prompts for the orchestration posture (#34).
+# The bootstrap checklist prompts for the orchestration posture (context-builder-kit#34).
 grep -q 'Orchestration posture' .claude/skills/scaffold/references/bootstrap_checklist_template.md || { echo "the bootstrap checklist lacks the orchestration-posture row"; exit 1; }
 # Hook registry ⇔ files ⇔ table: every shipped guard is registered at least once and the advisory
 # exemplars stay unregistered on the kit tree (a target asserts its own wiring in the project
@@ -661,7 +661,7 @@ for t in HARD-DENY ASK-GATE ADVISORY STOP; do grep -q "$t" <<<"$hookcomment" || 
 jq -r '[.hooks[][] | .hooks[] | .command][]' .claude/settings.json | sort -u | while read -r c; do b=$(basename "$c"); grep -q "$b" .claude/rules/cbk-conventions.md || { echo "cbk-conventions.md § Mutation discipline does not name the registered hook $b"; exit 1; }; done
 # The launch-root guard, on its branches (crafted payloads; read-only). Only exit 2 denies, so the
 # blocking case asserts 2 exactly; `|| rc=$?` keeps -e satisfied while the status stays testable.
-# stderr is kept and printed on failure: the hook's own reason is the diagnostic (#58 item 11).
+# stderr is kept and printed on failure: the hook's own reason is the diagnostic (context-builder-kit#58 item 11).
 rc=0; err=$(printf '{"tool_name":"Agent","tool_input":{},"cwd":"%s/docs"}' "$PWD" | .claude/hooks/require-repo-root-for-agents.sh 2>&1 >/dev/null) || rc=$?
 [ "$rc" -eq 2 ] || { echo "launch-root guard did not DENY a subdirectory dispatch (exit $rc; only 2 blocks). The hook said:"; printf '  %s\n' "$err"; exit 1; }
 rc=0; err=$(printf '{"tool_name":"Agent","tool_input":{},"cwd":"%s"}' "$PWD" | .claude/hooks/require-repo-root-for-agents.sh 2>&1 >/dev/null) || rc=$?
@@ -1117,6 +1117,11 @@ absent grep -n "six iterations through this gate, one per do[c]" .claude/skills/
 for p in cbk-conventions pr-review; do r=.claude/rules/$p-reference.md; pre=$(grep -m1 '^> \*\*Path-scoped' "$r"); while IFS= read -r h; do [ -n "$h" ] || continue; grep -qxF "## $h" .claude/rules/$p.md || grep -qF "§ $h" <<<"$pre" || { echo "$r § $h has no pointer heading in $p.md and is not named in its preamble"; exit 1; }; done <<<"$(awk '/^```/{f=!f; next} !f && /^## /{sub(/^## /, ""); print}' "$r")"; done
 # Kit tree only: no foreign project's identifiers in the kit's examples (V9.20) — examples are invented, generic names.
 [ -f docs/cbk/scaffold.md ] || absent grep -rn -i 'tuito[r]\|anubi[s]\|per-Pilo[t]\|Servo\.set_angl[e]' .claude/
+# Kit tree only (V9.21, D53): shipped content names no sibling project, and cites the kit's own issues as
+# context-builder-kit#N — a bare number reads as the target's own issue once the file is copied into a target.
+# The patterns split or bracket themselves so these lines never match.
+[ -f docs/cbk/scaffold.md ] || absent git grep -n -i -E 'you-are-hea[r]|echospher[e]' -- .claude .github README.md CLAUDE.md
+[ -f docs/cbk/scaffold.md ] || absent grep -rnE '(^|[[:space:](,;])#[0-9]{1,3}\b' .claude/rules .claude/hooks .claude/workflows .claude/agents .claude/commands/finish.md .claude/commands/finish-procedure.md .claude/skills/rough-in/references/finish-command.md .claude/skills/rough-in/references/finish-procedure.md .claude/skills/adr-new .claude/skills/blueprint/references/templates .claude/settings.json .github
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
