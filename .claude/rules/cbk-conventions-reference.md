@@ -900,6 +900,9 @@ for c in .claude/rules/*.md; do case "$c" in *-reference.md) continue;; esac; r=
 # The dispatch surfaces carry no count their list can outgrow: the heading is "The dispatch surfaces + resolution order"
 # in both halves and every citation follows it (context-builder-kit#65; the pointer check above catches a one-sided rename).
 absent grep -rn 'three surfaces + resolution orde[r]\|§ The three surfaces an[d]' .claude/
+# Fan-out discipline names the workflow concurrency variable, the teammate trap on the agent-team row, and read-only
+# agents (orchestration.md § The dispatch-mechanism decision, § Fan-out discipline; context-builder-kit#69, context-builder-kit#72).
+[ ! -f .claude/rules/orchestration.md ] || { grep -q 'CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS' .claude/rules/orchestration.md && grep -q 'launches as a teammate' .claude/rules/orchestration.md && grep -q 'Read-only agents stay read-only' .claude/rules/orchestration.md; } || { echo "orchestration.md lacks the workflow concurrency variable, the teammate trap, or the read-only-agents bullet"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
