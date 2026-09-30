@@ -16,7 +16,7 @@ paths:
 
 # Cascade Conventions — the reference half
 
-> **Path-scoped.** This file holds the sections of `cbk-conventions.md` a session needs only when it touches a cascade artifact, a decision record, a skill or command, a hook or the settings file, a `.github/` file, a manifest or lockfile, `mise.toml`, `.gitignore` or `.gitattributes` — the `paths:` block above lists the triggers; replace the bracketed entry with the project's manifest and lockfile globs at install. `cbk-conventions.md` (always loaded) keeps a pointer heading for every section here, so `cbk-conventions.md § <section>` citations resolve to the pointer and the pointer to this file. Sections were moved verbatim on 2026-09-06; the split is by when the content is needed, never by length. See `cbk-conventions.md` § Rule loading and the instruction budget.
+> **Path-scoped.** This file holds the sections of `cbk-conventions.md` a session needs only when it touches a cascade artifact, a decision record, a skill or command, a hook or the settings file, a `.github/` file, a manifest or lockfile, `mise.toml`, `.gitignore` or `.gitattributes` — the `paths:` block above lists the triggers; replace the bracketed entry with the project's manifest and lockfile globs at install. `cbk-conventions.md` (always loaded) keeps a pointer heading for every section moved here at the split, so `cbk-conventions.md § <section>` citations resolve to the pointer and the pointer to this file; a section added here since (§ .gitignore anchoring, § ADR relation grains, § Required-checks trap, § Hook authoring) is cited by this file's own name, `cbk-conventions-reference.md § <section>`. Sections were moved verbatim on 2026-09-06; the split is by when the content is needed, never by length. See `cbk-conventions.md` § Rule loading and the instruction budget.
 
 ## Cascade artifact layout — flat (default) or nested
 
@@ -1111,6 +1111,10 @@ for s in scaffold blueprint framing rough-in; do grep -q 'flags as individually 
 # re-review blueprint.md, which gate 6 owns.
 grep -q 'seven on the `github-issues` and `in-repo-markdown` axes' .claude/skills/blueprint/SKILL.md || { echo "blueprint/SKILL.md counts six foundation docs where its table lists seven on two axes"; exit 1; }
 absent grep -n "six iterations through this gate, one per do[c]" .claude/skills/blueprint/SKILL.md
+# A reference half's pointer claim is checked, not asserted (V9.19): every `## ` section outside a code fence has a
+# pointer heading in its contract or is named in the half's preamble as added since the split. The heading list is fed
+# as a here-string, so a failing heading's exit 1 ends the block from its own shell.
+for p in cbk-conventions pr-review; do r=.claude/rules/$p-reference.md; pre=$(grep -m1 '^> \*\*Path-scoped' "$r"); while IFS= read -r h; do [ -n "$h" ] || continue; grep -qxF "## $h" .claude/rules/$p.md || grep -qF "§ $h" <<<"$pre" || { echo "$r § $h has no pointer heading in $p.md and is not named in its preamble"; exit 1; }; done <<<"$(awk '/^```/{f=!f; next} !f && /^## /{sub(/^## /, ""); print}' "$r")"; done
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

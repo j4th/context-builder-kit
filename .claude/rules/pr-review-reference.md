@@ -8,7 +8,7 @@ paths:
 
 # PR Review Rules — the reference half
 
-> **Path-scoped.** Loads when a reviewer agent, a workflow, a CI workflow, or this rule pair is read. `pr-review.md` (always loaded) keeps a pointer heading for every section here. **A triage is not a file read**: the executor reads this file by name at its triage step (`commands/finish.md`), because nothing else triggers it there. Sections were moved verbatim on 2026-09-06. See `cbk-conventions.md` § Rule loading and the instruction budget.
+> **Path-scoped.** Loads when a reviewer agent, a workflow, a CI workflow, or this rule pair is read. `pr-review.md` (always loaded) keeps a pointer heading for every section moved here at the split; a section added here since (§ Authoring a project-local reviewer, § Reviewer precedent memory — genres and staleness) is cited by this file's own name. **A triage is not a file read**: the executor reads this file by name at its triage step (`commands/finish.md`), because nothing else triggers it there. Sections were moved verbatim on 2026-09-06. See `cbk-conventions.md` § Rule loading and the instruction budget.
 
 ## Apply / Surface calibration
 
