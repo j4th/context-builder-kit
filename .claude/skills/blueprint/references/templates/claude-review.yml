@@ -11,9 +11,11 @@
 # not re-fire a review (constraint 5 — label-driven proportionality); re-trigger with
 # the label. Model and effort are explicit, never inherited (orchestration.md).
 #
-# Constraint 1 — the action cannot review the PR that introduces it: the action
-# validates this file against the default branch and exits green without running on
-# any PR that adds or changes it. Verify on the next PR, not this one.
+# Constraint 1 — this workflow cannot review any PR that changes it: claude-code-action skips, green and
+# with no model session, on a PR that adds or changes this file. Its log: "This is expected when adding
+# Claude Code workflows to new repositories or on PRs with workflow changes" (`src/github/token.ts` at the
+# pinned SHA, read 2026-09-30); the comparison runs server side, at the action's token exchange. The last
+# step goes red on such a PR and says why. Verify on the next PR, not this one.
 #
 # Constraint 4 — the posted artifact is the deliverable, in both directions: a green run
 # with no summary comment is a failure to investigate; a red run whose review posted is a
@@ -124,10 +126,13 @@ jobs:
     # 2026-09-30), so that label moves when GitHub re-points it and a runner change lands unreviewed. Bump
     # the image in a reviewed PR.
     runs-on: ubuntu-24.04
-    # Constraint 3 — a job-level timeout: the action has no timeout input of its own.
+    # Constraint 3 — a job-level timeout: the action has no timeout input of its own (its action.yml at the
+    # pinned SHA declares none, read 2026-09-30).
     timeout-minutes: 30
-    # Constraint 6 — permissions scoped to the job. `id-token: write` is required by the
-    # action even in OAuth-token mode; `checks: read` for the prompt's `gh pr checks`.
+    # Constraint 6 — permissions scoped to the job. `id-token: write` is required by the action even in
+    # OAuth-token mode: unless a `github_token` input is given, it exchanges an OIDC token for its app token
+    # (`setupGitHubToken` in `src/github/token.ts`, read 2026-09-30). `checks: read` for the prompt's
+    # `gh pr checks`.
     permissions:
       contents: read
       pull-requests: write
@@ -237,7 +242,9 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Full SDK output so an auth or stream failure is diagnosable from the run log.
           show_full_output: true
-          # track_progress is unsupported on `labeled` events (the action fails).
+          # Before claude-code-action v1.0.188, track_progress rejects a `labeled` event (the action fails);
+          # v1.0.188 accepts it (`validActions` in `src/modes/detector.ts` at each tag, read 2026-09-30). Once
+          # the pinned SHA is v1.0.188 or later, this can be `track_progress: true`.
           track_progress: ${{ github.event.action != 'labeled' && 'true' || 'false' }}
           # Named twice on purpose — here and in the job's `permissions:` block. The job block scopes
           # the workflow's own token; this input is what the action requests when it exchanges its OIDC

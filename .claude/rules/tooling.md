@@ -98,7 +98,7 @@
 | Ask a question on a PR or issue | `@claude` in a comment (`.github/workflows/claude.yml`) | Interactive; least-privilege tool list |
 | Answer the review's findings | `/pr-respond <N>` | The feedback loop; every finding a SHA and a reply |
 
-**Decision rule**: the posted artifact is the deliverable (`cbk-conventions.md` § Deliverable trap) — a green run with no comment is investigated, a red run whose review posted is a pass. The workflow cannot review the PR that introduces it; verify on the next one. Record here which labels the project actually created.
+**Decision rule**: the posted artifact is the deliverable (`cbk-conventions.md` § Deliverable trap) — a green run with no comment is investigated, a red run whose review posted is a pass. The workflow cannot review any PR that changes it — `claude-code-action` skips it, green and with no session (the review template's Constraint 1 carries the source) — and its last step, `Assert the review posted`, goes red on such a PR with the reason; verify on the next PR. The model is named by family alias, so the action's pinned SHA fixes both the model and the Claude Code the bot runs, and the job summary records each: check a harness fact the bot asserts against the Claude Code version you run before acting on it. Record here which labels the project actually created.
 
 ## Plugins
 

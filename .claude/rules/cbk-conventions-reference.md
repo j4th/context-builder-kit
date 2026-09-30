@@ -695,7 +695,7 @@ grep -q 'verdict rule' .claude/skills/rough-in/references/templates/rough-in-spe
 # Review automation (P4, Task 4): both workflow templates exist with their stated constraints; scaffold's review
 # question names its consequence; rough-in's gh shape carries the create-then-edit pass.
 for t in claude-review.yml claude.yml; do [ -f .claude/skills/blueprint/references/templates/$t ] || { echo "blueprint lacks templates/$t"; exit 1; }; grep -q 'timeout-minutes' .claude/skills/blueprint/references/templates/$t || { echo "templates/$t has no job timeout (constraint 3)"; exit 1; }; done
-for w in 'cannot review the PR that introduces it' -- '--disallowedTools Agent' 'continue-on-error: true' 'Assert the review posted'; do [ "$w" = -- ] && continue; grep -qF -- "$w" .claude/skills/blueprint/references/templates/claude-review.yml || { echo "templates/claude-review.yml lacks: $w"; exit 1; }; done
+for w in 'cannot review any PR that changes it' -- '--disallowedTools Agent' 'continue-on-error: true' 'Assert the review posted'; do [ "$w" = -- ] && continue; grep -qF -- "$w" .claude/skills/blueprint/references/templates/claude-review.yml || { echo "templates/claude-review.yml lacks: $w"; exit 1; }; done
 grep -q 'solo-merge with automated review' .claude/skills/scaffold/SKILL.md || { echo "scaffold's PR question does not name its consequence"; exit 1; }
 grep -q 'create-then-edit' .claude/skills/rough-in/references/planning-backend-commit.md || { echo "rough-in's gh shape lacks the create-then-edit pass"; exit 1; }
 # Phases (P4): the cascade-events index template exists and scaffold cites it; nothing in rough-in misnames the index;
@@ -879,6 +879,8 @@ for t in claude-review.yml claude.yml; do a=$(awk '/claude_args: [|]/{f=1; next}
 for f in .claude/skills/blueprint/references/templates/claude-review.yml .claude/skills/blueprint/references/templates/claude.yml; do grep -qF '.claude-pr/' "$f" || { echo "$f does not say the PR's own configuration copies are under .claude-pr/"; exit 1; }; done
 for w in 'Report only commands you actually ran' 'gh pr checks` (this job grants' 'must match each subcommand independently' '[N — the note above claude_args]'; do grep -qF -- "$w" .claude/skills/blueprint/references/templates/claude-review.yml || { echo "templates/claude-review.yml lacks: $w"; exit 1; }; done
 absent grep -nE '(^|[[:space:](,;])#[0-9]{1,3}\b' .claude/skills/blueprint/references/templates/claude-review.yml .claude/skills/blueprint/references/templates/claude.yml
+# tooling.md's § Automated review, where the project kept it, states constraint 1 as the template does.
+if grep -q '^## Automated review on the git host' .claude/rules/tooling.md; then grep -qF 'cannot review any PR that changes it' .claude/rules/tooling.md || { echo "tooling.md § Automated review says the workflow cannot review only the PR that introduces it"; exit 1; }; fi
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
