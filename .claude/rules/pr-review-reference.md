@@ -92,6 +92,10 @@ If the diff is entirely under `docs/` or matches `*.md`, the toolkit's specializ
 
 The hand-off is the audit surface. List counts per class plus the concrete actioned items and the verbatim Surface entries. If everything classified as Reject, say so in one line — don't pad.
 
+### ❌ Folding one review layer into another
+
+The floor, the sweep, the flip's auto-review and each `/pr-respond` round are separate layers, and they catch different things because each reads the branch with its own context. On one real PR the floor caught kit-versus-project merge losses, the round-2 sweep caught a silent miss in the round-1 fix, and the flip's auto-review caught that the round-2 fixture never ran — "none of them was the layer that found the previous layer's bug" (context-builder-kit#33). Keep them separate: a bigger combined pass is not a substitute for any of them. It is the same principle as the floor running once with at most one verification workflow per delta (`pr-review.md` § The floor), seen from the other side.
+
 ### ❌ Describing a review instead of running one
 
 "The diff was reviewed for X, Y and Z" by an agent that read the diff is not `/simplify` or `pr-review-toolkit:review-pr` having run. The floor is two skill invocations; a description of what they would have found is the failure mode the `## Review gate` block exists to catch (`pr-review.md` § The floor).
