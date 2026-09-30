@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # PreToolUse hook: force a per-action operator confirmation on every
 # knowledge-backend WRITE tool call. The matcher in settings.json owns the
-# tool-name pattern — the shipped regex covers Notion (the kit's v1 reference
-# knowledge backend) mutating verbs (create/update/move/duplicate/convert/
-# delete) across both the direct mcp__notion__* and plugin-namespaced tool
-# names; when the MCP grows a new mutating verb, widen the matcher — and
+# tool-name pattern. The shipped regex covers the ten mutating verbs of Notion
+# (the kit's v1 reference knowledge backend), across both the direct
+# mcp__notion__* and plugin-namespaced tool names: create, update, move,
+# duplicate, convert and delete, plus upload (upload-skill replaces a page's
+# body), spawn and send (spawn-session and send-message-to-session drive an
+# agent that writes) and stop (stop-session). The verb list is a dated
+# observation of the vendor's tool names (2026-09-21): re-verify it when the
+# MCP's tool list changes, widen the matcher for a new mutating verb, and
 # adjust it to your configured MCP's tool names if your knowledge backend
 # differs. Reads (fetch/search) are unmatched and unaffected.
 #
@@ -15,6 +19,10 @@
 # it forces the operator prompt even when a broad permissions-allow entry
 # would otherwise auto-approve the tool.
 # Tier:     ASK-GATE (see the registry comment in .claude/settings.json).
+# Depends:  nothing — the decision is unconditional for a matched tool, so the
+#           payload is never parsed, and an unreadable one asks like any other
+#           (cbk-conventions-reference.md § Hook authoring).
+# Fixture:  .claude/workflows/tests/hook-guards-fixture.sh.
 
 set -uo pipefail
 # Drain stdin first (cbk-conventions-reference.md § Hook authoring › The stdin / exit contract);

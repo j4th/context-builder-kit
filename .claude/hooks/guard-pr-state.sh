@@ -11,9 +11,12 @@
 # the per-action OK. `git push` and `gh pr create` are deliberately unmatched
 # (/finish legitimately runs both).
 #
-# Fail-open on environment defects (missing jq), mirroring
-# protect-lock-files.sh.
 # Tier:     ASK-GATE (see the registry comment in .claude/settings.json).
+# Depends:  jq (the payload) — absent, the guard fails open: exit 0 with a stderr
+#           warning that says no mechanical backstop exists. A payload jq cannot
+#           read is not an environment defect: it gets the prompt
+#           (cbk-conventions-reference.md § Hook authoring).
+# Fixture:  .claude/workflows/tests/hook-guards-fixture.sh.
 
 set -uo pipefail
 
@@ -23,8 +26,23 @@ input="$(cat)"
 
 if ! command -v jq &>/dev/null; then
   echo "guard-pr-state: WARNING — jq not installed; PR-state guard DISABLED." >&2
-  echo "                Until fixed, the only backstop is the prose rule in /finish and" >&2
-  echo "                /pr-respond that PR-state changes are the operator's calls." >&2
+  echo "                Install jq to re-enable. Backstop until then: none mechanical — every" >&2
+  echo "                gh pr ready/merge/close/reopen needs the operator's explicit per-action OK." >&2
+  exit 0
+fi
+
+# A payload jq cannot read gets the prompt, never a pass: its command cannot be checked, so the
+# operator decides.
+if ! jq -e 'type == "object"' >/dev/null 2>&1 <<<"$input"; then
+  cat <<'EOF'
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "ask",
+    "permissionDecisionReason": "guard-pr-state could not read this tool payload (not parseable JSON, or not an object), so it cannot tell whether the command changes a PR's state. Approve only if the operator asked for exactly this command."
+  }
+}
+EOF
   exit 0
 fi
 

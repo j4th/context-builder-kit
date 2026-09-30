@@ -20,8 +20,13 @@
 #
 # Hook receives JSON on stdin with the tool input. Exit 2 + stderr blocks.
 # Fail-open on environment defects (missing jq, non-repo cwd): exit 0 with a
-# loud stderr warning, mirroring protect-lock-files.sh.
+# loud stderr warning naming the backstops, mirroring protect-lock-files.sh.
+# A payload jq cannot read is refused (cbk-conventions-reference.md § Hook
+# authoring). Fixture: .claude/workflows/tests/hook-guards-fixture.sh.
 # Tier:     HARD-DENY (see the registry comment in .claude/settings.json).
+# Depends:  jq (the payload) and git (the branch) — absent jq, the guard fails
+#           open: exit 0 with a stderr warning naming the backstops; absent git,
+#           or a working directory that is not a checkout, the same.
 
 set -uo pipefail
 
@@ -33,9 +38,18 @@ input="$(cat)"
 
 if ! command -v jq &>/dev/null; then
   echo "protect-main-branch: WARNING — jq not installed; main-branch commit protection DISABLED." >&2
-  echo "                     Install jq to re-enable. Until then the only backstop is the operator" >&2
-  echo "                     noticing a commit on main before pushing." >&2
+  echo "                     Install jq to re-enable. Backstops until then: [the base branch's ruleset —" >&2
+  echo "                     pull requests only — where one exists], and the operator noticing a commit" >&2
+  echo "                     on local main before branching." >&2
   exit 0
+fi
+
+# A payload jq cannot read is refused: its command and working directory cannot be checked, and a
+# guard that waved it through would fall to one lone UTF-16 surrogate escape in the command.
+if ! jq -e 'type == "object"' >/dev/null 2>&1 <<<"$input"; then
+  echo "BLOCKED: protect-main-branch could not read the tool payload (not parseable JSON, or not an object)," >&2
+  echo "so it cannot tell whether this is a commit on main. A lone UTF-16 surrogate escape in the command does this — remove it and retry." >&2
+  exit 2
 fi
 
 tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"
@@ -65,6 +79,7 @@ fi
 
 branch="$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null)" || {
   echo "protect-main-branch: WARNING — $PROJECT_DIR is not a git repo; guard inactive for this call." >&2
+  echo "                     Backstop: [the base branch's ruleset — pull requests only — where one exists]." >&2
   exit 0
 }
 

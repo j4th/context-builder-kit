@@ -6,20 +6,23 @@
 # pnpm install, cargo update, ...) — never via manual editing. Direct edits
 # silently de-sync the lockfile from the manifest and break reproducible builds.
 #
-# Allowed:
-#   - Bash invocations of the package manager (the proper way to change locks)
-#   - Reads of lock files (no Edit/Write involved)
-# Blocked:
-#   - Edit/Write/MultiEdit on lock files
-#
-# Hook receives JSON on stdin with the tool input. Exit 2 + stderr blocks.
-#
-# Fail-open on environment defects (missing jq, unset CLAUDE_PROJECT_DIR):
-# exit 0 with a loud stderr warning. The alternative (failing closed) converts
-# a targeted lock-file block into a universal Edit/Write/MultiEdit block, which
-# is worse than allowing a lock-file edit to slip through. The operator notices
-# the warning and fixes their environment.
+# Allowed:  Bash invocations of the package manager (the proper way to change locks); reads of lock
+#           files (no Edit/Write involved); a file with a case arm of its own above the `*.lock)` arm.
+# Blocked:  Edit/Write/MultiEdit on a lock file — a named ecosystem's, or any other `*.lock` by the
+#           fallback arm; and a payload jq cannot read, whose path cannot be checked.
+# Not seen: an edit through a symlink under another name (the guard decides on the path text, so a
+#           link named deps.txt that points at uv.lock passes), and a write through the Bash tool
+#           (unmatched on purpose: the package manager is the route). The project's CI lockfile
+#           check, where one exists, refuses a drifted lock at PR time.
 # Tier:     HARD-DENY (see the registry comment in .claude/settings.json).
+# Depends:  jq (the payload) — absent, the guard fails open: exit 0 with a stderr warning naming the
+#           project's CI lockfile check as the backstop (a bracketed slot the project fills).
+#
+# Hook receives JSON on stdin with the tool input. Exit 2 + stderr blocks. Fail-open on environment
+# defects (missing jq, unset CLAUDE_PROJECT_DIR): exit 0 with a loud stderr warning — failing closed
+# would turn a targeted lock-file block into a universal Edit/Write/MultiEdit block. Input the guard
+# cannot read is not an environment defect, and is refused (cbk-conventions-reference.md § Hook
+# authoring). Fixture: .claude/workflows/tests/hook-guards-fixture.sh.
 
 set -uo pipefail
 
@@ -37,8 +40,18 @@ PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$PWD}"
 # NOT fail-closed (would block all Edit/Write/MultiEdit silently).
 if ! command -v jq &>/dev/null; then
   echo "protect-lock-files: WARNING — jq not installed; lock-file protection DISABLED." >&2
-  echo "                    Install jq to re-enable. Lock-file edits will NOT be caught until fixed." >&2
+  echo "                    Install jq to re-enable. Backstop until then: [the project's CI lockfile check — a" >&2
+  echo "                    locked or frozen-lockfile install that fails when the lock file and its manifest disagree]." >&2
   exit 0
+fi
+
+# A payload jq cannot read is refused, never waved through: this hook runs on Edit|Write|MultiEdit only,
+# so the call is still a file write, and its path cannot be checked (a lone UTF-16 surrogate escape
+# anywhere in the tool input does this).
+if ! jq -e 'type == "object"' >/dev/null 2>&1 <<<"$input"; then
+  echo "BLOCKED: protect-lock-files could not read the tool payload (not parseable JSON, or not an object)," >&2
+  echo "so its path cannot be checked. A lone UTF-16 surrogate escape in the tool input does this — remove it and retry." >&2
+  exit 2
 fi
 
 tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"
@@ -81,9 +94,10 @@ EOF
     cat >&2 <<EOF
 BLOCKED: $rel looks like a package-manager lock file (the *.lock fallback arm — the
 named ecosystems are listed above this arm in the hook; the next ecosystem is covered
-by construction rather than by an edit, #58 item 3).
+by construction rather than by an edit, context-builder-kit#58 item 3).
 Run the package manager that owns it instead of editing it by hand. If this file is
-NOT a lock file, add its name to the hook's exemption comment and say so in the PR.
+NOT a lock file, give it a case arm of its own above the \`*.lock)\` arm in this hook
+(an arm that exits 0), and say so in the PR.
 EOF
     exit 2
     ;;
