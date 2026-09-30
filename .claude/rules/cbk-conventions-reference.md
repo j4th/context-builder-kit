@@ -822,6 +822,18 @@ shellform=$(jq -r '.hooks[][] | .hooks[] | select(.type == "command") | select(.
 jq -e '[.enabledPlugins // {} | to_entries[] | select((.key | startswith("pr-review-toolkit@")) and .value == true)] | length >= 1' .claude/settings.json >/dev/null || { echo "settings.json does not enable pr-review-toolkit@<marketplace> (the review floor's toolkit half; a bare key enables nothing)"; exit 1; }
 bare=$(jq -r '.enabledPlugins // {} | keys[] | select(contains("@") | not)' .claude/settings.json); [ -z "$bare" ] || { echo "enabledPlugins key(s) without @<marketplace> enable nothing: $bare"; exit 1; }
 absent grep -n "silently replaces the committed on[e]" .claude/rules/tooling.md
+# The registry comment is a registry (V3.4): each hook under its tier with its event and matcher, plus pointers; the
+# facts live in the hook headers and § Hook authoring, so it stays under 2,500 characters. It states the exec form the
+# registrations use and names every sourced helper under .claude/hooks/lib/.
+hc=$(jq -r '._comment_hooks' .claude/settings.json)
+[ "${#hc}" -le 2500 ] || { echo "settings.json _comment_hooks is ${#hc} characters (limit 2500): it is a registry, and each fact lives in its hook's header or § Hook authoring"; exit 1; }
+grep -qF '"args": []' <<<"$hc" || { echo "the registry comment does not state the exec form (\"args\": []) the registrations use"; exit 1; }
+for l in .claude/hooks/lib/*.sh; do [ -f "$l" ] || continue; grep -qF "$(basename "$l")" <<<"$hc" || { echo "the registry comment does not name the sourced helper $l"; exit 1; }; done
+# enabledMcpjsonServers approves servers by the names .mcp.json declares (https://code.claude.com/docs/en/settings-reference
+# § enabledMcpjsonServers, read 2026-09-30): each name it lists is a server in the project's .mcp.json, or in
+# .mcp.json.example on the kit tree.
+mcpf=.mcp.json; [ -f "$mcpf" ] || mcpf=.mcp.json.example
+if [ -f "$mcpf" ]; then for s in $(jq -r '.enabledMcpjsonServers // [] | .[]' .claude/settings.json); do jq -e --arg s "$s" '.mcpServers | has($s)' "$mcpf" >/dev/null || { echo "settings.json enabledMcpjsonServers names $s, which $mcpf does not declare"; exit 1; }; done; fi
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
