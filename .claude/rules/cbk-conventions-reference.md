@@ -1034,6 +1034,13 @@ rm -rf "$hbt"
 [ -f docs/cbk/scaffold.md ] || while IFS= read -r l; do case "$l" in ''|'#'*) continue;; esac; grep -qxF -- "$l" .gitignore || { echo "the kit's .gitignore lacks the harness-block entry $l"; exit 1; }; done <<<"$hb"
 ga=$(awk '/^## \.gitignore anchoring/{p=1; next} p && /^## /{exit} p' .claude/rules/cbk-conventions-reference.md)
 while IFS= read -r l; do case "$l" in ''|'#'*) continue;; esac; grep -qF -- "\`$l\`" <<<"$ga" || { echo "cbk-conventions-reference.md § .gitignore anchoring does not name the harness-block entry $l (the fence restates its list)"; exit 1; }; done <<<"$hb"
+# Kit-owned code stays out of a target's formatter (context-builder-kit#71): format-on-edit.sh's floor skips
+# .claude/workflows/ in the checkout and in a worktree's copy and its arms name the forcing flag; both advisory
+# exemplars register in exec form ("args": []) and name all three wiring edits (context-builder-kit#58 R11); the
+# bootstrap checklist carries the one-time formatter-scope choice.
+{ grep -qF '.claude/workflows/*|*/.claude/workflows/*' .claude/hooks/format-on-edit.sh && grep -q -- '--force-exclude' .claude/hooks/format-on-edit.sh; } || { echo "format-on-edit.sh's floor does not skip .claude/workflows/, or its arms do not name the forcing flag"; exit 1; }
+for h in format-on-edit.sh analyze-on-edit.sh; do reg=$(awk '/^# Register:/{p=1} p && !/^#/{exit} p' .claude/hooks/$h); { grep -qF '"args": []' <<<"$reg" && grep -q 'ADVISORY_WIRED' <<<"$reg" && grep -q 'two-views paragraph' <<<"$reg"; } || { echo "$h: the Register: stanza lacks exec form or the three-edit wiring note"; exit 1; }; done
+grep -q 'Formatter and linter scope' .claude/skills/scaffold/references/bootstrap_checklist_template.md || { echo "the bootstrap checklist lacks the formatter-scope one-time choice"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══

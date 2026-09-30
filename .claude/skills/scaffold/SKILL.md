@@ -255,7 +255,7 @@ The full template with worked examples for every section lives in `references/sc
 
 Alongside the scaffold output doc (which is persistent), scaffold produces a **bootstrap checklist** for the current session only. It tells the user what was done, what they still need to do manually, and how to verify integrations.
 
-Four sections: completed items (with links), manual instructions (with URLs and expected outcomes), verification matrix (with test actions), and the rule-file disposition table (one row per shipped template or path-scoped rule, plus the one-time choices — reviewer memory scope, licence). Template in `references/bootstrap_checklist_template.md`.
+Four sections: completed items (with links), manual instructions (with URLs and expected outcomes), verification matrix (with test actions), and the rule-file disposition table (one row per shipped template or path-scoped rule, plus the one-time choices the template lists). Template in `references/bootstrap_checklist_template.md`.
 
 Present inline + downloadable artifact. Do not commit to repo (session-scoped).
 

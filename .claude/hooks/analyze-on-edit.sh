@@ -31,7 +31,12 @@
 #           authoring: a hook-shaped object outside `hooks` voids the whole settings file):
 #           { "matcher": "Edit|Write|MultiEdit",
 #             "hooks": [ { "type": "command",
-#                          "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/analyze-on-edit.sh" } ] }
+#                          "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/analyze-on-edit.sh",
+#                          "args": [] } ] }
+#           Wiring is three edits, not one: the stanza, this hook's name in the project
+#           sub-block's ADVISORY_WIRED, and its name in cbk-conventions.md § Mutation
+#           discipline's two-views paragraph. The verification block reads all three, so a
+#           registration alone turns it red.
 
 set -uo pipefail
 
