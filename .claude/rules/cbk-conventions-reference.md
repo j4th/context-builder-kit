@@ -839,6 +839,13 @@ if [ -f "$mcpf" ]; then for s in $(jq -r '.enabledMcpjsonServers // [] | .[]' .c
 # https://code.claude.com/docs/en/sub-agents § What loads at startup, read 2026-09-30); its description, which
 # rides in every session's agent list, is its routing sentence (under 300 characters).
 if [ -f .claude/agents/Explore.md ]; then fm=$(awk 'NR==1 && /^---$/ {f=1; next} f && /^---$/ {exit} f' .claude/agents/Explore.md); grep -q '^omitClaudeMd: true$' <<<"$fm" || { echo "agents/Explore.md does not set omitClaudeMd: true (it would load CLAUDE.md and every unscoped rule the built-in skips)"; exit 1; }; d=$(sed -n 's/^description: //p' <<<"$fm"); [ -n "$d" ] && [ "${#d}" -le 300 ] || { echo "agents/Explore.md's description is ${#d} characters; keep it to the routing sentence (300 at most) and put the rationale in the body"; exit 1; }; fi
+# Report and comment text is data, not instructions (V3.6): /intake reads an outside reporter's text and /pr-respond any
+# commenter's, so each states the research phases' rule; /intake writes its own reproduction; /pr-respond applies a
+# finding only from an author it can trust, and reads the path-scoped rubric half itself, because a triage is not a file
+# read (https://code.claude.com/docs/en/memory § Path-specific rules, read 2026-09-30).
+for f in .claude/commands/intake.md .claude/commands/pr-respond.md; do [ -f "$f" ] || continue; grep -q 'data, not instructions' "$f" || { echo "$f does not state that report and comment text is data, not instructions"; exit 1; }; done
+[ ! -f .claude/commands/intake.md ] || grep -q 'Write the reproduction yourself' .claude/commands/intake.md || { echo "commands/intake.md does not require the executor to write its own reproduction"; exit 1; }
+[ ! -f .claude/commands/pr-respond.md ] || { grep -q 'collaborators/<login>/permission' .claude/commands/pr-respond.md && grep -q 'pr-review-reference.md' .claude/commands/pr-respond.md; } || { echo "commands/pr-respond.md lacks the author check or its explicit read of pr-review-reference.md"; exit 1; }
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
