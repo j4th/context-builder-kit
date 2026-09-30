@@ -473,7 +473,7 @@ A target that recorded its **Kit commit** (scaffold's Cascade metadata table) sy
 
 Two audiences share one block. **Kit-repo checks** hold on the kit's own tree and on any target project's copy of `.claude/`; **project checks** hold only in a filled-in target project and skip themselves when `docs/cbk/scaffold.md` is absent. A red check is a defect in the check until proven otherwise: a suite with a permanently red line is a suite nobody runs, which is worse than no suite. Every check says what it catches. Run the block after major edits to cascade skills, to the rules, or to a project's filled-in copy of this file.
 
-**Run it** through `.claude/workflows/tests/run-verification-block.sh`: it performs the documented extraction and adds two fail-loud rails the block cannot carry for itself — an empty extraction is red (a plain `bash -e` on an empty file exits 0), and an exit 0 that never printed `verification: done` is red. The kit's CI runs it on every pull request; a target wires the same script as the body of a task its check command depends on (a check nobody re-runs is a belief with a date on it — #58, second application, item 7). The block stays fail-fast: every red is fixed, or the check is narrowed in the project's own copy with an inline comment saying why — a "recorded" red cannot reach the sentinels.
+**Run it** through `.claude/workflows/tests/run-verification-block.sh`: it performs the documented extraction and adds three fail-loud rails the block cannot carry for itself — an empty extraction is red (a plain `bash -e` on an empty file exits 0); an exit 0 that never printed `verification: done` is red; and in a filled target (`docs/cbk/scaffold.md` exists) an exit 0 that never printed `verification: project sub-block complete` is red, because the done sentinel prints whether or not the project sub-block ran. The third rail keys on the same `docs/cbk/scaffold.md` as the project sub-block's guard, so a deleted or renamed scaffold file makes a target look like the kit's own tree, and that is not caught. `run-verification-block-fixture.sh` drives the three rails on synthetic blocks, and the block runs it, so the block guards the script that runs it. The kit's CI runs the runner on every pull request; a target wires the same script as the body of a task its check command depends on (a check nobody re-runs is a belief with a date on it — context-builder-kit#58, second application, item 7). The block stays fail-fast: every red is fixed, or the check is narrowed in the project's own copy with an inline comment saying why — a "recorded" red cannot reach the sentinels.
 
 ```bash
 # ═══ KIT-REPO CHECKS — must be green on the kit tree and in every target project ═══
@@ -686,6 +686,10 @@ absent grep -rn "framing\.md inde[x]\|framing\.md even[t]" .claude/skills/rough-
 # every session, and every non-fork subagent loads the set again. Print the always-loaded
 # set and its size so the standing cost is a number, not a discovery.
 total=0; for f in .claude/rules/*.md; do head -1 "$f" | grep -q '^---$' || { s=$(wc -c < "$f"); total=$((total+s)); echo "always-loaded: $f ($s bytes)"; }; done; echo "always-loaded total: $total bytes"
+
+# The runner's three rails hold on synthetic blocks, the runner copied into throwaway checkouts at its real
+# path (§ Verification › Run it): the block guards the script that runs it.
+bash .claude/workflows/tests/run-verification-block-fixture.sh || { echo "run-verification-block.sh lost a rail (the fixture names the case)"; exit 1; }
 
 echo "verification: kit sub-block complete"
 
