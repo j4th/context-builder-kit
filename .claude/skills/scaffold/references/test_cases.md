@@ -11,7 +11,7 @@ For Claude.ai's qualitative test loop (no subagents, no benchmarking): a real hu
 
 **What success looks like:**
 - Skill detects greenfield + solo + light-mode-leaning, but proposes **full mode** with the option to drop to light if the user pushes
-- Backend selection proposes github-issues planning (+ knowledge = none) and surfaces the three-level constraint in one sentence before commitment; the committed scaffold.md carries the two-axis Cascade metadata rows
+- Backend selection proposes github-issues planning (+ knowledge = none) and surfaces the three-level constraint in one sentence before commitment; the committed scaffold.md carries the two-axis Cascade metadata rows and a **Kit commit** row reading `vX.Y.Z (sha)`, which the bootstrap checklist's verification matrix confirms against the kit repository's tag
 - Discovery captures team shape (solo), quality bar, PR/review process (likely "self-merge with self-review"), tool comfort, and pace
 - Stage 1 confirms account state without lengthy interrogation
 - Stage 2 provisions repo via GitHub MCP, walks user through manual label creation, branch naming uses a short team identifier

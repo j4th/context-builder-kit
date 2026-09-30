@@ -66,6 +66,7 @@ Walk through each row. If anything fails, retry or fall back to manual instructi
 | Labels exist | Visit <repo URL>/labels | All cascade labels present, GitHub defaults cleaned up | ☐ |
 | Project board exists | Visit <project URL> | Board loads with Board template, repo is linked | ☐ |
 | Scaffold output readable | View <repo URL>/blob/main/docs/cbk/scaffold.md | File renders, Cascade metadata reads `Planning backend: github-issues` | ☐ |
+| Kit release recorded | Read the **Kit commit** row of docs/cbk/scaffold.md, then run `git ls-remote --tags <kit repository URL> 'vX.Y.Z^{}'` with its tag | The row reads `vX.Y.Z (sha)`, and the peeled tag the command prints begins with that sha | ☐ |
 | Problem brief committed | View <repo URL>/blob/main/docs/cbk/problem_brief.md | File renders, contains problem statement and appetite | ☐ |
 | Branch protection (if configured) | Try to push directly to main from a clone | Push is rejected | ☐ |
 | Verification block runs | With the kit's `.claude/` in the clone and the rule-file disposition below done, from the clone's root: `bash .claude/workflows/tests/run-verification-block.sh` | Exits 0; the last two lines are `verification: project sub-block complete` and `verification: done` (a filled target owes both — `cbk-conventions-reference.md` § Verification › Run it). Blueprint wires the same script into `check`. | ☐ |

@@ -210,7 +210,7 @@ docs/
 
 **The scaffold output doc: `docs/cbk/scaffold.md`.** Template in `references/scaffold_output_template.md`. Five sections:
 
-1. **Cascade metadata** — planning backend choice, knowledge backend choice, planning hierarchy levels, in-repo cascade artifacts path, repo URL, project board URL (if planning = `github-issues`), Linear workspace URL (if planning = `linear`), Notion hub URL (if knowledge = `notion`), provisioned date. For Claude in future sessions.
+1. **Cascade metadata** — planning backend choice, knowledge backend choice, planning hierarchy levels, in-repo cascade artifacts path, repo URL, project board URL (if planning = `github-issues`), Linear workspace URL (if planning = `linear`), Notion hub URL (if knowledge = `notion`), the kit release `.claude/` was installed from (`vX.Y.Z (sha)`, the base of the next sync), provisioned date. For Claude in future sessions.
 2. **Team shape** — solo or team, size, roles, decision-maker, timezone/sync info. From discovery.
 3. **Working conventions** — team identifier, branch naming, commit format, label taxonomy. From stage 2.
 4. **Development preferences** — quality bar, PR/review process, testing philosophy, pace, decision recording. From discovery.

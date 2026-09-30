@@ -21,7 +21,7 @@ the developer-facing parts into standards.md and contributing.md.*
 | **Hierarchy levels** | 3 issue levels (workstream → framing → rough-in)<, under the planner's initiative/project shell when planning = linear> |
 | **Cascade artifact layout** | <Flat (kit default) \| Nested> under `docs/cbk/` |
 | **Repo** | <URL> |
-| **Kit commit** | <context-builder-kit sha this `.claude/` was installed from — the base of the next sync> |
+| **Kit commit** | <vX.Y.Z (sha) — the kit release this `.claude/` was installed from, the base of the next sync (`cbk-conventions-reference.md` § Syncing the kit)> |
 | **Provisioned** | <date> |
 
 <Axis-conditional rows — include the ones the chosen axes need, delete the rest:>
@@ -103,7 +103,7 @@ comfortable, veteran>
 
 ## Per-section guidance
 
-**Cascade metadata**: the most-read section by Claude in future sessions. The `Planning backend` and `Knowledge backend` rows must be unambiguous and use the exact axis values (`github-issues | linear | in-repo-markdown`; `notion | none`) — later phases branch on them, and an unrecognized value reads as scaffold drift. Include only the axis-conditional rows the chosen axes need. Keep the design-doc-mode note for in-repo-markdown planning as a one-liner.
+**Cascade metadata**: the most-read section by Claude in future sessions. The `Planning backend` and `Knowledge backend` rows must be unambiguous and use the exact axis values (`github-issues | linear | in-repo-markdown`; `notion | none`) — later phases branch on them, and an unrecognized value reads as scaffold drift. Include only the axis-conditional rows the chosen axes need. Keep the design-doc-mode note for in-repo-markdown planning as a one-liner. The `Kit commit` row reads `vX.Y.Z (sha)`: the kit release this `.claude/` came from and its commit, which the kit's install step (its `README.md` § Quick start) prints as `Kit commit: vX.Y.Z (sha)`. From a clone of the kit rather than a release archive, `git describe --tags --exact-match` and `git rev-parse --short HEAD` in that clone give the two halves; a clone on no tag records the newest tag before it (`git describe --tags --abbrev=0`) with the clone's own sha, which is the merge base.
 
 **Team shape**: answers "who is working on this and how." Solo is one sentence. Team needs enough detail that blueprint can decide whether to recommend pair programming, what review process to propose, and whether async coordination needs tooling support.
 
@@ -127,7 +127,7 @@ comfortable, veteran>
 | **Hierarchy levels** | 3 issue levels (workstream → framing → rough-in) |
 | **Cascade artifact layout** | Flat (kit default) under `docs/cbk/` |
 | **Repo** | https://github.com/jforth/notes-cli |
-| **Kit commit** | e92e9c4 |
+| **Kit commit** | v0.4.0 (e92e9c4) |
 | **Project board** | https://github.com/users/jforth/projects/4 |
 | **Provisioned** | 2026-04-11 |
 

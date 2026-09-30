@@ -238,7 +238,7 @@ Cascade events being append-only is structurally important: the cascade IS the a
 
 ## Syncing the kit
 
-Three-way `git merge-file` against the recorded **Kit commit**; the file-by-file table first. → `cbk-conventions-reference.md` § Syncing the kit.
+Three-way `git merge-file` against the recorded **Kit commit**, `vX.Y.Z (sha)`; the kit `CHANGELOG.md`'s Sync notes, then the file-by-file table, first. → `cbk-conventions-reference.md` § Syncing the kit.
 
 ## Verification
 
