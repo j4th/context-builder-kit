@@ -16,9 +16,11 @@
 # Allowed:  everything else — commits on feature branches, non-commit git
 #           commands on main, `git commit-tree`, and a `commit.*` config key.
 # Not seen: a commit the command spells indirectly — `eval`, a variable holding
-#           `git`, a git alias, a script that commits. A pattern guard reads the
-#           text, not what runs; the base branch's ruleset, where one exists,
-#           refuses such a commit when it is pushed.
+#           `git`, a git alias, a script that commits — and a commit into another
+#           checkout the command reaches itself (`cd <dir> && git commit`,
+#           `git -C <dir> commit`): the branch judged is the one at the payload's
+#           cwd. A pattern guard reads the text, not what runs; the base branch's
+#           ruleset, where one exists, refuses such a commit when it is pushed.
 # Timing:   the guard reads the branch BEFORE the command runs, so a compound
 #           command that creates a branch and commits in one call is judged on
 #           main and blocked. Create the branch and make the first commit in
@@ -77,6 +79,9 @@ PROJECT_DIR="${cwd:-${CLAUDE_PROJECT_DIR:-$PWD}}"
 
 [[ "$tool_name" != "Bash" ]] && exit 0
 [[ -z "$command" ]] && exit 0
+# A line continuation (backslash-newline) joins one command across lines, and grep matches one line at a time: fold
+# each into a space first, so `git \<newline> commit` is judged as the commit it runs as.
+command=${command//$'\\\n'/ }
 
 # Token-anchored and flag-tolerant: `commit` may appear any number of tokens
 # after a token-anchored `git` (so global options like `-c k=v`, `--no-pager`,

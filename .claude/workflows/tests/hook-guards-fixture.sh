@@ -88,6 +88,10 @@ for c in 'bash -c "git commit -m x"' "sh -c 'git commit -m x'" '(git commit -m x
          '`git commit -m x`' '/usr/bin/git commit -m x' 'git commit;' 'git commit&&true' 'true;git commit'; do
   run "$MAIN" "$(bash_payload "$c" "$d/on-main")"; want 2 "a commit on main is denied: $c"
 done
+# A line continuation joins one command across lines, and grep matches line by line: each is still a commit.
+for c in $'git \\\n  commit -m x' $'git -c user.name=x \\\n  commit -m x' $'true && git \\\n commit'; do
+  run "$MAIN" "$(bash_payload "$c" "$d/on-main")"; want 2 "a commit split by a line continuation is denied: ${c//$'\n'/ ⏎ }"
+done
 for c in 'git commit-tree HEAD^{tree} -m x' 'git -c commit.gpgsign=false log' 'git config commit.gpgsign true' 'git log --grep=commit'; do
   run "$MAIN" "$(bash_payload "$c" "$d/on-main")"; want 0 "not a commit: $c"
 done
@@ -111,6 +115,9 @@ for c in 'gh pr merge 7 --squash' 'gh pr ready 7' 'gh pr close 7' 'gh pr reopen 
 done
 for c in 'bash -c "gh pr merge 5"' '(gh pr merge 5)' '$(gh pr merge 5)' '/usr/bin/gh pr merge 5' '(gh pr merge)' 'gh pr close 5;echo done'; do
   run "$PRS" "$(bash_payload "$c" "$d/on-feat")"; asks "a PR-state change asks: $c"
+done
+for c in $'gh pr \\\n  merge 5' $'gh \\\n pr ready 7'; do
+  run "$PRS" "$(bash_payload "$c" "$d/on-feat")"; asks "a PR-state change split by a line continuation asks: ${c//$'\n'/ ⏎ }"
 done
 for c in 'gh pr view 7 --json mergeable' 'gh pr list --state merged' 'gh pr create --draft' 'gh pr view 7' 'gh pr list' \
   'gh pr checks 7' 'gh issue close 7'; do

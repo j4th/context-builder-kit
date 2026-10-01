@@ -63,6 +63,9 @@ eval "$fields"
 
 [[ "$tool_name" != "Bash" ]] && exit 0
 [[ -z "$command" ]] && exit 0
+# A line continuation (backslash-newline) joins one command across lines, and grep matches one line at a time: fold
+# each into a space first, so `git \<newline> commit` is judged as the commit it runs as.
+command=${command//$'\\\n'/ }
 
 # Token-anchored + flag-tolerant: matches `gh pr merge`, `gh -R o/r pr ready`,
 # `gh pr -R o/r close 5`, etc. Over-matching (the phrase quoted inside another
