@@ -175,16 +175,19 @@ fi
 
 # ── a copy without its lib/ helper fails open, and says which backstop still stands ──
 solo="$t/solo"; mkdir -p "$solo/.claude/hooks"; cp "$src/$ADR" "$solo/.claude/hooks/"; chmod +x "$solo/.claude/hooks/$ADR"
-rc=0; (cd "$root" && jq -cn --arg fp "$A" '{tool_name:"Edit",tool_input:{file_path:$fp}}' | env CLAUDE_PROJECT_DIR="$root" "$solo/.claude/hooks/$ADR") >/dev/null 2>"$t/err" || rc=$?
+rc=0; (cd "$root" && jq -cn --arg fp "$A" '{tool_name:"Edit",tool_input:{file_path:$fp}}' | env CLAUDE_PROJECT_DIR="$root" "$solo/.claude/hooks/$ADR") >"$t/out" 2>"$t/err" || rc=$?
 n=$((n + 1))
 [ "$rc" -eq 0 ] || fail $ADR "a copy without lib/ must fail open (want exit 0, got $rc)"
 { grep -q 'helper' "$t/err" && grep -q 'Backstop' "$t/err" && grep -q 'adr-immutability-check.yml' "$t/err"; } || fail $ADR "the missing-helper warning must name the helper and the backstop's workflow"
+# On exit 0 stderr reaches only the debug log, so the warning must also be the systemMessage on stdout.
+jq -e '.systemMessage | contains("adr-immutability-check.yml")' "$t/out" >/dev/null 2>&1 || fail $ADR "the missing-helper warning is not shown to the user (no systemMessage on stdout)"
 # ── with no jq on PATH the guard fails open, and says which backstop still stands (a PATH holding only what the
 #    guard runs before its jq check) ──
 nojq="$t/nojq"; mkdir -p "$nojq"
 for tool in bash cat readlink; do p=$(type -P "$tool" || true); [ -n "$p" ] && ln -sf "$p" "$nojq/$tool"; done
-rc=0; (cd "$root" && jq -cn --arg fp "$A" '{tool_name:"Edit",tool_input:{file_path:$fp}}' > "$t/pay-nojq" && env -i PATH="$nojq" HOME="$HOME" CLAUDE_PROJECT_DIR="$root" bash "$src/$ADR" < "$t/pay-nojq") >/dev/null 2>"$t/err" || rc=$?
+rc=0; (cd "$root" && jq -cn --arg fp "$A" '{tool_name:"Edit",tool_input:{file_path:$fp}}' > "$t/pay-nojq" && env -i PATH="$nojq" HOME="$HOME" CLAUDE_PROJECT_DIR="$root" bash "$src/$ADR" < "$t/pay-nojq") >"$t/out" 2>"$t/err" || rc=$?
 n=$((n + 1))
 [ "$rc" -eq 0 ] || fail $ADR "with no jq the guard must fail open (want exit 0, got $rc)"
 { grep -q 'jq not installed' "$t/err" && grep -q 'Backstop' "$t/err"; } || fail $ADR "the no-jq warning must say jq is missing and name the backstop"
+jq -e '.systemMessage | contains("jq not installed")' "$t/out" >/dev/null 2>&1 || fail $ADR "the no-jq warning is not shown to the user (no systemMessage on stdout)"
 echo "protected-paths-hook-fixture: $n cases ok"

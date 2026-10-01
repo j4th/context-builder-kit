@@ -27,12 +27,12 @@
 #
 # Hook receives JSON on stdin with the tool input. Exit 2 + stderr blocks.
 # Fail-open on environment defects (missing jq, non-repo cwd): exit 0 with a
-# loud stderr warning naming the backstops, mirroring protect-lock-files.sh.
+# loud warning naming the backstops, shown as a systemMessage, mirroring protect-lock-files.sh.
 # A payload jq cannot read is refused (cbk-conventions-reference.md § Hook
 # authoring). Fixture: .claude/workflows/tests/hook-guards-fixture.sh.
 # Tier:     HARD-DENY (see the registry comment in .claude/settings.json).
 # Depends:  jq (the payload) and git (the branch) — absent jq, the guard fails
-#           open: exit 0 with a stderr warning naming the backstops; absent git,
+#           open: exit 0 with a warning, shown as a systemMessage, naming the backstops; absent git,
 #           or a working directory that is not a checkout, the same.
 
 set -uo pipefail
@@ -40,15 +40,24 @@ set -uo pipefail
 # Drain stdin before any early exit, or a piping caller's SIGPIPE masks this hook's own
 # exit code (cbk-conventions-reference.md § Hook authoring › The stdin / exit contract).
 input="$(cat)"
+# A fail-open warning goes to stderr, which on exit 0 reaches only the debug log, and to the user as the systemMessage
+# on stdout (https://code.claude.com/docs/en/hooks § Exit code 0 and § JSON output, read 2026-10-01). Pure bash, so it
+# works on the minimal PATH the fail-open cases run with.
+fail_open() {
+  printf '%s\n' "$@" >&2
+  local m="$*"; while [[ $m == *"  "* ]]; do m=${m//  / }; done
+  m=${m//\\/\\\\}; m=${m//\"/\\\"}
+  printf '{"systemMessage":"%s"}\n' "$m"
+  exit 0
+}
 # Deliberately NOT `set -e` — fail-open on environment defects rather than
 # aborting with cryptic stderr that blocks all Bash calls.
 
 if ! command -v jq &>/dev/null; then
-  echo "protect-main-branch: WARNING — jq not installed; main-branch commit protection DISABLED." >&2
-  echo "                     Install jq to re-enable. Backstops until then: [the base branch's ruleset —" >&2
-  echo "                     pull requests only — where one exists], and the operator noticing a commit" >&2
-  echo "                     on local main before branching." >&2
-  exit 0
+  fail_open "protect-main-branch: WARNING — jq not installed; main-branch commit protection DISABLED." \
+    "                     Install jq to re-enable. Backstops until then: [the base branch's ruleset —" \
+    "                     pull requests only — where one exists], and the operator noticing a commit" \
+    "                     on local main before branching."
 fi
 
 # A payload jq cannot read is refused: its command and working directory cannot be checked, and a
@@ -90,9 +99,8 @@ if ! grep -Eq '(^|[^[:alnum:]_.-])git([[:space:]]+[^[:space:]]+)*[[:space:]]+com
 fi
 
 branch="$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null)" || {
-  echo "protect-main-branch: WARNING — $PROJECT_DIR is not a git repo; guard inactive for this call." >&2
-  echo "                     Backstop: [the base branch's ruleset — pull requests only — where one exists]." >&2
-  exit 0
+  fail_open "protect-main-branch: WARNING — $PROJECT_DIR is not a git repo; guard inactive for this call." \
+    "                     Backstop: [the base branch's ruleset — pull requests only — where one exists]."
 }
 
 if [[ "$branch" == "main" || "$branch" == "master" ]]; then

@@ -23,7 +23,7 @@
 #           hand edit, and a symlink swapped between this check and the write. CI's ADR immutability job
 #           (.github/workflows/adr-immutability-check.yml) refuses any of them that reaches a PR.
 # Tier:     HARD-DENY (see the registry comment in .claude/settings.json).
-# Depends:  jq (the payload) — absent, the guard fails open: exit 0 with a stderr warning naming CI's ADR
+# Depends:  jq (the payload) — absent, the guard fails open: exit 0 with a warning, shown as a systemMessage, naming CI's ADR
 #           immutability job as the backstop. The sourced helper .claude/hooks/lib/resolve-path.sh — absent, the
 #           same fail-open and the same backstop. readlink (a symlink's target) — absent, a path through a symlink
 #           is refused. Nothing else: the device-and-inode check is bash's own `-ef`.
@@ -36,21 +36,29 @@ set -uo pipefail
 # Drain stdin before any early exit, or a piping caller's SIGPIPE masks this hook's own
 # exit code (cbk-conventions-reference.md § Hook authoring › The stdin / exit contract).
 input="$(cat)"
+# A fail-open warning goes to stderr, which on exit 0 reaches only the debug log, and to the user as the systemMessage
+# on stdout (https://code.claude.com/docs/en/hooks § Exit code 0 and § JSON output, read 2026-10-01). Pure bash, so it
+# works on the minimal PATH the fail-open cases run with.
+fail_open() {
+  printf '%s\n' "$@" >&2
+  local m="$*"; while [[ $m == *"  "* ]]; do m=${m//  / }; done
+  m=${m//\\/\\\\}; m=${m//\"/\\\"}
+  printf '{"systemMessage":"%s"}\n' "$m"
+  exit 0
+}
 # Deliberately NOT `set -e`: on an environment defect an abort exits non-2, which the hook
 # contract reads as NON-blocking — the ADR edit would go through with a cryptic error. Warn and
 # fall open instead, naming the backstop.
 
 if ! command -v jq &>/dev/null; then
-  echo "protect-immutable-adrs: WARNING — jq not installed; ADR-immutability protection DISABLED." >&2
-  echo "                        Install jq to re-enable. Backstop: CI's ADR immutability job (.github/workflows/adr-immutability-check.yml) still refuses the change at PR time." >&2
-  exit 0
+  fail_open "protect-immutable-adrs: WARNING — jq not installed; ADR-immutability protection DISABLED." \
+    "                        Install jq to re-enable. Backstop: CI's ADR immutability job (.github/workflows/adr-immutability-check.yml) still refuses the change at PR time."
 fi
 
 case "${BASH_SOURCE[0]}" in */*) here=${BASH_SOURCE[0]%/*} ;; *) here=. ;; esac
 if [ ! -r "$here/lib/resolve-path.sh" ]; then
-  echo "protect-immutable-adrs: WARNING — its path helper $here/lib/resolve-path.sh is missing; ADR-immutability protection DISABLED." >&2
-  echo "                        Backstop: CI's ADR immutability job (.github/workflows/adr-immutability-check.yml) still refuses the change at PR time." >&2
-  exit 0
+  fail_open "protect-immutable-adrs: WARNING — its path helper $here/lib/resolve-path.sh is missing; ADR-immutability protection DISABLED." \
+    "                        Backstop: CI's ADR immutability job (.github/workflows/adr-immutability-check.yml) still refuses the change at PR time."
 fi
 # shellcheck source=lib/resolve-path.sh
 . "$here/lib/resolve-path.sh"

@@ -50,6 +50,10 @@ says() { grep -q -- "$1" <<<"$ERR" || { echo "FAIL: $2 (stderr lacks '$1')"; pri
 asks() { [ "$RC" -eq 0 ] && jq -e '.hookSpecificOutput.permissionDecision == "ask"' >/dev/null 2>&1 <<<"$OUT" \
   || { echo "FAIL: $1 (want an ask decision on stdout, exit 0; got exit $RC)"; printf '  stdout: %s\n' "$OUT"; exit 1; }; }
 silent() { [ "$RC" -eq 0 ] && [ -z "$OUT" ] || { echo "FAIL: $1 (want exit 0 and no decision; got exit $RC)"; printf '  stdout: %s\n' "$OUT"; exit 1; }; }
+# On exit 0 the harness writes a hook's stderr to the debug log only, so a fail-open warning reaches the user as the
+# systemMessage on stdout (https://code.claude.com/docs/en/hooks § Exit code 0, read 2026-10-01).
+shows() { jq -e --arg s "$1" '.systemMessage | contains($s)' >/dev/null 2>&1 <<<"$OUT" \
+  || { echo "FAIL: $2 (no systemMessage on stdout carrying '$1': stderr on exit 0 reaches only the debug log)"; printf '  stdout: %s\n' "$OUT"; exit 1; }; }
 bash_payload() { jq -cn --arg c "$1" --arg cwd "$2" '{tool_name:"Bash", tool_input:{command:$c}, cwd:$cwd}'; }
 edit_payload() { jq -cn --arg t "$1" --arg f "$2" '{tool_name:$t, tool_input:{file_path:$f}}'; }
 surrogate() { printf '{"tool_name":"%s","tool_input":{"%s":"%s","content":"x\\ud800y"},"cwd":"%s"}' "$1" "$2" "$3" "$4"; }
@@ -90,8 +94,10 @@ done
 # Fail-open branches name what still stands.
 run "$MAIN" "$(bash_payload 'git commit -m x' "$d/plain")";          want 0 "a directory that is not a checkout fails open"
 says "not a git repo" "the non-checkout warning says why"; says "Backstop" "the non-checkout warning names a backstop"
+shows "Backstop" "the non-checkout warning is shown to the user"
 run "$MAIN" "$(bash_payload 'git commit -m x' "$d/on-main")" -i PATH="$nojq" HOME="$HOME"; want 0 "no jq fails open"
 says "jq not installed" "the no-jq warning says why"; says "Backstops" "the no-jq warning names the backstops"
+shows "jq not installed" "the no-jq warning is shown to the user"
 # Input it cannot read is refused, on any branch: the guard cannot tell what it is.
 run "$MAIN" "$(surrogate Bash command 'git commit -m x' "$d/on-feat")"; want 2 "a payload jq cannot parse is refused"
 says "could not read the tool payload" "the refusal says why"
@@ -113,6 +119,7 @@ done
 run "$PRS" "$(jq -cn '{tool_name:"Edit", tool_input:{file_path:"x"}}')"; silent "a non-Bash tool passes through"
 run "$PRS" "$(bash_payload 'gh pr merge 7' "$d/on-feat")" -i PATH="$nojq" HOME="$HOME"; want 0 "no jq fails open"
 says "jq not installed" "the no-jq warning says why"; says "Backstop" "the no-jq warning names what still stands"
+shows "jq not installed" "the no-jq warning is shown to the user"
 run "$PRS" "$(surrogate Bash command 'gh pr merge 7' "$d/on-feat")"; asks "a payload jq cannot parse gets the prompt"
 run "$PRS" 'not json at all';                                        asks "a payload that is not JSON gets the prompt"
 
@@ -135,6 +142,7 @@ run "$LOCK" "$(edit_payload Read "$d/on-feat/uv.lock")"; want 0 "a read of a loc
 run "$LOCK" "$(jq -cn '{tool_name:"Edit", tool_input:{}}')";   want 0 "an empty file_path passes through"
 run "$LOCK" "$(edit_payload Edit "$d/on-feat/uv.lock")" -i PATH="$nojq" HOME="$HOME"; want 0 "no jq fails open"
 says "jq not installed" "the no-jq warning says why"; says "Backstop" "the no-jq warning names what still stands"
+shows "jq not installed" "the no-jq warning is shown to the user"
 run "$LOCK" "$(surrogate Write file_path "$d/on-feat/uv.lock" "$d/on-feat")"; want 2 "a payload jq cannot parse is refused"
 says "could not read the tool payload" "the refusal says why"
 

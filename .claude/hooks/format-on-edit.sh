@@ -15,13 +15,15 @@
 # discovery, read 2026-09-30). So each arm passes its formatter's forcing flag, and the floor
 # below keeps the trees no formatter may touch out, whatever any config says.
 #
-# Blocked:  nothing — advisory-only contract: exit 0 ALWAYS. A formatter failure surfaces on
-#           stderr as a non-fatal note; it never blocks the tool call.
+# Blocked:  nothing — on PostToolUse the tool has already run, so no exit code blocks it. A
+#           formatter failure exits 2, the one exit that hands its stderr to Claude ("Shows stderr
+#           to Claude; the tool already ran", https://code.claude.com/docs/en/hooks § Exit code 2 behavior per event, read 2026-10-01); a skip exits 0, its note in the
+#           debug log only.
 # Allowed:  everything.
 # Path:     registered (once wired) as ${CLAUDE_PROJECT_DIR}/.claude/hooks/format-on-edit.sh.
 # Tier:     ADVISORY (see the registry comment in .claude/settings.json).
 # Depends:  jq (the payload fields) and the project's formatters once the arms are wired —
-#           absent, the hook skips: exit 0 with a stderr note; the check task is the backstop.
+#           absent, the hook skips: exit 0, its note in the debug log; the check task is the backstop.
 # Register: copy this object into hooks.PostToolUse in .claude/settings.json once the case
 #           arms are wired — never as a top-level key (cbk-conventions-reference.md § Hook
 #           authoring: a hook-shaped object outside `hooks` voids the whole settings file):
@@ -69,7 +71,7 @@ esac
 
 # Wire one arm per file type your project formats. Each arm runs the formatter with the flag
 # that makes the project's own excludes hold for a path handed over explicitly, and CAPTURES
-# stderr, surfacing it non-fatally so the operator sees the real diagnostic. Measured
+# stderr; on a failure it prints the real diagnostic and exits 2, so Claude sees it. Measured
 # 2026-09-30 on an explicitly passed path the formatter's own config excludes (re-measure
 # after upgrading a formatter):
 #   ruff 0.16.9     formats it unless --force-exclude (or force-exclude = true); with it,
@@ -86,6 +88,7 @@ esac
 #     if ! out="$(YOUR_PYTHON_FORMATTER YOUR_FORCE_EXCLUDE_FLAG "$file_path" 2>&1)"; then
 #       echo "format-on-edit: python formatter failed on $rel (non-fatal):" >&2
 #       printf '%s\n' "$out" >&2
+#       exit 2
 #     fi
 #     ;;
 #   *.ts|*.tsx|*.js|*.jsx|*.json)
@@ -94,6 +97,7 @@ esac
 #     if ! out="$(YOUR_JS_FORMATTER YOUR_FORCE_EXCLUDE_FLAG "$file_path" 2>&1)"; then
 #       echo "format-on-edit: js/ts formatter failed on $rel (non-fatal):" >&2
 #       printf '%s\n' "$out" >&2
+#       exit 2
 #     fi
 #     ;;
 case "$file_path" in

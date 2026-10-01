@@ -27,12 +27,21 @@ set -uo pipefail
 # Drain stdin before any early exit, or a piping caller's SIGPIPE masks this hook's own
 # exit code (cbk-conventions-reference.md § Hook authoring › The stdin / exit contract).
 input="$(cat)"
+# A fail-open warning goes to stderr, which on exit 0 reaches only the debug log, and to the user as the systemMessage
+# on stdout (https://code.claude.com/docs/en/hooks § Exit code 0 and § JSON output, read 2026-10-01). Pure bash, so it
+# works on the minimal PATH the fail-open cases run with.
+fail_open() {
+  printf '%s\n' "$@" >&2
+  local m="$*"; while [[ $m == *"  "* ]]; do m=${m//  / }; done
+  m=${m//\\/\\\\}; m=${m//\"/\\\"}
+  printf '{"systemMessage":"%s"}\n' "$m"
+  exit 0
+}
 
 if ! command -v jq &>/dev/null; then
-  echo "guard-pr-state: WARNING — jq not installed; PR-state guard DISABLED." >&2
-  echo "                Install jq to re-enable. Backstop until then: none mechanical — every" >&2
-  echo "                gh pr ready/merge/close/reopen needs the operator's explicit per-action OK." >&2
-  exit 0
+  fail_open "guard-pr-state: WARNING — jq not installed; PR-state guard DISABLED." \
+    "                Install jq to re-enable. Backstop until then: none mechanical — every" \
+    "                gh pr ready/merge/close/reopen needs the operator's explicit per-action OK."
 fi
 
 # A payload jq cannot read gets the prompt, never a pass: its command cannot be checked, so the

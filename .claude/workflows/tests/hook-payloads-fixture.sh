@@ -35,12 +35,16 @@ ignore '/pkg/*/build/\n/pkg/*/.cache/\n'
 mkdir -p "$repo/pkg/a" "$repo/docs" "$repo/.claude/agent-memory/reviewer"
 spaced="$d/a b"; mkdir -p "$spaced/docs"; git -c init.defaultBranch=main init -q "$spaced"
 
-n=0; RC=0; ERR=""
-guard() { RC=0; ERR="$(printf '%s' "$1" | "$GUARD" 2>&1 >/dev/null)" || RC=$?; n=$((n + 1)); }
-guard_in() { RC=0; ERR="$(cd "$1" && printf '%s' "$2" | "$GUARD" 2>&1 >/dev/null)" || RC=$?; n=$((n + 1)); }
-stop() { RC=0; ERR="$(printf '%s' "$2" | CLAUDE_PROJECT_DIR="$1" "$STOP" 2>&1 >/dev/null)" || RC=$?; n=$((n + 1)); }
+n=0; RC=0; ERR=""; OUT=""
+guard() { RC=0; ERR="$(printf '%s' "$1" | "$GUARD" 2>&1 >"$d/out")" || RC=$?; OUT="$(cat "$d/out")"; n=$((n + 1)); }
+guard_in() { RC=0; ERR="$(cd "$1" && printf '%s' "$2" | "$GUARD" 2>&1 >"$d/out")" || RC=$?; OUT="$(cat "$d/out")"; n=$((n + 1)); }
+stop() { RC=0; ERR="$(printf '%s' "$2" | CLAUDE_PROJECT_DIR="$1" "$STOP" 2>&1 >"$d/out")" || RC=$?; OUT="$(cat "$d/out")"; n=$((n + 1)); }
 want() { [ "$RC" -eq "$1" ] || { echo "FAIL: $2 (want exit $1, got $RC)"; [ -n "$ERR" ] && printf '  stderr: %s\n' "$ERR"; exit 1; }; }
 says() { grep -q -- "$1" <<<"$ERR" || { echo "FAIL: $2 (stderr does not carry '$1')"; printf '  stderr: %s\n' "$ERR"; exit 1; }; }
+# On exit 0 the harness writes a hook's stderr to the debug log only, so a fail-open warning reaches the user as the
+# systemMessage on stdout (https://code.claude.com/docs/en/hooks § Exit code 0, read 2026-10-01).
+shows() { jq -e --arg s "$1" '.systemMessage | contains($s)' >/dev/null 2>&1 <<<"$OUT" \
+  || { echo "FAIL: $2 (no systemMessage on stdout carrying '$1': stderr on exit 0 reaches only the debug log)"; printf '  stdout: %s\n' "$OUT"; exit 1; }; }
 payload() { jq -cn --arg t "$1" --arg cwd "$2" '{tool_name:$t, tool_input:{}, cwd:$cwd}'; }
 
 # ── the launch-root guard ──
@@ -64,14 +68,15 @@ guard_in "$repo/docs" '{"tool_name":"Agent","tool_input":{}}'; want 2 "no cwd fi
 # Fail-open branches: each exits 0, warns, and names a surviving backstop.
 guard "$(payload Agent "$d")"; want 0 "a cwd outside any checkout fails open"
 says "WARNING" "the non-checkout warning is a WARNING"; says "not inside a git checkout" "the non-checkout warning says why"
-says "Backstop:" "the non-checkout warning names a backstop"
+says "Backstop:" "the non-checkout warning names a backstop"; shows "Backstop:" "the non-checkout warning is shown to the user"
 bin="$d/bin"; mkdir -p "$bin"
 for t in bash git cat printf sed dirname basename find grep sort head mktemp rm; do
   p=$(type -P "$t" || true); [ -n "$p" ] && ln -sf "$p" "$bin/$t"
 done
-RC=0; ERR="$(printf '%s' "$(payload Agent "$repo/docs")" | env -i PATH="$bin" HOME="$HOME" bash "$GUARD" 2>&1 >/dev/null)" || RC=$?; n=$((n + 1))
+RC=0; ERR="$(printf '%s' "$(payload Agent "$repo/docs")" | env -i PATH="$bin" HOME="$HOME" bash "$GUARD" 2>&1 >"$d/out")" || RC=$?; OUT="$(cat "$d/out")"; n=$((n + 1))
 want 0 "the guard fails open when jq is absent"
 says "jq not installed" "the jq warning says why"; says "Backstop:" "the jq warning names a backstop"
+shows "jq not installed" "the jq warning is shown to the user"
 # Input it cannot read is refused: the guard cannot tell where the dispatch launches from.
 guard "$(printf '{"tool_name":"Agent","tool_input":{"prompt":"x\\ud800y"},"cwd":"%s"}' "$repo")"; want 2 "a payload jq cannot parse is refused"
 says "could not read the tool payload" "the refusal says why"
@@ -127,13 +132,14 @@ want 2 "the detector blocks without jq on PATH"
 rm -rf "$repo/pkg/a/.claude"
 stop "$d" '{}';                             want 0 "a project dir outside any checkout fails open"
 says "WARNING" "the non-checkout warning is a WARNING"; says "not inside a git checkout" "the non-checkout warning says why"
-says "Backstop:" "the non-checkout warning names a backstop"
+says "Backstop:" "the non-checkout warning names a backstop"; shows "Backstop:" "the non-checkout warning is shown to the user"
 # A directory the walk cannot read makes the scan partial; reporting "clean" there is the silent miss the hook exists
 # to stop, so it warns. Root ignores mode bits, so the case cannot be staged there.
 if [ "$(id -u)" -ne 0 ]; then
   mkdir -p "$repo/pkg/a/sealed/inner"; chmod 000 "$repo/pkg/a/sealed"
   stop "$repo" '{}';                        want 0 "an unreadable directory does not fake a block"
   says "WARNING" "a partial scan is a WARNING"; says "the scan was partial" "a partial scan is reported, never silently clean"
+  shows "the scan was partial" "a partial scan is shown to the user"
   chmod 755 "$repo/pkg/a/sealed"; rm -rf "$repo/pkg/a/sealed"
 else
   echo "SKIP: the detector's partial-scan case (an unreadable directory unavailable: running as root)"

@@ -15,11 +15,11 @@
 #           (unmatched on purpose: the package manager is the route). The project's CI lockfile
 #           check, where one exists, refuses a drifted lock at PR time.
 # Tier:     HARD-DENY (see the registry comment in .claude/settings.json).
-# Depends:  jq (the payload) — absent, the guard fails open: exit 0 with a stderr warning naming the
+# Depends:  jq (the payload) — absent, the guard fails open: exit 0 with a warning, shown as a systemMessage, naming the
 #           project's CI lockfile check as the backstop (a bracketed slot the project fills).
 #
 # Hook receives JSON on stdin with the tool input. Exit 2 + stderr blocks. Fail-open on environment
-# defects (missing jq, unset CLAUDE_PROJECT_DIR): exit 0 with a loud stderr warning — failing closed
+# defects (missing jq): exit 0 with a loud warning, shown as a systemMessage — failing closed
 # would turn a targeted lock-file block into a universal Edit/Write/MultiEdit block. Input the guard
 # cannot read is not an environment defect, and is refused (cbk-conventions-reference.md § Hook
 # authoring). Fixture: .claude/workflows/tests/hook-guards-fixture.sh.
@@ -29,6 +29,16 @@ set -uo pipefail
 # Drain stdin before any early exit, or a piping caller's SIGPIPE masks this hook's own
 # exit code (cbk-conventions-reference.md § Hook authoring › The stdin / exit contract).
 input="$(cat)"
+# A fail-open warning goes to stderr, which on exit 0 reaches only the debug log, and to the user as the systemMessage
+# on stdout (https://code.claude.com/docs/en/hooks § Exit code 0 and § JSON output, read 2026-10-01). Pure bash, so it
+# works on the minimal PATH the fail-open cases run with.
+fail_open() {
+  printf '%s\n' "$@" >&2
+  local m="$*"; while [[ $m == *"  "* ]]; do m=${m//  / }; done
+  m=${m//\\/\\\\}; m=${m//\"/\\\"}
+  printf '{"systemMessage":"%s"}\n' "$m"
+  exit 0
+}
 # Note: deliberately NOT using `set -e` — we want to exit 0 (fail-open) on
 # environment defects rather than abort with cryptic stderr that blocks all
 # tool calls.
@@ -39,10 +49,9 @@ PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$PWD}"
 # jq is required for stdin parsing. Missing jq → fail-open with warning,
 # NOT fail-closed (would block all Edit/Write/MultiEdit silently).
 if ! command -v jq &>/dev/null; then
-  echo "protect-lock-files: WARNING — jq not installed; lock-file protection DISABLED." >&2
-  echo "                    Install jq to re-enable. Backstop until then: [the project's CI lockfile check — a" >&2
-  echo "                    locked or frozen-lockfile install that fails when the lock file and its manifest disagree]." >&2
-  exit 0
+  fail_open "protect-lock-files: WARNING — jq not installed; lock-file protection DISABLED." \
+    "                    Install jq to re-enable. Backstop until then: [the project's CI lockfile check — a" \
+    "                    locked or frozen-lockfile install that fails when the lock file and its manifest disagree]."
 fi
 
 # A payload jq cannot read is refused, never waved through: this hook runs on Edit|Write|MultiEdit only,

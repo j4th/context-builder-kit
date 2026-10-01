@@ -43,7 +43,7 @@
 #           this guard exists to block.
 # Tier:     HARD-DENY.
 # Depends:  jq (the payload's tool_name and cwd) and git (the top-level of that
-#           cwd) — absent, the guard fails open: exit 0 with a stderr warning
+#           cwd) — absent, the guard fails open: exit 0 with a warning shown as a systemMessage
 #           naming the backstop, detect-forked-agent-memory.sh (Stop tier,
 #           needs no jq). A payload jq cannot read is not an environment defect:
 #           it is refused (cbk-conventions-reference.md § Hook authoring).
@@ -51,21 +51,30 @@
 #
 # Hook receives JSON on stdin. Exit 2 + stderr blocks. Fail-open on
 # environment defects (missing jq, not a git checkout): exit 0 with a loud
-# stderr warning naming the surviving backstop, mirroring protect-main-branch.sh.
+# warning naming the surviving backstop, shown as a systemMessage, mirroring protect-main-branch.sh.
 
 set -uo pipefail
 
 # Drain stdin before any early exit, or a piping caller's SIGPIPE masks this hook's own
 # exit code (cbk-conventions-reference.md § Hook authoring › The stdin / exit contract).
 input="$(cat)"
+# A fail-open warning goes to stderr, which on exit 0 reaches only the debug log, and to the user as the systemMessage
+# on stdout (https://code.claude.com/docs/en/hooks § Exit code 0 and § JSON output, read 2026-10-01). Pure bash, so it
+# works on the minimal PATH the fail-open cases run with.
+fail_open() {
+  printf '%s\n' "$@" >&2
+  local m="$*"; while [[ $m == *"  "* ]]; do m=${m//  / }; done
+  m=${m//\\/\\\\}; m=${m//\"/\\\"}
+  printf '{"systemMessage":"%s"}\n' "$m"
+  exit 0
+}
 # Deliberately NOT `set -e` — fail-open on environment defects rather than
 # aborting with cryptic stderr that blocks every dispatch.
 
 if ! command -v jq &>/dev/null; then
-  echo "require-repo-root-for-agents: WARNING — jq not installed; the launch-directory guard is DISABLED." >&2
-  echo "                              Backstop: detect-forked-agent-memory.sh (Stop tier) needs no jq and still" >&2
-  echo "                              catches a stray agent-memory tree before the hand-off; git status shows it untracked." >&2
-  exit 0
+  fail_open "require-repo-root-for-agents: WARNING — jq not installed; the launch-directory guard is DISABLED." \
+    "                              Backstop: detect-forked-agent-memory.sh (Stop tier) needs no jq and still" \
+    "                              catches a stray agent-memory tree before the hand-off; git status shows it untracked."
 fi
 
 # A payload jq cannot read is refused: this hook runs on Task|Agent|Workflow only, so the call is
@@ -88,9 +97,8 @@ esac
 cwd="${cwd:-$PWD}"
 
 root="$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)" || {
-  echo "require-repo-root-for-agents: WARNING — $cwd is not inside a git checkout; guard inactive for this call." >&2
-  echo "                              Backstop: detect-forked-agent-memory.sh (Stop tier) catches a stray tree before the hand-off." >&2
-  exit 0
+  fail_open "require-repo-root-for-agents: WARNING — $cwd is not inside a git checkout; guard inactive for this call." \
+    "                              Backstop: detect-forked-agent-memory.sh (Stop tier) catches a stray tree before the hand-off."
 }
 
 # Canonical paths, so a symlinked or trailing-slash form is not a false mismatch.
