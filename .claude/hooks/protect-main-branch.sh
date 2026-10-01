@@ -53,19 +53,17 @@ fi
 
 # A payload jq cannot read is refused: its command and working directory cannot be checked, and a
 # guard that waved it through would fall to one lone UTF-16 surrogate escape in the command.
-if ! jq -e 'type == "object"' >/dev/null 2>&1 <<<"$input"; then
+if ! fields=$(jq -r 'if type == "object" then @sh "tool_name=\(.tool_name // "") command=\(.tool_input.command // "") cwd=\(.cwd // "")" else error("not an object") end' <<<"$input" 2>/dev/null); then
   echo "BLOCKED: protect-main-branch could not read the tool payload (not parseable JSON, or not an object)," >&2
   echo "so it cannot tell whether this is a commit on main. A lone UTF-16 surrogate escape in the command does this — remove it and retry." >&2
   exit 2
 fi
 
-tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"
-command="$(printf '%s' "$input" | jq -r '.tool_input.command // empty')"
+eval "$fields"
 # The payload's `cwd` is the directory the Bash tool is in — it follows `cd`
 # (probe, 2026-09-30; require-repo-root-for-agents.sh § Timing) — so a commit
 # run from a worktree or a nested repo is judged against that checkout's
 # branch, not a fixed project dir. Precedence: cwd, CLAUDE_PROJECT_DIR, $PWD.
-cwd="$(printf '%s' "$input" | jq -r '.cwd // empty')"
 PROJECT_DIR="${cwd:-${CLAUDE_PROJECT_DIR:-$PWD}}"
 
 [[ "$tool_name" != "Bash" ]] && exit 0

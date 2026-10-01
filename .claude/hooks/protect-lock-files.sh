@@ -48,14 +48,13 @@ fi
 # A payload jq cannot read is refused, never waved through: this hook runs on Edit|Write|MultiEdit only,
 # so the call is still a file write, and its path cannot be checked (a lone UTF-16 surrogate escape
 # anywhere in the tool input does this).
-if ! jq -e 'type == "object"' >/dev/null 2>&1 <<<"$input"; then
+if ! fields=$(jq -r 'if type == "object" then @sh "tool_name=\(.tool_name // "") file_path=\(.tool_input.file_path // "")" else error("not an object") end' <<<"$input" 2>/dev/null); then
   echo "BLOCKED: protect-lock-files could not read the tool payload (not parseable JSON, or not an object)," >&2
   echo "so its path cannot be checked. A lone UTF-16 surrogate escape in the tool input does this — remove it and retry." >&2
   exit 2
 fi
 
-tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"
-file_path="$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty')"
+eval "$fields"
 
 # Only run for file-mutating tools.
 case "$tool_name" in

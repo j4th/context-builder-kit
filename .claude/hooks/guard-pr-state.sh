@@ -37,7 +37,7 @@ fi
 
 # A payload jq cannot read gets the prompt, never a pass: its command cannot be checked, so the
 # operator decides.
-if ! jq -e 'type == "object"' >/dev/null 2>&1 <<<"$input"; then
+if ! fields=$(jq -r 'if type == "object" then @sh "tool_name=\(.tool_name // "") command=\(.tool_input.command // "")" else error("not an object") end' <<<"$input" 2>/dev/null); then
   cat <<'EOF'
 {
   "hookSpecificOutput": {
@@ -50,8 +50,7 @@ EOF
   exit 0
 fi
 
-tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"
-command="$(printf '%s' "$input" | jq -r '.tool_input.command // empty')"
+eval "$fields"
 
 [[ "$tool_name" != "Bash" ]] && exit 0
 [[ -z "$command" ]] && exit 0

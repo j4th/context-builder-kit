@@ -70,13 +70,13 @@ fi
 
 # A payload jq cannot read is refused: this hook runs on Task|Agent|Workflow only, so the call is
 # still a dispatch, and where it launches from cannot be checked.
-if ! jq -e 'type == "object"' >/dev/null 2>&1 <<<"$input"; then
+if ! fields=$(jq -r 'if type == "object" then @sh "tool_name=\(.tool_name // "") cwd=\(.cwd // "")" else error("not an object") end' <<<"$input" 2>/dev/null); then
   echo "BLOCKED: require-repo-root-for-agents could not read the tool payload (not parseable JSON, or not an object)," >&2
   echo "so it cannot tell where this dispatch launches from. A lone UTF-16 surrogate escape in the tool input does this — remove it and retry." >&2
   exit 2
 fi
 
-tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"
+eval "$fields"
 case "$tool_name" in
   Task|Agent|Workflow) ;;
   *) exit 0 ;;
@@ -85,7 +85,6 @@ esac
 # The hook payload carries the call's working directory (`cwd`), the same
 # field protect-main-branch.sh reads for Bash calls. Fall back to this
 # process's own directory when it is absent.
-cwd="$(printf '%s' "$input" | jq -r '.cwd // empty')"
 cwd="${cwd:-$PWD}"
 
 root="$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)" || {
