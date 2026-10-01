@@ -106,10 +106,8 @@ done
 for c in 'bash -c "gh pr merge 5"' '(gh pr merge 5)' '$(gh pr merge 5)' '/usr/bin/gh pr merge 5' '(gh pr merge)' 'gh pr close 5;echo done'; do
   run "$PRS" "$(bash_payload "$c" "$d/on-feat")"; asks "a PR-state change asks: $c"
 done
-for c in 'gh pr view 7 --json mergeable' 'gh pr list --state merged'; do
-  run "$PRS" "$(bash_payload "$c" "$d/on-feat")"; silent "no decision for: $c"
-done
-for c in 'gh pr create --draft' 'gh pr view 7' 'gh pr list' 'gh pr checks 7' 'gh issue close 7'; do
+for c in 'gh pr view 7 --json mergeable' 'gh pr list --state merged' 'gh pr create --draft' 'gh pr view 7' 'gh pr list' \
+  'gh pr checks 7' 'gh issue close 7'; do
   run "$PRS" "$(bash_payload "$c" "$d/on-feat")"; silent "no decision for: $c"
 done
 run "$PRS" "$(jq -cn '{tool_name:"Edit", tool_input:{file_path:"x"}}')"; silent "a non-Bash tool passes through"
