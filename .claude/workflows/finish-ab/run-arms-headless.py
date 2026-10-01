@@ -211,6 +211,20 @@ def common_flags(cfg, cell, budget=None):
             '--disallowedTools', *DENY]
 
 
+def worktree_of(cfg, anon):
+    return os.path.join(cfg['worktree_root'], f'eval-{anon}')
+
+
+def first_argv(cfg, cell, arms, session_id):
+    """The arm's first invocation; --dry-run prints this same argv, so the preview cannot drift from the real call."""
+    return ['claude', '-p', arm_prompt(cfg, cell, arms), '--session-id', session_id, *common_flags(cfg, cell),
+            '--append-system-prompt', UNATTENDED]
+
+
+def add_note(result, text):
+    result['notes'] = (result.get('notes') or '') + text
+
+
 def open_items(wt, payload):
     """What the arm still owes, by the completion condition: a structured result and PR_BODY.md."""
     items = []
@@ -232,7 +246,7 @@ def continuation(items):
 
 def run_arm(cfg, cell, arms, env, resume, record):
     anon = cell['anon']
-    wt = os.path.join(cfg['worktree_root'], f'eval-{anon}')
+    wt = worktree_of(cfg, anon)
     out = cfg['out_dir']
     runs, t0 = [], time.time()  # one {payload, rc, err} per invocation; rc is None for one an earlier pass made
     first = 1  # the next continuation's number
@@ -254,8 +268,7 @@ def run_arm(cfg, cell, arms, env, resume, record):
         # The session id is chosen here and recorded before the first invocation, so a first invocation killed before
         # it wrote any payload can still be resumed by --resume-existing.
         recorded_sid = str(uuid.uuid4())
-        argv_ = ['claude', '-p', arm_prompt(cfg, cell, arms), '--session-id', recorded_sid, *common_flags(cfg, cell),
-                 '--append-system-prompt', UNATTENDED]
+        argv_ = first_argv(cfg, cell, arms, recorded_sid)
         with open(cmd_path, 'w') as f:
             json.dump({'cwd': wt, 'session_id': recorded_sid, 'argv': argv_}, f, indent=1)
         runs.append(invoke(argv_, wt, env, os.path.join(out, f'{anon}.json'), os.path.join(out, f'{anon}.err')))
@@ -353,8 +366,8 @@ def run_checks(cfg, executed, env):
                 f.write(f'[runner] the check task could not start: {ex}\n')
                 rc = -1
         result['runner_check'] = {'command': cmd, 'exit': rc, 'log': log}
-        result['notes'] = (result.get('notes') or '') + (
-            f"\n[runner] check task run once by the runner after every arm finished: `{cmd}` exit {rc}; log {log}")
+        add_note(result, (
+            f"\n[runner] check task run once by the runner after every arm finished: `{cmd}` exit {rc}; log {log}"))
         print(f'{anon}: check task exit {rc} ({log})', flush=True)
 
 
@@ -437,7 +450,7 @@ def main(argv):
         cfg['mcp_config'] = os.path.join(os.path.abspath(cfg['out_dir']), 'no-mcp-servers.json')
         with open(cfg['mcp_config'], 'w') as f:
             json.dump({'mcpServers': {}}, f)
-    wts = {cell['anon']: os.path.join(cfg['worktree_root'], f"eval-{cell['anon']}") for cell in arms}
+    wts = {cell['anon']: worktree_of(cfg, cell['anon']) for cell in arms}
     if resume:
         for cell in arms:
             if not (os.path.isdir(wts[cell['anon']]) and os.path.exists(os.path.join(cfg['out_dir'], f"{cell['anon']}.cmd"))):
@@ -458,8 +471,7 @@ def main(argv):
         for cell in arms:
             wt = wts[cell['anon']]
             if dry:
-                argv_ = ['claude', '-p', arm_prompt(cfg, cell, arms), '--session-id', '<chosen at run time>',
-                         *common_flags(cfg, cell), '--append-system-prompt', UNATTENDED]
+                argv_ = first_argv(cfg, cell, arms, '<chosen at run time>')
                 print(json.dumps({'anon': cell['anon'], 'cwd': wt, 'argv': argv_, 'setup': setup or []}), flush=True)
                 continue
             subprocess.run(['git', 'worktree', 'add', '--detach', wt, cfg['base']], check=True)
@@ -497,12 +509,12 @@ def main(argv):
             continue
         # The runner knows where the arm ran; the judges locate it by this field, so the arm's own report never wins.
         if result.get('worktree') and os.path.abspath(os.path.join(r['wt'], result['worktree'])) != r['wt']:
-            result['notes'] = (result.get('notes') or '') + f"\n[runner] the arm reported worktree {result['worktree']!r}"
+            add_note(result, f"\n[runner] the arm reported worktree {result['worktree']!r}")
         result['worktree'] = r['wt']
-        result['notes'] = (result.get('notes') or '') + (
+        add_note(result, (
             f"\n[runner] {r['invocations']} invocation(s) ({r['invocations'] - 1} continuation(s)), "
             f"{r['minutes']} min this runner pass, total_cost_usd {cost} for the whole conversation, "
-            f"session {r['final'].get('session_id')}")
+            f"session {r['final'].get('session_id')}"))
         # Complete by its artifacts, yet its last invocation reported a failure (an error subtype or a non-zero exit
         # after the result was written): the arm is judged on what it produced, and the failure travels with it.
         failed = f" — {r['stop']}" if r['stop'] else ''
@@ -513,12 +525,13 @@ def main(argv):
               f"{len(result.get('commits', []))} commits, check exit {result.get('check_exit')}{failed}", flush=True)
     # Written before the checks and again after them: the checks run one at a time with no timeout, so a hung check or
     # an interrupt must not lose the record of arms already paid for (a later --resume-existing rewrites it anyway).
-    with open(os.path.join(cfg['out_dir'], 'executed.json'), 'w') as f:
-        json.dump(executed, f, indent=1)
-    if cfg.get('check_command'):
-        run_checks(cfg, executed, env)
+    def write_executed():
         with open(os.path.join(cfg['out_dir'], 'executed.json'), 'w') as f:
             json.dump(executed, f, indent=1)
+    write_executed()
+    if cfg.get('check_command'):
+        run_checks(cfg, executed, env)
+        write_executed()
     missing = [c['anon'] for c in arms if c['anon'] not in {e['anon'] for e in executed}]
     if missing:
         print(f"dropped arms (incomplete or no well-formed result): {', '.join(missing)}")
