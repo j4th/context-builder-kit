@@ -75,7 +75,7 @@ EOF
 
 # This hook is registered for Edit|Write|MultiEdit only, so a payload it cannot read is still one of those — and
 # its path cannot be checked, so it is refused rather than allowed.
-rp_payload "$input" || deny "the tool payload could not be read (not parseable JSON, or a field no shell word can hold), so its path cannot be checked." \
+rp_payload "$input" || deny "the tool payload could not be read (not parseable JSON, not an object, or a field that is not a string), so its path cannot be checked." \
   "(A lone UTF-16 surrogate escape in the tool input does this — jq refuses it. Remove it and retry.)"
 
 case "$RP_TOOL" in

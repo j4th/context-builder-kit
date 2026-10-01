@@ -148,4 +148,33 @@ else
   echo "SKIP: the knowledge-backend ask-gate (no mcp__ matcher in settings.json — the knowledge axis is none)"
 fi
 
+# ── every guard that evals its parsed payload: a field no single shell word can hold is refused, never run ──
+# Each guard reads its fields with one jq call and `eval`s the @sh-quoted result (lib/resolve-path.sh's rp_payload
+# for the ADR guard). jq's @sh splits an array into one word per element, so an array-valued field would become a
+# command after the assignment — and, with the variable never set, `set -u` would end the guard with exit 1, a
+# non-blocking pass. A field must be a string or null; anything else takes the unreadable-payload branch.
+ADR="$hooks/protect-immutable-adrs.sh"; ROOT="$hooks/require-repo-root-for-agents.sh"
+mark="$d/ran-a-command"
+no_mark() { [ ! -e "$mark" ] || { rm -f "$mark"; echo "FAIL: $1 (the payload ran a command)"; exit 1; }; }
+inj() { jq -cn --arg m "$mark" '["x", "touch", $m]'; }
+run "$MAIN" "$(jq -cn --argjson a "$(inj)" --arg cwd "$d/on-main" '{tool_name:"Bash", tool_input:{command:$a}, cwd:$cwd}')"
+no_mark "an array command reaches protect-main-branch"; want 2 "protect-main-branch refuses an array command"
+run "$MAIN" "$(jq -cn --argjson a "$(inj)" --arg cwd "$d/on-main" '{tool_name:"Bash", tool_input:{command:"git commit -m x"}, cwd:$a}')"
+no_mark "an array cwd reaches protect-main-branch"; want 2 "protect-main-branch refuses an array cwd"
+run "$MAIN" "$(jq -cn --arg cwd "$d/on-main" '{tool_name:"Bash", tool_input:{command:5}, cwd:$cwd}')"; want 2 "protect-main-branch refuses a number command"
+run "$MAIN" "$(jq -cn --arg cwd "$d/on-main" '{tool_name:"Bash", tool_input:{command:null}, cwd:$cwd}')"; want 0 "a null command is an absent one"
+run "$PRS" "$(jq -cn --argjson a "$(inj)" --arg cwd "$d/on-feat" '{tool_name:"Bash", tool_input:{command:$a}, cwd:$cwd}')"
+no_mark "an array command reaches guard-pr-state"; asks "guard-pr-state asks on an array command"
+run "$LOCK" "$(jq -cn --argjson a "$(inj)" '{tool_name:"Edit", tool_input:{file_path:$a}}')" CLAUDE_PROJECT_DIR="$d/on-feat"
+no_mark "an array file_path reaches protect-lock-files"; want 2 "protect-lock-files refuses an array file_path"
+run "$LOCK" "$(jq -cn --argjson a "$(inj)" '{tool_name:$a, tool_input:{file_path:"package-lock.json"}}')" CLAUDE_PROJECT_DIR="$d/on-feat"
+no_mark "an array tool_name reaches protect-lock-files"; want 2 "protect-lock-files refuses an array tool_name"
+run "$ADR" "$(jq -cn --argjson a "$(inj)" --arg cwd "$d/on-feat" '{tool_name:"Edit", tool_input:{file_path:$a}, cwd:$cwd}')" CLAUDE_PROJECT_DIR="$d/on-feat"
+no_mark "an array file_path reaches protect-immutable-adrs"; want 2 "protect-immutable-adrs refuses an array file_path"
+run "$ROOT" "$(jq -cn --argjson a "$(inj)" '{tool_name:"Agent", tool_input:{}, cwd:$a}')"
+no_mark "an array cwd reaches require-repo-root-for-agents"; want 2 "require-repo-root-for-agents refuses an array cwd"
+# An empty payload is unreadable too: jq prints nothing and exits 0 on empty input, so each parse runs `jq -e`.
+for h in "$MAIN" "$LOCK" "$ROOT" "$ADR"; do run "$h" "" CLAUDE_PROJECT_DIR="$d/on-feat"; want 2 "${h##*/} refuses an empty payload"; done
+run "$PRS" ""; asks "guard-pr-state asks on an empty payload"
+
 echo "hook-guards-fixture: $n cases ok"

@@ -70,8 +70,8 @@ fi
 
 # A payload jq cannot read is refused: this hook runs on Task|Agent|Workflow only, so the call is
 # still a dispatch, and where it launches from cannot be checked.
-if ! fields=$(jq -r 'if type == "object" then @sh "tool_name=\(.tool_name // "") cwd=\(.cwd // "")" else error("not an object") end' <<<"$input" 2>/dev/null); then
-  echo "BLOCKED: require-repo-root-for-agents could not read the tool payload (not parseable JSON, or not an object)," >&2
+if ! fields=$(jq -er 'def s: if . == null then "" elif type == "string" then . else error("a field is not a string") end; if type == "object" then @sh "tool_name=\(.tool_name | s) cwd=\(.cwd | s)" else error("not an object") end' <<<"$input" 2>/dev/null); then
+  echo "BLOCKED: require-repo-root-for-agents could not read the tool payload (not parseable JSON, not an object, or a field that is not a string)," >&2
   echo "so it cannot tell where this dispatch launches from. A lone UTF-16 surrogate escape in the tool input does this — remove it and retry." >&2
   exit 2
 fi

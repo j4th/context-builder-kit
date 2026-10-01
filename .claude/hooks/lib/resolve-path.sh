@@ -30,11 +30,12 @@
 # rp_payload <payload>: RP_TOOL, RP_FILE and RP_CWD from the hook payload, read exactly, in ONE jq process. jq's
 # @sh single-quotes each value, so a trailing newline in a path survives the command substitution, and eval
 # assigns the three at once. Returns 1 when jq cannot read the payload — not parseable (jq refuses a lone UTF-16
-# surrogate escape anywhere in the input), not an object, or a field no shell word can hold, such as an object
-# where a path belongs — and the caller refuses.
+# surrogate escape anywhere in the input), empty (`-e` fails when jq prints nothing), not an object, or a field that
+# is not a string or null — @sh would split an array into one word per element and eval would run them as a
+# command — and the caller refuses.
 rp_payload() {
   local fields
-  fields=$(jq -r 'if type == "object" then @sh "RP_TOOL=\(.tool_name // "") RP_FILE=\(.tool_input.file_path // "") RP_CWD=\(.cwd // "")" else error("not an object") end' <<<"$1" 2>/dev/null) || return 1
+  fields=$(jq -er 'def s: if . == null then "" elif type == "string" then . else error("a field is not a string") end; if type == "object" then @sh "RP_TOOL=\(.tool_name | s) RP_FILE=\(.tool_input.file_path | s) RP_CWD=\(.cwd | s)" else error("not an object") end' <<<"$1" 2>/dev/null) || return 1
   eval "$fields"
 }
 

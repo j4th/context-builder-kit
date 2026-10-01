@@ -53,8 +53,8 @@ fi
 
 # A payload jq cannot read is refused: its command and working directory cannot be checked, and a
 # guard that waved it through would fall to one lone UTF-16 surrogate escape in the command.
-if ! fields=$(jq -r 'if type == "object" then @sh "tool_name=\(.tool_name // "") command=\(.tool_input.command // "") cwd=\(.cwd // "")" else error("not an object") end' <<<"$input" 2>/dev/null); then
-  echo "BLOCKED: protect-main-branch could not read the tool payload (not parseable JSON, or not an object)," >&2
+if ! fields=$(jq -er 'def s: if . == null then "" elif type == "string" then . else error("a field is not a string") end; if type == "object" then @sh "tool_name=\(.tool_name | s) command=\(.tool_input.command | s) cwd=\(.cwd | s)" else error("not an object") end' <<<"$input" 2>/dev/null); then
+  echo "BLOCKED: protect-main-branch could not read the tool payload (not parseable JSON, not an object, or a field that is not a string)," >&2
   echo "so it cannot tell whether this is a commit on main. A lone UTF-16 surrogate escape in the command does this — remove it and retry." >&2
   exit 2
 fi

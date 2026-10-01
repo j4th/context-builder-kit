@@ -37,13 +37,13 @@ fi
 
 # A payload jq cannot read gets the prompt, never a pass: its command cannot be checked, so the
 # operator decides.
-if ! fields=$(jq -r 'if type == "object" then @sh "tool_name=\(.tool_name // "") command=\(.tool_input.command // "")" else error("not an object") end' <<<"$input" 2>/dev/null); then
+if ! fields=$(jq -er 'def s: if . == null then "" elif type == "string" then . else error("a field is not a string") end; if type == "object" then @sh "tool_name=\(.tool_name | s) command=\(.tool_input.command | s)" else error("not an object") end' <<<"$input" 2>/dev/null); then
   cat <<'EOF'
 {
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
     "permissionDecision": "ask",
-    "permissionDecisionReason": "guard-pr-state could not read this tool payload (not parseable JSON, or not an object), so it cannot tell whether the command changes a PR's state. Approve only if the operator asked for exactly this command."
+    "permissionDecisionReason": "guard-pr-state could not read this tool payload (not parseable JSON, not an object, or a field that is not a string), so it cannot tell whether the command changes a PR's state. Approve only if the operator asked for exactly this command."
   }
 }
 EOF
