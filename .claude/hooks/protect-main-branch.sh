@@ -14,7 +14,8 @@
 #           no word character, `.` or `-` continues, while the call's working
 #           directory is on main or master; and a payload jq cannot read.
 # Allowed:  everything else — commits on feature branches, non-commit git
-#           commands on main, `git commit-tree`, and a `commit.*` config key.
+#           commands on main, `git commit-tree`, a `commit.*` config key, and the
+#           root commit of a repository with no commits yet.
 # Not seen: a commit the command spells indirectly — `eval`, a variable holding
 #           `git`, a git alias, a script that commits — and a commit into another
 #           checkout the command reaches itself (`cd <dir> && git commit`,
@@ -104,6 +105,9 @@ if ! grep -Eq '(^|[^[:alnum:]_.-])git([[:space:]]+[^[:space:]]+)*[[:space:]]+com
 fi
 
 branch="$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null)" || {
+  # No commits yet: rev-parse cannot name HEAD, but symbolic-ref can. A new repository's root commit has to land on
+  # its default branch, so it is allowed — never misreported as "not a git repo".
+  git -C "$PROJECT_DIR" symbolic-ref --quiet HEAD >/dev/null 2>&1 && exit 0
   fail_open "protect-main-branch: WARNING — $PROJECT_DIR is not a git repo; guard inactive for this call." \
     "                     Backstop: [the base branch's ruleset — pull requests only — where one exists]."
 }

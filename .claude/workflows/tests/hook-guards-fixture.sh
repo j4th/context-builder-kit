@@ -95,6 +95,11 @@ done
 for c in 'git commit-tree HEAD^{tree} -m x' 'git -c commit.gpgsign=false log' 'git config commit.gpgsign true' 'git log --grep=commit'; do
   run "$MAIN" "$(bash_payload "$c" "$d/on-main")"; want 0 "not a commit: $c"
 done
+# A repository with no commits yet: rev-parse cannot name HEAD there, but the root commit has to land on the default
+# branch, so it is allowed — and never misreported as "not a git repo".
+git -c init.defaultBranch=main init -q "$d/unborn"
+run "$MAIN" "$(bash_payload 'git commit -m root' "$d/unborn")";      want 0 "the root commit of a new repository is allowed"
+[ -z "$ERR$OUT" ] || { echo "FAIL: the root commit is allowed without a warning (got stderr '$ERR', stdout '$OUT')"; exit 1; }
 # Fail-open branches name what still stands.
 run "$MAIN" "$(bash_payload 'git commit -m x' "$d/plain")";          want 0 "a directory that is not a checkout fails open"
 says "not a git repo" "the non-checkout warning says why"; says "Backstop" "the non-checkout warning names a backstop"
