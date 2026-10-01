@@ -1155,6 +1155,9 @@ if [ ! -f docs/cbk/scaffold.md ]; then
   absent grep -nE '(^|[[:space:](,;])#[0-9]{1,3}([^0-9]|$)' README.md CLAUDE.md
 fi
 
+# Releases (V10): on the kit tree, LICENSE names its copyright holder instead of the appendix's placeholder.
+[ -f docs/cbk/scaffold.md ] || absent grep -nF '[name of copyright owner]' LICENSE
+
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
