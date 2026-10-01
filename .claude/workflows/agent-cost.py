@@ -95,14 +95,17 @@ def summarise(path):
                 skipped += 1
     per_model = {}  # model id -> token counts; priced per model, so a mixed transcript is never billed at one tier
     stamps = []
-    for e in events:
+    # One API response is written as several lines (one per content block), each repeating its message id and usage,
+    # the output growing as it streams: keyed by id, the last line stands for the response, so it is billed once. A
+    # line with no id is a response of its own.
+    responses = {}
+    for n, e in enumerate(events):
         if e.get('timestamp'):
             stamps.append(e['timestamp'])
         m = e.get('message') or {}
-        u = m.get('usage')
-        if not u:
-            continue
-        model = m.get('model', '?')
+        if m.get('usage'):
+            responses[m.get('id') or ('line', n)] = (m.get('model', '?'), m['usage'])
+    for model, u in responses.values():
         if model == '<synthetic>' and not any(u.get(f) for f in ('input_tokens', 'output_tokens',
                                                                    'cache_creation_input_tokens', 'cache_read_input_tokens')):
             continue  # a harness-written message with zero usage: nothing to price. One that ever carried usage stays,

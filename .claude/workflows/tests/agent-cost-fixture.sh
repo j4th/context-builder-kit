@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Fixture for agent-cost.py: seventeen synthetic transcripts, one case each — the set that shipped before
+# Fixture for agent-cost.py: eighteen synthetic transcripts, one case each — the set that shipped before
 # context-builder-kit#69 and that issue's, unioned under distinct names. Priced: Opus 5 with cache tokens (aaa); a
 # transcript mixing two priced models (ddd); Fable 5.1 at its 0.025x cache-read rate (eee); Opus 5.5 with cache tokens
 # at its 0.05x rate (fff); Opus 5.5 beside a zero-usage <synthetic> message, which is skipped (ggg); a dated Haiku 4.5
 # id with no timestamps, so minutes is null (jjj); Sonnet 5.5 (lll); legacy Fable 5 at the standard 0.1x, where a
 # family key would bill it at Fable 5.1's 0.025x (mmm); Mythos 5.1 at 0.025x (nnn); an Opus 5.5 id with a [1m] suffix
-# (ooo); an undated Haiku 4.5 id with no timestamps (qqq). Unpriced and named: a model the table does not know (bbb);
+# (ooo); an undated Haiku 4.5 id with no timestamps (qqq); one response written as two lines that share its
+# message id — streaming snapshots, priced once from the last (rrr). Unpriced and named: a model the table does not know (bbb);
 # no usage events and a truncated line (ccc); fast mode (hhh); a lone truncated line (iii); an unknown point release,
 # never priced as its predecessor (kkk); a <synthetic> message that carries usage (ppp). Asserts the cache
 # multipliers, per-model pricing of a mixed transcript, per-row facts read from the --json output (never two
@@ -24,6 +25,7 @@ row() {  # row <agent> <json line>… — one transcript per agent
 }
 u() { printf '{"type":"user","timestamp":"2026-09-30T00:00:00Z","message":{"content":"%s prompt"}}' "$1"; }
 m() { printf '{"type":"assistant","timestamp":"2026-09-30T00:0%s:00Z","message":{"model":"%s","usage":%s}}' "$1" "$2" "$3"; }
+mi() { printf '{"type":"assistant","timestamp":"2026-09-30T00:0%s:00Z","message":{"id":"%s","model":"%s","usage":%s}}' "$1" "$2" "$3" "$4"; }
 row aaa "$(u aaa)" "$(m 1 claude-opus-5 '{"input_tokens":1000000,"output_tokens":100000,"cache_creation_input_tokens":1000000,"cache_read_input_tokens":1000000}')"
 row bbb "$(u bbb)" "$(m 2 claude-future-9 '{"input_tokens":5,"output_tokens":5}')"
 row ccc "$(u ccc)" '{"type":"assistant","timestamp":"2026-09-30T00:0'
@@ -42,6 +44,11 @@ row nnn "$(u nnn)" "$(m 1 claude-mythos-5-1 '{"input_tokens":0,"output_tokens":0
 row ooo "$(u ooo)" "$(m 1 'claude-opus-5-5[1m]' '{"input_tokens":1000000,"output_tokens":0}')"
 row ppp "$(u ppp)" "$(m 1 claude-opus-5-5 '{"input_tokens":1000000,"output_tokens":0}')" "$(m 2 '<synthetic>' '{"input_tokens":5,"output_tokens":0}')"
 row qqq '{"type":"assistant","message":{"model":"claude-haiku-4-5","usage":{"input_tokens":1000,"output_tokens":0}}}'
+# Claude Code writes one response as several transcript lines that repeat its message id and usage, output growing
+# as it streams: summed per line, a response is billed two or three times.
+row rrr "$(u rrr)" "$(mi 1 msg_r1 claude-opus-5-5 '{"input_tokens":1000000,"output_tokens":3}')" \
+  "$(mi 1 msg_r1 claude-opus-5-5 '{"input_tokens":1000000,"output_tokens":100000}')" \
+  "$(mi 2 msg_r2 claude-opus-5-5 '{"input_tokens":1000000,"output_tokens":0}')"
 out=$(python3 -B "$script" "$d" --json "$d/out.json")
 # Per-row facts, read from the JSON by agent: two independent greps would pass on any row carrying the value.
 python3 -B - "$d/out.json" <<'EOF' || { echo "$out"; exit 1; }
@@ -60,6 +67,7 @@ want_cost = {
     'nnn': (0.25, 'Mythos 5.1: 1M cache read @ 0.025x of $10'),
     'ooo': (4.00, 'an Opus 5.5 id with a [1m] suffix prices as Opus 5.5'),
     'qqq': (0.001, 'an undated Haiku 4.5 id prices as Haiku 4.5'),
+    'rrr': (10.00, 'two responses, one written as two lines sharing its message id: 2M in @ $4 + 100k out @ $20, the last snapshot once'),
 }
 bad = []
 for a, (cost, why) in want_cost.items():
@@ -72,14 +80,16 @@ for a in ('bbb', 'ccc', 'hhh', 'iii', 'kkk', 'ppp'):  # unknown model; no usage;
 for a in ('ccc', 'iii', 'jjj', 'qqq'):  # one timestamp, then none at all
     if rows[a]['minutes'] is not None:
         bad.append(f'{a}: fewer than two timestamps must report minutes null, not {rows[a]["minutes"]!r}')
+if (rows['rrr']['turns'], rows['rrr']['output']) != (2, 100000):
+    bad.append(f"rrr: one response is one turn, its usage the last line's: want 2 turns and 100000 output, got {rows['rrr']['turns']} and {rows['rrr']['output']}")
 if rows['ooo']['model'] != 'claude-opus-5-5[1m]':
     bad.append(f"ooo: the model column must carry the id as recorded, got {rows['ooo']['model']!r}")
 if bad:
     print('FAIL: ' + '\n  '.join(bad))
     sys.exit(1)
 EOF
-grep -q 'total list-price cost: \$65.15' <<<"$out" || { echo "FAIL: expected a \$65.15 total (14.25 + 7.00 + 10.25 + 11.20 + 4.00 + 0.001 + 3.20 + 11.00 + 0.25 + 4.00 + 0.001); got:"; echo "$out"; exit 1; }
-grep -q '11 of 17 agents priced' <<<"$out" || { echo "FAIL: the priced/unpriced split is not printed"; echo "$out"; exit 1; }
+grep -q 'total list-price cost: \$75.15' <<<"$out" || { echo "FAIL: expected a \$75.15 total (14.25 + 7.00 + 10.25 + 11.20 + 4.00 + 0.001 + 3.20 + 11.00 + 0.25 + 4.00 + 0.001 + 10.00); got:"; echo "$out"; exit 1; }
+grep -q '12 of 18 agents priced' <<<"$out" || { echo "FAIL: the priced/unpriced split is not printed"; echo "$out"; exit 1; }
 grep -q 'unpriced.*bbb, ccc, hhh, iii, kkk, ppp' <<<"$out" || { echo "FAIL: the unpriced agents are not named"; echo "$out"; exit 1; }
 grep -q 'unparsable lines skipped.*ccc (1), iii (1)' <<<"$out" || { echo "FAIL: the truncated transcripts are not named with their skipped-line counts"; echo "$out"; exit 1; }
 # tier() must match a PRICE key WHOLE whatever the dict order. With a family key listed first, a first-match (or
