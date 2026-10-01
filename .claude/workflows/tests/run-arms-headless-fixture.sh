@@ -69,7 +69,7 @@ export PATH="$t/bin:$PATH" FAKE_DIR="$t/fake"
 
 repo="$t/repo"
 git init -q -b main "$repo"
-git -C "$repo" -c user.email=f@x -c user.name=f commit -q --allow-empty -m base
+git -C "$repo" -c user.email=f@x -c user.name=f -c commit.gpgsign=false commit -q --allow-empty -m base
 base=$(git -C "$repo" rev-parse HEAD)
 cfg() {  # cfg <name> <out_dir> [max_budget] [max_continuations]
   printf '{"repo":"o/r","issue":1,"base":"%s","brief":"/b.md","worktree_root":"%s/.wt","out_dir":"%s","max_budget_usd":%s,"max_continuations":%s,"arms":[{"anon":"P","read":"f.md","model":"opus","effort":"high"},{"anon":"Q","read":"f.md","model":"opus","effort":"medium"}]}' \

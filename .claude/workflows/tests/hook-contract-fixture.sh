@@ -72,7 +72,7 @@ cmdpay() { jq -Rs --arg cwd "${2:-}" '{tool_name:"Bash",tool_input:{command:.},c
 # protect-main-branch is a HARD-DENY: a long commit body must not buy a bypass.
 mainrepo="$d/mainrepo"; mkdir -p "$mainrepo"
 git -c init.defaultBranch=main init -q "$mainrepo"
-git -C "$mainrepo" -c user.email=f@x -c user.name=f commit -q --allow-empty -m init
+git -C "$mainrepo" -c user.email=f@x -c user.name=f -c commit.gpgsign=false commit -q --allow-empty -m init
 printf "git commit -F - <<XEOF\n%s\nXEOF" "$manybody" > "$d/cmd-commit"
 cmdpay "$d/cmd-commit" "$mainrepo" > "$d/pay-commit"
 RC=0; ERR="$("$MAINBRANCH" < "$d/pay-commit" 2>&1 >/dev/null)" || RC=$?
