@@ -79,6 +79,10 @@ ln "$root/docs/adr/0001-x.md" "$root/adr-hard.md"; ln "$root/docs/corpus/00-over
 ln "$t/wt-outside/docs/adr/0001-x.md" "$t/wt-outside/notes-hard.md"
 ln -s loop-b "$root/loop-a"; ln -s loop-a "$root/loop-b"
 A="$root/docs/adr/0001-x.md"; C="$root/docs/corpus/00-overview.md"
+# One spelling each that only ONE of the two path readings catches, so neither reading can be dropped unnoticed: a
+# symlink to a directory outside the checkout, then `..` (only the lexical reading lands on the ADR); a symlink into
+# another checkout's docs/adr, then `../adr` (only the physical reading does).
+mkdir -p "$t/outside/deep"; ln -s "$t/outside/deep" "$root/out-link"; ln -s "$other/docs/adr" "$root/other-adr-link"
 
 n=0
 fail() { echo "FAIL [$1]: $2"; sed 's/^/  stderr: /' "$t/err"; exit 1; }
@@ -125,6 +129,8 @@ probe 2 "CLAUDE_PROJECT_DIR unset, launched from a subdirectory" $ADR "$root" "$
 probe 2 "another checkout's existing ADR (every target's ADRs are immutable)" $ADR "$root" "$root" "$root" Edit "$other/docs/adr/0001-x.md"
 probe 2 "an existing ADR in a linked worktree"                 $ADR "$root" "$root" "$root" Edit "$t/wt-outside/docs/adr/0001-x.md"
 probe 2 "a hardlink inside a linked worktree to that worktree's ADR" $ADR "$root" "$root" "$root" Edit "$t/wt-outside/notes-hard.md"
+probe 2 "an outside symlink, then .. (the lexical reading)"     $ADR "$root" "$root" "$root" Edit "$root/out-link/../docs/adr/0001-x.md"
+probe 2 "a symlink into another checkout, then ../adr (the physical reading)" $ADR "$root" "$root" "$root" Edit "$root/other-adr-link/../adr/0001-x.md"
 probe 2 "a project root containing a space"                   $ADR "$spaced" "$spaced" "$spaced" Edit "$spaced/docs/adr/0001-x.md"
 probe 2 "a relative path under a project root containing a space" $ADR "$spaced" "$spaced/docs/sub" "$spaced" Edit "../adr/0001-x.md"
 rc=0; (cd "$root" && jq -cn --arg fp "$root/adr-hard.md" --arg cwd "$root" '{tool_name:"Edit",tool_input:{file_path:$fp},cwd:$cwd}' \
