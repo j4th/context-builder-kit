@@ -1025,13 +1025,15 @@ absent grep -rn "docs\.github\.com …" .claude/ $dbx
 # where there is none (the kit tree), the same choice as the enabledMcpjsonServers check above: every url entry names
 # its type (Claude Code skips one without), every npx / uvx / bunx server runs an exact version (never @latest, never
 # unpinned — § Dependency settle-window), and no env or header value is a <placeholder> or a literal token:
-# credentials are ${VAR} references only.
+# credentials are ${VAR} references only. Each jq runs alone and its status is read: the block has no errexit, so
+# a jq that fails — `headers` written as a string, say — would otherwise leave `bad` empty and pass the token by.
 mcps=.mcp.json; [ -f "$mcps" ] || mcps=$mcpx
 if [ -n "$mcps" ]; then
+  mcpbad() { echo "$mcps: jq could not read every server entry (its error is above) — an env, headers or args of the wrong type, so the entry went unchecked"; exit 1; }
   [ "$(jq '.mcpServers | length' "$mcps")" -ge 1 ] || { echo "$mcps: no mcpServers read — the checks below would pass vacuously"; exit 1; }
-  bad=$(jq -r '.mcpServers | to_entries[] | select(.value.url != null and .value.type == null) | .key' "$mcps"); [ -z "$bad" ] || { echo "$mcps: a url entry with no type is skipped by Claude Code:" $bad; exit 1; }
-  bad=$(jq -r '.mcpServers | to_entries[] | select(.value.command == "npx" or .value.command == "uvx" or .value.command == "bunx") | select(([.value.args[]? | select(startswith("-") | not)][0] // "") | test("(@|==)[0-9]+(\\.[0-9]+)+$") | not) | .key' "$mcps"); [ -z "$bad" ] || { echo "$mcps: a stdio server not pinned to an exact version:" $bad; exit 1; }
-  bad=$(jq -r '.mcpServers | to_entries[] | select([(.value.env // {}), (.value.headers // {})][] | to_entries[] | .value | tostring | test("^<.*>$|ghp_|github_pat_|gho_|lin_api_|ctx7sk|sk-ant-")) | .key' "$mcps" | sort -u); [ -z "$bad" ] || { echo "$mcps: a literal credential or <placeholder> where a \${VAR} reference belongs:" $bad; exit 1; }
+  bad=$(jq -r '.mcpServers | to_entries[] | select(.value.url != null and .value.type == null) | .key' "$mcps") || mcpbad; [ -z "$bad" ] || { echo "$mcps: a url entry with no type is skipped by Claude Code:" $bad; exit 1; }
+  bad=$(jq -r '.mcpServers | to_entries[] | select(.value.command == "npx" or .value.command == "uvx" or .value.command == "bunx") | select(([.value.args[]? | select(startswith("-") | not)][0] // "") | test("(@|==)[0-9]+(\\.[0-9]+)+$") | not) | .key' "$mcps") || mcpbad; [ -z "$bad" ] || { echo "$mcps: a stdio server not pinned to an exact version:" $bad; exit 1; }
+  bad=$(jq -r '.mcpServers | to_entries[] | select([(.value.env // {}), (.value.headers // {})][] | to_entries[] | .value | tostring | test("^<.*>$|ghp_|github_pat_|gho_|lin_api_|ctx7sk|sk-ant-")) | .key' "$mcps") || mcpbad; bad=$(sort -u <<<"$bad"); [ -z "$bad" ] || { echo "$mcps: a literal credential or <placeholder> where a \${VAR} reference belongs:" $bad; exit 1; }
 fi
 # The .gitignore harness block (context-builder-kit#71, context-builder-kit#58 R7): extracted from github-starter-templates.md's fence and
 # pinned with git check-ignore in a throwaway repo, appended behind a stack section's unanchored `lib/` — every entry
