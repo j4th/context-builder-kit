@@ -27,8 +27,8 @@ This is a floor, not a menu. Neither is satisfied by an agent that read the diff
 
 ```markdown
 ## Review gate
-- `/simplify` — ran: <N> cleanup agents, <N> findings, <N> applied · or: invoked, not covered — <dropped dimensions> (never waived)
-- `pr-review-toolkit:review-pr` — ran: <N> agents, <N> findings, triaged <A/AwC/S/D/R> · or: invoked, not covered — <dropped dimensions> · or: waived — <break-glass reason>
+- `/simplify` — ran: <N> cleanup agents, <N> findings, <N> applied · or: invoked, not covered — <dropped dimensions> (never waived) · or: not run — <reason> (an issue-less branch only)
+- `pr-review-toolkit:review-pr` — ran: <N> agents, <N> findings, triaged <A/AwC/S/D/R> · or: invoked, not covered — <dropped dimensions> · or: waived — <break-glass reason> · or: not run — <reason> (an issue-less branch only)
 - `review-sweep` — ran: <N> finders + <N> verifiers, <N> confirmed / <N> refuted / <N> unverified, dropped coverage: <reviewers or dimensions, or none>, bounds <per-dimension>/<verified> · or: skipped — <reason>
 ```
 
@@ -129,7 +129,7 @@ The highest-leverage tuning surface for AI code review (per Cloudflare's evidenc
 **Project may exclude additionally** (configure as the `pr-review-toolkit` configuration permits):
 
 - **Bot-author or dependabot PRs** — reviewing automated dependency bumps line-by-line is rarely worth the tokens.
-- **Docs-only PRs** — if the diff is entirely under `docs/` or `*.md`, the orchestrated sweep may be skipped, its gate line reading `skipped — docs-only diff`; the floor still runs, both skills invoked (§ The floor). **Not light where the docs are one-way doors** — a cascade artifact, an ADR, the conventions, a rule file: the sweep runs for its project-local reviewers, and a human reviews them too.
+- **Docs-only PRs** — if the diff is entirely under `docs/` or `*.md`, the orchestrated sweep may be skipped, its gate line reading `skipped — docs-only diff`; on a cascade PR the floor still runs, both skills invoked (§ The floor), and an issue-less branch writes its lines *not run* with the reason (`cbk-conventions.md` § Branch naming). **Not light where the docs are one-way doors** — a cascade artifact, an ADR, the conventions, a rule file: the sweep runs for its project-local reviewers, and a human reviews them too.
 - **Project-specific noise patterns** that emerge from the first month of running the toolkit. Add them here as you find them.
 
 ## Path-conditional aggressiveness

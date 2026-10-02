@@ -86,7 +86,7 @@ If the human reviewed the draft PR, decided to leave a Surface item alone, and t
 
 ### ❌ Running the full sweep on a docs-only PR
 
-If the diff is entirely under `docs/` or matches `*.md`, the sweep's toolkit dimensions and caller-named finders have little code to chew on: skip the sweep and record why on its gate line. The floor is not skipped — `/simplify` and `pr-review-toolkit:review-pr` both run, and waiving the toolkit is a break-glass call, never a docs-only default (`pr-review.md` § The floor). The exception — docs that are one-way doors — is stated once, in `pr-review.md` § What NOT to flag, and not restated here.
+If the diff is entirely under `docs/` or matches `*.md`, the sweep's toolkit dimensions and caller-named finders have little code to chew on: skip the sweep and record why on its gate line. On a cascade PR the floor is not skipped — `/simplify` and `pr-review-toolkit:review-pr` both run, and waiving the toolkit is a break-glass call, never a docs-only default (`pr-review.md` § The floor); an issue-less branch is the one case that writes the floor *not run*, with the reason (`cbk-conventions.md` § Branch naming). The exception — docs that are one-way doors — is stated once, in `pr-review.md` § What NOT to flag, and not restated here.
 
 ### ❌ Padding the hand-off summary with "looks good" prose
 
