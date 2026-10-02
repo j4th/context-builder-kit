@@ -143,7 +143,7 @@ What gets provisioned depends on the operator's two-axis choice and detection st
 
 - **Branch naming**: propose a format based on team identifier from discovery, e.g. `{team-id}-{issue-number}-{short-description}`. Confirm with user.
 - **Commit format**: propose Conventional Commits as default unless the user has a preference. Confirm.
-- **Label taxonomy**: propose the full set as an axis structure — cascade depth, awaiting-cascade-work, provenance, type, workstream, meta, review control, and the optional labour lane (`references/github_only_profile.md` § State 1 step 3 lists every label). Confirm, then create them (`gh label create` when a token exists, otherwise walk the user through the labels page).
+- **Label taxonomy**: propose the full set as an axis structure — cascade depth, awaiting-cascade-work, provenance, type, workstream, meta, lifecycle, review control, and the optional labour lane (`references/github_only_profile.md` § State 1 step 3 lists every label). Confirm, then create them (`gh label create` when a token exists, otherwise walk the user through the labels page).
 
 **HITL gate**: user confirms what was created, walks verification matrix.
 
