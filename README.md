@@ -188,11 +188,11 @@ These compose into 3 × 2 = 6 configurations. See `.claude/rules/knowledge-backe
 **Knowledge backend**: none
 **Repo**: github.com/you/tuitor
 **Project board**: github.com/you/tuitor/projects/4
-**Kit commit**: v0.5.0 (74edf84)
+**Kit commit**: v1.0.0 (<sha>)
 
 ## Working conventions
 **Team identifier**: TUI
-**Branch naming**: `<type>/tui-<N>-<short-slug>`
+**Branch naming**: `<type>/<N>-<short-slug>` (the bare issue number, on GitHub Issues)
 **Commit format**: Conventional Commits
 
 ## Quality bar
