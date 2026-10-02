@@ -7,7 +7,7 @@ paths:
 
 # Orchestration — the reference half
 
-> **Path-scoped.** Loads when a workflow, an agent definition, or this rule pair is read. `orchestration.md` (always loaded) keeps a pointer heading for every section here. Sections were moved verbatim on 2026-09-06, and every quotation was re-fetched on 2026-09-30. See `cbk-conventions.md` § Rule loading and the instruction budget.
+> **Path-scoped.** Loads when a workflow, an agent definition, or this rule pair is read. `orchestration.md` (always loaded) keeps a pointer heading for every section moved here at the split; § Generation notes — the sources and § Cost terms and run hygiene were added since and are cited by this file's own name. Sections were moved verbatim on 2026-09-06, and every quotation was re-fetched on 2026-09-30. See `cbk-conventions.md` § Rule loading and the instruction budget.
 
 ## The dispatch surfaces + resolution order
 

@@ -9,7 +9,7 @@ paths:
 
 # Knowledge Backend Patterns — the reference half
 
-> **Path-scoped.** Loads when a cascade skill or command, the knowledge-backend ask-gate hook, a cascade artifact, or this rule pair is read — the moments a phase provisions, reads or writes the knowledge backend. `knowledge-backend.md` (always loaded) keeps the operative contract — when to read, when to write, the announcement discipline, inheritance — and a pointer heading for every section here. Sections were moved verbatim on 2026-09-30. See `cbk-conventions.md` § Rule loading and the instruction budget. When the knowledge axis is `none`, this file is deleted together with `knowledge-backend.md`, the hook and its settings stanza.
+> **Path-scoped.** Loads when a cascade skill or command, the knowledge-backend ask-gate hook, a cascade artifact, or this rule pair is read — the moments a phase provisions, reads or writes the knowledge backend. `knowledge-backend.md` (always loaded) keeps the operative contract — when to read, when to write, the announcement discipline, inheritance — and a pointer heading for every section here. Sections were moved on 2026-09-30 and re-sourced in the same change. See `cbk-conventions.md` § Rule loading and the instruction budget. When the knowledge axis is `none`, this file is deleted together with `knowledge-backend.md`, the hook and its settings stanza.
 
 ## The three surfaces
 
