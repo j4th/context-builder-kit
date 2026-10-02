@@ -12,7 +12,9 @@
 # guard's fail-open branches — no lib/ helper, and no jq on PATH — exit 0 and name the surviving backstop.
 # Needs bash, git, jq, readlink (GNU or BSD). Four cases need more and print a SKIP line where the host lacks it:
 # the /proc case needs /proc/self/root, and the three bind-mount cases need `unshare -rm` (an unprivileged user and
-# mount namespace). Run by the verification block; also: bash .claude/workflows/tests/protected-paths-hook-fixture.sh
+# mount namespace). On the kit's CI runner (verify.yml, runs-on: ubuntu-24.04) `unshare -rm` is denied, so the bind-mount
+# cases SKIP there and run on a host that allows them (observed https://github.com/j4th/context-builder-kit/actions/runs/36953707599, 2026-10-02).
+# Run by the verification block; also: bash .claude/workflows/tests/protected-paths-hook-fixture.sh
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 src="$here/../../hooks"
