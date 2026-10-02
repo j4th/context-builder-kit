@@ -30,7 +30,8 @@ For Claude.ai's qualitative test loop (no subagents, no benchmarking): a real hu
 - Stack decisions are committed without explicit user confirmation (premature stack lock-in)
 - Methodology recommendation is "use Shape Up" without a citation or context tie
 - The handoff issue is omitted
-- blueprint.md contains a "Manual setup runlist" section with one-time setup commands (those go in the handoff issue, not blueprint.md)
+- blueprint.md contains a "Manual setup runlist" section with one-time setup commands (on this github-issues run those go in the handoff issue; only the in-repo-markdown axis writes them as § Manual setup, once)
+- blueprint.md has no `## Workstreams` table, or a row without its confirmed slug (every later phase validates a title's slug against it)
 - Working conventions in CONTRIBUTING.md drift from what scaffold.md said
 
 ## Test 2 — unusual stack where one decision category doesn't apply
