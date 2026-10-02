@@ -29,7 +29,7 @@ read 2026-09-30):
 config.json:
   repo, issue            — as finish-ab.js takes them
   base                   — the commit every arm starts from; each worktree is added there, detached
-  brief                  — absolute path of the operator brief
+  brief                  — path of the operator brief, made absolute; a file that does not exist is refused
   worktree_root          — directory the arm worktrees are created under (inside the repository, so the arms'
                            edits stay inside a working directory the session's permissions already cover). It must
                            be a gitignored path, such as .claude/worktrees/ — ignored by an anchored entry,
@@ -38,10 +38,15 @@ config.json:
                            detect-forked-agent-memory.sh blocks the launching session's hand-off on any such tree
                            outside the root that .gitignore does not exclude
   out_dir                — receives <anon>.json (the `claude -p --output-format json` payload), <anon>.err,
-                           <anon>.cmd (the argv, for the record) and executed.json
+                           <anon>.cmd (the argv, for the record) and executed.json, one {anon, cell, result} per
+                           complete arm (cell: the read, also, verb, model and effort it ran with)
   max_budget_usd         — per-arm spend cap across all its invocations (`--max-budget-usd`, given each
-                           continuation as what is left), a runaway guard rather than a budget
-  arms                   — [{anon, read, also?, verb?, model, effort}], as finish-ab.js's arms
+                           continuation as what is left), a runaway guard rather than a budget; a positive number
+  max_continuations      — optional, default 3: continuations per arm in one runner pass; a whole number, 0 or more
+  arms                   — [{anon, arm?, read, also?, verb?, model, effort}], as finish-ab.js's arms; anon is a
+                           plain name (letters, digits, - and _), because it names the worktree and the out_dir files
+  Every config is refused before anything is created when a key is unknown or a value is malformed: a misspelled
+  key would otherwise be ignored without a word.
   worktree_setup         — optional: shell commands run with `bash -c` in each new worktree, in order, right after it
                            is created and before any arm starts (a tool's trust step such as `mise trust`, or a
                            dependency install). One that exits non-zero stops the run before any arm is paid for,
@@ -66,8 +71,9 @@ Every arm runs in `auto` permission mode, where a classifier reviews each action
 host denies whatever would prompt ("In a `-p` run with no host, these requests are denied either way",
 code.claude.com/docs/en/headless, read 2026-09-30). It runs with `--strict-mcp-config` and deny rules for the remote
 writes DENY names ("Deny rules block in every mode", code.claude.com/docs/en/permission-modes, read 2026-09-30). The
-launching session's environment variables whose names start with CLAUDE are stripped, and named on stdout, so each arm
-starts as a fresh top-level session: a Claude Code 2.1.286 session sets CLAUDECODE, CLAUDE_CODE_SESSION_ID and
+launching session's environment variables whose names start with CLAUDE are stripped, and named on stdout — all but
+the provider, authentication and client-certificate selectors KEEP_ENV names — so each arm starts as a fresh top-level
+session on the operator's own provider and account: a Claude Code 2.1.286 session sets CLAUDECODE, CLAUDE_CODE_SESSION_ID and
 CLAUDE_CODE_ENTRYPOINT among others (observed 2026-09-30), and CLAUDE_CONFIG_DIR goes with them, so an arm reads
 the default configuration directory. The settings files' own `env` blocks re-apply whatever they set. A fresh run refuses an
 existing worktree or an out_dir holding an earlier run's files before creating anything; --resume-existing needs each
@@ -126,22 +132,40 @@ WRITE_SERVERS = ('github', 'linear', 'notion')
 # The only servers an arm's mcp_config may name. An allowlist, not WRITE_SERVERS turned around: a server this file does
 # not know — one added to .mcp.json later, or a machine's own — is refused rather than let through (fail closed).
 MCP_ALLOWED = ('context7', 'time')
+# gh takes its global flags before the noun or between the noun and the verb — `gh -R o/r pr merge 5`,
+# `gh pr -R o/r merge 5` (guard-pr-state.sh lists both) — so each gh write is denied in every placement, as `git push`
+# is above: the plain form, a flag before the noun, and a flag between noun and verb, each with and without arguments.
+def gh_writes(noun, verbs):
+    return [rule for v in verbs for rule in (f'Bash(gh {noun} {v} *)', f'Bash(gh * {noun} {v} *)', f'Bash(gh * {noun} {v})',
+                                             f'Bash(gh {noun} * {v} *)', f'Bash(gh {noun} * {v})')]
+
+
 DENY = [
     'Bash(git push *)', 'Bash(git * push *)', 'Bash(git * push)',
     *[f'mcp__{srv}__*' for srv in WRITE_SERVERS],
     'mcp__plugin_github_github__*', 'mcp__plugin_linear_linear__*', 'mcp__plugin_Notion_notion__*', 'mcp__claude_ai_*',
-    'Bash(gh api *)',
-    *[f'Bash(gh pr {c} *)' for c in ('create', 'edit', 'merge', 'comment', 'ready', 'close', 'reopen', 'review',
-                                      'update-branch', 'lock', 'unlock')],
-    *[f'Bash(gh issue {c} *)' for c in ('create', 'edit', 'comment', 'close', 'reopen', 'delete', 'transfer',
-                                         'develop', 'pin', 'unpin', 'lock', 'unlock')],
-    *[f'Bash(gh label {c} *)' for c in ('create', 'edit', 'delete', 'clone')],
-    *[f'Bash(gh release {c} *)' for c in ('create', 'edit', 'delete', 'upload', 'delete-asset')],
-    *[f'Bash(gh repo {c} *)' for c in ('create', 'delete', 'edit', 'fork', 'rename', 'archive', 'unarchive', 'sync')],
-    *[f'Bash(gh workflow {c} *)' for c in ('run', 'enable', 'disable')],
-    *[f'Bash(gh run {c} *)' for c in ('rerun', 'cancel', 'delete')],
-    'Bash(gh secret *)', 'Bash(gh variable *)', 'Bash(gh gist *)',
+    *[rule for noun in ('api', 'secret', 'variable', 'gist') for rule in (f'Bash(gh {noun} *)', f'Bash(gh * {noun} *)')],
+    *gh_writes('pr', ('create', 'edit', 'merge', 'comment', 'ready', 'close', 'reopen', 'review', 'update-branch', 'lock',
+                      'unlock')),
+    *gh_writes('issue', ('create', 'edit', 'comment', 'close', 'reopen', 'delete', 'transfer', 'develop', 'pin', 'unpin',
+                         'lock', 'unlock')),
+    *gh_writes('label', ('create', 'edit', 'delete', 'clone')),
+    *gh_writes('release', ('create', 'edit', 'delete', 'upload', 'delete-asset')),
+    *gh_writes('repo', ('create', 'delete', 'edit', 'fork', 'rename', 'archive', 'unarchive', 'sync')),
+    *gh_writes('workflow', ('run', 'enable', 'disable')),
+    *gh_writes('run', ('rerun', 'cancel', 'delete')),
 ]
+# The keys a config and an arm may carry: a misspelled one (`Also`, `check_cmd`) is refused, not silently ignored —
+# ignored, it would change the treatment or drop the check task without a word. Keys starting with `_` are comments.
+CONFIG_KEYS = {'repo', 'issue', 'base', 'brief', 'worktree_root', 'out_dir', 'max_budget_usd', 'max_continuations', 'arms',
+               'worktree_setup', 'check_command', 'mcp_config'}
+ARM_KEYS = {'anon', 'arm', 'read', 'also', 'verb', 'model', 'effort'}
+# The CLAUDE* variables an arm keeps: provider selection, authentication and client certificates
+# (code.claude.com/docs/en/env-vars, read 2026-10-01). Stripped, an arm on Bedrock, Vertex or a token would fail its
+# auth or run on another provider, and so another model and another account; every other CLAUDE* name is session
+# state and is stripped.
+KEEP_ENV = re.compile(r'CLAUDE_CODE_(USE_(BEDROCK|VERTEX|FOUNDRY|MANTLE|ANTHROPIC_AWS)|SKIP_[A-Z_]*AUTH|'
+                      r'OAUTH_(TOKEN|REFRESH_TOKEN|SCOPES)|API_KEY_HELPER_TTL_MS|CLIENT_(CERT|KEY|KEY_PASSPHRASE)|CERT_STORE)')
 
 # The arm's structured return: finish-ab.js's ARM_SCHEMA, with its descriptions. One difference, on purpose:
 # `dispatched` is required here, because a headless arm can dispatch subagents, and optional there, where a workflow
@@ -230,8 +254,11 @@ def open_items(wt, payload):
     items = []
     if not os.path.exists(os.path.join(wt, 'PR_BODY.md')):
         items.append('PR_BODY.md does not exist in your worktree yet')
-    if not isinstance((payload or {}).get('structured_output'), dict):
+    result = (payload or {}).get('structured_output')
+    if not isinstance(result, dict):
         items.append('your last turn returned no structured result')
+    elif missing := [k for k in ARM_SCHEMA['required'] if k not in result]:
+        items.append(f"your structured result lacks {', '.join(missing)}")
     return items
 
 
@@ -245,10 +272,21 @@ def continuation(items):
 
 
 def run_arm(cfg, cell, arms, env, resume, record):
+    """One arm's thread. A crash is recorded with what the arm had spent, never lost as "the thread recorded nothing":
+    its invocations are paid for, and --resume-existing can continue them."""
+    runs = []
+    try:
+        _run_arm(cfg, cell, arms, env, resume, record, runs)
+    except Exception as e:  # every failure in a thread is reported, whatever it is
+        cost, floor = spend(runs)
+        record[cell.get('anon')] = dict(crash=f'{type(e).__name__}: {e}', cost=round(cost, 2), floor=floor, invocations=len(runs))
+
+
+def _run_arm(cfg, cell, arms, env, resume, record, runs):
     anon = cell['anon']
     wt = worktree_of(cfg, anon)
     out = cfg['out_dir']
-    runs, t0 = [], time.time()  # one {payload, rc, err} per invocation; rc is None for one an earlier pass made
+    t0 = time.time()  # runs: one {payload, rc, err} per invocation; rc is None for one an earlier pass made
     first = 1  # the next continuation's number
     cmd_path = os.path.join(out, f'{anon}.cmd')
     if resume:
@@ -311,7 +349,9 @@ def run_arm(cfg, cell, arms, env, resume, record):
         print(f'{anon}: continuation {k} — {"; ".join(items)}', flush=True)
         runs.append(invoke(argv_, wt, env, os.path.join(out, f'{anon}.cont{k}.json'), os.path.join(out, f'{anon}.cont{k}.err')))
     else:
-        if open_items(wt, runs[-1]['payload']):
+        if runs[-1]['rc'] is not None and failure_of(runs[-1]):  # the last permitted continuation failed: say so
+            stop = f"its last invocation failed: {failure_of(runs[-1])}"
+        elif open_items(wt, runs[-1]['payload']):
             stop = f"this pass reached max_continuations ({int(cfg.get('max_continuations', 3))}); --resume-existing continues it"
     # A resumed invocation reports the conversation's whole total, earlier runs included ("the run reports the
     # conversation's whole total", code.claude.com/docs/en/headless, read 2026-09-30), so the arm's cost is the latest
@@ -328,8 +368,11 @@ def spend(runs):
     parsed = [i for i, r in enumerate(runs) if r['payload']]
     if not parsed:
         return 0.0, bool(runs)
-    last = parsed[-1]
-    return float(runs[last]['payload'].get('total_cost_usd') or 0), last < len(runs) - 1
+    totals = [i for i in parsed if runs[i]['payload'].get('total_cost_usd') is not None]
+    if not totals:
+        return 0.0, True  # payloads, but none carries a total: the spend is unknown, so 0 is only a floor
+    last = totals[-1]  # a later payload without a total leaves this figure a floor, like a missing payload
+    return float(runs[last]['payload']['total_cost_usd']), last < len(runs) - 1
 
 
 def failure_of(run):
@@ -395,9 +438,23 @@ def main(argv):
     if unknown:
         print(f"unknown argument(s): {' '.join(unknown)} (expected --dry-run or --resume-existing)")
         return 2
-    with open(argv[1]) as f:
-        cfg = json.load(f)
     dry, resume = '--dry-run' in argv, '--resume-existing' in argv
+    if dry and resume:
+        print('--dry-run and --resume-existing do not combine: a dry run creates nothing, so there is nothing to resume')
+        return 2
+    try:
+        with open(argv[1]) as f:
+            cfg = json.load(f)
+    except (OSError, json.JSONDecodeError) as e:
+        print(f'config: {argv[1]} could not be read as JSON ({e})')
+        return 2
+    if not isinstance(cfg, dict):
+        print(f'config: {argv[1]} must hold a JSON object')
+        return 2
+    unknown = sorted(k for k in cfg if k not in CONFIG_KEYS and not k.startswith('_'))
+    if unknown:
+        print(f"config: unknown key {', '.join(unknown)} (expected {', '.join(sorted(CONFIG_KEYS))}; a key starting with _ is a comment)")
+        return 2
     for k in ('repo', 'issue', 'base', 'brief', 'worktree_root', 'out_dir', 'max_budget_usd', 'arms'):
         if cfg.get(k) in (None, ''):
             print(f'config: {k} is required')
@@ -409,14 +466,34 @@ def main(argv):
     # Every arm is checked before any worktree exists: a missing key inside a runner thread would otherwise surface
     # only as "the thread recorded nothing", after the worktrees that block a re-run were already created.
     for cell in arms:
+        extra = sorted(k for k in cell if k not in ARM_KEYS)
+        if extra:
+            print(f"config: arm {cell.get('anon')!r} has an unknown key {', '.join(extra)} (expected {', '.join(sorted(ARM_KEYS))})")
+            return 2
         bad = [k for k in ('anon', 'read', 'model', 'effort') if not isinstance(cell.get(k), str) or not cell.get(k)]
         if cell.get('also') is not None and not (isinstance(cell['also'], list) and all(isinstance(f, str) and f for f in cell['also'])):
             bad.append('also (a list of file paths)')
         if bad:
             print(f"config: arm {cell.get('anon')!r} lacks {', '.join(bad)}")
             return 2
+        if not re.fullmatch(r'[A-Za-z0-9_-]+', cell['anon']):
+            print(f"config: arm anon {cell['anon']!r} is not a plain name (letters, digits, - and _): it names the arm's worktree "
+                  f"and its files in out_dir")
+            return 2
     if len({cell['anon'] for cell in arms}) != len(arms):  # every anon is a non-empty string by now
         print('config: the arms need distinct anon ids')
+        return 2
+    budget = cfg['max_budget_usd']
+    if isinstance(budget, bool) or not isinstance(budget, (int, float)) or budget <= 0:
+        print('config: max_budget_usd is a positive number of US dollars, the cap each arm runs under')
+        return 2
+    conts = cfg.get('max_continuations', 3)
+    if isinstance(conts, bool) or not isinstance(conts, int) or conts < 0:
+        print('config: max_continuations is a whole number of continuations per arm, 0 or more')
+        return 2
+    cfg['brief'] = os.path.abspath(cfg['brief'])  # an arm reads it from inside its worktree, so a relative path would miss
+    if not os.path.isfile(cfg['brief']):
+        print(f"config: brief {cfg['brief']} is not a file (a relative path resolves against the directory the runner runs in)")
         return 2
     if cfg.get('check_command') is not None and not (isinstance(cfg['check_command'], str) and cfg['check_command'].strip()):
         print('config: check_command is a shell command string, run once in each complete arm\'s worktree')
@@ -430,7 +507,7 @@ def main(argv):
         return 2
     cfg['worktree_root'] = os.path.abspath(cfg['worktree_root'])  # the judges read result.worktree from any cwd
     os.makedirs(cfg['out_dir'], exist_ok=True)
-    stripped = sorted(k for k in os.environ if k.startswith('CLAUDE'))
+    stripped = sorted(k for k in os.environ if k.startswith('CLAUDE') and not KEEP_ENV.fullmatch(k))
     env = {k: v for k, v in os.environ.items() if k not in stripped}
     print(f"stripped from the arms' environment: {', '.join(stripped) or 'nothing'}", flush=True)
     if cfg.get('mcp_config'):
@@ -474,7 +551,12 @@ def main(argv):
                 argv_ = first_argv(cfg, cell, arms, '<chosen at run time>')
                 print(json.dumps({'anon': cell['anon'], 'cwd': wt, 'argv': argv_, 'setup': setup or []}), flush=True)
                 continue
-            subprocess.run(['git', 'worktree', 'add', '--detach', wt, cfg['base']], check=True)
+            made = subprocess.run(['git', 'worktree', 'add', '--detach', wt, cfg['base']], capture_output=True, text=True)
+            if made.returncode != 0:
+                print(f"git worktree add failed for {wt} (exit {made.returncode}): {made.stderr.strip()}; no arm was started. "
+                      f"Remove the worktrees this run created before running again (git worktree remove <path>): "
+                      f"{' '.join(created) or 'none'}")
+                return 1
             created.append(wt)
             # A project's own per-worktree step (a tool's trust prompt, a dependency install), from the config rather
             # than hard-coded: a target without the tool would otherwise fail here after the first worktree exists.
@@ -500,6 +582,10 @@ def main(argv):
         if r is None:
             print(f"{cell['anon']}: the runner thread recorded nothing")
             continue
+        if 'crash' in r:
+            print(f"{cell['anon']}: the runner thread failed after {r['invocations']} invocation(s), "
+                  f"${r['cost']}{' (a floor)' if r['floor'] else ''} spent: {r['crash']}; --resume-existing continues it")
+            continue
         result = r['final'].get('structured_output')
         cost = f"${r['cost']}{' (a floor)' if r['floor'] else ''}"
         if r['items'] or not isinstance(result, dict):
@@ -520,7 +606,9 @@ def main(argv):
         failed = f" — {r['stop']}" if r['stop'] else ''
         if failed:
             result['notes'] += f"\n[runner] {r['stop']}"
-        executed.append({'anon': cell['anon'], 'result': result})
+        # The cell travels with the result, so finish-ab can refuse an arm table that disagrees with what ran.
+        executed.append({'anon': cell['anon'], 'cell': {k: cell[k] for k in ('read', 'also', 'verb', 'model', 'effort') if k in cell},
+                         'result': result})
         print(f"{cell['anon']}: complete after {r['invocations']} invocation(s), {cost}, "
               f"{len(result.get('commits', []))} commits, check exit {result.get('check_exit')}{failed}", flush=True)
     # Written before the checks and again after them: the checks run one at a time with no timeout, so a hung check or

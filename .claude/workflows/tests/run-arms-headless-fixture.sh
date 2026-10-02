@@ -72,9 +72,10 @@ git init -q -b main "$repo"
 git -C "$repo" -c user.email=f@x -c user.name=f -c commit.gpgsign=false commit -q --allow-empty -m base
 base=$(git -C "$repo" rev-parse HEAD)
 cfg() {  # cfg <name> <out_dir> [max_budget] [max_continuations]
-  printf '{"repo":"o/r","issue":1,"base":"%s","brief":"/b.md","worktree_root":"%s/.wt","out_dir":"%s","max_budget_usd":%s,"max_continuations":%s,"arms":[{"anon":"P","read":"f.md","model":"opus","effort":"high"},{"anon":"Q","read":"f.md","model":"opus","effort":"medium"}]}' \
+  printf '{"repo":"o/r","issue":1,"base":"%s","brief":"'"$t"'/b.md","worktree_root":"%s/.wt","out_dir":"%s","max_budget_usd":%s,"max_continuations":%s,"arms":[{"anon":"P","read":"f.md","model":"opus","effort":"high"},{"anon":"Q","read":"f.md","model":"opus","effort":"medium"}]}' \
     "$base" "$repo" "$2" "${3:-10}" "${4:-3}" > "$t/$1.json"
 }
+printf 'the operator brief\n' > "$t/b.md"
 fail() { echo "FAIL: $1"; printf '%s\n' "$out" | sed 's/^/  | /'; exit 1; }
 # Every run also watches for an unclosed file: with ResourceWarning enabled, a file the runner opened and
 # never closed shows in its output, and fails the fixture (a code-quality review found the config, mcp_config and
@@ -116,6 +117,13 @@ q = [json.loads(l) for l in open(f'{fake}/argv-Q.jsonl')]
 if len(q) != 2 or q[1][q[1].index('--resume') + 1] != json.load(open(f'{out}/Q.cmd'))['session_id']:
     bad.append('Q: the continuation does not resume the recorded session')
 if '--append-system-prompt' not in q[1]: bad.append('Q: the continuation dropped the turn-ending paragraph')
+for anon in ('P', 'Q'):
+    first = [json.loads(l) for l in open(f'{fake}/argv-{anon}.jsonl')][0]
+    if '--append-system-prompt' not in first: bad.append(f'{anon}: the first invocation lacks the turn-ending paragraph')
+    if first[first.index('--max-budget-usd') + 1] != '10.00': bad.append(f'{anon}: the first invocation is not capped at the whole budget')
+    for rule in ('Bash(gh * pr merge *)', 'Bash(gh pr * merge *)', 'Bash(gh * issue close *)'):
+        if rule not in first: bad.append(f'{anon}: the deny list lacks {rule} (gh takes -R before or after the noun)')
+if q[1][q[1].index('--max-budget-usd') + 1] != '9.00': bad.append("Q: the continuation must get only what the cap has left ($9.00 after $1.00)")
 if 'total_cost_usd $2.5 for' not in ex['Q']['notes']: bad.append(f"Q: cost must be the latest total ($2.5), never a sum ($3.5): {ex['Q']['notes']!r}")
 if "reported worktree '/elsewhere'" not in ex['P']['notes']: bad.append('P: a worktree the arm reported elsewhere is not noted')
 if 'reported worktree' in ex['Q']['notes']: bad.append("Q: '.' is the arm's own worktree and must not be noted as different")
@@ -238,6 +246,18 @@ printf 'not json' > "$t/mcp-bad.json"
 bad_cfg c11g "c['mcp_config']='$t/mcp-bad.json'"; refused c11g '^config: mcp_config .* could not be read as an MCP config' --dry-run
 bad_cfg c11h "c['check_command']=3"; refused c11h '^config: check_command is a shell command string' --dry-run
 bad_cfg c11i "c['worktree_setup']='mise trust'"; refused c11i '^config: worktree_setup is a list of shell commands' --dry-run
+bad_cfg c11j "c['max_budget_usd']='10'"; refused c11j '^config: max_budget_usd is a positive number' --dry-run
+bad_cfg c11k "c['max_budget_usd']=True"; refused c11k '^config: max_budget_usd is a positive number' --dry-run
+bad_cfg c11l "c['max_budget_usd']=-5"; refused c11l '^config: max_budget_usd is a positive number' --dry-run
+bad_cfg c11m "c['max_continuations']=None"; refused c11m '^config: max_continuations is a whole number' --dry-run
+bad_cfg c11n "c['max_continuations']='three'"; refused c11n '^config: max_continuations is a whole number' --dry-run
+bad_cfg c11o "c['brief']='notes/missing-brief.md'"; refused c11o '^config: brief .* is not a file' --dry-run
+bad_cfg c11p "c['arms'][1]['anon']='../escape'"; refused c11p "^config: arm anon '../escape' is not" --dry-run
+bad_cfg c11q "c['arms'][1]['anon']='P.cont1'"; refused c11q "^config: arm anon 'P.cont1' is not" --dry-run
+bad_cfg c11r "c['check_cmd']='make check'"; refused c11r '^config: unknown key check_cmd' --dry-run
+bad_cfg c11s "c['arms'][1]['Also']=['extra.md']"; refused c11s "^config: arm 'Q' has an unknown key Also" --dry-run
+refused c8 '^--dry-run and --resume-existing do not combine' '--dry-run --resume-existing'
+printf 'not json' > "$t/c11u.json"; refused c11u '^config: .*c11u.json could not be read as JSON' --dry-run
 mkdir -p "$t/pyonly"; ln -sf "$(command -v python3)" "$t/pyonly/python3"
 rc=0; out=$(cd "$repo" && PATH="$t/pyonly" python3 -B "$runner" "$t/c8.json" 2>&1) || rc=$?
 [ "$rc" -eq 2 ] && grep -q '^claude is not on PATH' <<<"$out" && [ ! -e "$repo/.wt" ] || fail "no claude on PATH must be refused with exit 2 before anything is created (rc=$rc)"
@@ -264,10 +284,10 @@ run "$t/c13.json" --resume-existing
 #     of the environment does (the fake reads FAKE_DIR from it).
 reset; cfg c14 "$t/out14"
 printf 'done:1.00\n' > "$t/fake/plan-P"; printf 'done:1.00\n' > "$t/fake/plan-Q"
-rc=0; out=$(cd "$repo" && CLAUDE_PROBE=leaked python3 -B "$runner" "$t/c14.json" 2>&1) || rc=$?
+rc=0; out=$(cd "$repo" && CLAUDE_PROBE=leaked CLAUDE_CODE_USE_BEDROCK=1 CLAUDE_CODE_OAUTH_TOKEN=tok python3 -B "$runner" "$t/c14.json" 2>&1) || rc=$?
 [ "$rc" -eq 0 ] && grep -q "stripped from the arms' environment: .*CLAUDE_PROBE" <<<"$out" \
-  && [ "$(cat "$t/fake/env-P.json")" = "[]" ] && [ "$(cat "$t/fake/env-Q.json")" = "[]" ] \
-  || fail "no CLAUDE* variable may reach an arm, and the stripped ones are named (rc=$rc; P saw $(cat "$t/fake/env-P.json" 2>/dev/null))"
+  && python3 -c "import json,sys,re; seen=[set(json.load(open(f))) for f in sys.argv[1:]]; keep=re.compile(r'CLAUDE_CODE_(USE_(BEDROCK|VERTEX|FOUNDRY|MANTLE|ANTHROPIC_AWS)|SKIP_[A-Z_]*AUTH|OAUTH_(TOKEN|REFRESH_TOKEN|SCOPES)|API_KEY_HELPER_TTL_MS|CLIENT_(CERT|KEY|KEY_PASSPHRASE)|CERT_STORE)'); sys.exit(0 if all({'CLAUDE_CODE_USE_BEDROCK','CLAUDE_CODE_OAUTH_TOKEN'} <= s and all(keep.fullmatch(k) for k in s) for s in seen) else 1)" "$t/fake/env-P.json" "$t/fake/env-Q.json" \
+  || fail "only the provider, auth and client-certificate selectors may reach an arm, and the stripped names are listed (rc=$rc; P saw $(cat "$t/fake/env-P.json" 2>/dev/null))"
 
 # 15. check_command: run once per complete arm, one at a time (a lock the check takes would collide), after EVERY arm has
 #     finished (Q's payload is non-empty when P's check runs, though P finished first), and after executed.json is
@@ -324,5 +344,45 @@ run "$t/c17.json"
 [ "$rc" -eq 1 ] && grep -q 'worktree_setup: `exit 5` exited 5 in' <<<"$out" && grep -q "$repo/.wt/eval-P" <<<"$out" \
   && [ ! -e "$t/fake/argv-P.jsonl" ] && [ ! -e "$t/fake/argv-Q.jsonl" ] \
   || fail "a failing worktree_setup command must stop the run before any arm starts, naming it and the worktrees created (rc=$rc)"
+
+# 18. A last permitted continuation that fails is reported as the failure it is, not as the continuation cap.
+reset; cfg c18 "$t/out18" 10 1
+printf 'done:1.00\n' > "$t/fake/plan-P"; printf 'early:1.00\nfail:2.00\n' > "$t/fake/plan-Q"
+run "$t/c18.json"
+[ "$rc" -eq 1 ] && grep -q "Q: incomplete .*its last invocation failed" <<<"$out" && ! grep -q "Q: incomplete .*max_continuations" <<<"$out" \
+  || fail "a failed last continuation must be named as the failure, never as max_continuations reached (rc=$rc)"
+
+# 19. A worktree git cannot create stops the run with the command's error and the worktrees made so far, never a traceback.
+reset; cfg c19 "$t/out19"
+python3 -c "import json,sys; c=json.load(open(sys.argv[1])); c['base']='0'*40; json.dump(c, open(sys.argv[1],'w'))" "$t/c19.json"
+run "$t/c19.json"
+[ "$rc" -eq 1 ] && grep -q '^git worktree add failed' <<<"$out" && ! grep -q 'Traceback' <<<"$out" \
+  || fail "a failed git worktree add must stop with its error and no traceback (rc=$rc)"
+
+# 20. The runner's pure parts, imported: a payload with no total makes the spend a floor; a structured result missing a
+#     required key is not complete; a crash in an arm's thread is recorded with what was spent; and each arm's prompt
+#     forbids the files only the other arms were given (the A/B's blinding), a shared file to no one.
+python3 -B - "$runner" "$t" <<'EOF' || exit 1
+import importlib.util, os, sys
+spec = importlib.util.spec_from_file_location('runner', sys.argv[1]); m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+bad = []
+if m.spend([{'payload': {'total_cost_usd': 2.0}}, {'payload': {}}]) != (2.0, True):
+    bad.append(f"spend: a payload with no total_cost_usd must leave the earlier total as a floor, got {m.spend([{'payload': {'total_cost_usd': 2.0}}, {'payload': {}}])}")
+wt = os.path.join(sys.argv[2], 'pure-wt'); os.makedirs(wt, exist_ok=True); open(os.path.join(wt, 'PR_BODY.md'), 'w').close()
+if not m.open_items(wt, {'structured_output': {}}):
+    bad.append('open_items: a structured result missing the schema\'s required keys must not count as complete')
+record = {}
+m.run_arm({'worktree_root': sys.argv[2], 'out_dir': os.path.join(sys.argv[2], 'pure-out'), 'max_budget_usd': 1},
+          {'anon': 'Z'}, [], {}, True, record)
+if 'crash' not in record.get('Z', {}):
+    bad.append(f"run_arm: a crash in the thread must be recorded, got {record.get('Z')!r}")
+cfg = {'issue': 1, 'repo': 'o/r', 'brief': 'b.md', 'base': 'abc'}
+arms = [{'anon': 'P', 'read': 'a.md', 'also': ['shared.md']}, {'anon': 'Q', 'read': 'b.md', 'also': ['shared.md']}]
+p, q = (m.arm_prompt(cfg, c, arms) for c in arms)
+if 'Do not open b.md' not in p or 'Do not open a.md' not in q or 'shared.md or' in p or 'shared.md or' in q:
+    bad.append(f'arm_prompt: each arm must be forbidden the files only the other was given, a shared one to no one: {p!r}')
+if bad:
+    print('FAIL: ' + '\n  '.join(bad)); sys.exit(1)
+EOF
 
 echo "run-arms-headless-fixture: ok"
