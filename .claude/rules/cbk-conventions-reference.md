@@ -1158,6 +1158,26 @@ fi
 # Releases (V10): on the kit tree, LICENSE names its copyright holder instead of the appendix's placeholder.
 [ -f docs/cbk/scaffold.md ] || absent grep -nF '[name of copyright owner]' LICENSE
 
+# Each guard's registration matches every tool its header guards: the fixtures run the scripts directly, so a narrowed
+# matcher (`Edit` for `Edit|Write|MultiEdit`, `Task` for `Task|Agent|Workflow`) passes them all and leaves the rest of
+# its tools unguarded. A matcher is read as a whole-name regex, as the harness reads it.
+for pair in "protect-immutable-adrs.sh:Edit Write MultiEdit" "protect-lock-files.sh:Edit Write MultiEdit" "protect-main-branch.sh:Bash" "guard-pr-state.sh:Bash" "require-repo-root-for-agents.sh:Task Agent Workflow"; do
+  h=${pair%%:*}; [ -f ".claude/hooks/$h" ] || continue
+  for tool in ${pair#*:}; do jq -e --arg h "$h" --arg t "$tool" '[.hooks.PreToolUse[]? | select(any(.hooks[]; [.command] + (.args // []) | map(select(type == "string")) | any(endswith($h)))) | .matcher] | any(. as $m | $t | test("^(" + $m + ")$"))' .claude/settings.json >/dev/null || { echo "settings.json registers $h under no matcher that matches $tool"; exit 1; }; done
+done
+# The knowledge-backend ask-gate's matcher is that hook's whole logic: every Notion write tool matches it and no read
+# tool does. The names are the Notion MCP's tool list as this session showed it on 2026-10-01, in the plugin form and the
+# direct form; re-take them when the MCP's tool list changes (knowledge-backend.md § HITL announcement discipline).
+if [ -f .claude/hooks/require-knowledge-backend-ok.sh ]; then
+  kbm=$(jq -r '[.hooks.PreToolUse[]? | select(any(.hooks[]; [.command] + (.args // []) | map(select(type == "string")) | any(endswith("require-knowledge-backend-ok.sh")))) | .matcher] | join("|")' .claude/settings.json)
+  [ -n "$kbm" ] || { echo "require-knowledge-backend-ok.sh is not registered under any matcher"; exit 1; }
+  for p in mcp__plugin_Notion_notion__ mcp__notion__; do
+    for w in create-pages update-page move-pages duplicate-page create-database update-data-source create-comment create-view update-view create-folder update-folder create-attachment create-file-upload upload-skill convert-page-to-skill spawn-session send-message-to-session stop-session; do
+      jq -en --arg m "$kbm" --arg t "${p}notion-$w" '$t | test("^(" + $m + ")$")' >/dev/null || { echo "the knowledge-backend ask-gate's matcher misses the write tool ${p}notion-$w"; exit 1; }; done
+    for r in fetch search ai-search get-users get-comments get-teams query-data-sources query-multiple-data-sources list-recent-pages download-attachment download-skill wait-session read-session-event get-async-task; do
+      ! jq -en --arg m "$kbm" --arg t "${p}notion-$r" '$t | test("^(" + $m + ")$")' >/dev/null || { echo "the knowledge-backend ask-gate's matcher gates the read tool ${p}notion-$r"; exit 1; }; done
+  done
+fi
 echo "verification: kit sub-block complete"
 
 # ═══ PROJECT CHECKS — a filled-in target project only; skipped on the kit tree ═══
