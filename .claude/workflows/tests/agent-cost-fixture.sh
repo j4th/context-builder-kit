@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
-# Fixture for agent-cost.py: eighteen synthetic transcripts, one case each — the set that shipped before
+# Fixture for agent-cost.py: twenty synthetic transcripts, one case each — the set that shipped before
 # context-builder-kit#69 and that issue's, unioned under distinct names. Priced: Opus 5 with cache tokens (aaa); a
 # transcript mixing two priced models (ddd); Fable 5.1 at its 0.025x cache-read rate (eee); Opus 5.5 with cache tokens
 # at its 0.05x rate (fff); Opus 5.5 beside a zero-usage <synthetic> message, which is skipped (ggg); a dated Haiku 4.5
 # id with no timestamps, so minutes is null (jjj); Sonnet 5.5 (lll); legacy Fable 5 at the standard 0.1x, where a
 # family key would bill it at Fable 5.1's 0.025x (mmm); Mythos 5.1 at 0.025x (nnn); an Opus 5.5 id with a [1m] suffix
 # (ooo); an undated Haiku 4.5 id with no timestamps (qqq); one response written as two lines that share its
-# message id — streaming snapshots, priced once from the last (rrr). Unpriced and named: a model the table does not know (bbb);
+# message id — streaming snapshots, priced once from the last (rrr); Opus 5.5 cache writes split by TTL, the 5-minute half
+# at 1.25x and the 1-hour half at 2x (sss). Unpriced and named: a model the table does not know (bbb);
 # no usage events and a truncated line (ccc); fast mode (hhh); a lone truncated line (iii); an unknown point release,
-# never priced as its predecessor (kkk); a <synthetic> message that carries usage (ppp). Asserts the cache
+# never priced as its predecessor (kkk); a <synthetic> message that carries usage (ppp); a bracketed variant other than
+# [1m], whose rate the table does not know (ttt). Asserts the cache
 # multipliers, per-model pricing of a mixed transcript, per-row facts read from the --json output (never two
 # independent greps, which pass on any row carrying the value), that tier() matches a PRICE key whole whatever the
 # dict order, that CACHE_READ is defined once, the skipped-line count and the exit codes. Every python3 call runs
@@ -49,6 +51,9 @@ row qqq '{"type":"assistant","message":{"model":"claude-haiku-4-5","usage":{"inp
 row rrr "$(u rrr)" "$(mi 1 msg_r1 claude-opus-5-5 '{"input_tokens":1000000,"output_tokens":3}')" \
   "$(mi 1 msg_r1 claude-opus-5-5 '{"input_tokens":1000000,"output_tokens":100000}')" \
   "$(mi 2 msg_r2 claude-opus-5-5 '{"input_tokens":1000000,"output_tokens":0}')"
+# A 1-hour cache write bills at 2x input, a 5-minute one at 1.25x; Claude Code records the split in usage.cache_creation.
+row sss "$(u sss)" "$(m 1 claude-opus-5-5 '{"input_tokens":0,"output_tokens":0,"cache_creation_input_tokens":2000000,"cache_creation":{"ephemeral_5m_input_tokens":1000000,"ephemeral_1h_input_tokens":1000000}}')"
+row ttt "$(u ttt)" "$(m 1 'claude-opus-5-5[2m]' '{"input_tokens":1000000,"output_tokens":0}')"
 out=$(python3 -B "$script" "$d" --json "$d/out.json")
 # Per-row facts, read from the JSON by agent: two independent greps would pass on any row carrying the value.
 python3 -B - "$d/out.json" <<'EOF' || { echo "$out"; exit 1; }
@@ -68,13 +73,14 @@ want_cost = {
     'ooo': (4.00, 'an Opus 5.5 id with a [1m] suffix prices as Opus 5.5'),
     'qqq': (0.001, 'an undated Haiku 4.5 id prices as Haiku 4.5'),
     'rrr': (10.00, 'two responses, one written as two lines sharing its message id: 2M in @ $4 + 100k out @ $20, the last snapshot once'),
+    'sss': (13.00, 'Opus 5.5 cache writes: 1M at the 5-minute 1.25x ($5) + 1M at the 1-hour 2x ($8)'),
 }
 bad = []
 for a, (cost, why) in want_cost.items():
     got = rows[a]['cost_usd']
     if got is None or abs(got - cost) > 1e-9:
         bad.append(f'{a}: cost {got!r}, want {cost} ({why})')
-for a in ('bbb', 'ccc', 'hhh', 'iii', 'kkk', 'ppp'):  # unknown model; no usage; fast mode; truncated; unknown point release; <synthetic> with usage
+for a in ('bbb', 'ccc', 'hhh', 'iii', 'kkk', 'ppp', 'ttt'):  # unknown model; no usage; fast mode; truncated; unknown point release; <synthetic> with usage; unknown variant
     if rows[a]['cost_usd'] is not None:
         bad.append(f'{a}: must be unpriced (null cost), got {rows[a]["cost_usd"]!r}')
 for a in ('ccc', 'iii', 'jjj', 'qqq'):  # one timestamp, then none at all
@@ -88,9 +94,9 @@ if bad:
     print('FAIL: ' + '\n  '.join(bad))
     sys.exit(1)
 EOF
-grep -q 'total list-price cost: \$75.15' <<<"$out" || { echo "FAIL: expected a \$75.15 total (14.25 + 7.00 + 10.25 + 11.20 + 4.00 + 0.001 + 3.20 + 11.00 + 0.25 + 4.00 + 0.001 + 10.00); got:"; echo "$out"; exit 1; }
-grep -q '12 of 18 agents priced' <<<"$out" || { echo "FAIL: the priced/unpriced split is not printed"; echo "$out"; exit 1; }
-grep -q 'unpriced.*bbb, ccc, hhh, iii, kkk, ppp' <<<"$out" || { echo "FAIL: the unpriced agents are not named"; echo "$out"; exit 1; }
+grep -q 'total list-price cost: \$88.15' <<<"$out" || { echo "FAIL: expected a \$88.15 total (14.25 + 7.00 + 10.25 + 11.20 + 4.00 + 0.001 + 3.20 + 11.00 + 0.25 + 4.00 + 0.001 + 10.00 + 13.00); got:"; echo "$out"; exit 1; }
+grep -q '13 of 20 agents priced' <<<"$out" || { echo "FAIL: the priced/unpriced split is not printed"; echo "$out"; exit 1; }
+grep -q 'unpriced.*bbb, ccc, hhh, iii, kkk, ppp, ttt' <<<"$out" || { echo "FAIL: the unpriced agents are not named"; echo "$out"; exit 1; }
 grep -q 'unparsable lines skipped.*ccc (1), iii (1)' <<<"$out" || { echo "FAIL: the truncated transcripts are not named with their skipped-line counts"; echo "$out"; exit 1; }
 # tier() must match a PRICE key WHOLE whatever the dict order. With a family key listed first, a first-match (or
 # substring) rule prices Opus 5.5 as Opus 5 and Fable 5.1 as Fable 5 — the rows above cannot see that, because PRICE
@@ -105,7 +111,7 @@ for model, key in (('claude-opus-5-5-20260922', 'claude-opus-5-5'), ('claude-opu
                    ('claude-opus-5-5[1m]', 'claude-opus-5-5'), ('claude-fable-5-1', 'claude-fable-5-1'),
                    ('claude-fable-5', 'claude-fable-5')):
     assert m.tier(model) == key, (model, m.tier(model), key)
-for unknown in ('claude-opus-5-6', 'claude-sonnet-5-5', 'claude-opus-50', 'claude-opus-5-5 [speed=fast]'):
+for unknown in ('claude-opus-5-6', 'claude-sonnet-5-5', 'claude-opus-50', 'claude-opus-5-5 [speed=fast]', 'claude-opus-5-5[2m]'):
     assert m.tier(unknown) is None, (unknown, m.tier(unknown))
 EOF
 # One CACHE_READ: a second definition silently shadows the first (the hazard a merge of two copies creates).

@@ -4,7 +4,8 @@
 Usage: python3 .claude/workflows/agent-cost.py <transcript-dir> [--json out.json]
 
 <transcript-dir> is the directory the Workflow tool names in its result ("Transcript dir: …"); it holds one
-agent-<id>.jsonl per agent. Each assistant message carries `message.usage` and `message.model`, so cost is
+agent-<id>.jsonl per agent. Every assistant line carries `message.usage` and `message.model`, and one API response is
+written as several lines that repeat its `message.id`, so a response is read once, from its last line; cost is
 attributed to the model that actually answered, not to the label the script asked for. A transcript that
 mixes models is priced per model; one unpriced model leaves that agent's row unpriced, and the row is named
 and excluded from the total — never folded in as zero.
@@ -13,16 +14,16 @@ PRICE below is list price per MTok as of 2026-09-30 (platform.claude.com/docs/en
 pricing table — quoted in .claude/rules/orchestration-reference.md § Generation notes — the sources, which the kit's
 verification block diffs against PRICE). It is keyed by model version, not family, because a version can reprice its
 family: Opus 5.5 is $4/$20 where Opus 5 is $5/$25, and Opus 5 stays priced for transcripts recorded before Opus 5.5.
-Cache writes are 1.25x input (5-minute TTL) on every model. Cache reads are 0.1x input (CACHE_READ_DEFAULT) except
-where CACHE_READ says otherwise: 0.05x on Opus 5.5 and 0.025x on Fable 5.1 and Mythos 5.1 — legacy Fable 5 stays at
-0.1x (the same page's cache sentence, which the block diffs against CACHE_READ). Every cache write is priced at the
-5-minute rate — the per-TTL breakdown inside `cache_creation` is not read. A 1-hour cache TTL prices writes at 2x;
-because the cache-write share differs by tier, that widens a write-heavy tier's ratio rather than cancelling out (on
-one measured run, 2026-09-01, it moved a pooled top-tier:workhorse ratio from 3.2x to 3.6x — both priced with the top
-tier's cache reads at 0.1x, so both are upper bounds if that run's top tier was Fable 5.1, which reads cache at
-0.025x; the transcripts' model ids settle it, context-builder-kit#58 item 6). A model id no PRICE key matches whole is
-unpriced and named, never guessed at; so is a message whose `usage.speed` is not "standard" — fast mode bills at a
-premium (the pricing page's § Fast mode pricing; "The response `usage` object includes a `speed` field",
+Cache writes are 1.25x input at the 5-minute TTL and 2x at the 1-hour TTL on every model (the same page's prompt-caching
+table: "1-hour cache write | 2x base input price", read 2026-10-01), split by the per-TTL breakdown in
+`usage.cache_creation` where a transcript records one — Claude Code's do, and a session on the 1-hour TTL writes all of
+its cache there; a write with no breakdown is priced at the 5-minute rate. Until v1.0.0 every write was priced at
+1.25x, which understated a 1-hour session's writes (context-builder-kit#58 item 6). Cache reads are 0.1x input
+(CACHE_READ_DEFAULT) except where CACHE_READ says otherwise: 0.05x on Opus 5.5 and 0.025x on Fable 5.1 and Mythos 5.1 —
+legacy Fable 5 stays at 0.1x (the same page's cache sentence, which the block diffs against CACHE_READ). A model id no
+PRICE key matches whole is unpriced and named, never guessed at; so is a message whose `usage.speed` is not
+"standard" — fast mode bills at a premium (the pricing page's § Fast mode pricing; "The response `usage` object
+includes a `speed` field",
 platform.claude.com/docs/en/build-with-claude/fast-mode, read 2026-09-30). A `<synthetic>` message the harness writes
 itself with zero usage is skipped rather than left to unprice its agent's row; one that carries usage is not
 (observed in Claude Code transcripts, context-builder-kit#69). Re-verify the table against the pricing page before
@@ -51,6 +52,7 @@ CACHE_READ = {  # PRICE key -> cache-read multiplier where it is not CACHE_READ_
     'claude-opus-5-5': 0.05,
 }
 CACHE_READ_DEFAULT = 0.1  # every other model, legacy Fable 5 included: the standard 0.1x
+CACHE_WRITE_5M, CACHE_WRITE_1H = 1.25, 2.0  # every model; verified 2026-10-01
 # Keyed by version like PRICE. Until v1.0.0 a family key ('fable') billed legacy Fable 5 at Fable 5.1's 0.025x, and a
 # second, version-keyed dict merged in beside it would silently shadow the first (context-builder-kit#69) — so there is
 # one dict, and the fixture counts its definitions. The per-tier rule landed with context-builder-kit#58 item 6; the
@@ -59,13 +61,16 @@ CACHE_READ_DEFAULT = 0.1  # every other model, legacy Fable 5 included: the stan
 
 def tier(model):
     """The PRICE key the model id names whole: the key itself, optionally followed by a -YYYYMMDD snapshot date (the
-    dated form transcripts record for Haiku 4.5, claude-haiku-4-5-20251001) and a bracketed variant such as [1m]. So
+    dated form transcripts record for Haiku 4.5, claude-haiku-4-5-20251001) and the [1m] context-window variant, which
+    bills at list ("Claude 4.6 and later models ... include the full 1M token context window at standard pricing", the
+    pricing page § Long context pricing, read 2026-10-01). Any other bracketed variant names a rate the table does not
+    know, so it is unpriced and named. So
     `claude-opus-5-5` never prices as `claude-opus-5`, and a point release the table does not know yet
     (`claude-opus-5-6`) is unpriced and named rather than priced as its predecessor, which is the mispricing a version
     key exists to prevent. A speed-marked id (fast mode) matches no key: its rate is not list."""
     if '[speed=' in model:
         return None
-    return next((key for key in PRICE if re.fullmatch(rf'{re.escape(key)}(-\d{{8}})?(\[[^\]]*\])?', model)), None)
+    return next((key for key in PRICE if re.fullmatch(rf'{re.escape(key)}(-\d{{8}})?(\[1m\])?', model)), None)
 
 
 def first_prompt(events):
@@ -112,11 +117,12 @@ def summarise(path):
             # so its row is unpriced and named rather than silently undercounted
         if u.get('speed') not in (None, 'standard'):
             model = f"{model} [speed={u['speed']}]"  # fast mode bills at another rate: named as unpriced, never guessed at
-        t = per_model.setdefault(model, dict(turns=0, inp=0, out=0, cw=0, cr=0))
+        t = per_model.setdefault(model, dict(turns=0, inp=0, out=0, cw=0, cw1h=0, cr=0))
         t['turns'] += 1
         t['inp'] += u.get('input_tokens', 0)
         t['out'] += u.get('output_tokens', 0)
         t['cw'] += u.get('cache_creation_input_tokens', 0)
+        t['cw1h'] += (u.get('cache_creation') or {}).get('ephemeral_1h_input_tokens', 0)  # the rest of cw is 5-minute
         t['cr'] += u.get('cache_read_input_tokens', 0)
     model = ','.join(sorted(per_model)) or '?'
     turns, inp, out, cw, cr = (sum(t[k] for t in per_model.values()) for k in ('turns', 'inp', 'out', 'cw', 'cr'))
@@ -127,7 +133,9 @@ def summarise(path):
             cost = None  # one unpriced model leaves the whole row unpriced rather than partially counted
             break
         pi, po = PRICE[k]
-        cost += (t['inp'] * pi + t['cw'] * pi * 1.25 + t['cr'] * pi * CACHE_READ.get(k, CACHE_READ_DEFAULT) + t['out'] * po) / 1e6
+        cw5m = max(t['cw'] - t['cw1h'], 0)
+        cost += (t['inp'] * pi + cw5m * pi * CACHE_WRITE_5M + t['cw1h'] * pi * CACHE_WRITE_1H
+                 + t['cr'] * pi * CACHE_READ.get(k, CACHE_READ_DEFAULT) + t['out'] * po) / 1e6
     minutes = None
     if len(stamps) >= 2:
         minutes = round((parse_iso(max(stamps)) - parse_iso(min(stamps))).total_seconds() / 60, 1)
