@@ -10,6 +10,17 @@ attributed to the model that actually answered, not to the label the script aske
 mixes models is priced per model; one unpriced model leaves that agent's row unpriced, and the row is named
 and excluded from the total — never folded in as zero.
 
+Each response is billed once across the directory. A fork's transcript (an Agent-tool `fork`, marked `isFork` in the
+agent-<id>.meta.json Claude Code writes beside it) opens with its parent's history copied line for line, the parent's
+responses with their ids and usage, so a fork is read after its parent and keeps only what its parent did not record.
+Billed per file, as before v1.0.0, a parent's spend counted once more for every fork: up to a fifth of a directory's
+total in the three fork-bearing session directories on the measuring machine (Claude Code 2.1.280, 2.1.281 and 2.1.285
+transcripts, read 2026-10-01). A fork of
+the main loop inherited the session transcript beside the subagents directory, whose responses are excluded without
+a row; a fork whose parent is not at hand is cut at the tool result that hands it its task, which opens with
+<fork-boilerplate>; a fork with neither is unpriced and named. A row is labelled by its meta.json description where
+there is one — a workflow stage's label — and otherwise by its first prompt, and a fork is timed from its own start.
+
 PRICE below is list price per MTok as of 2026-09-30 (platform.claude.com/docs/en/about-claude/pricing, the model
 pricing table — quoted in .claude/rules/orchestration-reference.md § Generation notes — the sources, which the kit's
 verification block diffs against PRICE). It is keyed by model version, not family, because a version can reprice its
@@ -74,7 +85,7 @@ def tier(model):
 
 
 def first_prompt(events):
-    """First 90 chars of the first user message — the only label the transcript itself carries."""
+    """First 90 chars of the first user message — the label a transcript with no meta.json description carries."""
     for e in events:
         if e.get('type') != 'user':
             continue
@@ -89,28 +100,90 @@ def parse_iso(s):
     return dt.datetime.fromisoformat(s.replace('Z', '+00:00'))
 
 
-def summarise(path):
-    events = []
-    skipped = 0  # unparsable lines (a transcript truncated by a killed agent) are counted, never silently dropped
+FORK_BOUNDARY = '<fork-boilerplate>'  # opens the tool result that hands a fork its task (Claude Code 2.1.287, 2026-10-01)
+
+
+def read_jsonl(path):
+    """A transcript's events, and how many lines did not parse (a transcript truncated by a killed agent): counted,
+    never silently dropped."""
+    events, skipped = [], 0
     with open(path) as f:
         for line in f:
             try:
                 events.append(json.loads(line))
             except json.JSONDecodeError:
                 skipped += 1
-    per_model = {}  # model id -> token counts; priced per model, so a mixed transcript is never billed at one tier
-    stamps = []
-    # One API response is written as several lines (one per content block), each repeating its message id and usage,
-    # the output growing as it streams: keyed by id, the last line stands for the response, so it is billed once. A
-    # line with no id is a response of its own.
-    responses = {}
+    return events, skipped
+
+
+def responses_of(events, where):
+    """One entry per API response, as (model, usage, index of its last line). One response is written as several lines
+    (one per content block), each repeating its message id and usage, the output growing as it streams: keyed by id,
+    the last line stands for the response, so it is billed once. A line with no id is a response of its own, keyed by
+    its transcript (`where`) and line, so it never matches a line of another transcript."""
+    out = {}
     for n, e in enumerate(events):
-        if e.get('timestamp'):
-            stamps.append(e['timestamp'])
         m = e.get('message') or {}
         if m.get('usage'):
-            responses[m.get('id') or ('line', n)] = (m.get('model', '?'), m['usage'])
-    for model, u in responses.values():
+            out[m.get('id') or ('line', where, n)] = (m.get('model', '?'), m['usage'], n)
+    return out
+
+
+def read_meta(path):
+    """agent-<id>.meta.json beside the transcript: the agent's description and type and, for a fork, `isFork` and the
+    `parentAgentId` it forked from. {} when absent or unreadable, as for a transcript written before Claude Code wrote
+    one."""
+    try:
+        with open(path[:-len('.jsonl')] + '.meta.json') as f:
+            meta = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return meta if isinstance(meta, dict) else {}
+
+
+def is_fork(meta):
+    return meta.get('isFork') is True or meta.get('agentType') == 'fork'
+
+
+def session_transcript(path):
+    """The main session's transcript, which a fork of the main loop inherited: <project>/<session>.jsonl, beside the
+    <project>/<session>/subagents/ directory the fork's own transcript sits in. None when it is not there."""
+    d = os.path.dirname(os.path.abspath(path))
+    while os.path.basename(d) not in ('subagents', ''):
+        d = os.path.dirname(d)
+    s = os.path.dirname(d) + '.jsonl'
+    return s if os.path.basename(d) == 'subagents' and os.path.isfile(s) else None
+
+
+def summarise(path, meta, present, billed):
+    """One agent's row. `billed` maps every response already billed in this run to its agent, so a response recorded in
+    two transcripts is billed once. A fork's transcript opens with its parent's history copied line for line — the
+    parent's responses with their message ids and usage — so a fork is read after its parent and keeps only what its
+    parent did not record. A fork whose parent is not in `present` inherited either the main session (a fork of the
+    main loop, whose transcript is excluded without a row) or an agent that is not here, and then the line that hands
+    the fork its task marks where its own work starts; a fork with neither is unpriced and named, never billed for its
+    parent's history."""
+    events, skipped = read_jsonl(path)
+    responses = responses_of(events, path)
+    inherited, unseparable = set(), False
+    if is_fork(meta) and meta.get('parentAgentId') not in present:
+        session = None if meta.get('parentAgentId') else session_transcript(path)
+        if session:
+            inherited = set(responses_of(read_jsonl(session)[0], session))
+        else:
+            cut = next((n for n, e in enumerate(events)
+                        if e.get('type') == 'user' and FORK_BOUNDARY in json.dumps(e.get('message'))), None)
+            if cut is None:
+                unseparable = True
+            else:
+                inherited = {k for k, (_, _, n) in responses.items() if n < cut}
+    own = {k: v for k, v in responses.items() if k not in billed and k not in inherited}
+    elsewhere = [n for k, (_, _, n) in responses.items() if k not in own]
+    start = max(elsewhere) + 1 if elsewhere and not unseparable else 0  # where this agent's own work begins
+    if not unseparable:
+        billed.update({k: os.path.basename(path)[6:-6] for k in own})
+    per_model = {}  # model id -> token counts; priced per model, so a mixed transcript is never billed at one tier
+    for model, u, _ in own.values():
         if model == '<synthetic>' and not any(u.get(f) for f in ('input_tokens', 'output_tokens',
                                                                    'cache_creation_input_tokens', 'cache_read_input_tokens')):
             continue  # a harness-written message with zero usage: nothing to price. One that ever carried usage stays,
@@ -126,21 +199,24 @@ def summarise(path):
         t['cr'] += u.get('cache_read_input_tokens', 0)
     model = ','.join(sorted(per_model)) or '?'
     turns, inp, out, cw, cr = (sum(t[k] for t in per_model.values()) for k in ('turns', 'inp', 'out', 'cw', 'cr'))
-    cost = None if not per_model else 0.0  # no usage events at all: unpriced and named, never a free row
+    cost = None if not per_model or unseparable else 0.0  # no usage events, or a fork that cannot be cut: never a guess
     for name, t in per_model.items():
         k = tier(name)
-        if k is None:
+        if k is None or cost is None:
             cost = None  # one unpriced model leaves the whole row unpriced rather than partially counted
             break
         pi, po = PRICE[k]
         cw5m = max(t['cw'] - t['cw1h'], 0)
         cost += (t['inp'] * pi + cw5m * pi * CACHE_WRITE_5M + t['cw1h'] * pi * CACHE_WRITE_1H
                  + t['cr'] * pi * CACHE_READ.get(k, CACHE_READ_DEFAULT) + t['out'] * po) / 1e6
+    stamps = [e['timestamp'] for e in events[start:] if e.get('timestamp')]
     minutes = None
     if len(stamps) >= 2:
         minutes = round((parse_iso(max(stamps)) - parse_iso(min(stamps))).total_seconds() / 60, 1)
-    return dict(agent=os.path.basename(path)[6:-6], label=first_prompt(events), model=model, turns=turns,
-                input=inp, cache_write=cw, cache_read=cr, output=out, cost_usd=cost, minutes=minutes, skipped_lines=skipped)
+    label = meta.get('description') or first_prompt(events[start:])
+    return dict(agent=os.path.basename(path)[6:-6], label=label, model=model, turns=turns, input=inp, cache_write=cw,
+                cache_read=cr, output=out, cost_usd=cost, minutes=minutes, skipped_lines=skipped,
+                inherited=0 if unseparable else len(responses) - len(own), fork=is_fork(meta), unseparable=unseparable)
 
 
 def main(argv):
@@ -148,10 +224,21 @@ def main(argv):
         print(__doc__)
         return 2
     d = argv[1]
-    rows = [summarise(f) for f in sorted(glob.glob(os.path.join(d, 'agent-*.jsonl')))]
-    if not rows:
+    paths = sorted(glob.glob(os.path.join(d, 'agent-*.jsonl')))
+    if not paths:
         print(f'no agent-*.jsonl under {d}')
         return 1
+    metas = {p: read_meta(p) for p in paths}
+    present = {os.path.basename(p)[6:-6]: p for p in paths}
+
+    def depth(p, seen=()):  # a fork is read after the parent it copied, at every level
+        parent = present.get(metas[p].get('parentAgentId'))
+        if not is_fork(metas[p]) or parent is None or parent in seen:
+            return 0 if not is_fork(metas[p]) else 1
+        return 1 + depth(parent, seen + (p,))
+    billed = {}
+    by_path = {p: summarise(p, metas[p], present, billed) for p in sorted(paths, key=lambda p: (depth(p), p))}
+    rows = [by_path[p] for p in paths]
     cols = ['agent', 'label', 'model', 'turns', 'input', 'cache_write', 'cache_read', 'output', 'cost_usd', 'minutes']
     print('\t'.join(cols))
     for r in rows:
@@ -162,7 +249,10 @@ def main(argv):
     split = f' ({len(priced)} of {len(rows)} agents priced)' if unpriced else ''
     print(f'\nagents: {len(rows)}\ttotal list-price cost: ${total:.2f}{split}')
     if unpriced:
-        print(f'unpriced (model not in PRICE, a fast-mode message, or no usage events; named here and excluded from the total): {", ".join(unpriced)}')
+        print(f'unpriced (model not in PRICE, a fast-mode message, no usage events, or a fork whose inherited history could not be cut off; named here and excluded from the total): {", ".join(unpriced)}')
+    inherited = [f"{r['agent']} ({r['inherited']})" for r in rows if r['inherited']]
+    if inherited:
+        print(f'inherited responses, billed once to the transcript that recorded them first (a fork opens with its parent\'s history; a fork of the main loop, with the session\'s, which is not in this total): {", ".join(inherited)}')
     truncated = [f"{r['agent']} ({r['skipped_lines']})" for r in rows if r['skipped_lines']]
     if truncated:
         print(f'unparsable lines skipped (a truncated transcript undercounts its agent): {", ".join(truncated)}')

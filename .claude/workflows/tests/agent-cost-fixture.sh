@@ -13,14 +13,20 @@
 # [1m], whose rate the table does not know (ttt). Asserts the cache
 # multipliers, per-model pricing of a mixed transcript, per-row facts read from the --json output (never two
 # independent greps, which pass on any row carrying the value), that tier() matches a PRICE key whole whatever the
-# dict order, that CACHE_READ is defined once, the skipped-line count and the exit codes. Every python3 call runs
+# dict order, that CACHE_READ is defined once, the skipped-line count and the exit codes. A second directory holds
+# forks: a fork's transcript opens with its parent's history copied line for line, the parent's responses with their
+# message ids and usage, so billed per file a parent's spend counted once more per fork. It asserts each response is
+# billed once — to the parent, never to a fork, a fork of a fork, or a fork of the main loop (whose parent is the
+# session transcript beside the subagents directory) — that a fork whose parent is not at hand is cut at the boundary
+# line that hands it its task, that a fork with neither is unpriced and named, and that a row is labelled by its
+# meta.json description and timed from the fork's own start. Every python3 call runs
 # with -B, so no bytecode lands in the tree. Needs bash and python3.
 # Run: bash .claude/workflows/tests/agent-cost-fixture.sh
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 script="$here/../agent-cost.py"
-d=$(mktemp -d); e=$(mktemp -d)
-trap 'rm -rf "$d" "$e"' EXIT
+d=$(mktemp -d); e=$(mktemp -d); k=$(mktemp -d)
+trap 'rm -rf "$d" "$e" "$k"' EXIT
 row() {  # row <agent> <json line>… — one transcript per agent
   local a=$1; shift
   printf '%s\n' "$@" > "$d/agent-$a.jsonl"
@@ -98,6 +104,55 @@ grep -q 'total list-price cost: \$88.15' <<<"$out" || { echo "FAIL: expected a \
 grep -q '13 of 20 agents priced' <<<"$out" || { echo "FAIL: the priced/unpriced split is not printed"; echo "$out"; exit 1; }
 grep -q 'unpriced.*bbb, ccc, hhh, iii, kkk, ppp, ttt' <<<"$out" || { echo "FAIL: the unpriced agents are not named"; echo "$out"; exit 1; }
 grep -q 'unparsable lines skipped.*ccc (1), iii (1)' <<<"$out" || { echo "FAIL: the truncated transcripts are not named with their skipped-line counts"; echo "$out"; exit 1; }
+# ── Forks. The layout is Claude Code's: <project>/<session>.jsonl beside <project>/<session>/subagents/agent-*.jsonl,
+# each with an agent-<id>.meta.json. Inherited lines are byte copies of the parent's; the fork's own work starts after
+# the tool result that opens with <fork-boilerplate> (Claude Code 2.1.287 transcripts, 2026-10-01).
+sd="$k/proj/sess1/subagents"; mkdir -p "$sd"
+meta() { printf '%s\n' "$2" > "$sd/agent-$1.meta.json"; }
+fk() { local a=$1; shift; printf '%s\n' "$@" > "$sd/agent-$a.jsonl"; }
+r() { printf '{"type":"assistant","sessionId":"sess1","timestamp":"2026-09-30T00:0%s:00Z","message":{"id":"%s","model":"claude-opus-5-5","usage":{"input_tokens":1000000,"output_tokens":0}}}' "$1" "$2"; }
+bp() { printf '{"type":"user","sessionId":"sess1","timestamp":"2026-09-30T00:0%s:00Z","message":{"role":"user","content":[{"type":"tool_result","content":"<fork-boilerplate> You are a worker fork. The transcript above is the parent history."}]}}' "$1"; }
+P="$(u par)"
+fk par "$P" "$(r 1 msg_p1)" "$(r 2 msg_p2)"
+meta par '{"agentType":"pr-review-toolkit:comment-analyzer","description":"the parent reviewer","spawnDepth":1}'
+fk fk1 "$P" "$(r 1 msg_p1)" "$(r 2 msg_p2)" "$(bp 5)" "$(r 7 msg_f1)"
+meta fk1 '{"agentType":"fork","isFork":true,"parentAgentId":"par","description":"fork one","spawnDepth":2}'
+fk fk2 "$P" "$(r 1 msg_p1)" "$(r 2 msg_p2)" "$(bp 5)" "$(r 7 msg_f1)" "$(bp 8)" "$(r 9 msg_g1)"
+meta fk2 '{"agentType":"fork","isFork":true,"parentAgentId":"fk1","description":"a fork of fork one","spawnDepth":3}'
+fk orphan "$P" "$(r 1 msg_q1)" "$(bp 5)" "$(r 6 msg_o1)"
+meta orphan '{"agentType":"fork","isFork":true,"parentAgentId":"gone","description":"a fork whose parent is not here","spawnDepth":2}'
+fk blind "$P" "$(r 1 msg_b0)" "$(r 2 msg_b1)"
+meta blind '{"agentType":"fork","isFork":true,"parentAgentId":"gone2","description":"a fork with no boundary","spawnDepth":2}'
+printf '%s\n' "$(u main)" "$(r 1 msg_s1)" > "$k/proj/sess1.jsonl"
+fk mainfork "$(u main)" "$(r 1 msg_s1)" "$(r 4 msg_m1)"
+meta mainfork '{"agentType":"fork","isFork":true,"description":"a fork of the main loop","spawnDepth":1}'
+kout=$(python3 -B "$script" "$sd" --json "$k/out.json") || { echo "FAIL: the fork directory did not read"; echo "$kout"; exit 1; }
+python3 -B - "$k/out.json" <<'EOF' || { echo "$kout"; exit 1; }
+import json, sys
+with open(sys.argv[1]) as f:
+    rows = {r['agent']: r for r in json.load(f)}
+bad = []
+want = {'par': (8.0, 2, 'the parent reviewer'), 'fk1': (4.0, 1, 'fork one'), 'fk2': (4.0, 1, 'a fork of fork one'),
+        'orphan': (4.0, 1, 'a fork whose parent is not here'), 'mainfork': (4.0, 1, 'a fork of the main loop')}
+for a, (cost, turns, label) in want.items():
+    got = rows[a]
+    if got['cost_usd'] is None or abs(got['cost_usd'] - cost) > 1e-9 or got['turns'] != turns:
+        bad.append(f"{a}: billed {got['cost_usd']!r} over {got['turns']} turns, want {cost} over {turns} (each response billed once)")
+    if got['label'] != label:
+        bad.append(f"{a}: labelled {got['label']!r}, want the meta.json description {label!r}")
+if rows['blind']['cost_usd'] is not None:
+    bad.append(f"blind: a fork with neither its parent nor a boundary must be unpriced, got {rows['blind']['cost_usd']!r}")
+if rows['fk1']['minutes'] != 2.0:
+    bad.append(f"fk1: timed from its own start (00:05) to its last line (00:07) is 2.0 minutes, got {rows['fk1']['minutes']!r}")
+if (rows['fk1'].get('inherited'), rows['fk2'].get('inherited'), rows['par'].get('inherited')) != (2, 3, 0):
+    bad.append(f"inherited counts: want fk1 2, fk2 3, par 0; got {rows['fk1'].get('inherited')}, {rows['fk2'].get('inherited')}, {rows['par'].get('inherited')}")
+if bad:
+    print('FAIL: ' + '\n  '.join(bad))
+    sys.exit(1)
+EOF
+grep -q 'total list-price cost: \$24.00 (5 of 6 agents priced)' <<<"$kout" || { echo "FAIL: the fork directory's total must bill each response once: \$24.00 over 5 of 6 agents"; echo "$kout"; exit 1; }
+grep -q 'unpriced.*blind' <<<"$kout" || { echo "FAIL: the unseparable fork is not named"; echo "$kout"; exit 1; }
+grep -q 'inherited' <<<"$kout" || { echo "FAIL: the summary does not say what the forks inherited"; echo "$kout"; exit 1; }
 # tier() must match a PRICE key WHOLE whatever the dict order. With a family key listed first, a first-match (or
 # substring) rule prices Opus 5.5 as Opus 5 and Fable 5.1 as Fable 5 — the rows above cannot see that, because PRICE
 # happens to list the longer key first.
