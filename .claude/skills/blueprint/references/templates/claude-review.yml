@@ -190,7 +190,10 @@ jobs:
         # claude-fast-review > default. Matches the QUOTED JSON token so a stray
         # `claude-deep-review-wip` label cannot false-trigger the heavy path.
         # Constraint 7 — no orphanable sub-dispatch: the default and fast paths keep the
-        # review in one session (`--disallowedTools Agent`); only the deep path fans out.
+        # review in one session (`--disallowedTools Agent`); only the deep path fans out. Each branch
+        # also writes the prompt's dispatch rule, so the prompt never forbids a fan-out the deep path
+        # pays for or offers one the tool list refuses; a deep-path subagent returns before the
+        # summary posts, so none is left running when the session ends.
         # Every branch names its effort, because the default is per model: "Opus 5.5 and Sonnet 5.5
         # default to `medium`" (https://code.claude.com/docs/en/model-config § Adjust effort level, read
         # 2026-09-30), so an unnamed effort drops whenever the alias moves. That makes the fast branch's
@@ -215,6 +218,7 @@ jobs:
             # Claude Code 2.1.284), so `xhigh` above is named, not implied.
             echo "settings_arg=--settings '{\"ultracode\":true}'" >> "$GITHUB_OUTPUT"
             echo "disallow_arg=" >> "$GITHUB_OUTPUT"
+            echo "dispatch_rule=You may dispatch subagents for independent parts of this review; wait for every one to return before you post the summary, and post it yourself." >> "$GITHUB_OUTPUT"
           elif grep -qF '"claude-fast-review"' <<<"$labels"; then
             echo "model=sonnet" >> "$GITHUB_OUTPUT"
             # A pin pending a Sonnet 5.5 effort sweep, not a calibrated level: "Its levels are recalibrated,
@@ -226,11 +230,13 @@ jobs:
             echo "effort=high" >> "$GITHUB_OUTPUT"
             echo "settings_arg=" >> "$GITHUB_OUTPUT"
             echo "disallow_arg=--disallowedTools Agent" >> "$GITHUB_OUTPUT"
+            echo "dispatch_rule=Do the review in this one session; do not dispatch subagents, which this path's tool list refuses." >> "$GITHUB_OUTPUT"
           else
             echo "model=opus" >> "$GITHUB_OUTPUT"
             echo "effort=high" >> "$GITHUB_OUTPUT"
             echo "settings_arg=" >> "$GITHUB_OUTPUT"
             echo "disallow_arg=--disallowedTools Agent" >> "$GITHUB_OUTPUT"
+            echo "dispatch_rule=Do the review in this one session; do not dispatch subagents, which this path's tool list refuses." >> "$GITHUB_OUTPUT"
           fi
 
       - name: Auto-review
@@ -296,8 +302,7 @@ jobs:
 
             **Your deliverable is the posted comments, not your reply.** A review that never ran
             `gh pr comment` for its summary produced nothing. If you are low on turns, post the
-            summary before adding more inline comments. Do the review in this one session — do not
-            dispatch subagents and wait on them.
+            summary before adding more inline comments. ${{ steps.model.outputs.dispatch_rule }}
 
             ## Rubric (from `.claude/rules/pr-review.md`)
 
@@ -325,9 +330,9 @@ jobs:
             Do not rely on a hard-coded ADR list in this prompt. Known citation defects live in
             `docs/adr/corrections.md`; do not restate a claim already flagged wrong there.
 
-            Project-local reviewer agents in `.claude/agents/` encode extra checks. Apply them
-            **inline yourself** (one session, no subagents): read the ones whose scope the diff
-            touches, per `.claude/rules/pr-review.md` § Project-local agents.
+            Project-local reviewer agents in `.claude/agents/` encode extra checks. Apply the ones
+            whose scope the diff touches, per `.claude/rules/pr-review.md` § Project-local agents,
+            under the dispatch rule above.
 
             ## How to format the summary comment
 

@@ -16,6 +16,10 @@
 #     session with the workflow unchanged fails with the auth-or-setup notice instead;
 #   - structure: the step's condition is `${{ !cancelled() }}`, the job's first step records the start time, the
 #     step reads it, and SESSION_RAN is keyed on the execution_file of the step with `id: review`;
+#   - "Pick model + effort from labels", run on each label set: the precedence (deep over fast over the default, the
+#     quoted token so `claude-deep-review-wip` is no deep label), and a dispatch rule that agrees with the tool list
+#     on every path — a path that disallows the Agent tool tells the reviewer not to dispatch, the path that keeps it
+#     says it may; the prompt reads that rule and states no dispatch rule of its own;
 #   - "Record the resolved model", in both review templates: the step runs on `always()` when its action step wrote an
 #     execution_file, with continue-on-error; on a synthetic execution file its job-summary line names the model the
 #     session started on, its Claude Code version, every model that answered, and the alias and effort requested;
@@ -133,6 +137,29 @@ for wf in "${wfs[@]}"; do
   run "$A" 1 "$rel: no session, and the workflow unchanged (an auth or setup failure)" "$t/empty.json" false "$t/same"
   says "auth or setup" "$rel: the no-session notice names auth or setup"
   if grep -qF "workflow validation" "$t/posted"; then echo "FAIL: $rel: an unchanged workflow was reported as a validation skip"; exit 1; fi
+  # The label step: precedence, and a dispatch rule that agrees with the tool list on every path.
+  lbody=$(extract_run_block "$wf" "Pick model + effort from labels")
+  [ -n "$lbody" ] || { echo "FAIL: $rel has no 'Pick model + effort from labels' run: body"; exit 1; }
+  printf '%s\n' "$lbody" > "$t/labels.sh"
+  for want in '[]:opus:high' '["claude-fast-review"]:sonnet:high' '["claude-deep-review"]:opus:xhigh' \
+              '["claude-deep-review-wip"]:opus:high' '["claude-fast-review","claude-deep-review"]:opus:xhigh'; do
+    labels=${want%%:*}; rest=${want#*:}; wm=${rest%%:*}; we=${rest#*:}
+    : > "$t/ghout"; rc=0
+    env LABELS_JSON="$labels" GITHUB_OUTPUT="$t/ghout" bash --noprofile --norc -eo pipefail "$t/labels.sh" > "$t/out" 2>&1 || rc=$?
+    n=$((n + 1))
+    [ "$rc" -eq 0 ] || { echo "FAIL: $rel: the label step exited $rc on $labels"; sed 's/^/  | /' "$t/out"; exit 1; }
+    out() { sed -n "s/^$1=//p" "$t/ghout"; }
+    [ "$(out model)" = "$wm" ] && [ "$(out effort)" = "$we" ] || { echo "FAIL: $rel: labels $labels picked $(out model) at $(out effort), not $wm at $we"; exit 1; }
+    rule=$(out dispatch_rule)
+    case "$(out disallow_arg)" in
+      *Agent*) [[ $rule == *"do not dispatch"* && $rule != *"may dispatch"* ]] || { echo "FAIL: $rel: labels $labels disallow the Agent tool, but the dispatch rule is '$rule'"; exit 1; } ;;
+      *) [[ $rule == *"may dispatch"* && $rule != *"not dispatch"* ]] || { echo "FAIL: $rel: labels $labels keep the Agent tool, but the dispatch rule is '$rule'"; exit 1; } ;;
+    esac
+  done
+  grep -qF '${{ steps.model.outputs.dispatch_rule }}' "$wf" || { echo "FAIL: $rel: the prompt does not read the label step's dispatch rule"; exit 1; }
+  if grep -nE 'do not dispatch|no subagents' "$wf" | grep -v 'dispatch_rule='; then
+    echo "FAIL: $rel: a dispatch rule stated outside the label step contradicts a path (above)"; exit 1
+  fi
 done
 # ── "Record the resolved model", in both templates: what the step writes to the job summary. Whether GitHub shows
 # that line is designed-unexercised (the step's own comment says so); this pins what the step writes.
@@ -179,4 +206,4 @@ rq=$(awk '$1 == "REQUESTED:" {print $2; exit}' <<<"$rec"); ef=$(awk '$1 == "EFFO
 if [ -z "$m" ] || [ "$m" != "$rq" ] || [ -z "$e" ] || [ "$e" != "$ef" ]; then
   echo "FAIL: claude.yml's record step names '$rq' at '$ef', but its claude_args run '$m' at '$e'"; exit 1
 fi
-echo "review-assert-fixture: $n cases ok (${#wfs[@]} workflow(s), 5 structural checks each; the record step in both templates; claude.yml's job gate)"
+echo "review-assert-fixture: $n cases ok (${#wfs[@]} workflow(s), 5 structural checks and the label step each; the record step in both templates; claude.yml's job gate)"
