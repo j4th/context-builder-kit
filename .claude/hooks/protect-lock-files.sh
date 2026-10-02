@@ -78,7 +78,7 @@ rel="${file_path#"$PROJECT_DIR/"}"
 
 # Match the common lock file shapes anywhere in the repo.
 case "$(basename "$rel")" in
-  uv.lock|pnpm-lock.yaml|package-lock.json|yarn.lock|Cargo.lock|Gemfile.lock|poetry.lock|composer.lock|mix.lock|pubspec.lock)
+  uv.lock|pnpm-lock.yaml|package-lock.json|npm-shrinkwrap.json|yarn.lock|bun.lockb|Cargo.lock|Gemfile.lock|poetry.lock|composer.lock|mix.lock|pubspec.lock)
     cat >&2 <<EOF
 BLOCKED: Lock files are package-manager-managed.
 File: $rel
@@ -87,7 +87,9 @@ To change a lock file, invoke the corresponding package manager:
   - uv.lock              →  uv lock  /  uv sync
   - pnpm-lock.yaml       →  pnpm install
   - package-lock.json    →  npm install
+  - npm-shrinkwrap.json  →  npm install  /  npm shrinkwrap
   - yarn.lock            →  yarn install
+  - bun.lockb            →  bun install
   - Cargo.lock           →  cargo update
   - pubspec.lock         →  dart pub get  /  flutter pub get  (pub upgrade to move a resolution)
   - etc.

@@ -136,7 +136,7 @@ run "$PRS" "$(surrogate Bash command 'gh pr merge 7' "$d/on-feat")"; asks "a pay
 run "$PRS" 'not json at all';                                        asks "a payload that is not JSON gets the prompt"
 
 # ── protect-lock-files.sh (HARD-DENY: a hand edit to a lock file) ──
-for f in uv.lock pnpm-lock.yaml package-lock.json yarn.lock Cargo.lock Gemfile.lock poetry.lock composer.lock mix.lock pubspec.lock; do
+for f in uv.lock pnpm-lock.yaml package-lock.json npm-shrinkwrap.json yarn.lock bun.lockb Cargo.lock Gemfile.lock poetry.lock composer.lock mix.lock pubspec.lock; do
   run "$LOCK" "$(edit_payload Edit "$d/on-feat/$f")"; want 2 "a hand edit to $f is denied"
   says "package-manager-managed" "$f is denied by its named arm, not the fallback"
 done
@@ -164,6 +164,8 @@ if [ -n "$KB" ]; then
   run "$KB" '{"tool_name":"mcp__notion__notion-update-page","tool_input":{"page_id":"x"}}'; asks "a knowledge-backend write asks"
   run "$KB" 'not json at all';                                                           asks "an unparseable payload still asks (no parse, no fail-open)"
   run "$KB" '';                                                                          asks "an empty payload still asks"
+elif [ -e "$hooks/require-knowledge-backend-ok.sh" ]; then
+  echo "FAIL: require-knowledge-backend-ok.sh ships, but no settings.json entry under an mcp__ matcher runs it — its cases would be skipped unseen"; exit 1
 else
   echo "SKIP: the knowledge-backend ask-gate (no mcp__ matcher in settings.json — the knowledge axis is none)"
 fi
