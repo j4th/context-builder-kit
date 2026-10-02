@@ -8,7 +8,7 @@ Each release's **Sync notes** say what a target does by hand when its sync cross
 
 Nothing yet.
 
-## [1.0.0] — 2026-09-30 — harvest 5 (PR #75)
+## [1.0.0] — 2026-10-02 — harvest 5 (PR #75)
 
 The first release to be tagged; the five before it are tagged on their merge commits after the fact. It closes #58 and #60–#74, and the findings of a review of the whole kit. Design: `docs/superpowers/specs/2026-09-30-cascade-kit-harvest-5-design.md`, with one trace row per ask beside it.
 
