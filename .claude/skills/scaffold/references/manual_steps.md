@@ -10,7 +10,7 @@ When generating manual instructions in the bootstrap checklist's section 2, use 
 
 - **GitHub account creation**: scaffold cannot create accounts. If the user doesn't have one, point them at https://github.com/signup.
 - **GitHub paid plans**: free tier is fine for most projects. Pro/Team/Enterprise upgrades happen at https://github.com/settings/billing/plans. Scaffold never recommends upgrading unless the user explicitly hits a tier limit.
-- **Linear account creation** (when planning = `linear`): https://linear.app/signup. Free tier supports up to 10 users.
+- **Linear account creation** (when planning = `linear`): https://linear.app/signup. The Free plan lists unlimited members, 2 teams and 250 issues (`https://linear.app/pricing`, read 2026-09-30) — the issue cap is the limit a cascade meets first, since every milestone adds a framing issue and its R-issues.
 - **Notion account creation** (when knowledge = `notion`): https://notion.so/signup.
 
 ### OAuth and integrations

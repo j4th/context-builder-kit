@@ -2,7 +2,7 @@ export const meta = {
   name: "review-sweep",
   description: "The focused review that runs beside pr-review-toolkit:review-pr: project reviewers always, plus the finders this diff needs — deduplicated, bounded, adversarially verified. Supplements, never substitutes.",
   whenToUse:
-    "Runs BESIDE pr-review-toolkit:review-pr, after /simplify, when a multi-agent orchestration surface is available. The governing rule is .claude/rules/pr-review.md § The orchestrated sweep supplements; it never substitutes: the floor is the two skills actually invoked and this workflow discharges neither; it is sized to the diff, never to the session's effort setting; it reads the reviewer roster from pr-review.md at runtime and degrades to the toolkit dimensions when that read fails; it bounds at dedup and verify (3 per dimension, 8 verified by default), logs the planned agent count before the find stage, returns anything a bound drops as unverified, and returns its own gate line. The caller scouts the diff and passes {base, files, reviewers?, finders?, maxPerDimension?, maxVerify?, findEffort? (default medium), retryEffort? (default high), verifyModel?} — always pass files; verify agents inherit the session model unless verifyModel names a lower tier. Triage stays with the caller: this workflow finds and verifies; it never classifies.",
+    "Runs BESIDE pr-review-toolkit:review-pr, after /simplify, when a multi-agent orchestration surface is available. The governing rule is .claude/rules/pr-review.md § The orchestrated sweep supplements; it never substitutes: the floor is the two skills actually invoked and this workflow discharges neither; it is sized to the diff, never to the session's effort setting; it reads the reviewer roster from pr-review.md at runtime and degrades to the toolkit dimensions when that read fails; it bounds at dedup and verify (3 per dimension, 8 verified by default), logs the planned agent count before the find stage, returns anything a bound drops as unverified, and returns its own gate line. The caller scouts the diff and passes {base, files, reviewers?, finders? ([{key, prompt?, agentType?}] — a defined agent, a targeted concern stated as a prompt, or both), maxPerDimension?, maxVerify?, findEffort? (default medium), retryEffort? (default high), verifyModel?} — always pass files; verify agents inherit the session model unless verifyModel names a lower tier. Triage stays with the caller: this workflow finds and verifies; it never classifies.",
   phases: [
     { title: "Roster", detail: "read the authoritative reviewer roster from pr-review.md (degrades on failure)", model: "haiku" },
     { title: "Find", detail: "toolkit dimensions + intersecting project reviewers + caller-named finders; effort medium, retry high", model: "sonnet" },
@@ -19,7 +19,7 @@ const FINDINGS_SCHEMA = {
         type: "object",
         properties: {
           file: { type: "string" },
-          line: { type: "number" },
+          line: { type: "integer", minimum: 1 },
           title: { type: "string" },
           detail: { type: "string" },
           severity: { type: "string", enum: ["high", "medium", "low"] },
@@ -76,6 +76,12 @@ const TOOLKIT_DIMENSIONS = [
 // The runtime may deliver args as a JSON-encoded string; normalize before any
 // access (a stringified files array would silently degrade auto-selection).
 const params = typeof args === "string" ? JSON.parse(args) : (args ?? {});
+// Malformed arguments are refused before any agent runs: a bound of -1 disabled the cost guard, "8" turned the planned
+// count into a string, and a non-list `finders` threw only after the roster agent had run (context-builder-kit#69 review).
+for (const k of ["files", "finders", "reviewers"]) if (params[k] !== undefined && !Array.isArray(params[k])) throw new Error(`review-sweep: ${k} must be a list (got ${typeof params[k]})`);
+for (const k of ["maxPerDimension", "maxVerify"]) if (params[k] !== undefined && !(Number.isInteger(params[k]) && params[k] >= 0)) throw new Error(`review-sweep: ${k} must be a whole number, 0 or more (got ${JSON.stringify(params[k])})`);
+// The verify stage runs at the session model; an override names a tier at or below the workhorse, never one above it.
+if (params.verifyModel !== undefined && !["opus", "sonnet", "haiku"].includes(params.verifyModel)) throw new Error(`review-sweep: verifyModel must be opus, sonnet or haiku — the verify stage never runs above the workhorse tier (got ${JSON.stringify(params.verifyModel)})`);
 
 const files = params.files ?? [];
 const base = params.base ?? "main";
@@ -103,7 +109,7 @@ if (files.length === 0) {
 // source of truth it claims to be. A failed or malformed read DEGRADES — the
 // toolkit dimensions still run — and the dropped coverage is reported, never hidden.
 phase("Roster");
-let reviewers = params.reviewers;
+let reviewers = params.reviewers ? [...new Set(params.reviewers)] : undefined;
 const rosterAgents = reviewers ? 0 : 1;
 if (!reviewers) {
   const roster = await agent(
@@ -113,7 +119,13 @@ Split them by the section's own dispatch rule: reviewers it says run UNCONDITION
 
 If the section is ambiguous, missing, or names a reviewer whose agent file does not exist under .claude/agents/, say so in "note" rather than guessing.`,
     { label: "roster:read-rule-file", phase: "Roster", model: "haiku", schema: ROSTER_SCHEMA }, // haiku: no effort dial — orchestration.md § Generation notes
-  ).catch(() => null); // a throw (a budget ceiling — orchestration.md § Fan-out discipline) degrades exactly like a null read below; every other agent() here sits inside a parallel() thunk, which the runtime catches (#58 item 8)
+  ).catch((e) => {
+    // A throw (a budget ceiling — orchestration.md § Fan-out discipline) degrades exactly like a null read below;
+    // every other agent() here sits inside a parallel() thunk, which the runtime catches (context-builder-kit#58
+    // item 8). The reason is logged first, so the degrade path keeps a record of why (context-builder-kit#72 item 3).
+    log(`review-sweep: the roster read threw — ${e && e.message ? e.message : String(e)}`);
+    return null;
+  });
 
   if (roster === null || !Array.isArray(roster.crossCutting) || !Array.isArray(roster.domain)) {
     log("review-sweep: DEGRADED — the reviewer roster could not be read from pr-review.md (null or malformed); running the toolkit dimensions only. Project-reviewer coverage is DROPPED for this run: record it on the sweep's `## Review gate` line and dispatch the project reviewers directly.");
@@ -121,6 +133,9 @@ If the section is ambiguous, missing, or names a reviewer whose agent file does 
     reviewers = [];
   } else {
     if (roster.note) log(`review-sweep: roster note — ${roster.note}`);
+    // pr-review.md's reviewers run on every sweep, so a read that names none (a renamed section, an empty reply) lost
+    // them: dropped coverage, never a clean gate line.
+    if (roster.crossCutting.length === 0 && roster.domain.length === 0) droppedCoverage.push(`project-local reviewers (the roster read returned none${roster.note ? `: ${roster.note}` : ""})`);
     // The roster reader has returned `name (path)` for a name and backticked hints
     // (observed 2026-09-05); agentType and the substring match both need the bare
     // strings — the name is the token before whitespace or a parenthesis.
@@ -138,7 +153,7 @@ If the section is ambiguous, missing, or names a reviewer whose agent file does 
     const usable = domain.filter((d) => !unusable.includes(d));
     // Hints are directory prefixes (pr-review.md § Reviewer craft rules), so the match is anchored
     // at the path's start — a substring match would let src/schema/ claim test/src/schema/x.
-    // Directory-boundary safe: `src/schema` must not claim `src/schema-extra/x` (#58 item 7). A hint
+    // Directory-boundary safe: `src/schema` must not claim `src/schema-extra/x` (context-builder-kit#58 item 7). A hint
     // is a directory prefix, never a segment anchor — enumerate directories rather than reaching for
     // a regex the roster line cannot carry.
     const matched = usable.filter((d) => files.some((f) => d.pathHints.some((h) => f === h || f.startsWith(h + "/")))).map((d) => d.name);
@@ -154,7 +169,20 @@ log(`review-sweep: project reviewers — ${reviewers.join(", ") || "(none)"}`);
 
 // ---- Find ----
 phase("Find");
-const finders = (params.finders ?? []).map((f) => ({ key: f.key, agentType: f.agentType }));
+// A caller-named finder is {key, prompt?, agentType?}: a defined agent, a targeted concern stated as a prompt that
+// the default workflow agent reviews against (a ratio bound, a timing invariant), or both. One with neither has
+// nothing to review with: dropped coverage, named on the gate line, never dispatched blind (context-builder-kit#72
+// item 1).
+// A key that is already a toolkit dimension, a reviewer or an earlier finder would share that dimension's bound and hide
+// convergence between the two, so it is dropped coverage too, with the reason.
+const finders = [];
+const taken = new Set([...TOOLKIT_DIMENSIONS.map((d) => d.key), ...reviewers]);
+for (const f of params.finders ?? []) {
+  if (!f || !f.key) droppedCoverage.push(`(unnamed) (caller finder with no key${f && (f.prompt || f.agentType) ? "" : ", and neither prompt nor agentType"})`);
+  else if (!(f.prompt || f.agentType)) droppedCoverage.push(`${f.key} (caller finder with neither prompt nor agentType)`);
+  else if (taken.has(f.key)) droppedCoverage.push(`${f.key} (caller finder whose key is already a dimension or a reviewer — give it a key of its own)`);
+  else { taken.add(f.key); finders.push({ key: f.key, agentType: f.agentType, focus: f.prompt }); }
+}
 const dimensions = [...TOOLKIT_DIMENSIONS, ...reviewers.map((name) => ({ key: name, agentType: name })), ...finders];
 const fileList = files.join("\n");
 // The planned count is logged BEFORE the find stage (the one roster agent, when
@@ -169,10 +197,27 @@ const plannedAgents = {
 };
 log(`review-sweep: planned agents — ${plannedAgents.roster} roster + ${plannedAgents.finders} finders + up to ${plannedAgents.retries} retries + up to ${plannedAgents.verifiers} verifiers = at most ${plannedAgents.max} (bounds ${MAX_PER_DIMENSION}/dimension, ${MAX_VERIFY} verified)`);
 
+// Read-only agents stay read-only (orchestration.md § Fan-out discipline): an agent that edited a tracked file and
+// restored it with its old mtime left a build tool judging a stale artifact fresh, so a finder or verifier that wants
+// to probe works on a copy (context-builder-kit#72 item 4). Every find and verify prompt carries the clause.
+const READ_ONLY = "Never modify the working tree — not even to restore a file afterwards. To probe (run code, try a patch), copy what you need into a scratch directory and give it its own build cache.";
+
+// A finder's brief is complete and ends on the think-first line. Finders are pinned `sonnet`, which resolves to
+// Sonnet 5.5 on the Anthropic API and to an older Sonnet on some other providers
+// (https://code.claude.com/docs/en/model-config, read 2026-09-30). The Sonnet 5.5 prompting guide
+// (https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5-5, read
+// 2026-09-30): "At `low` and `medium`, on long agentic tasks, it's more likely to stop and check in with the user
+// before it finishes", and on a JSON answer to a task that needs working out "the model often answers without
+// thinking first, particularly at `low` and `medium` effort". Finders run at FIND_EFFORT (`medium`) and answer in a
+// schema. A subagent cannot get an answer to a check-in (workflows.md § Subagent dispatch), so the brief says so;
+// with adaptive thinking the guide puts its remedy line at the end of a system prompt, and a finder's brief is the
+// only prompt this script writes for it, so the line ends that brief.
+const FIND_TAIL = "You cannot ask the caller anything, and nobody will answer a check-in: finish the review of every listed file before you return. Think the problem through before you answer.";
+
 const findOnce = (dim, effort = FIND_EFFORT, retry = false) =>
   agent(
-    `Review the branch diff (git diff ${base}...HEAD), restricted to these changed files:\n${fileList}\n\nApply your standard review discipline. Respect the exclusion list in .claude/rules/pr-review.md § "What NOT to flag" — findings only on changed code, no theoretical risks without concrete preconditions. Report every finding you would defend against a reviewer actively trying to refute it, including medium and low confidence — deduplication and a severity-ranked bound happen before verification, and triage happens in the caller: do not classify. Rank most-severe first.`,
-    { label: `find:${dim.key}${retry ? ":retry" : ""}`, phase: "Find", agentType: dim.agentType, model: "sonnet", effort, schema: FINDINGS_SCHEMA },
+    `Review the branch diff (git diff ${base}...HEAD), restricted to these changed files:\n${fileList}\n\n${dim.focus ? `Your review focus, from the caller: ${dim.focus}\nReport findings on this focus only.\n\n` : "Apply your standard review discipline. "}${READ_ONLY} Respect the exclusion list in .claude/rules/pr-review.md § "What NOT to flag" — findings only on changed code, no theoretical risks without concrete preconditions. Report every finding you would defend against a reviewer actively trying to refute it, including medium and low confidence — deduplication and a severity-ranked bound happen before verification, and triage happens in the caller: do not classify. Rank most-severe first. ${FIND_TAIL}`,
+    { label: `find:${dim.key}${retry ? ":retry" : ""}`, phase: "Find", ...(dim.agentType ? { agentType: dim.agentType } : {}), model: "sonnet", effort, schema: FINDINGS_SCHEMA },
   );
 
 const firstPass = await parallel(dimensions.map((dim) => () => findOnce(dim)));
@@ -185,7 +230,7 @@ const failedIdx = dimensions.map((_d, i) => i).filter((i) => firstPass[i] === nu
 if (failedIdx.length) log(`review-sweep: ${failedIdx.length} find agent(s) returned nothing — retrying once at effort ${RETRY_EFFORT}: ${failedIdx.map((i) => dimensions[i].key).join(", ")}`);
 const retried = await parallel(failedIdx.map((i) => () => findOnce(dimensions[i], RETRY_EFFORT, true)));
 const results = firstPass.slice();
-failedIdx.forEach((i, k) => { results[i] = retried[k] ?? null; }); // the index-list reindex, shared with finish-ab.js (#58 smaller item 6)
+failedIdx.forEach((i, k) => { results[i] = retried[k] ?? null; }); // the index-list reindex, shared with finish-ab.js (context-builder-kit#58 smaller item 6)
 
 const failedDimensions = dimensions.filter((_d, i) => results[i] === null).map((d) => d.key);
 if (failedDimensions.length > 0) {
@@ -195,24 +240,37 @@ if (failedDimensions.length > 0) {
 
 // ---- Dedup + bound: a genuine barrier — dedup needs every finder's output at
 // once, and it must happen BEFORE the expensive verify stage. ----
+// A finding's path is normalised before it is keyed: `./x`, `x` and the repository-absolute spelling of a changed file
+// are one file, so they share one verify slot instead of paying for a paraphrase each.
+const normFile = (p) => {
+  const f = String(p ?? "").replace(/^(\.\/)+/, "");
+  if (!f.startsWith("/")) return f;
+  return files.find((x) => f.endsWith(`/${x}`)) ?? f;
+};
 const raw = [];
 results.forEach((r, i) => {
   if (!r) return;
-  for (const f of r.findings ?? []) raw.push({ ...f, dimension: dimensions[i].key });
+  for (const f of r.findings ?? []) raw.push({ ...f, file: normFile(f.file), dimension: dimensions[i].key });
 });
 
-// Same file:line:title from more than one dimension is ONE finding that keeps
-// the STRONGEST severity reported and records who converged — convergence is
-// signal for triage, never a penalty (pr-review.md § Three invariants, (3)).
+// Findings on the same file:line are ONE finding that keeps the STRONGEST
+// severity reported, every distinct title and detail, and who converged —
+// convergence is signal for triage, never a penalty (pr-review.md § Three
+// invariants, (3)). The key has no title: dimensions paraphrase one defect, and a
+// title in the key spent a verify slot per paraphrase (a real sweep refuted one
+// finding three times — context-builder-kit#72 item 2). A finding with no line
+// keeps its title in the key, or every line-less finding in a file would merge.
+const norm = (t) => (t ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 const seen = new Map();
 for (const f of raw) {
-  const key = `${f.file}:${f.line ?? "?"}:${(f.title ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()}`;
+  const key = f.line != null ? `${f.file}:${f.line}` : `${f.file}:?:${norm(f.title)}`;
   const prior = seen.get(key);
   if (prior) {
-    prior.alsoFoundBy.push(f.dimension);
+    if (f.dimension !== prior.dimension && !prior.alsoFoundBy.includes(f.dimension)) prior.alsoFoundBy.push(f.dimension);
+    if (!prior.titles.some((t) => norm(t) === norm(f.title))) { prior.titles.push(f.title); prior.details.push(f.detail); }
     if ((rank[f.severity] ?? 3) < (rank[prior.severity] ?? 3)) prior.severity = f.severity;
   } else {
-    seen.set(key, { ...f, alsoFoundBy: [] });
+    seen.set(key, { ...f, titles: [f.title], details: [f.detail], alsoFoundBy: [] });
   }
 }
 const deduped = [...seen.values()].sort(
@@ -244,6 +302,9 @@ if (overflow.length > 0) {
 log(`review-sweep: carrying ${toVerify.length} of ${deduped.length} deduplicated finding(s) into verification (${dimensions.length} finders ran)`);
 
 // ---- Verify ----
+// A merged finding's verifier sees every report on its line and, when it confirms, names the one its evidence
+// demonstrates: one verdict now covers every paraphrase, and the caller triages by the report named, the others
+// standing as unverified (pr-review.md § Three invariants, (3)).
 // Verify agents inherit the session model — the ceiling (orchestration.md § The
 // ceiling rule: spawned agents match or tier down, never up). A caller in a
 // top-tier session may pass verifyModel to tier the verifiers DOWN.
@@ -251,7 +312,7 @@ phase("Verify");
 const judged = await parallel(
   toVerify.map((finding) => () =>
     agent(
-      `Adversarially verify a review finding — your job is to REFUTE it. Finding (from ${finding.dimension}${finding.alsoFoundBy.length ? `, also flagged by ${finding.alsoFoundBy.join(", ")}` : ""}): "${finding.title}" at ${finding.file}${finding.line ? `:${finding.line}` : ""}. Detail: ${finding.detail}\n\nRead the actual code and any governing rule/ADR it cites. Default to real=false when the failure scenario cannot be demonstrated, an existing guard/test/CI check already covers it, or the finding misreads the code. Confirm real=true only with concrete evidence.`,
+      `Adversarially verify a review finding — your job is to REFUTE it. Finding (from ${finding.dimension}${finding.alsoFoundBy.length ? `, also flagged by ${finding.alsoFoundBy.join(", ")}` : ""}) at ${finding.file}${finding.line ? `:${finding.line}` : ""}:\n${finding.titles.length > 1 ? `${finding.titles.length} reports on this line — paraphrases of one defect, or several defects:\n` : ""}${finding.titles.map((t, i) => `- "${t}". Detail: ${finding.details[i]}`).join("\n")}\n\nRead the actual code and any governing rule/ADR it cites. Default to real=false when the failure scenario cannot be demonstrated, an existing guard/test/CI check already covers it, or the finding misreads the code. Confirm real=true only with concrete evidence${finding.titles.length > 1 ? ", and when you do, name in your reasoning which of the reports the evidence demonstrates" : ""}. ${READ_ONLY}`,
       { label: `verify:${finding.file}`, phase: "Verify", effort: "high", schema: VERDICT_SCHEMA, ...(params.verifyModel ? { model: params.verifyModel } : {}) },
     ).then((verdict) => ({ ...finding, verdict })),
   ),

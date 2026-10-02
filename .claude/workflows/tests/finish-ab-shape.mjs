@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 // Stub harness for finish-ab.js. No agent is dispatched: the script is loaded through load-workflow.mjs and run
-// with stubbed agent()/parallel()/log()/phase(); the panel guard, the planned-count log, the arm-isolation
-// instruction and the rank arithmetic are asserted. Run: node .claude/workflows/tests/finish-ab-shape.mjs
+// with stubbed agent()/parallel()/log()/phase(); the panel guard (two to four arms, a Latin square), the planned-count
+// log, the arm-isolation instruction, executed mode, the base/brief/rubric arguments, the runner's check log in the
+// judges' prompt, the judges' read-only clause, the rank arithmetic, the value and key checks, the judges' schema and
+// a judge's score coverage, and the arm schema's agreement with
+// run-arms-headless.py are asserted — the scenarios that shipped before context-builder-kit#69 and that issue's,
+// unioned and renumbered so no two share a number. Run: node .claude/workflows/tests/finish-ab-shape.mjs
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { loadWorkflow } from "./load-workflow.mjs";
 
 const { meta, run: runWorkflow } = loadWorkflow(new URL("../finish-ab/finish-ab.js", import.meta.url));
@@ -16,7 +22,7 @@ async function run(args, { armResult, judgeResult }) {
     calls.push({ prompt, opts });
     return opts.phase === "Execute" ? armResult(opts, prompt) : judgeResult(opts, prompt);
   };
-  const parallel = async (thunks) => Promise.all(thunks.map((t) => t())); // a throwing mock is a harness bug, not a "null agent" (#58 item 10)
+  const parallel = async (thunks) => Promise.all(thunks.map((t) => t())); // a throwing mock is a harness bug, not a "null agent" (context-builder-kit#58 item 10)
   const result = await runWorkflow(args, agent, parallel, (m) => logs.push(String(m)), () => {});
   return { result, logs, calls };
 }
@@ -150,7 +156,63 @@ const judgeOk = (opts) => {
   check(Array.isArray(result.droppedJudges) && result.droppedJudges.length === 1, "droppedJudges is returned");
 }
 
-// 11. Duplicate arm labels are refused before any dispatch (otherFile() picks the other arm by label).
+// 9. Three arms: a cyclic Latin square (every arm read in every position once) is accepted; per-arm model and
+//    effort reach each executor; an arm's `also` files are read by it and forbidden to the others, while a file
+//    every arm shares is forbidden to none.
+const three = [
+  { arm: "A", anon: "P", read: ".claude/commands/finish.md", verb: "satisfy it", effort: "high" },
+  { arm: "B", anon: "Q", read: ".claude/commands/finish.md", verb: "satisfy it", effort: "medium" },
+  { arm: "C", anon: "R", read: ".claude/commands/finish.md", verb: "satisfy it", also: ["x/subagent-driven-arm.md"], model: "sonnet", effort: "high" },
+];
+const latin = [{ order: ["P", "Q", "R"] }, { order: ["Q", "R", "P"] }, { order: ["R", "P", "Q"] }];
+const scoreAll = (order) => order.map((arm) => ({ arm, fidelity: 4, assumptions: 4, tests: 4, implementation: 4, gate_honesty: 4, reviewability: 4, prose: 4, overall: 4, check_exit_observed: 0, defects: [] }));
+const judgeFor = (panel) => (opts) => { const order = panel[Number(opts.label.match(/judge:(\d+)/)[1]) - 1].order; return { scores: scoreAll(order), measures: [], ranking: [...order], hallucinations: [], graft: [], word_counts: [], notes: "" }; };
+{
+  const { result, logs, calls } = await run({ ...base, arms: three, judges: latin }, { armResult: armOk, judgeResult: judgeFor(latin) });
+  check(/planned agents: 3 executors \+ 3 judges \+ up to 3 judge retries = at most 9/.test(logs[0] ?? ""), `three-arm planned count (got: ${logs[0]})`);
+  const ex = calls.filter((c) => c.opts.phase === "Execute");
+  check(ex.length === 3 && ex.find((c) => c.opts.label === "arm:Q@opus/medium" && c.opts.effort === "medium"), "an arm's own effort reaches its executor");
+  const r = ex.find((c) => c.opts.label.startsWith("arm:R@"));
+  // R's model differs from the run default (opus), so this proves the per-arm override reaches agent(); P keeps the default.
+  check(r && r.opts.label === "arm:R@sonnet/high" && r.opts.model === "sonnet" && ex.find((c) => c.opts.label.startsWith("arm:P@")).opts.model === "opus", "an arm's own model reaches its executor, and an arm without one keeps the run's");
+  check(r && r.prompt.includes("then x/subagent-driven-arm.md in full") && !/Do not open [^.]*\.claude\/commands\/finish\.md/.test(r.prompt), "arm R reads its extra file, and the shared file is forbidden to no one");
+  const p = ex.find((c) => c.opts.label.startsWith("arm:P@"));
+  check(p && p.prompt.includes("Do not open x/subagent-driven-arm.md"), "arm P is told not to open arm R's extra file");
+  check(result.ranks.P.join(",") === "1,3,2" && result.ranks.R.join(",") === "3,2,1", `three-arm ranks follow each judge (got ${JSON.stringify(result.ranks)})`);
+}
+
+// 10. Three arms: a panel that is not a multiple of three, or that reads one arm first more often, is refused
+//     before any dispatch.
+{
+  let err = null; let dispatched = 0;
+  const count = (opts) => { dispatched += 1; return armOk(opts); };
+  try { await run({ ...base, arms: three, judges: latin.slice(0, 2) }, { armResult: count, judgeResult: judgeFor(latin) }); } catch (e) { err = e; }
+  check(err && /multiple of 3 judges/.test(err.message) && dispatched === 0, `a two-judge panel over three arms throws before dispatch (got: ${err && err.message})`);
+  err = null;
+  const skewed = [{ order: ["P", "Q", "R"] }, { order: ["P", "R", "Q"] }, { order: ["Q", "P", "R"] }];
+  try { await run({ ...base, arms: three, judges: skewed }, { armResult: count, judgeResult: judgeFor(skewed) }); } catch (e) { err = e; }
+  check(err && /every position equally often/.test(err.message) && dispatched === 0, `a position-skewed panel throws before dispatch (got: ${err && err.message})`);
+}
+
+// 11. Executed mode: arms that ran outside the workflow are judged without an Execute phase; an executed entry
+//     naming no arm is refused before any dispatch.
+{
+  const executed = three.map((c) => ({ anon: c.anon, result: armOk({ label: c.anon }) }));
+  const { result, logs, calls } = await run({ ...base, arms: three, judges: latin, executed }, { armResult: armOk, judgeResult: judgeFor(latin) });
+  check(calls.every((c) => c.opts.phase === "Judge") && calls.length === 3, `only the judges are dispatched (got ${calls.map((c) => c.opts.label).join(", ")})`);
+  check(/0 executors \(3 arms executed outside this workflow\)/.test(logs[0] ?? "") && result.plannedAgents === 6, `the planned count excludes the executed arms (got: ${logs[0]}, ${result.plannedAgents})`);
+  let err = null;
+  try { await run({ ...base, arms: three, judges: latin, executed: [{ anon: "Z", result: {} }] }, { armResult: armOk, judgeResult: judgeFor(latin) }); } catch (e) { err = e; }
+  check(err && /executed\[0\] must name one of the arm ids/.test(err.message), `an unknown executed arm throws (got: ${err && err.message})`);
+  err = null; let dispatched = 0;
+  try { await run({ ...base, arms: three, judges: latin, executed: "/tmp/executed.json" }, { armResult: (o) => { dispatched += 1; return armOk(o); }, judgeResult: judgeFor(latin) }); } catch (e) { err = e; }
+  check(err && /args\.executed must be a list/.test(err.message) && dispatched === 0, `a non-list executed throws before any executor is paid for (got: ${err && err.message})`);
+  err = null;
+  try { await run({ ...base, arms: three, judges: latin, executed: [executed[0], executed[0], executed[1]] }, { armResult: armOk, judgeResult: judgeFor(latin) }); } catch (e) { err = e; }
+  check(err && /names an arm more than once/.test(err.message), `a duplicate executed arm throws (got: ${err && err.message})`);
+}
+
+// 12. Duplicate arm labels are refused before any dispatch (the returned record maps each anon id back to its arm).
 {
   let err = null; let dispatched = 0;
   const count = (opts) => { dispatched += 1; return armOk(opts); };
@@ -159,14 +221,19 @@ const judgeOk = (opts) => {
   check(dispatched === 0, "and nothing was dispatched first");
 }
 
-// 12. A well-formed judge with no `hallucinations` field counts zero flags instead of crashing.
+// 13. A well-formed judge with no `hallucinations` list — missing, or not a list — counts zero flags instead of
+//     crashing, and is logged as undercounting.
 {
   const noHall = (opts, prompt) => { const j = judgeOk(opts, prompt); delete j.hallucinations; return j; };
-  const { result } = await run(base, { armResult: armOk, judgeResult: noHall });
+  const { result, logs } = await run(base, { armResult: armOk, judgeResult: noHall });
   check(result.flags.P === 0 && result.flags.Q === 0, `missing hallucinations counts zero (got ${JSON.stringify(result.flags)})`);
+  check(logs.some((l) => /judge 1 \(P>Q\).*returned no contradicted-claims list/.test(l)), "a judge with no contradicted-claims list is logged");
+  const strHall = (opts, prompt) => { const j = judgeOk(opts, prompt); j.hallucinations = "none"; return j; };
+  const { result: r2 } = await run(base, { armResult: armOk, judgeResult: strHall });
+  check(r2.flags.P === 0 && r2.flags.Q === 0, "a non-list hallucinations value counts zero instead of throwing");
 }
 
-// 13. A contradicted claim naming no arm id is counted as unattributed, for neither arm.
+// 14. A contradicted claim naming no arm id is counted as unattributed, for neither arm.
 {
   const stray = (opts, prompt) => { const j = judgeOk(opts, prompt); j.hallucinations = [{ arm: "Z", claim_verbatim: "x", contradicting_source: "y" }]; return j; };
   const { result, logs } = await run(base, { armResult: armOk, judgeResult: stray });
@@ -175,6 +242,137 @@ const judgeOk = (opts) => {
   check(logs.some((l) => /name no arm id/.test(l)), "the stray entries are logged");
 }
 
+// 15. Five arms are refused before any dispatch — the two-to-four ceiling bounds panel size and cost.
+{
+  let err = null; let dispatched = 0;
+  const five = ["P", "Q", "R", "S", "T"].map((anon, i) => ({ arm: String.fromCharCode(65 + i), anon, read: ".claude/commands/finish.md" }));
+  try { await run({ ...base, arms: five, judges: [] }, { armResult: (o) => { dispatched += 1; return armOk(o); }, judgeResult: judgeOk }); } catch (e) { err = e; }
+  check(err && /two to four arms \(got 5\)/.test(err.message) && dispatched === 0, `five arms throw before dispatch (got: ${err && err.message})`);
+}
+
+// 16. A replay's base commit reaches every executor, and is absent when no base is given.
+{
+  const { calls } = await run({ ...base, base: "abc1234" }, { armResult: armOk, judgeResult: judgeOk });
+  const ex = calls.filter((c) => c.opts.phase === "Execute");
+  check(ex.length === 2 && ex.every((c) => c.prompt.includes("git switch -c <branch> abc1234")), "every executor is told to branch at the replay's base commit");
+  const { calls: plain } = await run(base, { armResult: armOk, judgeResult: judgeOk });
+  check(plain.filter((c) => c.opts.phase === "Execute").every((c) => !c.prompt.includes("git switch -c")), "no base, no branch-at-commit instruction");
+}
+
+// 17. brief and rubric override the scratch defaults in every arm and judge prompt.
+{
+  const { calls } = await run({ ...base, brief: "/x/brief.md", rubric: "/x/rubric.md" }, { armResult: armOk, judgeResult: judgeOk });
+  const ex = calls.filter((c) => c.opts.phase === "Execute"); const jd = calls.filter((c) => c.opts.phase === "Judge");
+  check(ex.every((c) => c.prompt.includes("/x/brief.md") && !c.prompt.includes("/tmp/ab/operator-brief.md")), "arms read the named brief, not the scratch default");
+  check(jd.length === 4 && jd.every((c) => c.prompt.includes("/x/rubric.md") && c.prompt.includes("/x/brief.md") && !c.prompt.includes("/tmp/ab/judge-rubric.md")), "judges read the named rubric and brief, not the scratch defaults");
+}
+
+// 18. A malformed `also` — not a list, or holding an empty path — is refused before any dispatch.
+{
+  for (const also of ["x.md", ["", "x.md"], [3]]) {
+    let err = null; let dispatched = 0;
+    try { await run({ ...base, arms: [arms[0], { ...arms[1], also }] }, { armResult: (o) => { dispatched += 1; return armOk(o); }, judgeResult: judgeOk }); } catch (e) { err = e; }
+    check(err && /also must be a list of file paths/.test(err.message) && dispatched === 0, `also ${JSON.stringify(also)} throws before dispatch (got: ${err && err.message})`);
+  }
+}
+
+// 19. The arm schema has two hand-kept copies — finish-ab.js's ARM_SCHEMA (a workflow arm) and run-arms-headless.py's
+//     (a headless arm) — because a workflow script gets no fs to share a module. They must describe the same result:
+//     the same properties, and the same required list except `dispatched`, which the headless copy requires (a
+//     headless arm can dispatch subagents) and the workflow copy does not (a workflow agent has no Agent tool).
+{
+  const { calls } = await run(base, { armResult: armOk, judgeResult: judgeOk });
+  const js = calls.find((c) => c.opts.phase === "Execute").opts.schema;
+  // fileURLToPath, never URL.pathname: .pathname percent-encodes a space in the checkout's path, and python3 then opens
+  // a file that does not exist (a kit installed under "…/a b/…" would go red here).
+  const pyPath = fileURLToPath(new URL("../finish-ab/run-arms-headless.py", import.meta.url));
+  let py = null;
+  try {
+    py = JSON.parse(execFileSync("python3", ["-B", "-c", "import importlib.util, json, sys\nspec = importlib.util.spec_from_file_location('r', sys.argv[1]); m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)\nprint(json.dumps(m.ARM_SCHEMA))", pyPath], { encoding: "utf8" }));
+  } catch (e) { check(false, `run-arms-headless.py's ARM_SCHEMA could not be read (${e.message.split("\n")[0]})`); }
+  if (py) {
+    const keys = (o) => Object.keys(o.properties).sort().join(",");
+    check(keys(js) === keys(py), `the two ARM_SCHEMA copies name the same properties (js: ${keys(js)} | py: ${keys(py)})`);
+    const req = (o) => o.required.filter((k) => k !== "dispatched").sort().join(",");
+    check(req(js) === req(py), `the two ARM_SCHEMA copies require the same fields apart from dispatched (js: ${req(js)} | py: ${req(py)})`);
+    check(py.required.includes("dispatched") && !js.required.includes("dispatched"), "dispatched is required by the headless copy only, as both copies' comments say");
+    // Names alone miss a changed type, items shape or description: compare the whole schema, keys sorted.
+    const stable = (o) => (Array.isArray(o) ? `[${o.map(stable).join(",")}]` : o && typeof o === "object" ? `{${Object.keys(o).sort().map((k) => `${JSON.stringify(k)}:${stable(o[k])}`).join(",")}}` : JSON.stringify(o));
+    const whole = (o) => stable({ ...o, required: o.required.filter((k) => k !== "dispatched").sort() });
+    check(whole(js) === whole(py), "the two ARM_SCHEMA copies are the same schema in every property's type, items and description");
+  }
+}
+
+// 20. Headless arms whose runner ran the check task once: every judge is given each arm's log and exit and told to read
+//     it, not re-run the whole gate — eighteen parallel per-judge gates on one machine would have measured the machine
+//     (context-builder-kit#69). With no runner log the judge runs the gate itself, as the rubric says.
+{
+  const withLog = arms.map((c) => ({ anon: c.anon, result: { ...armOk({ label: c.anon }), runner_check: { command: "mise run check", exit: c.anon === "P" ? 3 : 0, log: `/out/${c.anon}.check.log` } } }));
+  const { calls } = await run({ ...base, executed: withLog }, { armResult: armOk, judgeResult: judgeOk });
+  const jd = calls.filter((c) => c.opts.phase === "Judge");
+  check(jd.length === 4 && jd.every((c) => c.prompt.includes("/out/P.check.log") && c.prompt.includes("/out/Q.check.log") && /P: [^;]*exit 3/.test(c.prompt)), "each judge is given every arm's runner check log and its exit");
+  check(jd.every((c) => /do not re-run the whole gate/i.test(c.prompt)), "judges are told to read the runner's log, not re-run the whole gate");
+  const without = arms.map((c) => ({ anon: c.anon, result: armOk({ label: c.anon }) }));
+  const { calls: c2 } = await run({ ...base, executed: without }, { armResult: armOk, judgeResult: judgeOk });
+  check(c2.filter((c) => c.opts.phase === "Judge").every((c) => !/do not re-run the whole gate/i.test(c.prompt)), "with no runner log, the judge is not told to skip the gate");
+}
+
+// 21. Every judge's prompt carries the read-only clause — a judge never modifies a worktree, not even to restore a
+//     file — and no executor's does (an arm must write); the judges' `measures` stay optional, so a rubric with no
+//     verdict rule leaves them out.
+{
+  const { calls } = await run(base, { armResult: armOk, judgeResult: judgeOk });
+  const jd = calls.filter((c) => c.opts.phase === "Judge"); const ex = calls.filter((c) => c.opts.phase === "Execute");
+  check(jd.length === 4 && jd.every((c) => c.prompt.includes("not even to restore a file afterwards")), "every judge is given the read-only clause");
+  check(ex.length === 2 && ex.every((c) => !c.prompt.includes("not even to restore a file afterwards")), "no executor is given the judges' read-only clause");
+  const js = jd[0].opts.schema;
+  check(Boolean(js.properties.measures) && !js.required.includes("measures"), "measures is a JUDGE_SCHEMA property, and optional");
+}
+
+// 22. Values and keys are refused before any dispatch: an effort the dial does not have, an empty model, and an unknown
+//     key on the arguments, an arm or a judge (a misspelled `efort` or `Also` would otherwise be ignored without a word,
+//     and the panel paid for a different experiment) — context-builder-kit#69 review.
+{
+  const refused = async (args, re, what) => {
+    let err, n = 0;
+    try { await runWorkflow(args, async () => { n += 1; return null; }, async (t) => Promise.all(t.map((f) => f())), () => {}, () => {}); } catch (e) { err = e; }
+    check(err && re.test(err.message) && n === 0, `${what} is refused before any dispatch (got: ${err && err.message}; ${n} dispatched)`);
+  };
+  await refused({ ...base, arms: [{ ...arms[0], effort: "hgih" }, arms[1]] }, /effort/, "an arm effort the dial does not have");
+  await refused({ ...base, arms: [{ ...arms[0], model: "" }, arms[1]] }, /model/, "an empty arm model");
+  await refused({ ...base, effort: "maximum" }, /effort/, "a run effort the dial does not have");
+  await refused({ ...base, judges: balanced.map((j, i) => (i ? j : { ...j, effort: "hgih" })) }, /effort/, "a judge effort the dial does not have");
+  await refused({ ...base, Brief: "/x.md" }, /unknown argument Brief/, "an unknown argument");
+  await refused({ ...base, arms: [{ ...arms[0], efort: "medium" }, arms[1]] }, /unknown key efort/, "an unknown arm key");
+  await refused({ ...base, judges: balanced.map((j, i) => (i ? j : { ...j, efort: "max" })) }, /unknown key efort/, "an unknown judge key");
+// 23. An anon id is a plain name, and never an arm label: it names worktrees and files, and it is the only id a judge sees.
+  await refused({ ...base, arms: [{ ...arms[0], anon: "../x" }, arms[1]] }, /plain name/, "an anon that is not a plain name");
+  await refused({ ...base, arms: [{ ...arms[0], anon: "A" }, arms[1]] }, /names an arm/, "an anon equal to an arm label");
+// 25. Executed mode: a runner_check that is not { command, exit, log } is refused, and so is an executed arm whose
+//     recorded cell disagrees with args.arms — the verdict would be credited to a treatment that did not run.
+  const ex = arms.map((c) => ({ anon: c.anon, result: armOk({ label: c.anon }) }));
+  await refused({ ...base, executed: [{ ...ex[0], result: { ...ex[0].result, runner_check: {} } }, ex[1]] }, /runner_check/, "a malformed runner_check");
+  await refused({ ...base, executed: [{ ...ex[0], cell: { read: arms[0].read, verb: arms[0].verb, model: "sonnet", effort: "high" } }, ex[1]] }, /ran with model sonnet/, "an executed cell that disagrees with args.arms");
+}
+// 24. A judge whose scores do not cover every arm is dropped and named — a ranking without its scores is the rank-alone
+//     verdict the panel exists to avoid.
+{
+  const half = (opts) => { const r = judgeOk(opts); return opts.label.startsWith("judge:1@") ? { ...r, scores: r.scores.slice(0, 1) } : r; };
+  const { result, logs } = await run(base, { armResult: armOk, judgeResult: half });
+  check(result.judges.length === 3 && logs.some((l) => /dropped judges.*judge 1 .*scores/.test(l)), `a judge scoring one arm of two is dropped and named (got ${result.judges.length} judges; ${logs.join(" | ")})`);
+}
+// 26. The judges' schema knows the arm ids: every arm field and ranking item is one of them, the ranking repeats none,
+//     one score per arm, and each dimension on the rubric's 1-5 scale.
+{
+  const { calls } = await run(base, { armResult: armOk, judgeResult: judgeOk });
+  const js = calls.find((c) => c.opts.phase === "Judge").opts.schema;
+  const ids2 = (e) => Array.isArray(e) && e.slice().sort().join(",") === "P,Q";
+  check(ids2(js.properties.ranking.items.enum) && js.properties.ranking.uniqueItems === true, "ranking items are the arm ids, never repeated");
+  check(js.properties.scores.minItems === 2 && js.properties.scores.maxItems === 2 && ids2(js.properties.scores.items.properties.arm.enum), "one score per arm, named by its id");
+  check(js.properties.scores.items.properties.fidelity.minimum === 1 && js.properties.scores.items.properties.fidelity.maximum === 5, "each dimension is on the 1-5 scale");
+  check(["hallucinations", "graft", "word_counts", "measures"].every((k) => ids2(js.properties[k].items.properties.arm.enum)), "every other per-arm entry names an arm id");
+}
+
 check(meta.name === "finish-ab" && Array.isArray(meta.phases) && meta.phases.length === 2, "meta literal is well-formed");
 if (failures) { console.error(`finish-ab-shape: ${failures} failure(s)`); process.exit(1); }
-console.log("finish-ab-shape: 14 scenarios ok");
+console.log("finish-ab-shape: 29 scenarios ok");

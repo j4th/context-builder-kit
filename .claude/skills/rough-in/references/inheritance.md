@@ -21,7 +21,7 @@ Rough-in is the fifth phase of the cascade. It inherits from four upstream artif
    - The Interface commitments table (for any commitments this milestone satisfies or relies on)
    - The Open questions section (some may need resolution during rough-in's research phase)
 
-5. **The framing sub-issue on the planning backend** (via `issue_read` in github-only profile) — for the slug inheritance, the F-number, and any comments posted after framing committed (which may contain user notes or decisions that aren't in frame-NN.md yet).
+5. **The framing sub-issue on the planning backend** (via `issue_read` on github-issues planning) — for the slug inheritance, the F-number, and any comments posted after framing committed (which may contain user notes or decisions that aren't in frame-NN.md yet).
 
 6. **`docs/ARCHITECTURE.md`**, **`docs/STANDARDS.md`**, **`CLAUDE.md`** — foundation docs for architectural constraints, testing philosophy, and command conventions. Rough-in's specs cite these by section name, so rough-in must know which sections exist and what's in them.
 
@@ -133,7 +133,7 @@ The summary is dense by design. Anything skipped here will need to be re-fetched
 
 ## The mandatory deferred meta-issues pre-flight check
 
-This is the single most important piece of rough-in's inheritance discipline. Framing produces a Pre-flight checks table in `frame-NN.md` capturing concerns that don't decompose into a specific milestone but DO gate transitions or rough-in. Rough-in **must check this table before decomposing any milestone** — see `references/backends.md` § Deferred meta-issues for the full first-class artifact discipline.
+This is the single most important piece of rough-in's inheritance discipline. Framing produces a Pre-flight checks table in `frame-NN.md` capturing concerns that don't decompose into a specific milestone but DO gate transitions or rough-in. Rough-in **must check this table before decomposing any milestone** — see `references/backends.md` § Pre-flight checks for the full first-class artifact discipline.
 
 **Why this check exists**: the most common rough-in failure mode is decomposing a milestone whose preconditions haven't been met. Framing's open questions section catches some of these, but the meta-issues table is where structural blockers live (the automation recommender that has to land between M2 and M3, the architectural decision that has to be made before M4 can start, etc.). Without the check, rough-in would happily produce sub-sub-issues for M3 even though M3's start depends on a meta-issue that's still open. The downstream `/finish` phase would then attempt to execute work that was always going to fail because its prerequisites weren't ready.
 

@@ -1,6 +1,6 @@
 # GitHub starter templates
 
-The `.github/` starter files scaffold pushes on the **github-issues** planning axis. `github_only_profile.md` § State 1 step 2 cites this file; `bootstrap_checklist_template.md` lists what landed.
+The starter files scaffold pushes on the **github-issues** planning axis: the `.github/` bodies, plus the root `.gitattributes` counter-line and the `.gitignore` harness block. `github_only_profile.md` § State 1 steps 1 and 2 cite this file; `bootstrap_checklist_template.md` lists what landed.
 
 > **Provenance.** Scaffold promised these files for two harvest passes and cited `references/scaffold_output_template.md` for them — where they never existed; a repo-wide grep for their content returned nothing, so step 2 was an instruction to copy files that were not there. This file holds the literal bodies. Do not re-point the citation without checking the target actually holds them.
 
@@ -182,6 +182,13 @@ on:
   push:
     branches: [main]
 
+# `bash --noprofile --norc -eo pipefail {0}` on every run: step. Unset, GitHub runs `bash -e {0}`, with no
+# pipefail (the shell table in https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax,
+# read 2026-09-30).
+defaults:
+  run:
+    shell: bash
+
 jobs:
   check:
     # `name:` is the check-run context a ruleset will require. Set it before the job
@@ -189,7 +196,7 @@ jobs:
     # orphans the required context (cbk-conventions-reference.md § Required-checks
     # trap, cause 3).
     name: check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # a named image: `ubuntu-latest` moves when GitHub re-points the label; bump in a reviewed PR
     steps:
       - run: echo "CI stub — blueprint wires the real gate"
 ```
@@ -257,13 +264,20 @@ updates:
   # ── Inactive stubs carry the floor ────────────────────────────────────────
   # An ecosystem the repo does not use yet stays commented out WITH its cooldown,
   # so enabling it later is an uncomment, never a re-derivation of the policy.
+  # Images: `docker` reads a Dockerfile's FROM lines, `docker-compose` a compose
+  # file's image: keys. Neither reads COPY --from=<image>, and the cooldown has a
+  # publication date only from Docker Hub — the note below this block.
   # - package-ecosystem: "docker"
+  #   directory: "/"
+  #   schedule: { interval: "monthly" }
+  #   cooldown: { default-days: 7 }
+  # - package-ecosystem: "docker-compose"
   #   directory: "/"
   #   schedule: { interval: "monthly" }
   #   cooldown: { default-days: 7 }
 ```
 
-**Not covered by any bot, and therefore not exempt:** toolchain and single-binary pins (`mise.toml` `[tools]`, `.tool-versions`, `rust-toolchain.toml`, a bare `.nvmrc`), container base-image tags, standalone binaries. They install the compilers that build everything else. Apply the same floor by hand, record the settle evidence in the commit (`"<version> is the newest build clearing the 7-day window as of <date>"`), and name the tracking mechanism (an open question in the frame, or a project automation) — silent exemption is how the highest-privilege dependency surface in the repo ends up unaudited (`cbk-conventions-reference.md` § Dependency settle-window).
+**Not covered by Dependabot, and therefore not exempt:** toolchain and single-binary pins (`mise.toml` `[tools]`, `.tool-versions`, a bare `.nvmrc`) and standalone binaries — they install the compilers that build everything else — plus an image referenced only by `COPY --from=<image>` and a dev container's image. Apply the same floor by hand, record the settle evidence in the commit (`"<version> is the newest build clearing the 7-day window as of <date>"`), and name the tracking mechanism (an open question in the frame, or a project automation) — silent exemption is how the highest-privilege dependency surface in the repo ends up unaudited. An image in a Dockerfile `FROM` or a compose `image:` **is** covered, by the two stubs above; route a `COPY --from` image through a named `FROM <image> AS <stage>` and `docker` maintains it too. Where the image's registry is not Docker Hub, the bump arrives with no cooldown date, so read the image's publication date before merging it. The rule and its sources are `cbk-conventions-reference.md` § Dependency settle-window; blueprint's `templates/tooling.md` sanity question 6b restates it.
 
 ## `.gitattributes`
 
@@ -278,4 +292,25 @@ Ships only when the repo has a lockfile the settle window audits. The git host m
 # Counter-line per audited lockfile the host would collapse (linguist's generated
 # list is per-name; check it — the line is harmless where the name is not listed).
 <lockfile> linguist-generated=false
+```
+
+## `.gitignore` — the harness block
+
+Appended to the stack `.gitignore` scaffold writes, after every stack section — always, whether or not the brief gave a stack hint. The rules are `cbk-conventions-reference.md` § .gitignore anchoring: every entry is anchored, so a same-named path deeper in the tree stays visible (each line below matches its path and not, say, `docs/.claude/worktrees/x` or `src/__pycache__/a.pyc`), and the commit that adds the block states those pin assertions in its body. The last line re-includes the hook helpers, which an unanchored `lib/` in a stack section above it would otherwise hide from `git add`; it must stay below every stack section. The verification block pins this fence with `git check-ignore` in a throwaway repository.
+
+```
+### Claude Code harness — per-host state and staging copies, never source ###
+# Personal settings. Claude Code keeps the file out of git only when it wrote it; a hand-made one needs this line.
+/.claude/settings.local.json
+# Reviewer memory in the `local` scope (the `project` scope, /.claude/agent-memory/, is committed).
+/.claude/agent-memory-local/
+# Worktrees Claude Code creates (--worktree, isolated subagents) and finish-ab's headless arms.
+/.claude/worktrees/
+# The review action's staging copy of the PR's .claude/, .mcp.json and CLAUDE.md; a local reproduction leaves it.
+/.claude-pr/
+# Bytecode from the kit's Python under .claude/workflows/ — a by-hand import or a test writes it.
+/.claude/workflows/**/__pycache__/
+/.claude/workflows/**/*.py[cod]
+# The hook helpers stay tracked even under a stack section's unanchored `lib/`. Keep this line last.
+!/.claude/hooks/lib/
 ```

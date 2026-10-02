@@ -88,19 +88,19 @@ Before any decisions, blueprint reads both prior-phase outputs and explicitly st
 - Tool landscape (informs CLAUDE.md's commands section and tooling configs)
 - Tool comfort (informs how much explanation CLAUDE.md needs)
 
-After reading both files, **state inheritance explicitly to the user**: *"Reading what I've inherited: from the problem brief, [one-sentence summary of problem + appetite + key constraint]. From the scaffold output, [one-sentence summary of profile + team shape + quality bar]. The stack decisions you flagged for blueprint are: [list]. Anything to correct before I proceed?"*
+After reading both files, **state inheritance explicitly to the user**: *"Reading what I've inherited: from the problem brief, [one-sentence summary of problem + appetite + key constraint]. From the scaffold output, [one-sentence summary of the two backend axes + team shape + quality bar]. The stack decisions you flagged for blueprint are: [list]. Anything to correct before I proceed?"*
 
 This is the first HITL gate. The user's correction here prevents downstream rework.
 
-### Markdown-only profile acknowledgment (runs only if scaffold landed in markdown-only mode)
+### In-repo-markdown acknowledgment (runs only when `Planning backend` is `in-repo-markdown`)
 
-If scaffold's profile field is `markdown-only`, blueprint adds a one-line acknowledgment to the inheritance gate before proceeding. The user already confirmed markdown-only at scaffold's full HITL gate, so this is not a re-litigation — it's a "I see what scaffold did, here's what it means for blueprint specifically" sanity check at the moment blueprint takes the baton:
+If `docs/cbk/scaffold.md` § Cascade metadata records `Planning backend` as `in-repo-markdown` (falling back to `.cascade/backends.toml`), blueprint adds a one-line acknowledgment to the inheritance gate before proceeding. The user already confirmed that axis at scaffold's in-repo-markdown confirmation gate, so this is not a re-litigation — it's a "I see what scaffold did, here's what it means for blueprint specifically" sanity check at the moment blueprint takes the baton:
 
-> "I see scaffold landed in **markdown-only** profile. That means for blueprint specifically: I'll produce every foundation doc and `blueprint.md` as normal, but I'll **skip the planning-backend half of every commit** — no parent Issues get created on GitHub, the atomic transition collapses to just the markdown commit, and the workstream slug confirmation gate (which still runs because slugs appear in `blueprint.md` headings and downstream `frame-NN.md` references) is locking in identifiers that will exist only in markdown. Setup steps that would normally go into a GitHub handoff issue will stay in `blueprint.md` § Manual setup instead. Sound right, or do you want to revisit the profile choice before I commit anything?"
+> "I see scaffold chose **in-repo-markdown** planning. That means for blueprint specifically: I'll produce every foundation doc and `blueprint.md` as normal, but I'll **skip the planning-backend half of every commit** — no parent Issues get created on GitHub, the atomic transition collapses to just the markdown commit, and the workstream slug confirmation gate (which still runs because slugs appear in `blueprint.md` headings and downstream `frame-NN.md` references) is locking in identifiers that will exist only in markdown. Setup steps that would normally go into a GitHub handoff issue will stay in `blueprint.md` § Manual setup instead. Sound right, or do you want to revisit the planning axis before I commit anything?"
 
-If the user wants to revisit the profile, blueprint pauses and tells them to re-run scaffold with the new profile choice — blueprint cannot change the profile mid-session because the profile is committed in `scaffold.md` and changing it requires re-running scaffold's confirmation gate. This is intentional: profile is a one-way door at the cascade level, set once at scaffold time.
+If the user wants to revisit the axis, blueprint pauses and tells them to re-run scaffold with the new planning choice — blueprint cannot change the planning axis mid-session because it is committed in `scaffold.md` and changing it requires re-running scaffold's confirmation gate. This is intentional: the planning axis is a one-way door at the cascade level, set once at scaffold time.
 
-If the user confirms, blueprint proceeds normally — the markdown-only behavior is already plumbed through every downstream step (see `references/planning-backend-commit.md` for the per-step skip pattern). This acknowledgment exists so the user gets one explicit reminder at the moment blueprint takes over, not for the user to make a new decision.
+If the user confirms, blueprint proceeds normally — the in-repo-markdown behavior is already plumbed through every downstream step (see `references/planning-backend-commit.md` for the per-step skip pattern). This acknowledgment exists so the user gets one explicit reminder at the moment blueprint takes over, not for the user to make a new decision.
 
 This sub-gate runs in every rigor mode. Light mode doesn't collapse it because it's a one-line acknowledgment, not a heavy gate, and the explicit reminder is the whole point.
 
@@ -161,7 +161,7 @@ Detailed question banks, failure modes, and the detect-then-confirm phrasings ar
 
 The second substantive step. Pick a methodology from the register based on team shape, appetite, and quality bar — all of which blueprint inherited from scaffold.
 
-The methodology register lives outside this skill (it's shared across all six cascade phases). The blueprint-relevant entries are summarized in `references/methodology-selection.md`, which contains:
+The methodology register is not a shipped file — it is the named methodologies each cited by primary source. The blueprint-relevant entries are summarized in `references/methodology-selection.md`, which contains:
 
 - The decision tree for picking a default based on inherited context
 - Per-methodology pros/cons relative to the project at hand
@@ -175,7 +175,7 @@ The methodology register lives outside this skill (it's shared across all six ca
 
 ## Foundation document production
 
-Blueprint produces six prose foundation docs plus tooling configs. The order is **most critical first**, so the user can correct the highest-leverage docs before lower-leverage ones inherit from them.
+Blueprint produces six prose foundation docs — seven on the `github-issues` and `in-repo-markdown` axes, where `docs/cbk/ROADMAP.md` joins them — plus tooling configs. The order is **most critical first**, so the user can correct the highest-leverage docs before lower-leverage ones inherit from them.
 
 | Order | Doc | Location | Why this order |
 |---|---|---|---|
@@ -210,7 +210,7 @@ Each doc has its own template in `references/templates/`. Each template starts w
 
 ### Workstream slug confirmation gate (mandatory inside `blueprint.md` production)
 
-When producing `blueprint.md` (doc #6, the cascade artifact), the workstreams table contains both human-readable workstream names AND the slugs derived from them. **Slugs are the cascade's longest-lived identifier** — they appear in every parent Issue title (`[regex-pack] Regex pack`), every framing sub-issue title (`[regex-pack:F1] ...`), every rough-in sub-sub-issue title (`[regex-pack:F1:R1] ...`), every PR title that closes a downstream Issue, every `frame-NN.md` reference, every `README.md` index row, and every commit message that references work on the workstream. They're also visible in markdown-only mode (in `blueprint.md` headings and `frame-NN.md` references) so this gate runs in every profile.
+When producing `blueprint.md` (doc #6, the cascade artifact), the workstreams table contains both human-readable workstream names AND the slugs derived from them. **Slugs are the cascade's longest-lived identifier** — they appear in every parent Issue title (`[regex-pack] Regex pack`), every framing sub-issue title (`[regex-pack:F1] ...`), every rough-in sub-sub-issue title (`[regex-pack:F1:R1] ...`), every PR title that closes a downstream Issue, every `frame-NN.md` reference, every `README.md` index row, and every commit message that references work on the workstream. They're also visible on the `in-repo-markdown` axis (in `blueprint.md` § Workstreams and `frame-NN.md` references), so this gate runs on every axis.
 
 **Run an explicit slug-confirmation gate as a sub-step of step 4** (Present inline for HITL review). After drafting `blueprint.md`'s workstreams table, surface the slugs separately from the rest of the doc:
 
@@ -266,7 +266,7 @@ Blueprint has seven HITL gates in **full mode**, four in **standard mode**, and 
 1. **After inheritance check** — user confirms the inheritance summary is accurate
 2. **After stack decisions** — user approves the full stack decision set
 3. **After methodology selection** — user confirms the methodology choice
-4. **After each foundation doc** — user reviews and approves before commit (six iterations through this gate, one per doc)
+4. **After each foundation doc** — user reviews and approves before commit (one iteration per doc in the table above except `docs/cbk/blueprint.md`, which gate 6 reviews — `ROADMAP.md` included where the axis produces it)
 5. **After tooling configs** — user reviews CI workflow, task runner config, .env.example
 6. **After blueprint.md** — user approves the cascade artifact
 7. **After handoff issue draft** — user reviews the version-pin inventory and checklist before blueprint creates the issue in the tracker
@@ -286,7 +286,7 @@ Each gate is an explicit "approve to proceed" moment. Iterate within a gate as m
 
 When blueprint is complete, framing inherits:
 
-- **Six foundation docs** at known locations, all reviewed and committed
+- **Six foundation docs** (seven with `docs/cbk/ROADMAP.md` on the `github-issues` and `in-repo-markdown` axes) at known locations, all reviewed and committed
 - **Tooling configs** in `.github/workflows/` and the appropriate task runner location
 - **`docs/cbk/blueprint.md`** containing stack decisions, methodology selection, success criteria, workstreams, dependencies, not-in-scope, and open questions
 - **`docs/cbk/ROADMAP.md`** on the `github-issues` and `in-repo-markdown` axes — framing reads it as an input and appends its rows in the same atomic commit as the frame
@@ -322,6 +322,7 @@ Auto-checkable, fires after the final gate and before blueprint declares itself 
 - [ ] The six docs exist at their paths (`CLAUDE.md`, `docs/ARCHITECTURE.md`, `docs/STANDARDS.md`, `CONTRIBUTING.md`, `README.md`, `docs/cbk/blueprint.md`), and `docs/cbk/blueprint.md` carries its Cascade metadata, Stack decisions, Methodology and Core Projects sections
 - [ ] On the github-issues and in-repo-markdown axes `docs/cbk/ROADMAP.md` exists with its `## Now` paragraph; the review workflows are on disk when scaffold's PR answer allowed them, or the one-line skip notice was given; the cross-document critic ran when the drafting fanned out, or its skip is in the phase note; `docs/cbk/README.md` gained the blueprint row and note
 - [ ] `CLAUDE.md` mentions the other docs as backticked paths: `grep -n "^- @\|@docs/" CLAUDE.md` prints nothing
+- [ ] The task runner defines the verification task that `check` depends on, and `bash .claude/workflows/tests/run-verification-block.sh` exits 0 with `verification: project sub-block complete` and `verification: done` as its last two lines
 - [ ] Every ADR blueprint wrote is indexed in `docs/adr/README.md` and in `docs/ARCHITECTURE.md` § Decisions Log, and `docs/cbk/blueprint.md` § Stack decisions lists it
 - [ ] The handoff issue (or its in-repo-markdown equivalent) exists, and the workstream parent entities blueprint.md names exist on the planning backend
 - [ ] Every call this run exercised that `references/planning-backend-matrix.md` flags as individually unexercised has been restamped in the same commit

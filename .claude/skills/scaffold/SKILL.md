@@ -18,7 +18,7 @@ If the user shows up wanting to scaffold but doesn't have any problem brief at a
 
 ## Light mode — when the user wants this lighter
 
-Scaffold's full flow (backend selection → discovery → audit → provisioning → output, with five HITL gates) is the **full** mode, not a requirement. A user who says *"just give me a repo and some labels"*, *"keep it minimal"*, *"I know what I'm doing"* should get **light** mode. The skill is opinionated, not dogmatic.
+Scaffold's full flow (backend selection → discovery → audit → provisioning → output, with six HITL gates) is the **full** mode, not a requirement. A user who says *"just give me a repo and some labels"*, *"keep it minimal"*, *"I know what I'm doing"* should get **light** mode. The skill is opinionated, not dogmatic.
 
 Light-mode patterns:
 
@@ -44,7 +44,7 @@ Two confirmation gates fire within Stage 1 depending on the planning choice:
 - **Three-level constraint conversation** when planning = `github-issues` — surface the 3-level constraint (vs Linear's 4) before proceeding.
 - **In-repo-markdown confirmation gate** when planning = `in-repo-markdown` — one-way-door warning; binary confirmation required.
 
-If knowledge = `notion`, Stage 2's follow-up runs the **brownfield Notion detection** from `.claude/rules/knowledge-backend.md` § "Brownfield detection at scaffold." Read-only; surfaces what exists; offers the three-option choice (create new hub row / designate existing / skip).
+If knowledge = `notion`, backend selection's Stage 2 follow-up runs the **brownfield Notion detection** from `.claude/rules/knowledge-backend.md` § "Brownfield detection at scaffold." Read-only; surfaces what exists; offers the three-option choice (create new hub row / designate existing / skip).
 
 The two axes generate 3 × 2 = 6 valid combinations. The kit composes these dynamically — there are no named preset profiles.
 
@@ -61,7 +61,7 @@ The gate language:
 > - **No automated work tracking**. Status, in-progress, in-review, done — none of these exist as queryable state. If you (or anyone else) want to know what state a workstream is in, you read the markdown.
 > - **No `/finish` executor — the largest single loss.** The phase-6 slash command reads a planning-backend issue; with no issues, it does not run on this axis. You execute each rough-in spec by opening a Claude Code session against the markdown spec yourself (plan → implement → PR remain manual-driven). The bottom-up `/intake` and `/enrich` commands still shape work, but their output is a markdown issue record, not a `/finish`-able backend issue.
 > - **No board for collaborators to look at**. If anyone other than you needs to see work-in-flight, they're reading markdown files in the repo, not browsing a board.
-> - **Setup steps stay in `blueprint.md` § Manual setup** instead of becoming a tracked GitHub handoff issue. You read the section, work through the steps, commit updates as you go.
+> - **Setup steps stay in `blueprint.md` § Manual setup** instead of becoming a tracked GitHub handoff issue. You read the section and work through the steps; the roadmap's step-0 row records your progress, since `blueprint.md` is not edited after its commit.
 > - **Switching later is hard**. If you start with in-repo markdown and decide three workstreams in that you want a board after all, you'll need to re-run scaffold and re-create the planning-backend objects for every prior workstream by hand. The cascade can help, but it's not a one-command flip.
 >
 > What you keep:
@@ -143,7 +143,7 @@ What gets provisioned depends on the operator's two-axis choice and detection st
 
 - **Branch naming**: propose a format based on team identifier from discovery, e.g. `{team-id}-{issue-number}-{short-description}`. Confirm with user.
 - **Commit format**: propose Conventional Commits as default unless the user has a preference. Confirm.
-- **Label taxonomy**: propose the full set as an axis structure — cascade depth, awaiting-cascade-work, provenance, type, workstream, meta, review control, and the optional labour lane (`references/github_only_profile.md` § State 1 step 3 lists every label). Confirm, then create them (`gh label create` when a token exists, otherwise walk the user through the labels page).
+- **Label taxonomy**: propose the full set as an axis structure — cascade depth, awaiting-cascade-work, provenance, type, workstream, meta, lifecycle, review control, and the optional labour lane (`references/github_only_profile.md` § State 1 step 3 lists every label). Confirm, then create them (`gh label create` when a token exists, otherwise walk the user through the labels page).
 
 **HITL gate**: user confirms what was created, walks verification matrix.
 
@@ -164,7 +164,7 @@ Goal: commit the four cascade-aware GitHub issue templates to `.github/ISSUE_TEM
 
 Each template has YAML frontmatter (`name`, `about`, `title`, `labels`, `assignees`) so the GitHub web UI honors them when humans manually create issues. The body of each is structured but not strangling — sections that downstream cascade phases populate, with HTML comments explaining what goes in each section, written so that both automated cascade runs and human authors can use them effectively.
 
-**The rough-in template is the most novel** because the resulting Issue is intended to be runnable via Claude Code's `/finish {issue_number}` slash command. Its body has six sections (Context / Implementation / Acceptance criteria / Done signal / Dependencies / PR contract), and `/finish` will anchor hardest on the Implementation section while reading the rest as supporting context. The template makes the heading structure mandatory (sections can be edited freely but heading names must stay as-written) so `/finish` can identify sections by name.
+**The rough-in template is the most novel** because the resulting Issue is intended to be runnable via Claude Code's `/finish {issue_number}` slash command. Its body has eight sections (Context / Assumptions / Implementation / Acceptance criteria / Test plan / Done signal / Dependencies / PR contract), and `/finish` will anchor hardest on the Implementation section while reading the rest as supporting context. The template makes the heading structure mandatory (sections can be edited freely but heading names must stay as-written) so `/finish` can identify sections by name.
 
 **The reference templates live in this skill bundle** at `references/issue-templates/`. Scaffold reads them from there and writes them to `.github/ISSUE_TEMPLATE/` in the user's repo via GitHub MCP. The bundled copies are the source of truth that scaffold ships; the repo copies become the live source of truth that downstream skills and humans actually use.
 
@@ -210,7 +210,7 @@ docs/
 
 **The scaffold output doc: `docs/cbk/scaffold.md`.** Template in `references/scaffold_output_template.md`. Five sections:
 
-1. **Cascade metadata** — planning backend choice, knowledge backend choice, planning hierarchy levels, in-repo cascade artifacts path, repo URL, project board URL (if planning = `github-issues`), Linear workspace URL (if planning = `linear`), Notion hub URL (if knowledge = `notion`), provisioned date. For Claude in future sessions.
+1. **Cascade metadata** — planning backend choice, knowledge backend choice, planning hierarchy levels, in-repo cascade artifacts path, repo URL, project board URL (if planning = `github-issues`), Linear workspace URL (if planning = `linear`), Notion hub URL (if knowledge = `notion`), the kit release `.claude/` was installed from (`vX.Y.Z (sha)`, the base of the next sync), provisioned date. For Claude in future sessions.
 2. **Team shape** — solo or team, size, roles, decision-maker, timezone/sync info. From discovery.
 3. **Working conventions** — team identifier, branch naming, commit format, label taxonomy. From stage 2.
 4. **Development preferences** — quality bar, PR/review process, testing philosophy, pace, decision recording. From discovery.
@@ -239,8 +239,8 @@ Examples:
 **Commit format**: Conventional Commits. Scopes: engine, packs, cli.
 
 **Label taxonomy**:
-- Type: bug, feature, improvement, tech-debt, documentation
-- Area: area:engine, area:packs, area:cli
+- Type: bug, feature, improvement, chore, documentation, tech-debt
+- Workstream: workstream:engine, workstream:packs, workstream:cli
 ```
 
 The full template with worked examples for every section lives in `references/scaffold_output_template.md`. Load it when drafting; the example above just shows what one section feels like.
@@ -255,7 +255,7 @@ The full template with worked examples for every section lives in `references/sc
 
 Alongside the scaffold output doc (which is persistent), scaffold produces a **bootstrap checklist** for the current session only. It tells the user what was done, what they still need to do manually, and how to verify integrations.
 
-Four sections: completed items (with links), manual instructions (with URLs and expected outcomes), verification matrix (with test actions), and the rule-file disposition table (one row per shipped template or path-scoped rule, plus the one-time choices — reviewer memory scope, licence). Template in `references/bootstrap_checklist_template.md`.
+Four sections: completed items (with links), manual instructions (with URLs and expected outcomes), verification matrix (with test actions), and the rule-file disposition table (one row per shipped template or path-scoped rule, plus the one-time choices the template lists). Template in `references/bootstrap_checklist_template.md`.
 
 Present inline + downloadable artifact. Do not commit to repo (session-scoped).
 
@@ -312,7 +312,7 @@ Auto-checkable, fires after gate 6 and before scaffold declares itself complete.
 - [ ] The Cascade metadata rows in `docs/cbk/scaffold.md` agree with `.cascade/backends.toml` (the verification block's axis-mirror check passes)
 - [ ] `docs/adr/` exists with the three starters and ADR-0000's header is filled: `grep -n "YYYY-MM-DD\|<project owner" docs/adr/0000-*.md` prints nothing
 - [ ] On the github-issues and linear axes, the four cascade issue templates are on disk under `.github/ISSUE_TEMPLATE/`, and `cascade-rough-in.md` carries the eight headings including `## Assumptions`
-- [ ] The bootstrap checklist's rule-file disposition table has a disposition for every shipped template and path-scoped rule; `logging.md` and `testing.md` carry stamped globs (no `<ext>` left)
+- [ ] The bootstrap checklist's rule-file disposition table has a disposition for every shipped template and path-scoped rule; `logging.md`, `testing.md` and `cbk-conventions-reference.md` carry stamped globs (no `<ext>` and no bracketed manifest entry left)
 - [ ] Every call this run exercised that a reference file flags as individually unexercised has been restamped in the same commit (`references/linear_planning.md` § Exercise status names the flags)
 
 ## Reference files

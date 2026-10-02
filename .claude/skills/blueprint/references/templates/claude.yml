@@ -3,16 +3,27 @@
 # Ships beside claude-review.yml under the same scaffold PR/review answer.
 #
 # Fires when @claude is mentioned in a PR or issue comment, a review, or an issue body.
-#   - concurrency + cancel-in-progress so a rapid back-and-forth does not queue
-#   - skips bots and the `skip-claude` label (avoids @claude loops; the opt-out)
+#   - job-level concurrency + cancel-in-progress so a rapid back-and-forth does not queue
+#   - skips bots and the `skip-claude` label in the job's `if:` (avoids @claude loops; the opt-out)
 #   - explicit --allowedTools (least privilege at the tool level)
-#   - the workhorse model at its default effort: mentions are interactive and quota-sensitive
+#   - the `opus` alias at `high` effort, named rather than left to the default: mentions are
+#     interactive and quota-sensitive, and "Opus 5.5 and Sonnet 5.5 default to `medium`"
+#     (https://code.claude.com/docs/en/model-config § Adjust effort level, read 2026-09-30), so an
+#     unnamed effort would move whenever the alias does
+#   - the model by family alias, as claude-review.yml's Model naming paragraph says: the action's SHA
+#     is the model pin, the `Record the resolved model` step writes the model that ran to the job
+#     summary, and ANTHROPIC_MODEL is never set on the action step
+#   - on a PR the session reads the base branch's configuration: the action restores `.claude/`,
+#     `.mcp.json` and the root `CLAUDE.md` from the base before it starts and keeps the PR's copies
+#     under `.claude-pr/`; a nested `CLAUDE.md`, or an `AGENTS.md` the root one links to, reads at the
+#     PR head (claude-review.yml's restore GOTCHA carries the source). This file passes no prompt of
+#     its own; a prompt added here states those facts, as claude-review.yml's does
 #
 # Needs the `CLAUDE_CODE_OAUTH_TOKEN` Actions secret (`/install-github-app`).
 #
 # SAFETY (constraint 2): no untrusted input (issue title, PR body, comment body) is
-# interpolated into `run:` — ACTOR and the label JSON arrive through `env:` and are read
-# as quoted shell variables. The action is pinned to a full commit SHA (constraint: the
+# interpolated into `run:` — the bot and label gates are expressions in the job's `if:`,
+# evaluated before any shell runs, and every step value arrives through `env:`. The action is pinned to a full commit SHA (constraint: the
 # settle window, cbk-conventions-reference.md). A job timeout (constraint 3) and job-scoped
 # permissions (constraint 6) as in claude-review.yml.
 
@@ -28,9 +39,11 @@ on:
   issues:
     types: [opened, assigned]
 
-concurrency:
-  group: claude-mention-${{ github.event.issue.number || github.event.pull_request.number }}
-  cancel-in-progress: true
+# `bash --noprofile --norc -eo pipefail {0}` on every run: step, not GitHub's `bash -e {0}` default, which has
+# no pipefail (claude-review.yml's defaults comment carries the source).
+defaults:
+  run:
+    shell: bash
 
 jobs:
   claude:
@@ -42,39 +55,38 @@ jobs:
       actions: read
       checks: read           # `gh pr checks` is allowlisted below; the scope must match
       id-token: write
+    # The bot and skip-claude gates sit here, not in a step: a step runs only after the job joined the
+    # concurrency group below, so a bot comment that mentions @claude would cancel the reply in flight before a
+    # step could skip it. `sender.type == 'User'` matches the action's own gate, which refuses an actor whose
+    # account type is not `User` unless `allowed_bots` names it ("Empty string (default) allows no bots" —
+    # action.yml, and `checkHumanActor` in src/github/validation/actor.ts, read 2026-10-01); a project that sets
+    # `allowed_bots` widens this test with it. On a PR, an `issue_comment` carries the PR's labels on `issue`.
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      github.event.sender.type == 'User' &&
+      !contains(github.event.issue.labels.*.name, 'skip-claude') &&
+      !contains(github.event.pull_request.labels.*.name, 'skip-claude') &&
+      ((github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
-    runs-on: ubuntu-latest
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude'))))
+    # On the job, not the workflow: every comment and review event creates a run, and a workflow-level group
+    # would let a run this `if:` skips (a reply with no @claude, a comment the bot posts) cancel the response
+    # in flight (claude-review.yml's concurrency comment).
+    concurrency:
+      group: claude-mention-${{ github.event.issue.number || github.event.pull_request.number }}
+      cancel-in-progress: true
+    # A named image, never `ubuntu-latest`, which moves when GitHub re-points it (claude-review.yml's runs-on
+    # comment carries the source). Bump the image in a reviewed PR.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - name: Skip if bot author or skip-claude label
-        id: gate
-        env:
-          ACTOR: ${{ github.actor }}
-          ISSUE_LABELS_JSON: ${{ toJSON(github.event.issue.labels.*.name) }}
-          PR_LABELS_JSON: ${{ toJSON(github.event.pull_request.labels.*.name) }}
-        run: |
-          set -uo pipefail
-          ALL_LABELS="${ISSUE_LABELS_JSON:-[]} ${PR_LABELS_JSON:-[]}"
-          if [[ "$ACTOR" == "claude[bot]" || "$ACTOR" == "dependabot[bot]" || "$ACTOR" == "renovate[bot]" ]]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          elif printf '%s' "$ALL_LABELS" | grep -qF '"skip-claude"'; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Checkout
-        if: steps.gate.outputs.skip == 'false'
         uses: actions/checkout@[full-commit-sha] # v[version]
         with:
           fetch-depth: 1
 
       - name: Run Claude Code
-        if: steps.gate.outputs.skip == 'false'
+        id: claude
         uses: anthropics/claude-code-action@[full-commit-sha] # v[version]
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -83,7 +95,23 @@ jobs:
             actions: read
             checks: read
           claude_args: |
-            --model [<workhorse model id>]
-            --fallback-model [<mid-tier model id>]
+            --model opus
+            --fallback-model sonnet
+            --effort high
             --max-turns 60
             --allowedTools "Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh pr checks:*),Bash(gh run view:*),Bash(gh run list:*),mcp__github_inline_comment__create_inline_comment"
+
+      - name: Record the resolved model
+        # The same step as claude-review.yml's; its comment carries the sources. Every value arrives through
+        # env:, never interpolated into the command.
+        if: always() && steps.claude.outputs.execution_file != ''
+        continue-on-error: true
+        env:
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+          REQUESTED: opus     # the --model and --effort in claude_args above; review-assert-fixture.sh keeps them equal
+          EFFORT: high
+        run: |
+          started=$(jq -r '[.[] | select(.type == "system" and .subtype == "init") | .model][0] // "unknown"' "$EXECUTION_FILE")
+          version=$(jq -r '[.[] | select(.type == "system" and .subtype == "init") | .claude_code_version][0] // "unknown"' "$EXECUTION_FILE")
+          used=$(jq -r '[.[] | select(.type == "result") | (.modelUsage // {}) | keys[]] | unique | join(", ")' "$EXECUTION_FILE")
+          echo "Mention model: started \`$started\` on Claude Code \`$version\`, used \`${used:-none recorded}\` (requested the \`$REQUESTED\` alias at effort \`$EFFORT\`)" >> "$GITHUB_STEP_SUMMARY"

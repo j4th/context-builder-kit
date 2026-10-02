@@ -14,19 +14,36 @@ on:
   pull_request:
     branches: [main]
 
+# `shell: bash` runs every step as `bash --noprofile --norc -eo pipefail {0}`;
+# an unspecified shell runs `bash -e {0}`, without pipefail
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax,
+# read 2026-09-30).
+defaults:
+  run:
+    shell: bash
+
 jobs:
   immutability:
     # The check-run context a ruleset requires. Pinned before promotion and never
     # renamed afterwards — matching is by name (the trap's cause 3).
     name: ADR immutability
-    runs-on: ubuntu-latest
+    # A named image, not a moving label: the runner changes only by a reviewed edit.
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout PR branch
         # SHA-pinned per cbk-conventions.md § Dependency settle-window: tag refs
         # are mutable and open to tag-retag compromise.
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
+          # The full commit graph (the diff needs the merge base) and no blobs:
+          # with --no-renames, `git diff --name-status` compares tree entries, so
+          # no ADR blob is fetched (a blobless clone's missing-object count was
+          # unchanged across the diff, measured 2026-09-30). `filter` is an input
+          # of the pinned action (its action.yml at this SHA, read 2026-09-30).
+          # The property rests on --no-renames staying in the body below; the
+          # verification block pins the two together.
           fetch-depth: 0
+          filter: blob:none
 
       - name: Detect modified or deleted ADR files
         env:
@@ -35,42 +52,30 @@ jobs:
         run: |
           set -euo pipefail
 
-          # List changes restricted to docs/adr/NNNN-*.md (numbered ADR files;
-          # README.md, template.md, and other supporting files are exempt).
-          mapfile -t changes < <(
-            git diff --name-status "$BASE_SHA" "$HEAD_SHA" -- 'docs/adr/' \
-              | awk '$2 ~ /^docs\/adr\/[0-9]{4}-.*\.md$/ { print }'
-          )
+          # Every change to an existing numbered ADR — docs/adr/NNNN-*.md directly under docs/adr/ —
+          # fails the check; an added ADR passes, and README.md, template.md, corrections.md and nested
+          # files are exempt. The body parses no paths: a `:(glob)` pathspec selects the numbered ADRs
+          # (`*` does not cross `/`), `--diff-filter=a` drops additions, `--no-renames` turns a rename
+          # into the deletion it is, and any output fails. The awk path match this replaced missed a
+          # name git prints quoted (a non-ASCII one) and a name awk splits (a spaced one); both read
+          # as "no ADR changed" (context-builder-kit#60).
+          # Three dots: the diff runs from the merge base of the two SHAs, so an ADR merged to the base
+          # branch after this branch was cut is not read as deleted here.
+          # Fail closed: command substitution hands `git diff`'s status to the `||`, so a git error
+          # (an unreadable SHA, no merge base) is never "no ADR changed" (context-builder-kit#61).
+          # This body runs under .claude/workflows/tests/adr-ci-body-fixture.sh.
+          changes="$(git diff --no-renames --diff-filter=a --name-status "$BASE_SHA...$HEAD_SHA" -- ':(glob)docs/adr/[0-9][0-9][0-9][0-9]-*.md')" \
+            || { echo "::error::git diff $BASE_SHA...$HEAD_SHA failed; not reporting a pass on no data."; exit 1; }
 
-          if [ ${#changes[@]} -eq 0 ]; then
-            echo "No numbered ADR files changed in this PR."
+          if [ -z "$changes" ]; then
+            echo "No existing numbered ADR changed in this PR."
             exit 0
           fi
 
-          echo "Numbered ADR file changes in this PR:"
-          printf '%s\n' "${changes[@]}"
-
-          # Allowed: A (added). Forbidden: M (modified), D (deleted), R (renamed
-          # — would lose the immutable ADR identity), C (copied — same).
-          violations=()
-          for change in "${changes[@]}"; do
-            status="${change%%$'\t'*}"
-            path="${change#*$'\t'}"
-            if [ "${status}" != "A" ]; then
-              violations+=("${status}\t${path}")
-            fi
-          done
-
-          if [ ${#violations[@]} -gt 0 ]; then
-            echo ""
-            echo "::error::ADR immutability violation: existing ADRs cannot be modified."
-            echo "Per docs/adr/0000-record-architecture-decisions.md, ADRs are immutable once accepted."
-            echo "To revise a decision, write a new ADR that supersedes the old one."
-            echo ""
-            echo "Forbidden changes:"
-            printf '  %b\n' "${violations[@]}"
-            exit 1
-          fi
-
+          echo "::error::ADR immutability violation: existing ADRs cannot be modified, deleted, renamed or re-moded."
+          echo "Per docs/adr/0000-record-architecture-decisions.md, ADRs are immutable once accepted."
+          echo "To revise a decision, write a new ADR that supersedes the old one; a wrong claim goes to docs/adr/corrections.md."
           echo ""
-          echo "All ADR changes are additions (allowed)."
+          echo "Forbidden changes:"
+          printf '%s\n' "$changes"
+          exit 1

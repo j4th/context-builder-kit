@@ -17,21 +17,29 @@
 # read the file before format-on-edit.sh rewrites it; that affects line numbers
 # in its output, nothing else.
 #
-# Blocked:  nothing — advisory-only contract, like format-on-edit.sh: exit 0
-#           ALWAYS. Errors go to stderr as non-fatal notes; warnings and infos
+# Blocked:  nothing — on PostToolUse the tool has already run, so no exit code
+#           blocks it. Analyzer ERRORS exit 2, the one exit that hands stderr to
+#           Claude ("Shows stderr to Claude; the tool already ran",
+#           https://code.claude.com/docs/en/hooks § Exit code 2 behavior per event, read 2026-10-01); a skip or a clean run
+#           exits 0, whose stderr reaches only the debug log. Warnings and infos
 #           stay the check task's business.
 # Allowed:  everything.
 # Path:     registered (once wired) as ${CLAUDE_PROJECT_DIR}/.claude/hooks/…
 # Tier:     ADVISORY.
 # Depends:  jq (the payload fields), git (the edited file's checkout) and the
 #           project's analyzer once the case arms are wired — absent, the hook
-#           skips: exit 0 with a stderr note; the check task is the backstop.
+#           skips: exit 0, its note in the debug log; the check task is the backstop.
 # Register: copy this object into hooks.PostToolUse in .claude/settings.json once the case
 #           arms are wired — never as a top-level key (cbk-conventions-reference.md § Hook
 #           authoring: a hook-shaped object outside `hooks` voids the whole settings file):
 #           { "matcher": "Edit|Write|MultiEdit",
 #             "hooks": [ { "type": "command",
-#                          "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/analyze-on-edit.sh" } ] }
+#                          "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/analyze-on-edit.sh",
+#                          "args": [] } ] }
+#           Wiring is three edits, not one: the stanza, this hook's name in the project
+#           sub-block's ADVISORY_WIRED, and its name in cbk-conventions.md § Mutation
+#           discipline's two-views paragraph. The verification block reads all three, so a
+#           registration alone turns it red.
 
 set -uo pipefail
 
@@ -81,6 +89,7 @@ case "$file_path" in
 #    if [[ -n "$errors" ]]; then
 #      echo "analyze-on-edit: YOUR_ANALYZER reports errors after editing $rel (non-fatal):" >&2
 #      printf '%s\n' "$errors" >&2
+#      exit 2
 #    fi
 #    ;;
   *) : ;;  # no analyzer configured yet — no-op; add arms above this catch-all

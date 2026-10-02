@@ -22,9 +22,9 @@ assert.ok(Array.isArray(meta.phases) && meta.phases.length === 3, "meta.phases d
 async function scenario(name, { args, roster, findings, verdict }) {
   const logs = [];
   const calls = [];
-  const agent = async (_prompt, opts = {}) => {
+  const agent = async (prompt, opts = {}) => {
     const label = opts.label ?? "";
-    calls.push({ label, opts });
+    calls.push({ label, opts, prompt });
     if (label.startsWith("roster:")) return roster;
     if (label.startsWith("find:")) {
       const key = label.slice(5).replace(/:retry$/, "");
@@ -36,7 +36,7 @@ async function scenario(name, { args, roster, findings, verdict }) {
     throw new Error(`unexpected label ${label}`);
   };
   // A thunk that THROWS is a bug in this harness's own mock and must fail the test; the runtime
-  // resolves a failed agent to null without throwing, so null is modelled by returning null (#58 item 10).
+  // resolves a failed agent to null without throwing, so null is modelled by returning null (context-builder-kit#58 item 10).
   const parallel = async (thunks) => Promise.all(thunks.map((t) => t()));
   const out = await run(args, agent, parallel, (m) => logs.push(m), () => {});
   const buckets = [...out.confirmed, ...out.refuted, ...out.unverified].map((f) => `${f.file}:${f.line}:${f.title}`);
@@ -387,6 +387,7 @@ for (const roster of [null, { crossCutting: "not-an-array" }]) {
   const out = await run({ files: ["a"] }, agent, parallel, (m) => logs.push(m), () => {});
   assert.deepEqual(out.reviewers, []);
   assert.ok(out.droppedCoverage.some((d) => d.includes("roster read failed")), "a throwing roster read is dropped coverage, not an aborted run");
+  assert.ok(logs.some((l) => l.includes("budget ceiling")), "the degrade path logs WHY the roster read threw, not only that it degraded (context-builder-kit#72 item 3)");
   assert.ok(typeof out.gateLine === "string" && out.gateLine.length > 0, "the run still returns its gate line");
   n++;
 }
@@ -405,6 +406,156 @@ for (const roster of [null, { crossCutting: "not-an-array" }]) {
   });
   assert.ok(out.confirmed.some((f) => f.line === 5), "the three-way shared finding is charged to the reporter with no other finding and verified");
   assert.ok(out.confirmed.some((f) => f.title === "cr only") && out.confirmed.some((f) => f.title === "adr only"), "neither loaded reporter loses its own unique finding to the shared one");
+  n++;
+}
+
+// 25 — a caller-named finder may carry its own prompt and no agentType: a targeted concern with no defined agent
+//      rides in the sweep (context-builder-kit#72 item 1). A finder with neither is dropped coverage, never
+//      dispatched blind.
+{
+  const { out, calls } = await scenario("prompt-carrying finder", {
+    args: { files: ["a"], finders: [{ key: "ratio-bounds", prompt: "Check that every ratio the diff computes stays within [0, 1]." }, { key: "empty-finder" }] },
+    roster: rosterOK, findings: { "ratio-bounds": { findings: [F("a", 4, "ratio above one", "high")] } }, verdict: real,
+  });
+  const c = calls.find((x) => x.label === "find:ratio-bounds");
+  assert.ok(c, "the prompt-carrying finder is dispatched");
+  assert.equal(c.opts.agentType, undefined, "no agentType: the default workflow agent runs it");
+  assert.ok(c.prompt.includes("every ratio the diff computes"), "the caller's focus reaches the finder's prompt");
+  assert.ok(out.confirmed.some((f) => f.title === "ratio above one" && f.dimension === "ratio-bounds"), "its finding is attributed to the finder");
+  assert.ok(!calls.some((x) => x.label.startsWith("find:empty-finder")), "a finder with neither prompt nor agentType is not dispatched");
+  assert.ok(out.droppedCoverage.some((d) => d.includes("empty-finder")), "and it is named as dropped coverage");
+  assert.ok(out.gateLine.includes("empty-finder"), "so the gate line names it");
+  n++;
+}
+
+// 26 — dedup keys on file + line: paraphrases of one defect from three dimensions share ONE verify slot, whose prompt
+//      lists every title and asks the verifier to name the report its evidence proves; the strongest severity and
+//      every co-reporter are kept (context-builder-kit#72 item 2). Line-less findings keep the title in the key, so
+//      two different line-less findings in one file stay two.
+{
+  const { out, calls } = await scenario("paraphrased duplicates", {
+    args: { files: ["a"], maxPerDimension: 3, maxVerify: 8 }, roster: rosterOK,
+    findings: {
+      "code-review": { findings: [F("a", 7, "Unknown config key is skipped, not refused", "medium")] },
+      "silent-failures": { findings: [F("a", 7, "An unrecognised config key is silently ignored", "high")] },
+      "adr-conformance-reviewer": { findings: [F("a", 7, "config key naming no setting is not rejected", "low"), F("a", undefined, "no line one", "low"), F("a", undefined, "no line two", "low")] },
+    },
+    verdict: real,
+  });
+  const onSeven = calls.filter((c) => c.label.startsWith("verify:") && c.prompt.includes("at a:7"));
+  assert.equal(onSeven.length, 1, `paraphrases on one line take one verify slot (got ${onSeven.length})`);
+  for (const t of ["Unknown config key is skipped", "An unrecognised config key", "config key naming no setting"]) {
+    assert.ok(onSeven[0].prompt.includes(t), `the verify prompt lists every reported title: ${t}`);
+  }
+  assert.ok(/name[^.]*which of the reports/.test(onSeven[0].prompt), "a merged finding's verifier is asked to name the report its evidence demonstrates");
+  const merged = out.confirmed.find((f) => f.line === 7);
+  assert.equal(merged.severity, "high", "the strongest severity is kept");
+  assert.equal(merged.titles.length, 3, "every distinct title is carried");
+  assert.deepEqual(merged.alsoFoundBy.slice().sort(), ["adr-conformance-reviewer", "silent-failures"], "every co-reporter once, never the original");
+  assert.equal(out.confirmed.filter((f) => f.line === undefined).length, 2, "two different line-less findings stay two");
+  n++;
+}
+
+// 27 — finders and verifiers are told never to modify the working tree: a probe runs on a copy (context-builder-kit#72
+//      item 4 — an agent edited a tracked file in place and restored it with its old mtime, and a build tool then
+//      judged a stale artifact fresh).
+{
+  const { calls } = await scenario("read-only prompts", {
+    args: { files: ["a"], finders: [{ key: "ratio-bounds", prompt: "Check every ratio." }] }, roster: rosterOK,
+    findings: { "code-review": { findings: [F("a", 1, "x", "high")] } }, verdict: real,
+  });
+  const dispatched = calls.filter((c) => c.label.startsWith("find:") || c.label.startsWith("verify:"));
+  assert.ok(dispatched.some((c) => c.label.startsWith("verify:")) && dispatched.some((c) => c.label === "find:ratio-bounds"));
+  for (const c of dispatched) assert.match(c.prompt, /never modify the working tree/i, `${c.label} carries the read-only clause`);
+  n++;
+}
+
+// 28 — every finder's brief is complete and ends on the Sonnet 5.5 guide's think-first line: a finder at medium effort
+//      cannot get an answer to a check-in, and on a JSON answer it may skip thinking (the guide's remedy line, verbatim).
+{
+  let attempt = 0;
+  const { calls } = await scenario("finder tail", {
+    args: { files: ["a"], finders: [{ key: "ratio-bounds", prompt: "Check every ratio." }] }, roster: rosterOK,
+    findings: { "code-review": () => { attempt += 1; return attempt === 1 ? null : { findings: [] }; } }, verdict: () => null,
+  });
+  const finds = calls.filter((c) => c.label.startsWith("find:"));
+  assert.ok(finds.some((c) => c.label.endsWith(":retry")) && finds.some((c) => c.label === "find:ratio-bounds"), "the scenario reaches a retry and a caller finder");
+  for (const c of finds) {
+    assert.ok(c.prompt.includes("nobody will answer a check-in"), `${c.label} says a check-in gets no answer`);
+    assert.ok(c.prompt.endsWith("Think the problem through before you answer."), `${c.label} ends on the think-first line`);
+  }
+  n++;
+}
+
+// 29 — the bounds' defaults are 3 per dimension and 8 verified, and a bound of 0 is a bound (verifies nothing), never a
+//      default: pinned by behaviour, not by the source text.
+{
+  const { out } = await scenario("default bounds", { args: { files: ["a"] }, roster: rosterOK, findings: {}, verdict: real });
+  assert.deepEqual(out.bounds, { MAX_PER_DIMENSION: 3, MAX_VERIFY: 8 }, "the default bounds are 3 and 8");
+  const { calls } = await scenario("zero verify", {
+    args: { files: ["a"], maxVerify: 0 }, roster: rosterOK, findings: { "code-review": { findings: [F("a", 1, "x", "high")] } }, verdict: real,
+  });
+  assert.equal(calls.filter((c) => c.label.startsWith("verify:")).length, 0, "maxVerify 0 verifies nothing");
+  n++;
+}
+
+// 30 — malformed arguments are refused before any agent runs: a bound that is not a whole number (−1 disabled the cost
+//      guard; "8" became the string "138" in the planned count), a list argument that is not a list, and a verify
+//      model above the workhorse tier.
+for (const [args, re] of [
+  [{ files: ["a"], maxVerify: -1 }, /maxVerify must be a whole number/],
+  [{ files: ["a"], maxPerDimension: "3" }, /maxPerDimension must be a whole number/],
+  [{ files: ["a"], finders: { key: "x" } }, /finders must be a list/],
+  [{ files: "a.ts" }, /files must be a list/],
+  [{ files: ["a"], verifyModel: "fable" }, /verifyModel must be/],
+]) {
+  let dispatched = 0;
+  await assert.rejects(run(args, async () => { dispatched += 1; return null; }, async (t) => Promise.all(t.map((f) => f())), () => {}, () => {}), re);
+  assert.equal(dispatched, 0, `${JSON.stringify(args)} is refused before any agent runs`);
+}
+n++;
+
+// 31 — a caller finder whose key is already a dimension or a reviewer would share its per-dimension bound and hide their
+//      convergence: it is dropped coverage with the reason, never dispatched; duplicate caller reviewers run once.
+{
+  const { out, calls } = await scenario("key collision", {
+    args: { files: ["a"], reviewers: ["r1", "r1"], finders: [{ key: "code-review", prompt: "ratios" }, { key: "r1", prompt: "x" }] },
+    roster: rosterOK, findings: {}, verdict: real,
+  });
+  assert.equal(calls.filter((c) => c.label === "find:r1").length, 1, "a duplicate caller reviewer runs once");
+  assert.equal(calls.filter((c) => c.label === "find:code-review").length, 1, "the colliding finder is not dispatched beside the toolkit's code-review");
+  assert.ok(out.droppedCoverage.some((d) => d.startsWith("code-review (caller finder whose key is already")) && out.droppedCoverage.some((d) => d.startsWith("r1 (caller finder whose key is already")), "each collision is dropped coverage, named");
+  n++;
+}
+
+// 32 — a finding's path is normalised before the dedup key: `./src/a.ts`, `src/a.ts` and the repository-absolute spelling of
+//      one changed file are one defect, one verify slot; and the schema asks for a line number from 1.
+{
+  const { calls } = await scenario("path spellings", {
+    args: { files: ["src/a.ts"] }, roster: rosterOK,
+    findings: { "code-review": { findings: [F("./src/a.ts", 3, "x", "high")] }, "comments": { findings: [F("src/a.ts", 3, "y", "high")] },
+                "silent-failures": { findings: [F("/home/u/repo/src/a.ts", 3, "z", "high")] } },
+    verdict: real,
+  });
+  assert.equal(calls.filter((c) => c.label.startsWith("verify:")).length, 1, "three spellings of one file:line take one verify slot");
+  const schema = calls.find((c) => c.label.startsWith("find:")).opts.schema;
+  assert.equal(schema.properties.findings.items.properties.line.type, "integer");
+  assert.equal(schema.properties.findings.items.properties.line.minimum, 1);
+  n++;
+}
+
+// 33 — a roster read that returns no reviewer at all (a renamed section, an empty reply) is dropped coverage, never a clean
+//      "dropped coverage: none" — pr-review.md's reviewers run on every sweep.
+{
+  const { out } = await scenario("empty roster", { args: { files: ["a"] }, roster: { crossCutting: [], domain: [], note: "section not found" }, findings: {}, verdict: real });
+  assert.ok(out.droppedCoverage.some((d) => d.startsWith("project-local reviewers (the roster read returned none")), `an empty roster is dropped coverage (got ${JSON.stringify(out.droppedCoverage)})`);
+  n++;
+}
+
+// 34 — a caller finder with a prompt but no key is dropped for having no key, not for "neither prompt nor agentType".
+{
+  const { out } = await scenario("keyless finder", { args: { files: ["a"], finders: [{ prompt: "ratios" }] }, roster: rosterOK, findings: {}, verdict: real });
+  assert.ok(out.droppedCoverage.some((d) => /^\(unnamed\) \(caller finder with no key\)$/.test(d)), `a keyless finder is dropped for its missing key (got ${JSON.stringify(out.droppedCoverage)})`);
   n++;
 }
 

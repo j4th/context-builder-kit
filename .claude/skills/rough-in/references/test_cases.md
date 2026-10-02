@@ -21,14 +21,14 @@ These tests are not exhaustive — they cover the canonical happy path and the i
 - **Step 1 (Inheritance + meta-issues check)**: rough-in reads all required inputs, presents a verbatim inheritance summary including the parent issue's slug + F-number inherited from `[regex-pack:F1]`. Runs the pre-flight checks, finds the empty section, treats as passed. HITL gate before proceeding.
 - **Step 2 (Milestone selection)**: confirms the user wants M1 specifically, not M2 or any other milestone in F1. Detects this as a first rough-in (no prior rough-in events for this milestone in `README.md` index), proceeds without re-rough-in flow.
 - **Step 3 (Research)**: proposes a research depth based on inheritance signals — likely "shallow" or "standard" since regex-pack is the first cascade workstream and there's no prior cascade work to extend. Presents findings if any sub-tracks ran.
-- **Step 4 (Issue plan)**: produces 3-7 R-issues with titles, intents, dependencies, and a capstone marker if applicable. HITL gate.
-- **Step 5 (Spec drafting)**: drafts each spec individually using `cascade-rough-in.md` (read from disk first), populates the six sections, ensures each Implementation section meets the eight properties.
+- **Step 4 (Issue plan)**: produces 2-6 R-issues with titles, intents, dependencies, and a capstone marker if applicable. HITL gate.
+- **Step 5 (Spec drafting)**: drafts each spec individually using `cascade-rough-in.md` (read from disk first), populates the eight sections, ensures each Implementation section meets the eight properties.
 - **Step 6 (Commit)**: presents the atomic transition (sub-sub-issues + README.md index update), HITL gate, executes the two-step `issue_write` + `sub_issue_write` for each spec, commits the README.md index entry, completes successfully.
 
 **Success criteria**:
 
 - All R-issues land on the planning backend with `cascade-depth:roughed-in` label, parented under the framing sub-issue
-- Each R-issue's body has the six standard sections with heading names preserved verbatim
+- Each R-issue's body has the eight sections the executor requires (`commands/finish.md` § Preconditions), with heading names preserved verbatim
 - Each Implementation section is in the 300-800 word range, second person, names specific files/signatures, cites cascade docs by section name
 - The slug + F-number in each R-issue title matches the parent framing sub-issue's title
 - The README.md index has an entry recording the rough-in event with the R-number range
@@ -62,34 +62,34 @@ These tests are not exhaustive — they cover the canonical happy path and the i
 - The R-issue specs reference M1's established patterns by inlining them, not by requiring `/finish` to chase context
 - The R-numbering continues sequentially (e.g., if M1 created R1-R4, M2 might start at R5 or restart at R1 depending on how rough-in handles cross-milestone R-numbering — the discipline is per-milestone, so M2 starts at R1)
 
-## Test 3 — Markdown-only profile rough-in
+## Test 3 — In-repo-markdown planning rough-in
 
 **Setup**:
-- A repo where scaffold landed in markdown-only profile (`scaffold.md` has `profile: markdown-only`)
+- A repo where scaffold chose in-repo-markdown planning (`scaffold.md` § Cascade metadata records `Planning backend` as `in-repo-markdown`)
 - No GitHub Project board, no parent Issues on the planning backend, no framing sub-issues — the cascade lives entirely as markdown in `docs/cbk/`
 - A `frame-01.md` exists at `docs/cbk/` with the milestones list, including the M1 to be roughed-in
-- `.github/ISSUE_TEMPLATE/cascade-rough-in.md` exists (scaffold commits the templates regardless of profile)
-- The user has explicitly chosen markdown-only at scaffold's confirmation gate
+- No `.github/ISSUE_TEMPLATE/cascade-rough-in.md` is expected — scaffold skips planning provisioning on this axis — so rough-in drafts from its bundled `references/templates/rough-in-spec-template.md`
+- The user has explicitly chosen in-repo-markdown at scaffold's confirmation gate
 
 **Prompt**: *"Rough in M1 of the regex pack."*
 
 **Expected behaviors**:
 
-- **Step 1**: reads scaffold.md, detects `profile: markdown-only`, surfaces the markdown-only acknowledgment in the inheritance gate (parallel to blueprint's markdown-only acknowledgment): *"This is markdown-only profile — I'll skip the planning-backend half of every commit. The rough-in specs will land as markdown content rather than as GitHub sub-sub-issues. Sound right?"*
+- **Step 1**: reads scaffold.md, detects `Planning backend: in-repo-markdown`, surfaces the in-repo-markdown acknowledgment in the inheritance gate (parallel to blueprint's in-repo-markdown acknowledgment): *"This is in-repo-markdown planning — I'll skip the planning-backend half of every commit. The rough-in specs will land as markdown content rather than as GitHub sub-sub-issues. Sound right?"*
 - **Step 2**: inherits the slug + F-number from the framing's milestone entry in `frame-01.md` directly (not from a parent issue title because there isn't one).
 - **Steps 3-5**: same as Test 1 — research, issue plan, spec drafting all profile-agnostic.
-- **Step 6**: presents the markdown-only commit gate with the file location choice (append to frame-01.md vs new per-milestone rough-in markdown file). User picks. Rough-in commits the markdown content and the README.md index entry. No planning-backend operations.
+- **Step 6**: presents the `in-repo-markdown` commit gate with the file location choice (append to frame-01.md vs new per-milestone rough-in markdown file). User picks. Rough-in commits the markdown content and the README.md index entry. No planning-backend operations.
 
 **Success criteria**:
 
-- The markdown-only acknowledgment fires correctly
+- The in-repo-markdown acknowledgment fires correctly
 - The slug + F-number inheritance works without a parent issue
 - The user is offered the file-location choice and rough-in respects the choice
-- The rough-in spec content lands in the chosen location with the six-section structure preserved
+- The rough-in spec content lands in the chosen location with the eight-section structure preserved
 - The README.md index has an entry recording the rough-in event
 - No planning-backend MCP operations were attempted
 - The pre-flight checks still ran (it's profile-agnostic)
-- No `/finish` references appear in the output without explicit caveats (markdown-only mode has no `/finish` slash command, the user executes manually)
+- No `/finish` references appear in the output without explicit caveats (the `in-repo-markdown` axis has no `/finish` executor; the user executes the specs manually)
 
 ## Test 4 — Deferred meta-issue blocker hit
 
@@ -206,6 +206,7 @@ These tests are not exhaustive — they cover the canonical happy path and the i
 - Every drafter/researcher prompt embeds the repo-wide-verification rule verbatim (no single-package existence greps)
 - Any verifier/harmonizer pass preferentially spot-checks **negative** claims ("X does not exist") over positive anchors
 - Drafts cite the run's existing grounding output for facts it already covers instead of re-deriving them
+- A claim about a tool's behaviour names the binary it was checked against, resolved from inside the code's own execution context (`command -v` or `type -a` from a child script, never `type -P`)
 
 **Failure signals**:
 - A spec instructs the executor to *create* something whose absence evidence is a single-directory grep
@@ -224,18 +225,20 @@ These tests are not exhaustive — they cover the canonical happy path and the i
 - The one gate carries the decision list; the framing-invited judgment call (which R-issue the blocking row becomes a dependency of) is made and its reason recorded
 - Step 5.5 reports "present and matching" for both files of the pair without a gate; Step 6 runs in the main loop after the gate
 - No inheritance summary, gate-question list or provisioning diff appears inside any spec body
+- When the operator's review at the gate reshapes the set (issues merged, a criterion moved or dropped, counts reshaped), the consolidated set is a new draft: one more fresh-context verifier attacks it, and its defects are fixed, before Step 6's one-way commit
 
 **Failure signals**:
 - A spec's Dependencies section names an open issue in prose that is not a dependency (the executor would refuse it)
 - A test tag that resolves to no numbered criterion
 - The drafter, not the main loop, attempts Step 5.5 or Step 6
 - The set is presented unverified, or "verification" is the drafter re-reading its own output
+- A consolidation made at the gate is committed on the strength of the verifier that ran before it
 
 ## Cross-test invariants
 
 A few things should be true across all tests:
 
-- **The pre-flight checks runs in every test**, even Test 3 (markdown-only) where the planning backend doesn't exist
+- **The pre-flight checks runs in every test**, even Test 3 (`in-repo-markdown`) where no external planning backend exists
 - **No HITL gate is skipped silently** — if a gate is collapsed (in light mode), the user explicitly chose light mode
 - **Token pressure honesty** — if any test hits token pressure during research or spec drafting, rough-in surfaces it explicitly and offers the three options (finish partial, skim, continue in follow-up)
 - **The cascade event log is append-only** — no test should result in an overwritten or deleted markdown file or planning-backend object

@@ -4,7 +4,7 @@ The second substantive step after stack decisions. Picks the development methodo
 
 ## The register
 
-The methodology register lives outside this skill — it's a shared reference across all six cascade phases at `methodology_register.md` in the cascade root. Read it before this step if you haven't already in this session. It contains entries for Shape Up, Scrum, Kanban, vertical slicing, walking skeleton, tracer bullets, YAGNI, spike solutions, augmented coding, harness engineering, spec-driven development, TDD with AI agents, context engineering, trunk-based development, continuous delivery, code review, pair programming, ADRs, and DORA metrics.
+The methodology register is not a file the kit ships: it is the named methodologies and patterns below, each cited by its primary source (author, work, chapter). This file carries the project-level entries; the consultation skill's `references/methodology_register_excerpt.md` carries the shaping entries (Shape Up, spikes, YAGNI) in full. The register spans Shape Up, Scrum, Kanban, vertical slicing, walking skeleton, tracer bullets, YAGNI, spike solutions, augmented coding, harness engineering, spec-driven development, TDD with AI agents, context engineering, trunk-based development, continuous delivery, code review, pair programming, ADRs, and DORA metrics.
 
 Blueprint cares mostly about the **scoping methodologies** category (Shape Up, Scrum, Kanban) for the top-level methodology choice, and the **planning patterns** category (vertical slicing, walking skeleton, tracer bullets, YAGNI, spike solutions) for how to structure the workstreams that go into `blueprint.md`. The other categories matter at later phases (scaffold already touched some, framing/rough-in/finish will touch others).
 

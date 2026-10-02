@@ -77,11 +77,11 @@
 
 | You want to … | Reach for | Why |
 |---|---|---|
-| Wire a server the project depends on | The committed `.mcp.json`, with credentials as **environment-variable references** (`${GITHUB_TOKEN}`), plus a committed `.env.example` naming every variable | The config is reviewable and shared; the secrets are not. The kit's `.mcp.json.example` is the starting shape |
+| Wire a server the project depends on | The committed `.mcp.json`, with credentials as **environment-variable references** (`${GITHUB_TOKEN}`), plus a committed `.env.example` naming every variable; a stdio server at an exact version past the settle window (`cbk-conventions-reference.md` § Dependency settle-window) | The config is reviewable and shared; the secrets are not. The kit's `.mcp.json.example` is the starting shape |
 | Wire a server only you use | The user-level MCP config, never the project file | A personal server in the committed file is a dependency for everyone |
 | Add a server | The cascade phase that justifies it wires it — the planning MCP at scaffold, a docs MCP at blueprint, a domain MCP when a workstream needs it — and records it in `cbk-conventions.md` § Surface inventory | A server nobody's phase asked for is noise in every session's tool list |
 
-**Decision rule**: list-valued keys (`enabledPlugins`, `allow`, `deny`, hook arrays) are **never repeated** in the local settings file — the local file overrides by key, so a repeated list silently replaces the committed one instead of extending it; add to the committed list or not at all. A linter exclusion for an MCP or settings file is added only where nothing in it could be actioned (a generated file, a secrets template) — an exclusion is not an exemption (`cbk-conventions.md` § `[skip ci]` rule).
+**Decision rule**: a list key set in several settings files merges — "each file can add entries without removing another file's", except four model-list keys (`https://code.claude.com/docs/en/settings` § Lists merge instead of overriding, read 2026-09-30) — so the local file carries only its own additions. `enabledPlugins` is an object keyed `<plugin>@<marketplace>`; a local `false` is the documented per-machine opt-out (`https://code.claude.com/docs/en/settings-reference`, read 2026-09-30). A linter exclusion for an MCP or settings file is added only where nothing in it could be actioned (a generated file, a secrets template) — an exclusion is not an exemption (`cbk-conventions.md` § `[skip ci]` rule).
 
 ## [Stack surfaces — add a section per wired MCP]
 
@@ -98,7 +98,7 @@
 | Ask a question on a PR or issue | `@claude` in a comment (`.github/workflows/claude.yml`) | Interactive; least-privilege tool list |
 | Answer the review's findings | `/pr-respond <N>` | The feedback loop; every finding a SHA and a reply |
 
-**Decision rule**: the posted artifact is the deliverable (`cbk-conventions.md` § Deliverable trap) — a green run with no comment is investigated, a red run whose review posted is a pass. The workflow cannot review the PR that introduces it; verify on the next one. Record here which labels the project actually created.
+**Decision rule**: the posted artifact is the deliverable (`cbk-conventions.md` § Deliverable trap) — a green run with no comment is investigated, a red run whose review posted is a pass. The workflow cannot review any PR that changes it — `claude-code-action` skips it, green and with no session (the review template's Constraint 1 carries the source) — and its last step, `Assert the review posted`, goes red on such a PR with the reason; verify on the next PR. The model is named by family alias, so the action's pinned SHA fixes both the model and the Claude Code the bot runs, and the job summary records each: check a harness fact the bot asserts against the Claude Code version you run before acting on it. Record here which labels the project actually created.
 
 ## Plugins
 
@@ -134,7 +134,7 @@
 | `Write` | Create a new file or full rewrite |
 | `Bash` | Run a shell command (git, the task runner, gh) |
 | `Glob` / `Grep` | Find files / search contents |
-| Task-tracking tools | Track multi-step work — see [`workflows.md`](workflows.md) |
+| Task-tracking tools, or a checklist file where the model is not offered them | Track multi-step work — see [`workflows.md`](workflows.md) § A tracked checklist vs in-head |
 | `AskUserQuestion` | Surface a decision the operator owns; never preview-and-confirm trivial ops |
 | `WebFetch` / `WebSearch` | Fetch a specific URL / general web search |
 

@@ -8,7 +8,7 @@ paths:
 
 # PR Review Rules — the reference half
 
-> **Path-scoped.** Loads when a reviewer agent, a workflow, a CI workflow, or this rule pair is read. `pr-review.md` (always loaded) keeps a pointer heading for every section here. **A triage is not a file read**: the executor reads this file by name at its triage step (`commands/finish.md`), because nothing else triggers it there. Sections were moved verbatim on 2026-09-06. See `cbk-conventions.md` § Rule loading and the instruction budget.
+> **Path-scoped.** Loads when a reviewer agent, a workflow, a CI workflow, or this rule pair is read. `pr-review.md` (always loaded) keeps a pointer heading for every section moved here at the split; a section added here since (§ Authoring a project-local reviewer, § Reviewer precedent memory — genres and staleness) is cited by this file's own name. **A triage is not a file read**: the executor reads this file by name at its triage step (`commands/finish.md`), because nothing else triggers it there. Sections were moved verbatim on 2026-09-06. See `cbk-conventions.md` § Rule loading and the instruction budget.
 
 ## Apply / Surface calibration
 
@@ -84,13 +84,17 @@ Apply commits over a red branch hide regressions. Run `mise run check` after eac
 
 If the human reviewed the draft PR, decided to leave a Surface item alone, and the next sweep flags it again with the same reasoning — that's fine to surface again, but **don't auto-apply it**. The human's call stands until they explicitly ask for the change.
 
-### ❌ Running review-toolkit on a docs-only PR
+### ❌ Running the full sweep on a docs-only PR
 
-If the diff is entirely under `docs/` or matches `*.md`, the toolkit's specialized agents have nothing to chew on. Skip the sweep; the simplify pass is sufficient. The exception — docs that are one-way doors — is stated once, in `pr-review.md` § What NOT to flag, and not restated here.
+If the diff is entirely under `docs/` or matches `*.md`, the sweep's toolkit dimensions and caller-named finders have little code to chew on: skip the sweep and record why on its gate line. On a cascade PR the floor is not skipped — `/simplify` and `pr-review-toolkit:review-pr` both run, and waiving the toolkit is a break-glass call, never a docs-only default (`pr-review.md` § The floor); an issue-less branch is the one case that writes the floor *not run*, with the reason (`cbk-conventions.md` § Branch naming). The exception — docs that are one-way doors — is stated once, in `pr-review.md` § What NOT to flag, and not restated here.
 
 ### ❌ Padding the hand-off summary with "looks good" prose
 
 The hand-off is the audit surface. List counts per class plus the concrete actioned items and the verbatim Surface entries. If everything classified as Reject, say so in one line — don't pad.
+
+### ❌ Folding one review layer into another
+
+The floor, the sweep, the flip's auto-review and each `/pr-respond` round are separate layers, and they catch different things because each reads the branch with its own context. On one real PR the floor caught kit-versus-project merge losses, the round-2 sweep caught a silent miss in the round-1 fix, and the flip's auto-review caught that the round-2 fixture never ran — "none of them was the layer that found the previous layer's bug" (context-builder-kit#33). Keep them separate: a bigger combined pass is not a substitute for any of them. It is the same principle as the floor running once with at most one verification workflow per delta (`pr-review.md` § The floor), seen from the other side.
 
 ### ❌ Describing a review instead of running one
 
@@ -112,7 +116,7 @@ The contract's paragraph (`pr-review.md` § Project-local agents › Authoring) 
 - **Report, never propose.** Findings are `file:line` + the violated clause + the rubric class + a one-sentence fix direction. Patches, rewrites and "here is the corrected block" are the executor's job after triage.
 - **Two drift tripwires, in the body.** (1) *Roster:* "my entry in `pr-review.md` § Project-local agents must exist with my dispatch condition; if it does not, report myself as unregistered before reviewing" — the sweep reads that roster at runtime, so an unregistered reviewer never runs in it. (2) *Memory:* the memory-directory tripwire. Both live in the kit's shared `## Writing memory` section (the last section of every shipped reviewer, kept identical by the verification block), so a project-authored reviewer gets them by carrying that section.
 - **Eviction conditions for guard lists.** Every do-not-flag entry carries the condition under which it is removed ("until the conventions formalize X"; "while `<file>` still carries `<token>`"). A guard list without eviction conditions only ever grows, and the reviewer's silence stops meaning anything.
-- **Path-matched triggers come from usage, and are written for the roster reader.** The scope this section lists for a domain reviewer is the set of directories where the governed API is *used* (grep the tree for its calls and types), written as bare path prefixes on the reviewer's own entry line — the sweep's roster agent parses this section into `pathHints`, matches changed paths by prefix, and reports a glob or prose hint as dropped coverage.
+- **Path-matched triggers come from usage, and are written for the roster reader.** The scope this section lists for a domain reviewer is the set of directories where the governed API is *used* (grep the tree for its calls and types), written as bare path prefixes on the reviewer's own entry line — the sweep's roster agent parses this section into `pathHints`, matches changed paths by prefix on a directory boundary, and reports a glob or prose hint as dropped coverage. A segment or family pattern (`/^<project>-[^/]+\//`) cannot be written as a prefix, so enumerate every directory it would match, each with its slash — and add a directory to the line when the family grows (context-builder-kit#58).
 
 ## Reviewer precedent memory — genres and staleness
 
@@ -139,4 +143,4 @@ This rules file is load-bearing the moment `/finish`'s review pass dispatches `p
 - The break-glass mechanism gets used more than ~5% of the time — that's a signal the rubric is mis-calibrated, not the override mechanism. Investigate.
 - The `## Review gate` block's shape changes — edit its one home (`pr-review.md` § The floor) and check that `/finish` Step 10 still cites it rather than carrying a copy.
 
-The corresponding entry in `docs/STANDARDS.md` § PR review process points here for the operational detail; that file states the principle, this file states the contract.
+The gate's principle is stated in `pr-review.md` § The floor, a heading every target carries; this half holds the operational detail behind it.

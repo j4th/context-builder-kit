@@ -1,5 +1,3 @@
-reference/
-
 # Reviewer precedent memory stays session-local in THIS repo: pr-review.md
 # ships the memory mechanism empty, so kit-session calibration must not ride
 # along when a target project copies .claude/. Target projects default the
@@ -8,3 +6,21 @@ reference/
 # (scaffold's rule-file disposition pass prompts the choice; nothing flips it
 # for you).
 .claude/agent-memory/
+
+# The harness block, copied from the fence in
+# .claude/skills/scaffold/references/github-starter-templates.md § `.gitignore` — the harness block
+# (the verification block checks that every entry of the fence is here).
+### Claude Code harness — per-host state and staging copies, never source ###
+# Personal settings. Claude Code keeps the file out of git only when it wrote it; a hand-made one needs this line.
+/.claude/settings.local.json
+# Reviewer memory in the `local` scope (the `project` scope, /.claude/agent-memory/, is committed).
+/.claude/agent-memory-local/
+# Worktrees Claude Code creates (--worktree, isolated subagents) and finish-ab's headless arms.
+/.claude/worktrees/
+# The review action's staging copy of the PR's .claude/, .mcp.json and CLAUDE.md; a local reproduction leaves it.
+/.claude-pr/
+# Bytecode from the kit's Python under .claude/workflows/ — a by-hand import or a test writes it.
+/.claude/workflows/**/__pycache__/
+/.claude/workflows/**/*.py[cod]
+# The hook helpers stay tracked even under a stack section's unanchored `lib/`. Keep this line last.
+!/.claude/hooks/lib/

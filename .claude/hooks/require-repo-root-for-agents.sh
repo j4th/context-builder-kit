@@ -14,7 +14,8 @@
 # the "launch from the root" instruction that preceded them.
 #
 # Blocked:  Task, Agent and Workflow tool calls whose working directory is not
-#           the git top-level of the checkout it sits in.
+#           the git top-level of the checkout it sits in; and a payload jq cannot
+#           read, whose working directory cannot be checked.
 # Allowed:  everything else — including a launch from a worktree's own root,
 #           which is that checkout's top-level.
 # Matcher:  `Task|Agent|Workflow` — `Agent` and `Workflow` are the names the
@@ -24,50 +25,67 @@
 #           rename degrades to a no-op rather than silence.
 # Timing:   the guard reads the payload's `cwd` (a common field on every hook
 #           event — https://code.claude.com/docs/en/hooks-guide § How hooks
-#           work) BEFORE the tool runs. That field is the SESSION's working
-#           directory — where Claude Code was launched — not the Bash tool's
-#           persisted shell directory: a real dispatch made after `cd docs` in
-#           the shell was allowed, with the payload cwd still at the root (dated
-#           observation, 2026-09-07). The confirmed deny is a session launched
-#           from a subdirectory (the verification block's payload dry-run); the
-#           remedy there is to relaunch the session from the root. The hooks
-#           reference states the OPPOSITE of the observation above — "cwd follows
-#           Claude: … the new directory after Claude runs cd"
+#           work) BEFORE the tool runs. That field follows the Bash tool's `cd`
+#           — "the new directory after Claude runs `cd`"
 #           (https://code.claude.com/docs/en/hooks § Reference scripts by path,
-#           read 2026-09-07). The two disagree; this guard judges whichever cwd
-#           the payload carries and is correct under either reading. RE-VERIFY
-#           TRIGGER: a dispatch made after `cd <subdir>` that is denied means the
-#           page's reading now holds — update this paragraph (#58, S3).
+#           read 2026-09-30) — and a logging-hook probe on Claude Code 2.1.286
+#           showed it (2026-09-30): a Bash call and an Agent dispatch made after
+#           `cd docs` both carried <root>/docs. So a dispatch made after a `cd`
+#           into a subdirectory is denied, and the remedy is to `cd` back to the
+#           root as its own command. The 2026-09-07 observation that the field
+#           stayed at the session's launch directory is retired
+#           (context-builder-kit#58, S3). RE-VERIFY TRIGGER: a dispatch made after
+#           `cd <subdir>` that is allowed means the field stopped following `cd` —
+#           re-run the probe and update this paragraph.
 # Path:     registered as ${CLAUDE_PROJECT_DIR}/.claude/hooks/… — handlers run
 #           in the current directory (https://code.claude.com/docs/en/hooks), so
 #           a bare relative path would not resolve from the very subdirectory
 #           this guard exists to block.
 # Tier:     HARD-DENY.
 # Depends:  jq (the payload's tool_name and cwd) and git (the top-level of that
-#           cwd) — absent, the guard fails open: exit 0 with a stderr warning
+#           cwd) — absent, the guard fails open: exit 0 with a warning shown as a systemMessage
 #           naming the backstop, detect-forked-agent-memory.sh (Stop tier,
-#           needs no jq).
+#           needs no jq). A payload jq cannot read is not an environment defect:
+#           it is refused (cbk-conventions-reference.md § Hook authoring).
+#           Fixture: .claude/workflows/tests/hook-payloads-fixture.sh.
 #
 # Hook receives JSON on stdin. Exit 2 + stderr blocks. Fail-open on
 # environment defects (missing jq, not a git checkout): exit 0 with a loud
-# stderr warning naming the surviving backstop, mirroring protect-main-branch.sh.
+# warning naming the surviving backstop, shown as a systemMessage, mirroring protect-main-branch.sh.
 
 set -uo pipefail
 
 # Drain stdin before any early exit, or a piping caller's SIGPIPE masks this hook's own
 # exit code (cbk-conventions-reference.md § Hook authoring › The stdin / exit contract).
 input="$(cat)"
+# A fail-open warning goes to stderr, which on exit 0 reaches only the debug log, and to the user as the systemMessage
+# on stdout (https://code.claude.com/docs/en/hooks § Exit code 0 and § JSON output, read 2026-10-01). Pure bash, so it
+# works on the minimal PATH the fail-open cases run with.
+fail_open() {
+  printf '%s\n' "$@" >&2
+  local m="$*"; while [[ $m == *"  "* ]]; do m=${m//  / }; done
+  m=${m//\\/\\\\}; m=${m//\"/\\\"}
+  printf '{"systemMessage":"%s"}\n' "$m"
+  exit 0
+}
 # Deliberately NOT `set -e` — fail-open on environment defects rather than
 # aborting with cryptic stderr that blocks every dispatch.
 
 if ! command -v jq &>/dev/null; then
-  echo "require-repo-root-for-agents: WARNING — jq not installed; the launch-directory guard is DISABLED." >&2
-  echo "                              Backstop: detect-forked-agent-memory.sh (Stop tier) needs no jq and still" >&2
-  echo "                              catches a stray agent-memory tree before the hand-off; git status shows it untracked." >&2
-  exit 0
+  fail_open "require-repo-root-for-agents: WARNING — jq not installed; the launch-directory guard is DISABLED." \
+    "                              Backstop: detect-forked-agent-memory.sh (Stop tier) needs no jq and still" \
+    "                              catches a stray agent-memory tree before the hand-off; git status shows it untracked."
 fi
 
-tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"
+# A payload jq cannot read is refused: this hook runs on Task|Agent|Workflow only, so the call is
+# still a dispatch, and where it launches from cannot be checked.
+if ! fields=$(jq -er 'def s: if . == null then "" elif type == "string" then . else error("a field is not a string") end; if type == "object" then @sh "tool_name=\(.tool_name | s) cwd=\(.cwd | s)" else error("not an object") end' <<<"$input" 2>/dev/null); then
+  echo "BLOCKED: require-repo-root-for-agents could not read the tool payload (not parseable JSON, not an object, or a field that is not a string)," >&2
+  echo "so it cannot tell where this dispatch launches from. A lone UTF-16 surrogate escape in the tool input does this — remove it and retry." >&2
+  exit 2
+fi
+
+eval "$fields"
 case "$tool_name" in
   Task|Agent|Workflow) ;;
   *) exit 0 ;;
@@ -76,13 +94,11 @@ esac
 # The hook payload carries the call's working directory (`cwd`), the same
 # field protect-main-branch.sh reads for Bash calls. Fall back to this
 # process's own directory when it is absent.
-cwd="$(printf '%s' "$input" | jq -r '.cwd // empty')"
 cwd="${cwd:-$PWD}"
 
 root="$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)" || {
-  echo "require-repo-root-for-agents: WARNING — $cwd is not inside a git checkout; guard inactive for this call." >&2
-  echo "                              Backstop: detect-forked-agent-memory.sh (Stop tier) catches a stray tree before the hand-off." >&2
-  exit 0
+  fail_open "require-repo-root-for-agents: WARNING — $cwd is not inside a git checkout; guard inactive for this call." \
+    "                              Backstop: detect-forked-agent-memory.sh (Stop tier) catches a stray tree before the hand-off."
 }
 
 # Canonical paths, so a symlinked or trailing-slash form is not a false mismatch.

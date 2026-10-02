@@ -10,7 +10,7 @@ This template is read by Step 4 (refined definition) and Step 5 (milestones) whe
 |---|---|
 | `docs/cbk/blueprint.md` § "Workstreams" | The verbatim row for the project being framed — goes in the header link |
 | `docs/cbk/blueprint.md` § "Stack decisions" | Decisions that constrain this project's approach — go in Key Constraints |
-| `docs/cbk/blueprint.md` § "Methodology" | The methodology blueprint picked — informs milestone shape per `methodology_register.md` |
+| `docs/cbk/blueprint.md` § "Methodology" | The methodology blueprint picked — informs milestone shape per the methodology's primary source |
 | `docs/cbk/scaffold.md` quality bar | Affects acceptance criteria strictness — goes in Approach |
 | `docs/cbk/frame-N.md` (each prior framing) | Interface Commitments table verbatim — goes in "Builds on" section |
 | Research phase output (Step 3) | Approach section, Open questions section |
@@ -68,7 +68,7 @@ deferred decisions either pre-dated framing or were pushed to rough-in." Do
 not leave the section empty.
 
 The section is append-only history of what this framing event itself decided,
-distinct from Open questions (deferred forward) and Deferred meta-issues
+distinct from Open questions (deferred forward) and Pre-flight checks
 (structural blockers tracked separately).]
 
 - **<Decision name>** — [one-line resolution + citation to the artifact that records it, e.g., "ADR-NNNN drafted and accepted during this framing event"]
@@ -289,8 +289,8 @@ Row schema:
 - **Notes**: compression rationale, capstone identifier, re-rough-in marker,
   Step 5.5 outcomes, anything notable for the cascade event log. Reference
   the discipline that justified each decision, not the version history of the
-  skill — see `references/planning-backend-commit.md` § "The README.md event
-  entry shape" for the discipline-not-version-history rule.]
+  skill — see the rough-in skill's `references/planning-backend-commit.md`
+  § "The README.md event entry shape" for the discipline-not-version-history rule.]
 
 | Date | Milestone | Sub-sub-issues created | Notes |
 |---|---|---|---|

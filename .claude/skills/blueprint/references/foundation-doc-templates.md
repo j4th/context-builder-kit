@@ -1,6 +1,6 @@
 # Foundation document templates — overview
 
-Blueprint produces six prose foundation documents plus tooling configs. This file is the overview — pointers to per-doc templates plus the production pattern that applies to all of them. Read this before producing any foundation doc, then read the individual template for the doc you're working on.
+Blueprint produces six prose foundation documents — seven on the `github-issues` and `in-repo-markdown` axes, where `docs/cbk/ROADMAP.md` joins them (`templates/roadmap.md`) — plus tooling configs. This file is the overview — pointers to per-doc templates plus the production pattern that applies to all of them. Read this before producing any foundation doc, then read the individual template for the doc you're working on.
 
 ## The six docs and why they exist
 

@@ -11,22 +11,46 @@
 # not re-fire a review (constraint 5 — label-driven proportionality); re-trigger with
 # the label. Model and effort are explicit, never inherited (orchestration.md).
 #
-# Constraint 1 — the action cannot review the PR that introduces it: the action
-# validates this file against the default branch and exits green without running on
-# any PR that adds or changes it. Verify on the next PR, not this one.
+# Constraint 1 — this workflow cannot review any PR that changes it: claude-code-action skips, green and
+# with no model session, on a PR that adds or changes this file. Its log: "This is expected when adding
+# Claude Code workflows to new repositories or on PRs with workflow changes" (`src/github/token.ts` at the
+# pinned SHA, read 2026-09-30); the comparison runs server side, at the action's token exchange. The last
+# step goes red on such a PR and says why. Verify on the next PR, not this one.
 #
 # Constraint 4 — the posted artifact is the deliverable, in both directions: a green run
 # with no summary comment is a failure to investigate; a red run whose review posted is a
 # pass (cbk-conventions.md § Deliverable trap). The prompt makes the summary an explicit
 # `gh pr comment` and names it first, and the last step asserts it landed: the action runs
-# with continue-on-error so the job's verdict is the assertion's — red only when no summary
-# comment from the review app appeared after the job started, with a one-line notice posted
-# to the PR so the failure is visible there. Designed-unexercised as of 2026-09-06: verify on
-# the first PR after this file lands and restamp this line.
+# with continue-on-error so the job's verdict is the assertion's — red only when no comment from
+# the review app carrying a verdict was written or edited after the job started, with a notice
+# posted to the PR that says why. Exercised in two targets by 2026-09-29 (context-builder-kit#67):
+# the positive path (a separate summary comment, and a tracker comment that carries the verdict)
+# and the validation-skip negative path.
+#
+# GOTCHA — on a PR the session reads the BASE branch's configuration. Before it starts, the action restores
+# `.claude`, `.mcp.json`, `CLAUDE.md` and a few other top-level paths from the base branch and keeps the PR's
+# copies under `.claude-pr/` "for review agents (not executed)" (`SENSITIVE_PATHS` and `restoreConfigFromBase`
+# in `src/github/operations/restore-config.ts` at the pinned SHA, read 2026-09-30). The list names top-level
+# paths only, so a nested `CLAUDE.md`, or an `AGENTS.md` the root `CLAUDE.md` links to, is not restored and
+# reads at the PR head: the restore closes settings, hooks and MCP servers, not every instructions file. The
+# prompt tells the reviewer so; CI, not this review, runs the PR's own hooks and fixtures.
 #
 # GOTCHA: the CI-skip marker on the HEAD commit at the draft→ready flip silently blocks
 # this workflow — end the branch on a non-marker commit before flipping
 # (cbk-conventions.md § [skip ci] rule, the auto-review trap).
+#
+# Model naming — by family alias, never by id and never `best`: `opus` by default and on the deep path,
+# `sonnet` on the fast path and as the fallback. `best` resolves to Fable "where Fable is available to you,
+# otherwise the same model as `opus`" (https://code.claude.com/docs/en/model-config § Model aliases, read
+# 2026-09-30), so an escalation through it would be silent. An alias resolves inside the Claude Code release
+# the pinned action installs (`claudeCodeVersion` in its `src/entrypoints/run.ts`), so the action's commit SHA
+# is the model pin: Dependabot's github-actions bump is the model bump, and a new model needs no edit here.
+# The `Record the resolved model` step writes the model that ran to the job summary. Never set
+# ANTHROPIC_MODEL on the action step: the action hands it to the SDK as the explicit model, and
+# `model: options.model || modelFromClaudeArgs` lets it win over `--model` (`src/entrypoints/run.ts` and
+# `base-action/src/parse-sdk-options.ts` at the pinned SHA, read 2026-09-30). The action-bump PR re-checks
+# what is sized to the model rather than to the alias: each branch's `--effort`, `--max-turns`, and the
+# prompt's degrade N (the note above claude_args; orchestration.md § Generation notes).
 #
 # Needs the `CLAUDE_CODE_OAUTH_TOKEN` Actions secret (`/install-github-app` in Claude Code).
 #
@@ -42,38 +66,73 @@ name: Claude PR Auto-Review
 on:
   pull_request:
     types: [opened, ready_for_review, reopened, labeled]
-    # Docs-only and cascade-artifact PRs are not reviewed by the bot. This is NOT a
-    # required check, so a paths filter is safe here (unlike ci.yml — cbk-conventions-reference.md
-    # § Required-checks trap). A docs-only PR whose docs are one-way
-    # doors (ADRs, the conventions) is reviewed by a human, not skipped by everyone.
-    paths-ignore:
-      - 'docs/cbk/**'
-      - '**/*.md'
-      - '.gitignore'
-      - '.gitattributes'
-      - '.editorconfig'
-      - '.github/dependabot.yml'
-      # [add the project's other prose-only paths]
+    # Docs-only PRs are not reviewed by the bot, but one-way-door markdown is: rules, skills, commands and
+    # agents under `.claude/`, and ADRs under `docs/adr/` (pr-review.md § What NOT to flag: "Not light
+    # where the docs are one-way doors"). A cascade artifact under `docs/cbk/`, the other
+    # one-way door, stays skipped, as the prompt's hard skip has it, and a human reviews it. `paths-ignore`
+    # cannot re-include a path. GitHub: "use the `paths` filter prefixed with the `!` character to indicate
+    # which paths should be excluded", and "A matching positive pattern after a negative match will include
+    # the path again" (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax,
+    # read 2026-09-30). So the re-includes come LAST: one moved above `!**/*.md` silently skips every
+    # one-way-door PR again, and `.claude/workflows/tests/review-trigger-fixture.py` pins the order. This is
+    # NOT a required check, so a path filter is safe here (unlike ci.yml — cbk-conventions-reference.md
+    # § Required-checks trap). The cost is more review runs against the subscription quota the token draws on.
+    paths:
+      - '**'
+      - '!docs/cbk/**'
+      - '!**/*.md'
+      - '!.gitignore'
+      - '!.gitattributes'
+      - '!.editorconfig'
+      - '!.github/dependabot.yml'
+      # [add the project's other prose-only paths, each with a leading `!`, above the re-includes]
+      - '.claude/**'
+      - 'docs/adr/**'
 
-concurrency:
-  group: claude-review-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+# Every run: step runs `bash --noprofile --norc -eo pipefail {0}`. With no shell set, GitHub runs `bash -e {0}`
+# instead, with no pipefail, so `cmd | tee log` passes when cmd fails. The shell table, of the unset case:
+# "Note that this runs a different command to when `bash` is specified explicitly"
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax, read 2026-09-30).
+defaults:
+  run:
+    shell: bash
 
 jobs:
   auto-review:
     name: Auto-review (inline + summary)
+    # A PR from a fork is skipped, not failed: "With the exception of `GITHUB_TOKEN`, secrets are not passed to
+    # the runner when a workflow is triggered from a forked repository", and that token is read-only there
+    # (https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows, read
+    # 2026-09-30). The action could not authenticate, and every outside contribution would get a red check. A
+    # human reviews a fork PR.
     if: |
+      github.event.pull_request.head.repo.full_name == github.repository &&
       (github.event.action != 'labeled' || github.event.label.name == 'claude-review-again') &&
       !github.event.pull_request.draft &&
       !contains(github.event.pull_request.labels.*.name, 'skip-claude') &&
       github.event.pull_request.user.login != 'dependabot[bot]' &&
       github.event.pull_request.user.login != 'renovate[bot]' &&
       github.event.pull_request.user.login != 'claude[bot]'
-    runs-on: ubuntu-latest
-    # Constraint 3 — a job-level timeout: the action has no timeout input of its own.
+    # `concurrency` sits on the job, not the workflow. A workflow-level group is entered by every run the
+    # trigger creates, including a `labeled` run this job's `if:` then skips, and with `cancel-in-progress` that
+    # run cancels the review in flight — runs that only skip were seen taking part in a workflow-level group in
+    # a target's run history (2026-09-30). A job its `if:` skips never starts, so it should never enter a
+    # job-level group: designed-unexercised (2026-09-30), re-check on the first `labeled` run after this lands.
+    concurrency:
+      group: claude-review-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    # A named image, never `ubuntu-latest`: "The `-latest` runner images are the latest stable images that
+    # GitHub provides" (https://docs.github.com/en/actions/reference/runners/github-hosted-runners, read
+    # 2026-09-30), so that label moves when GitHub re-points it and a runner change lands unreviewed. Bump
+    # the image in a reviewed PR.
+    runs-on: ubuntu-24.04
+    # Constraint 3 — a job-level timeout: the action has no timeout input of its own (its action.yml at the
+    # pinned SHA declares none, read 2026-09-30).
     timeout-minutes: 30
-    # Constraint 6 — permissions scoped to the job. `id-token: write` is required by the
-    # action even in OAuth-token mode; `checks: read` for the prompt's `gh pr checks`.
+    # Constraint 6 — permissions scoped to the job. `id-token: write` is required by the action even in
+    # OAuth-token mode: unless a `github_token` input is given, it exchanges an OIDC token for its app token
+    # (`setupGitHubToken` in `src/github/token.ts`, read 2026-09-30). `checks: read` for the prompt's
+    # `gh pr checks`.
     permissions:
       contents: read
       pull-requests: write
@@ -94,15 +153,21 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -uo pipefail
-          # --repo because this step runs BEFORE checkout. Read the PR's labels first: the one
-          # benign case is the label already gone from this PR (a concurrent run took it);
-          # every other failure — including the label deleted from the repository's taxonomy,
-          # which would break re-triggering for everyone — is an error.
-          if gh pr view "$PR_NUMBER" --repo "$REPO" --json labels --jq '.labels[].name' | grep -qxF 'claude-review-again'; then
+          # --repo because this step runs BEFORE checkout. The PR's labels are read first and captured,
+          # so a failed read is an error, never "already removed". The one benign case is the label
+          # already gone from this PR: a concurrent run took it, or the label was deleted from the
+          # repository, which removes it everywhere — "Deleting a label will remove the label from
+          # issues and pull requests" (https://docs.github.com/en/issues/using-labels-and-milestones-to-track-work/managing-labels,
+          # read 2026-09-30) — and re-triggering then needs the label recreated. Every other failure
+          # is an error. The match is a here-string, never `… | grep -q`: under pipefail a match can
+          # read as no match once grep exits first (cbk-conventions-reference.md § Hook authoring).
+          names="$(gh pr view "$PR_NUMBER" --repo "$REPO" --json labels --jq '.labels[].name')" \
+            || { echo "::error::Could not read the PR's labels."; exit 1; }
+          if grep -qxF 'claude-review-again' <<<"$names"; then
             gh pr edit "$PR_NUMBER" --repo "$REPO" --remove-label claude-review-again \
               || { echo "::error::Failed to remove the claude-review-again label."; exit 1; }
           else
-            echo "Label already removed from this PR (benign concurrent run)."
+            echo "Label already removed from this PR (a concurrent run took it, or the label was deleted from the repository)."
           fi
 
       - name: Checkout PR HEAD
@@ -114,7 +179,7 @@ jobs:
       - name: Fetch the base ref (so `git diff origin/<base>...HEAD` resolves)
         # `ref: head.sha` above checks out only the PR head; without this the reviewer's first diff
         # against the base fails ("no merge base") and it spends turns retrying fetches its allowlist
-        # refuses (#58 addendum, item 12). The ref name is read from an env var, never interpolated.
+        # refuses (context-builder-kit#58 addendum, item 12). The ref name is read from an env var, never interpolated.
         env:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: git fetch --no-tags origin "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
@@ -125,31 +190,57 @@ jobs:
         # claude-fast-review > default. Matches the QUOTED JSON token so a stray
         # `claude-deep-review-wip` label cannot false-trigger the heavy path.
         # Constraint 7 — no orphanable sub-dispatch: the default and fast paths keep the
-        # review in one session (`--disallowedTools Agent`); only the deep path fans out.
+        # review in one session (`--disallowedTools Agent`); only the deep path fans out. Each branch
+        # also writes the prompt's dispatch rule, so the prompt never forbids a fan-out the deep path
+        # pays for or offers one the tool list refuses; a deep-path subagent returns before the
+        # summary posts, so none is left running when the session ends.
+        # Every branch names its effort, because the default is per model: "Opus 5.5 and Sonnet 5.5
+        # default to `medium`" (https://code.claude.com/docs/en/model-config § Adjust effort level, read
+        # 2026-09-30), so an unnamed effort drops whenever the alias moves. That makes the fast branch's
+        # `high` load-bearing wherever `sonnet` resolves to Sonnet 5.5.
         env:
           LABELS_JSON: ${{ toJSON(github.event.pull_request.labels.*.name) }}
         run: |
           set -uo pipefail
           labels="${LABELS_JSON:-[]}"
-          if printf '%s' "$labels" | grep -qF '"claude-deep-review"'; then
-            echo "model=[<top-tier or workhorse model id>]" >> "$GITHUB_OUTPUT"
+          # Here-strings, never `printf … | grep -q`: under pipefail a match can read as no match.
+          if grep -qF '"claude-deep-review"' <<<"$labels"; then
+            # `opus`, or `fable` for a project that deliberately escalates its hardest reviews. Before choosing
+            # `fable`: "Fable 5.1 requires Claude Code v2.1.257 or later", so an older pinned action cannot run
+            # it; and "in an Agent SDK application that doesn't show the prompt, Claude Code never asks for
+            # consent" before billing Fable to usage credits (both https://code.claude.com/docs/en/model-config,
+            # read 2026-09-30) — this action is one (its package.json depends on @anthropic-ai/claude-agent-sdk).
+            # Never `best`: the header's Model naming says why.
+            echo "model=opus" >> "$GITHUB_OUTPUT"
             echo "effort=xhigh" >> "$GITHUB_OUTPUT"
-            # `ultracode` as exercised on the deep path (a dated observation, 2026-09-06); re-verify the setting name after harness upgrades.
+            # `ultracode` turns on dynamic workflows and sets no effort: "Turning ultracode on or off with
+            # `/effort` or the `ultracode` setting leaves the effort level unchanged" (the same page, from
+            # Claude Code 2.1.284), so `xhigh` above is named, not implied.
             echo "settings_arg=--settings '{\"ultracode\":true}'" >> "$GITHUB_OUTPUT"
             echo "disallow_arg=" >> "$GITHUB_OUTPUT"
-          elif printf '%s' "$labels" | grep -qF '"claude-fast-review"'; then
-            echo "model=[<mid-tier model id>]" >> "$GITHUB_OUTPUT"
+            echo "dispatch_rule=You may dispatch subagents for independent parts of this review; wait for every one to return before you post the summary, and post it yourself." >> "$GITHUB_OUTPUT"
+          elif grep -qF '"claude-fast-review"' <<<"$labels"; then
+            echo "model=sonnet" >> "$GITHUB_OUTPUT"
+            # A pin pending a Sonnet 5.5 effort sweep, not a calibrated level: "Its levels are recalibrated,
+            # so a level doesn't produce the same amount of thinking as the same level on Claude Sonnet 5"
+            # (https://platform.claude.com/docs/en/build-with-claude/effort, read 2026-09-30), and Claude Code
+            # runs Sonnet 5.5 at `medium` when no effort is named (this step's comment above). `high` holds
+            # until a sweep on this project's own reviews moves it; the action bump that moves `sonnet`
+            # re-checks it.
             echo "effort=high" >> "$GITHUB_OUTPUT"
             echo "settings_arg=" >> "$GITHUB_OUTPUT"
             echo "disallow_arg=--disallowedTools Agent" >> "$GITHUB_OUTPUT"
+            echo "dispatch_rule=Do the review in this one session; do not dispatch subagents, which this path's tool list refuses." >> "$GITHUB_OUTPUT"
           else
-            echo "model=[<workhorse model id>]" >> "$GITHUB_OUTPUT"
+            echo "model=opus" >> "$GITHUB_OUTPUT"
             echo "effort=high" >> "$GITHUB_OUTPUT"
             echo "settings_arg=" >> "$GITHUB_OUTPUT"
             echo "disallow_arg=--disallowedTools Agent" >> "$GITHUB_OUTPUT"
+            echo "dispatch_rule=Do the review in this one session; do not dispatch subagents, which this path's tool list refuses." >> "$GITHUB_OUTPUT"
           fi
 
       - name: Auto-review
+        id: review
         # continue-on-error: the assertion step below decides the job's verdict (constraint 4).
         continue-on-error: true
         uses: anthropics/claude-code-action@[full-commit-sha] # v[version] — [newest release clearing the settle window as of <date>]
@@ -157,7 +248,9 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Full SDK output so an auth or stream failure is diagnosable from the run log.
           show_full_output: true
-          # track_progress is unsupported on `labeled` events (the action fails).
+          # Before claude-code-action v1.0.188, track_progress rejects a `labeled` event (the action fails);
+          # v1.0.188 accepts it (`validActions` in `src/modes/detector.ts` at each tag, read 2026-09-30). Once
+          # the pinned SHA is v1.0.188 or later, this can be `track_progress: true`.
           track_progress: ${{ github.event.action != 'labeled' && 'true' || 'false' }}
           # Named twice on purpose — here and in the job's `permissions:` block. The job block scopes
           # the workflow's own token; this input is what the action requests when it exchanges its OIDC
@@ -174,15 +267,31 @@ jobs:
             for, the one property a UI-looking edit can break>]. Read `CLAUDE.md` first
             [<and the nested CLAUDE.md of each tree the diff touches>].
 
+            ## The base branch's configuration, and this PR's
+
+            Before this session the action restored `.claude/`, `.mcp.json` and the root `CLAUDE.md`
+            from the base branch and kept this PR's copies under `.claude-pr/`. A `Read` of `.claude/…`
+            returns the base's copy, and a `.claude/` file this PR adds is not there at all: read this
+            PR's version under `.claude-pr/` (for example `.claude-pr/.claude/rules/pr-review.md`);
+            `gh pr diff` shows the change itself. A `CLAUDE.md` nested anywhere but under `.claude/` is
+            not on the restore list, so it reads as this PR's own version [<if the root CLAUDE.md is a
+            symlink to AGENTS.md, or the project's instructions live in another file not on the list:
+            say that file is not restored either, so it reads as this PR's own version>]. Where this PR
+            changes a rule you apply, review it against the rule as this PR states it, and say which
+            version you used. You run none of this PR's hooks or fixtures: CI's [<the CI job that runs
+            the project's check task>] is the check for a PR that changes them — read its result with
+            `gh pr checks`.
+
             ## What to do
 
             Enumerate every changed file (`gh pr diff ${{ github.event.pull_request.number }} --name-only`)
             and walk each one; read the surrounding file, not only the hunk, when context matters.
-            If the diff exceeds [N] changed files (a sync of vendored or kit-copied trees, a generated
-            bulk), you cannot walk every file inside the turn cap: review the authored set the PR body
-            names and every file that is not a byte-identical copy of its source, post the summary FIRST
-            with the list of files you did not read, and say so in the verdict line. A capped run that
-            posted nothing is the failure this clause prevents (#58 addendum, item 11).
+            If the diff exceeds [N — the note above claude_args] changed files (a sync of vendored or
+            kit-copied trees, a generated bulk), you cannot walk every file inside the turn cap: review the
+            authored set the PR body names and every file that is not a byte-identical copy of its source,
+            post the summary FIRST with the list of files you did not read, and say so in the verdict line.
+            A capped run that posted nothing is the failure this clause prevents (context-builder-kit#58
+            addendum, item 11).
 
             Then post, **in this order**:
 
@@ -193,8 +302,7 @@ jobs:
 
             **Your deliverable is the posted comments, not your reply.** A review that never ran
             `gh pr comment` for its summary produced nothing. If you are low on turns, post the
-            summary before adding more inline comments. Do the review in this one session — do not
-            dispatch subagents and wait on them.
+            summary before adding more inline comments. ${{ steps.model.outputs.dispatch_rule }}
 
             ## Rubric (from `.claude/rules/pr-review.md`)
 
@@ -222,25 +330,27 @@ jobs:
             Do not rely on a hard-coded ADR list in this prompt. Known citation defects live in
             `docs/adr/corrections.md`; do not restate a claim already flagged wrong there.
 
-            Project-local reviewer agents in `.claude/agents/` encode extra checks. Apply them
-            **inline yourself** (one session, no subagents): read the ones whose scope the diff
-            touches, per `.claude/rules/pr-review.md` § Project-local agents.
+            Project-local reviewer agents in `.claude/agents/` encode extra checks. Apply the ones
+            whose scope the diff touches, per `.claude/rules/pr-review.md` § Project-local agents,
+            under the dispatch rule above.
 
             ## How to format the summary comment
 
-            One-line verdict: **APPROVE** / **APPROVE WITH NITS** / **REQUEST CHANGES** / **NEEDS DISCUSSION**.
+            One-line verdict, the verdict in bold: **APPROVE** / **APPROVE WITH NITS** / **REQUEST CHANGES** / **NEEDS DISCUSSION**.
             Then a counts table (Apply / Apply with care / Surface / Defer / Reject). Then three to
-            seven lines on the most important findings and any cross-cutting concern. CI status is
-            usually NOT readable from your token (`gh pr checks` fails with "Resource not accessible
-            by integration"); if it is, reference a failed check, otherwise say nothing about CI —
-            never report the permission error as a finding. End with one line on what is NOT in
-            scope of this review.
+            seven lines on the most important findings and any cross-cutting concern. Read CI with
+            `gh pr checks` (this job grants `checks: read`) and reference a failed check; if it fails
+            with "Resource not accessible by integration", the grant is missing — say so in one line,
+            never as a finding. Report only commands you actually ran: a command you never issued is
+            never reported as run, passed or refused. End with one line on what is NOT in scope of
+            this review.
 
             ## What to skip
 
             - Docs-only or cascade-artifact PRs (`docs/cbk/`, `*.md` only): post the one-line summary
-              `Docs-only PR — auto-review skipped per rule` and exit — unless the docs are one-way
-              doors (ADRs, the conventions), which a human reviews.
+              `**SKIPPED** — docs-only PR, auto-review skipped per rule` and exit — unless the markdown is under
+              `.claude/` or `docs/adr/`: rules, skills, commands, agents and ADRs are one-way doors,
+              and you review them like code.
             - Issues in unchanged code; speculative future-risk warnings with no concrete failing path;
               restating what a function name already says; library or framework swaps (blueprint's job);
               stylistic nits without a strong rationale (those are Reject, one line).
@@ -250,33 +360,117 @@ jobs:
             `gh pr view ${{ github.event.pull_request.number }}` for metadata, `gh pr diff` for the diff,
             and the inline-comment MCP tool for line-specific findings.
 
-            Model in use: ${{ steps.model.outputs.model }} (effort: ${{ steps.model.outputs.effort }})
+            Model in use: the `${{ steps.model.outputs.model }}` alias at effort ${{ steps.model.outputs.effort }} (an alias, not a model id; the job summary records the model that ran).
+          # A gate the project adds to the prompt (a check command the reviewer may run) gets its own
+          # --allowedTools entry below, and the two lists are edited together: a gate the prompt offers and
+          # the list refuses is a review that reports a refusal. Claude Code splits a compound command, and
+          # "A rule must match each subcommand independently"; a `cd` inside the working directory "is also
+          # read-only" (https://code.claude.com/docs/en/permissions § Compound commands, § Read-only commands,
+          # read 2026-09-30). Prefer one command per gate, and confirm a compound one on a real run. A gate
+          # that runs a `.claude/`-hosted fixture runs the BASE branch's copy on a PR that changes it (the
+          # header's restore GOTCHA): keep such fixtures out of the gates, or say in the prompt that the bot
+          # runs the base copy.
+          #
+          # The degrade clause's N is what the turn cap leaves after the posting calls. On Claude Code 2.1.286
+          # `--max-turns` counts round trips, not tool calls: five parallel `Read` calls in one response spent
+          # one turn (measured 2026-09-30 with `claude -p --max-turns 1` and `2`, `--output-format stream-json`;
+          # a target measured them per call on 2.1.274). A reviewer that reads one file per response spends a
+          # turn a file either way, so at one `Read` a file keep about a third of the cap for the `gh` calls,
+          # the inline comments and the summary: N = 40 against `--max-turns 60`. N and the cap move together:
+          # re-measure on the release your pinned action installs, and the action-bump PR re-checks both
+          # (orchestration.md § Generation notes).
           claude_args: |
             --model ${{ steps.model.outputs.model }}
-            --fallback-model [<mid-tier model id>]
+            --fallback-model sonnet
             --effort ${{ steps.model.outputs.effort }}
             ${{ steps.model.outputs.settings_arg }}
             --max-turns 60
             --allowedTools "Read,Grep,Glob,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh pr checks:*),Bash(gh run view:*),Bash(gh run list:*),mcp__github_inline_comment__create_inline_comment"
             ${{ steps.model.outputs.disallow_arg }}
 
+      - name: Record the resolved model
+        # The alias says which family was asked for; this says which model ran. The action writes the session's
+        # SDK messages to `execution_file` as a JSON array (`writeExecutionFile` in
+        # `base-action/src/execution-file.ts`, read 2026-09-30). Its `init` message carries the `model` the
+        # session started on and the `claude_code_version` it ran, and the `result` message's `modelUsage` holds
+        # "per-model totals for every model call made through the query pipeline"
+        # (https://code.claude.com/docs/en/agent-sdk/typescript, read 2026-09-30). `always()`, because a failed
+        # review is the run whose model matters most; continue-on-error, because this step is informational
+        # and must never redden a review that posted. What it appends is "shown on the workflow run summary
+        # page" (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands § Adding a
+        # job summary, read 2026-09-30). The step ran green in a target's review run on 2026-09-29, but the
+        # rendered line was not read back, so its display stays designed-unexercised: restamp this line when a
+        # run page shows it.
+        # `.claude/workflows/tests/review-assert-fixture.sh` runs this body on synthetic execution files.
+        if: always() && steps.review.outputs.execution_file != ''
+        continue-on-error: true
+        env:
+          EXECUTION_FILE: ${{ steps.review.outputs.execution_file }}
+          REQUESTED: ${{ steps.model.outputs.model }}
+          EFFORT: ${{ steps.model.outputs.effort }}
+        run: |
+          started=$(jq -r '[.[] | select(.type == "system" and .subtype == "init") | .model][0] // "unknown"' "$EXECUTION_FILE")
+          version=$(jq -r '[.[] | select(.type == "system" and .subtype == "init") | .claude_code_version][0] // "unknown"' "$EXECUTION_FILE")
+          used=$(jq -r '[.[] | select(.type == "result") | (.modelUsage // {}) | keys[]] | unique | join(", ")' "$EXECUTION_FILE")
+          echo "Review model: started \`$started\` on Claude Code \`$version\`, used \`${used:-none recorded}\` (requested the \`$REQUESTED\` alias at effort \`$EFFORT\`)" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Assert the review posted (constraint 4 — the artifact decides)
-        if: always()
+        # Three fixes over the first form (context-builder-kit#67):
+        #   - pages are fetched once and slurped (`--paginate`, then `jq -s`): `gh api --paginate --jq`
+        #     runs the filter once per page, so past 30 comments a posted review read as missing;
+        #   - the summary is matched by its verdict marker, on `updated_at` since the job started: the
+        #     action's tracker comment alone must not satisfy it, and an edit in place is a landing. A
+        #     tracker that ends with the review's own text carries the verdict, and that is a landed
+        #     review (observed in a target, 2026-09-24). The marker is a bold verdict from the prompt's
+        #     verdict line, or the bold `SKIPPED` its docs-only skip line opens with; a verdict word in
+        #     plain text, as a tracker's progress note can carry, is not one. A project that edits that
+        #     vocabulary edits the `test(...)` pattern below with it, and the fixture checks each bold
+        #     word the prompt prescribes against this step;
+        #   - `!cancelled()`, never `always()`: a run superseded through `concurrency` is not a failure.
+        # Why no session started is read from the checkout, not from the action. Its validation-skip flag
+        # is not a declared output, and its `conclusion` output is declared only from v1.0.188, while
+        # `execution_file` is declared at every tag from v1.0.0 on (action.yml at each tag, read 2026-09-30). An empty
+        # `execution_file` means no model session; then a diff of this file against the PR's base tells a
+        # validation skip (the copies differ) from an auth or setup failure (they match). The diff is tree
+        # against tree, `$BASE_SHA HEAD`, never from the merge base: the action compares contents, so a
+        # base that changed this file after the PR branched skips the review as surely as the PR changing
+        # it does. The diff is against the PR's base SHA: on a PR into a branch other than the default,
+        # that may not be the copy the action validates against, and the notice can misname the cause. Every value arrives through env:,
+        # never interpolated. `.claude/workflows/tests/review-assert-fixture.sh` runs this body.
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
           STARTED_AT: ${{ steps.start.outputs.at }}
           REVIEW_LOGIN: "[<the review app's login, e.g. claude[bot]>]"
+          SESSION_RAN: ${{ steps.review.outputs.execution_file != '' }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -uo pipefail
-          n="$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
-                --jq "[.[] | select(.user.login == \"$REVIEW_LOGIN\") | select(.created_at >= \"$STARTED_AT\")] | length")" || n=0
-          if [ "${n:-0}" -ge 1 ]; then
-            echo "Review posted ($n comment(s) since $STARTED_AT)."
-          else
-            gh pr comment "$PR_NUMBER" --repo "$REPO" --body "Auto-review did not post a summary — see $RUN_URL. Re-trigger with the \`claude-review-again\` label." || true
-            echo "::error::No review comment from $REVIEW_LOGIN since $STARTED_AT — the deliverable did not land (cbk-conventions.md § Deliverable trap)."
+          if ! comments="$(gh api "repos/$REPO/issues/$PR_NUMBER/comments?per_page=100" --paginate)"; then
+            echo "::error::Could not list the PR's comments, so whether the review posted is unknown — see the log above."
             exit 1
           fi
+          if ! n="$(jq -s --arg login "$REVIEW_LOGIN" --arg start "$STARTED_AT" '[.[][] | select(.user.login == $login and .updated_at >= $start and (.body | test("\\*\\*(APPROVE( WITH NITS)?|REQUEST CHANGES|NEEDS DISCUSSION|SKIPPED)\\*\\*")))] | length' <<<"$comments")"; then
+            echo "::error::Could not read the PR's comments as JSON, so whether the review posted is unknown."
+            exit 1
+          fi
+          if [ "$n" -ge 1 ]; then
+            echo "Review summary posted: $n comment(s) from $REVIEW_LOGIN with a verdict since $STARTED_AT."
+            exit 0
+          fi
+          if [ "$SESSION_RAN" = "true" ]; then
+            why="The review session ran but no summary with a verdict landed — see $RUN_URL. Re-trigger with the \`claude-review-again\` label."
+          else
+            rc=0; git diff --quiet "$BASE_SHA" HEAD -- .github/workflows/claude-review.yml || rc=$?
+            case "$rc" in
+              0) why="The review did not run: no model session started, and this PR's .github/workflows/claude-review.yml matches its base's, so this is an auth or setup failure, not a validation skip — see $RUN_URL. Fix the cause, then re-trigger with the \`claude-review-again\` label." ;;
+              1) why="The review was skipped by claude-code-action's workflow validation: this PR's .github/workflows/claude-review.yml differs from its base's (the PR changes it, or the base changed it after the PR branched), and the action skips a workflow that differs from the copy it validates against (its log says \"Exiting due to workflow validation skip\"). Re-triggering cannot fix that — review this PR another way; see $RUN_URL." ;;
+              *) why="The review did not run: no model session started, and whether this PR's .github/workflows/claude-review.yml differs from its base's could not be read (git diff exited $rc) — see $RUN_URL." ;;
+            esac
+          fi
+          gh pr comment "$PR_NUMBER" --repo "$REPO" --body "Auto-review: no summary posted. $why" || echo "::warning::Could not post the notice to the PR either."
+          echo "::error::No review summary since $STARTED_AT — the deliverable did not land (cbk-conventions.md § Deliverable trap). $why"
+          exit 1

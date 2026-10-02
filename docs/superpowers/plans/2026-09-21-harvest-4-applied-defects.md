@@ -1315,7 +1315,7 @@ Append to item 4: ` The always-loaded rule set at the kit's current sha totals t
 Run: `bash .claude/workflows/tests/run-verification-block.sh | tail -6 && for h in .claude/hooks/*.sh; do bash -n "$h"; done && node .claude/workflows/tests/load-workflow-shape.mjs && node .claude/workflows/tests/review-sweep-accounting.mjs && node .claude/workflows/tests/finish-ab-shape.mjs && bash .claude/workflows/tests/agent-cost-fixture.sh && bash .claude/workflows/tests/hook-contract-fixture.sh && echo ALL-GREEN`
 Expected: `ALL-GREEN`, `always-loaded total:` printed (record it), no `_example_` key in settings, the executor pair byte-parallel.
 
-Sanitization: `grep -rn -i 'crease\|CRE-[0-9]\|echosphere\|you-are-hear\|yah_\|ECH-[0-9]' .claude/ docs/adr/ README.md` → only the `#58`-adjacent mentions in the spec/plan (under `docs/superpowers/`) and the two public run names inside `.claude/` where a sentence already cites #58 with them (none expected; if any, rewrite to "a real application").
+Sanitization: `grep -rn -i 'cr[e]ase\|CR[E]-[0-9]\|echosphere\|you-are-hear\|yah_\|ECH-[0-9]' .claude/ docs/adr/ README.md` → only the `#58`-adjacent mentions in the spec/plan (under `docs/superpowers/`) and the two public run names inside `.claude/` where a sentence already cites #58 with them (none expected; if any, rewrite to "a real application").
 
 - [ ] **Step 3: Commit, push, one review sweep, the PR**
 

@@ -136,7 +136,10 @@ these become the gate's decision list; the repo claims it verified; and brief no
 The set is verified before it is shown: one fresh-context verifier at the project's verify tier attacks every
 citation and every claim about the repo or a package API against the sources, checks the coverage map against the
 bodies and every test tag against a numbered criterion, attacks absence claims hardest, runs the phase exit checklist
-mechanically, and returns defects with a verbatim quote each. Fix, then present. For a high-stakes milestone, generate
-two or three contract-first drafts, judge them blind, and synthesize from the winner. Tiering per the project's
+mechanically, and returns defects with a verbatim quote each. Fix, then present. A change the operator makes at the
+gate — issues merged, a criterion moved or dropped, counts reshaped — is a new draft: one more fresh-context verifier
+attacks the consolidated set before the one-way commit (`references/research-phase.md` § The verdict-first committed
+corpus, the spec-verification stage). For a high-stakes milestone, generate two or three contract-first drafts, judge
+them blind, and synthesize from the winner. Tiering per the project's
 `.claude/rules/orchestration.md`: drafters and verifiers at the workhorse tier, effort `high`, never a finder tier for
 anything that lands in an issue body.

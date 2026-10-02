@@ -36,10 +36,10 @@
 #           a tree placed by hand or by tooling UNDER an ignored directory (a build
 #           output, a tool cache) exits 0 — the dispatch that would create one is
 #           refused by require-repo-root-for-agents.sh, which is the guard for that
-#           case (#58 item 1's scenario table, reproduced independently 2026-09-13).
+#           case (context-builder-kit#58 item 1's scenario table, reproduced independently 2026-09-13).
 #           `./.claude-pr` is pruned unconditionally: it is the staging copy a
 #           hosted review action makes of the branch's `.claude/` tree, committed
-#           memory included — a copy, not a fork (#58, 2026-09-07 comment).
+#           memory included — a copy, not a fork (context-builder-kit#58, 2026-09-07 comment).
 # Path:     registered as ${CLAUDE_PROJECT_DIR}/.claude/hooks/… (handlers run
 #           in the current directory — https://code.claude.com/docs/en/hooks).
 # Tier:     STOP.
@@ -59,15 +59,29 @@ set -uo pipefail
 # Drain stdin before any early exit, or a piping caller's SIGPIPE masks this hook's own
 # exit code (cbk-conventions-reference.md § Hook authoring › The stdin / exit contract).
 input="$(cat)"
+# A warning goes to stderr, which on exit 0 reaches only the debug log, and is gathered for the user: every exit 0 below
+# goes through pass(), which prints the gathered warnings as the systemMessage on stdout
+# (https://code.claude.com/docs/en/hooks § Exit code 0 and § JSON output, read 2026-10-01). A block (exit 2) carries
+# its reason on stderr, which the harness hands to Claude. Pure bash, so it works on the minimal PATH this hook allows.
+notes=()
+note() { printf '%s\n' "$@" >&2; notes+=("$*"); }
+pass() {
+  if [ "${#notes[@]}" -gt 0 ]; then
+    local m="${notes[*]}"; m=${m//$'\n'/ }; while [[ $m == *"  "* ]]; do m=${m//  / }; done
+    m=${m//\\/\\\\}; m=${m//\"/\\\"}
+    printf '{"systemMessage":"%s"}\n' "$m"
+  fi
+  exit 0
+}
 
 # The scan runs from the checkout's git top-level. CLAUDE_PROJECT_DIR is exported to the hook
 # process (https://code.claude.com/docs/en/hooks — the same page documents the placeholder);
 # when it is absent the process's own $PWD may be a subdirectory — the drift case — and a scan
 # rooted there would treat <subdir>/.claude/agent-memory as the canonical tree and miss the fork.
 PROJECT_DIR="$(git -C "${CLAUDE_PROJECT_DIR:-$PWD}" rev-parse --show-toplevel 2>/dev/null)" || {
-  echo "detect-forked-agent-memory: WARNING — ${CLAUDE_PROJECT_DIR:-$PWD} is not inside a git checkout; fork detection inactive for this stop." >&2
-  echo "                            Backstop: the verification block's Stop-hook check (cbk-conventions-reference.md § Verification)." >&2
-  exit 0
+  note "detect-forked-agent-memory: WARNING — ${CLAUDE_PROJECT_DIR:-$PWD} is not inside a git checkout; fork detection inactive for this stop." \
+    "                            Backstop: the verification block's Stop-hook check (cbk-conventions-reference.md § Verification)."
+  pass
 }
 
 # Absent field ⇒ first block. Present and true ⇒ the agent is already continuing from this hook.
@@ -78,9 +92,9 @@ active=""
 grep -Eq '"stop_hook_active"[[:space:]]*:[[:space:]]*true' <<<"$input" && active="true"
 
 cd "$PROJECT_DIR" || {
-  echo "detect-forked-agent-memory: WARNING — cannot enter $PROJECT_DIR; fork detection inactive for this stop." >&2
-  echo "                            Backstop: the verification block's Stop-hook check (cbk-conventions-reference.md § Verification)." >&2
-  exit 0
+  note "detect-forked-agent-memory: WARNING — cannot enter $PROJECT_DIR; fork detection inactive for this stop." \
+    "                            Backstop: the verification block's Stop-hook check (cbk-conventions-reference.md § Verification)."
+  pass
 }
 
 # Every directory named agent-memory or agent-memory-local that is not the root's
@@ -91,16 +105,20 @@ cd "$PROJECT_DIR" || {
 # --exclude-standard --directory` names them (build output, tool caches, vendored
 # trees), so the skip list is .gitignore's, read at run time, never a hand-kept list
 # of stack names (the hand-kept list missed a second project's tool cache on its first
-# real application — #58 item 1). No -mindepth: as first written, -mindepth 2
+# real application — context-builder-kit#58 item 1). No -mindepth: as first written, -mindepth 2
 # exempted depth-1 directories from the prune test, so a top-level node_modules was
 # walked and its contents flagged (reproduced 2026-09-06). A stray tree under an
 # untracked but unignored directory is still found — that is the fork case.
 #
-# Three rules make an ignore-driven list safe (#58 item 1):
-#   1. Never prune a path that could BE or CONTAIN the tree this hook hunts for. A
-#      project that ignores the memory directory by an unanchored name (`agent-memory/`
-#      — the natural spelling for the `local` scope) or ignores `.claude/` wholesale
-#      would otherwise have its own ignore rules hide the fork.
+# Three rules make an ignore-driven list safe (context-builder-kit#58 item 1):
+#   1. Never prune a directory whose own name is one of the three this rule protects —
+#      the two the hook hunts, `agent-memory` and `agent-memory-local`, and `.claude`,
+#      which holds them: such a directory could BE or CONTAIN the tree. A project that
+#      ignores the memory directory by an unanchored name (`agent-memory/` — the natural
+#      spelling for the `local` scope) or ignores `.claude/` wholesale would otherwise
+#      have its own ignore rules hide the fork. A tree nested inside some OTHER ignored
+#      directory is pruned with it — the Residual above, a limit of this rule, not a
+#      promise it keeps.
 #   2. `-path` takes a glob, and `*`/`?` in it cross `/`. An ignored directory named
 #      `*` (a legal Unix name) would splice in as `-path './*'`, prune the first
 #      top-level entry the walk reaches, and report a clean tree with no stderr —
@@ -122,12 +140,12 @@ done < <(
 )
 # find's stderr is kept, not discarded: an unreadable directory makes the scan partial,
 # and a partial scan that reports "clean" is the silent miss this hook exists to stop
-# (#58 item 2). A redirection to an uncreatable path would abort the walk before find
+# (context-builder-kit#58 item 2). A redirection to an uncreatable path would abort the walk before find
 # ran, leaving forks empty and the tree reported clean — so the path is tested first
-# and the walk degrades to unmonitored with a warning (#58, 2026-09-07 comment).
+# and the walk degrades to unmonitored with a warning (context-builder-kit#58, 2026-09-07 comment).
 scan_err="$(mktemp 2>/dev/null || printf '%s/.detect-forked-agent-memory.%s.err' "${TMPDIR:-/tmp}" "$$")"
 if ! : 2>/dev/null >"$scan_err"; then
-  echo "detect-forked-agent-memory: WARNING — no scratch file for the scan's stderr ($scan_err); the walk runs unmonitored, so a partial scan cannot be reported." >&2
+  note "detect-forked-agent-memory: WARNING — no scratch file for the scan's stderr ($scan_err); the walk runs unmonitored, so a partial scan cannot be reported."
   scan_err=/dev/null
 fi
 forks=()
@@ -136,18 +154,17 @@ while IFS= read -r d; do forks+=("$d"); done < <(
          ${prunes[@]+"${prunes[@]}"} \) -prune -o -type d \( -name agent-memory -o -name agent-memory-local \) -print 2>"$scan_err" | sort
 )
 if [ -s "$scan_err" ]; then
-  echo "detect-forked-agent-memory: WARNING — the scan was partial; find could not read:" >&2
-  head -n 5 "$scan_err" >&2
-  echo "                            A stray tree under an unreadable directory is missed; fix the permissions and stop again." >&2
+  note "detect-forked-agent-memory: WARNING — the scan was partial; find could not read:" "$(head -n 5 "$scan_err")" \
+    "                            A stray tree under an unreadable directory is missed; fix the permissions and stop again."
 fi
 [ "$scan_err" = /dev/null ] || rm -f "$scan_err"
 
-[ "${#forks[@]}" -eq 0 ] && exit 0
+[ "${#forks[@]}" -eq 0 ] && pass
 
 if [ "$active" = "true" ]; then
-  echo "detect-forked-agent-memory: WARNING — forked reviewer memory still present after one fix attempt; letting the stop proceed:" >&2
-  printf '  %s\n' "${forks[@]}" >&2
-  exit 0
+  note "detect-forked-agent-memory: WARNING — forked reviewer memory still present after one fix attempt; letting the stop proceed:" \
+    "$(printf '  %s\n' "${forks[@]}")"
+  pass
 fi
 
 cat >&2 <<MSG

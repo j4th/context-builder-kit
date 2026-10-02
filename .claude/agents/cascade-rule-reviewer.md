@@ -39,10 +39,10 @@ If only a branch name is given, run `git diff main...HEAD` (or against the named
    - **New cascade artifact under `docs/cbk/`** → `cbk-conventions.md` § Mutation discipline (append-only? superseded via a new numbered file, not an in-place edit?)
    - **New ADR under `docs/adr/`** → `cbk-conventions.md` § ADR index sync (are all the indexes updated in lockstep?) — note this is the *index-sync convention*, distinct from ADR *decision* conformance, which is `adr-conformance-reviewer`'s job
    - **Branch name not matching convention** → `cbk-conventions.md` § Branch naming
-   - **PR title not Conventional Commits** → `cbk-conventions.md` § Closes-keyword conventions / commit format
+   - **PR title not Conventional Commits** → `cbk-conventions.md` § Closes-keyword conventions (PR titles are Conventional Commits)
    - **`[skip ci]` on a code / test / workflow / task-runner commit** → `cbk-conventions.md` § `[skip ci]` rule
    - **Knowledge-backend write reference in a non-cascade-skill code path** → `knowledge-backend.md` § HITL announcement discipline
-   - **Code that mirrors / re-stores cascade artifacts or ADRs** → `knowledge-backend.md` § no cascade-artifact / ADR mirroring
+   - **Code that mirrors / re-stores cascade artifacts or ADRs** → `knowledge-backend.md` § The code-adjacent split — canonical (its **Never** list)
 
 2. **Read each intersecting rule.** Don't skim. The "principles" + "operational rules" + "anti-patterns" sections name the contract.
 

@@ -19,14 +19,23 @@ Not a prose doc — a guide for what config artifacts to produce. Tooling is the
 The set depends on stack decisions. Default set:
 
 1. **Task runner config** (one of):
-   - `mise.toml` — for projects using mise
+   - `mise.toml` — for projects using mise. mise runs an inline task under `sh -o errexit -c` unless told otherwise (the `unix_default_inline_shell_args` default, `https://github.com/jdx/mise/blob/main/settings.toml`, read 2026-09-30) — no `pipefail`, so `false | true` passes. The emitted file carries this block verbatim:
+
+     ```toml
+     [task_config]
+     # bash, errexit kept inside command substitutions (inherit_errexit), pipefail on.
+     # A task's own `shell` overrides this default, so no task sets one. Needs mise >= 2026.7.15.
+     shell = "bash -O inherit_errexit -c -o errexit -o pipefail"
+     ```
+
+     `task_config.shell` "sets a project-scoped default shell for tasks, with task-local and template `shell` still taking precedence" (the v2026.7.15 release notes, jdx/mise#11354, `https://github.com/jdx/mise/releases/tag/v2026.7.15`, read 2026-09-30). A mise older than that release predates the key, so pin mise at or above it wherever tasks run, a CI setup action's own pin included. Measured 2026-09-30 on mise 2026.8.16 with bash 5.2: the inline task `false | true; echo reached` exits 0 without the block and fails with it, and `inherit_errexit` is what makes `x=$(false; echo leaked)` fail instead of quietly assigning `leaked`.
    - `Makefile` — for traditional Unix projects
    - `justfile` — for projects using just
    - `package.json` scripts — for Node projects
    - `Cargo.toml` aliases or `xtask` — for Rust projects (or fall through to mise/just)
    - Whichever the user chose during stack decisions
 
-   Must define at minimum: `setup`, `check`, `test`, `lint`, `dev` (or local equivalents).
+   Must define at minimum: `setup`, `check`, `test`, `lint`, `dev` (or local equivalents), and a **verification task** that `check` depends on, whose body is `bash .claude/workflows/tests/run-verification-block.sh` (`cbk-conventions-reference.md` § Verification › Run it). The runner needs `bash`, `git`, `awk` and `mktemp`; the block it runs also needs `jq`, `node` and `python3`, because it runs the kit's fixtures, so `setup` installs them or the stack decisions say where they come from. A host missing one of them runs the block red. In a filled target the runner requires both `verification: project sub-block complete` and `verification: done`. Name the task in CLAUDE.md's command list like every other.
 
 2. **CI pipeline** at `.github/workflows/<name>.yml`:
    - One workflow file (or split if there's a clear reason)
@@ -46,6 +55,7 @@ The set depends on stack decisions. Default set:
 ## Rules
 
 - **Every command in CLAUDE.md = actual task definition.** No exceptions.
+- **The verification block is a leg of `check`, never a command someone remembers.** It holds the `.claude/` tooling contract (the hook registry, the byte-parallel copies, the always-loaded budget, the project sub-block), and a check nobody re-runs is a belief with a date on it. Because `check` locally = the CI pipeline (the next rule), the CI job that runs `check` runs the block too. Run the task once before the HITL presentation; a red line is fixed before hand-off, not recorded.
 - **`check` locally = CI pipeline.** No surprises. If CI runs lint+typecheck+test, `check` runs lint+typecheck+test. If they diverge, local-vs-CI debugging becomes a recurring cost.
 - **`mise install` (or equivalent) gets a new contributor everything.** Setup should be one command. If it's not, the README's "Install" section becomes a multi-step ordeal.
 - **For pre-implementation projects**: produce config with placeholder tasks. Establishing the convention matters more than the implementation. A `test` task that runs `echo "no tests yet"` is fine for v0.1; the convention exists, the next phase fills it in.
@@ -64,12 +74,22 @@ on:
   pull_request:
     branches: [main]
 
+# `bash --noprofile --norc -eo pipefail {0}` on every run: step. Unset, GitHub runs `bash -e {0}`, with no
+# pipefail (the shell table in https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax,
+# read 2026-09-30).
+defaults:
+  run:
+    shell: bash
+
 jobs:
   <job-name-from-standards>:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # a named image: `ubuntu-latest` moves when GitHub re-points the label; bump in a reviewed PR
     steps:
-      - uses: actions/checkout@v4
-      - uses: <language-setup-action@version>
+      # Every `uses:` pinned to a full commit SHA with a trailing version comment, never a mutable tag, as the
+      # review templates pin theirs (cbk-conventions-reference.md § Dependency settle-window); the update
+      # bot's CI-actions entry bumps the pins.
+      - uses: actions/checkout@[full-commit-sha] # v[version]
+      - uses: <language-setup-action>@[full-commit-sha] # v[version]
       - run: <task-runner> <command-from-standards>
 ```
 
@@ -89,7 +109,7 @@ The sanity pass asks eight questions. Each is **stack-agnostic**; the user bring
 4. **License / advisory checker** — Will the license allowlist and advisory rules match what gets pulled transitively once dependencies are installed? Do you want to run the checker once now against a populated dependency tree and amend the allowlist, or ship defaults and fix at first CI run?
 5. **Stack-decision contradictions** — Any tooling config rules we wrote that contradict stack decisions from earlier in this session? (Example: a ban on a system library that a storage decision requires.) This is a cross-check: read the bans / denies / allow-lists in the tooling configs and verify none contradict the stack decisions list.
 6. **Automated review bot workflows** — **If we're committing an automated review bot as a merge gate** (claude-code-action, CodeRabbit, Copilot review, or equivalent): the out-of-the-box workflows these tools ship are usually wrong for any specific project. They over-review, under-review, comment on the wrong things, or apply generic rules that don't match your standards. Retuning them is a real authoring task — see the "Automated review bot prompt construction" section below for the full treatment. Sanity-pass-level decisions to make right now: (a) do you want the review bot to skip docs-only and template-only PRs to save tokens? (b) do you want concurrency cancellation so a burst of pushes only pays for the final review? (c) what wall-clock cap on the review job? (d) read-only tool permissions, or can the bot commit/push? (e) which PR authors should be skipped (drafts, dependabot, renovate, etc.)? **Also**: how will you verify the review bot actually ran and commented on your first post-blueprint PR? A bot gate that's silently broken is worse than no gate.
-6b. **Toolchain pins the bot does not cover** — the toolchain manager's pins (`mise.toml` `[tools]`, `.tool-versions`, `rust-toolchain.toml`, `.nvmrc`) and container base-image tags are outside every dependabot ecosystem: the settle window applies by hand (`cbk-conventions-reference.md` § Dependency settle-window). Decide now how the project records the settled age at pin time and what tracks the next bump — an open question in the frame, or a project automation.
+6b. **Pins the bot does not cover** — the toolchain manager's pins (`mise.toml` `[tools]`, `.tool-versions`, `.nvmrc`), an image referenced only by `COPY --from=<image>`, and a dev container's image are outside every dependabot ecosystem, and a bumped image from any registry but Docker Hub arrives with no cooldown date: the settle window applies by hand. A Dockerfile `FROM`, a compose `image:` and `rust-toolchain.toml` are covered, and a `COPY --from` image is brought under the bot by a named `FROM … AS <stage>` (`cbk-conventions-reference.md` § Dependency settle-window, which states this once; the starter's `dependabot.yml` section restates it). Decide now how the project records the settled age at pin time and what tracks the next bump — an open question in the frame, or a project automation.
 7. **Coupled dependency pairs** — Are there dependency pairs in your stack that are coupled upstream (library A caps library B's version, or they need to be bumped together)? If yes, your automated dependency bump config should group them so a single coordinated PR lands instead of two conflicting ones that can't both merge.
 8. **Temporary workarounds and trip-wires** — Any workarounds we're shipping from questions 1–7 just to get CI green on empty scaffolding? For each, we'll capture it in a **Cleanup tracking** section in `blueprint.md` with an explicit trip-wire condition for removal. Example trip-wires: *"remove when the first real test binary lands"*, *"remove when each ignored dep gets actually wired up"*, *"remove when upstream library X drops dependency Y"*.
 
@@ -173,7 +193,7 @@ Output format:
 - [Whether to use inline comments or top-level summary]
 ```
 
-**Tool permissions and workflow-level config** (the question 6 sub-questions from the sanity pass) get baked into the workflow file alongside the prompt. For GitHub Actions specifically: `paths-ignore` for docs-only PRs, `concurrency` group with `cancel-in-progress`, `timeout-minutes` cap, `permissions:` block scoped to read-only contents + write pull-requests, `if:` filter for drafts/bots.
+**Tool permissions and workflow-level config** (the question 6 sub-questions from the sanity pass) get baked into the workflow file alongside the prompt. For GitHub Actions specifically: a `paths` filter that skips docs-only PRs but re-includes one-way-door markdown (`.claude/**`, `docs/adr/**`) last — `paths-ignore` cannot re-include, and `templates/claude-review.yml`'s trigger comment says why the order matters; a job-level `concurrency` group with `cancel-in-progress`, so a run the job's `if:` skips cannot cancel a live review; a `timeout-minutes` cap; a `permissions:` block scoped to read-only contents + write pull-requests; an `if:` filter for drafts, bots and fork PRs.
 
 **HITL gate for the review bot prompt**: present the generated prompt content inline before committing the workflow file. Lead with: *"Here's the review bot prompt synthesized from <N> practitioner sources and your STANDARDS.md / ARCHITECTURE.md / CLAUDE.md. The 'do not duplicate' list mirrors your CI gates, the 'things CI can't catch' list mirrors your Unenforced invariants table, the 'leave alone' list mirrors the sanity pass workarounds. Read it as if you're the bot — anything it should be told that I missed? Anything it should ignore that's in the list?"*
 
@@ -208,7 +228,7 @@ Iterate until approved. Then commit each config file via GitHub MCP to its targe
 
 If the user invoked light mode:
 
-- **Task runner config has the minimum set**: setup, check, test. Skip lint/typecheck/dev/fix/etc. unless they were explicitly chosen during stack decisions.
+- **Task runner config has the minimum set**: setup, check, test, and the verification task `check` depends on (it keeps the `.claude/` contract checked, so light mode keeps it too). Skip lint/typecheck/dev/fix/etc. unless they were explicitly chosen during stack decisions.
 - **CI workflow has 1–3 jobs** instead of 5+
 - **Skip env template** unless the project clearly has env vars
 - **Surface a skipped review automation as a one-line notice**, never a silent omission

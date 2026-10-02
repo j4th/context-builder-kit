@@ -24,13 +24,13 @@ Create a new ADR. ADRs are **immutable** (ADR-0000) — superseding writes a new
 
 When invoked, **propose** every input below from what the operator already said and the tree (the conversation, the issue, the frame, the existing ADR index), present the filled set in one exchange, and ask only for what cannot be inferred — never one question at a time, and never a bare form. The operator corrects the proposal; the corrected set is the input.
 
-1. **Slug** — kebab-case noun phrase, max 8 words. Used in the filename. Example: `vector-store-as-anubis-tool`.
-2. **Title** — full title for the ADR header, sentence case. Example: `Vector store as an Anubis tool, not an MCP server`.
+1. **Slug** — kebab-case noun phrase, max 8 words. Used in the filename. Example: `vector-store-as-agent-tool`.
+2. **Title** — full title for the ADR header, sentence case. Example: `Vector store as an agent tool, not an MCP server`.
 3. **Supersedes?** — if yes, the ADR number being superseded (e.g., `0019`), or `ADR-NNNN Dn` for one clause.
    **Refines?** — if yes, the parent and the clauses narrowed, in `ADR-NNNN (Dn, …)` form.
-   **Extends?** — if yes, the parent and the clauses an obligation is added beside, same form (§ Refines vs Supersedes has the disambiguation test).
+   **Extends?** — if yes, the parent and the clauses an obligation is added beside, same form (`cbk-conventions-reference.md` § ADR relation grains has the disambiguation test).
    **Promotes?** — if the decision is lifted from a frozen pre-cascade corpus, the corpus path and heading.
-4. **Configurable / Hot-swappable** — for the configurability index row, where the project keeps one. Format: `yes (per-Pilot) | no (config-time)`. Use `n/a` for non-component decisions.
+4. **Configurable / Hot-swappable** — for the configurability index row, where the project keeps one. Format: `yes (per-tenant) | no (config-time)`. Use `n/a` for non-component decisions.
 5. **One-line summary** — for the README index and the Decisions log table.
 
 ## Steps
@@ -48,8 +48,8 @@ When invoked, **propose** every input below from what the operator already said 
    Then fill in: ADR number, title, status (`Accepted` for new decisions, `Proposed` if user wants HITL gate first), date (today, ISO format), deciders, related ADRs, the relation slots the inputs filled (`Supersedes:` / `Refines:` / `Extends:` / `Promotes:` — delete the unused lines), context, options considered, decision, consequences.
 
 3. **Update `docs/adr/README.md` index** — the canonical surface.
-   - Add the row to the index table in number order — **in the form the existing rows already use.** Read them first: which cell carries the relation grain and the parent (the kit's starter index puts it in the Status cell — `Accepted · Refines ADR-0007 (D2)` — while an index that predates the starter may carry it as a Title-cell parenthetical, with another separator, or in prose), and write the new row exactly that way. The separator is the index's convention, not this skill's; two real indexes already contradicted the pinned form two different ways (#58, 2026-09-07 comment).
-   - If wholly superseding, mark the old ADR's status field in the index as `Superseded by ADR-${NNNN}` (don't edit the old ADR file itself; the index expresses supersession). A clause-scoped supersession annotates the parent's row (`Accepted · Dn superseded by ADR-${NNNN}`); a refine or extend leaves the parent's row as it was.
+   - Add the row to the index table in number order — **in the form the existing rows already use.** Read them first: which cell carries the relation grain and the parent (the kit's starter index puts it in the Status cell — `Accepted · Refines ADR-0007 (D2)` — while an index that predates the starter may carry it as a Title-cell parenthetical, with another separator, or in prose), and write the new row exactly that way. The separator is the index's convention, not this skill's; two real indexes already contradicted the pinned form two different ways (context-builder-kit#58, 2026-09-07 comment).
+   - If wholly superseding, mark the old ADR's status field in the index as `Superseded by ADR-${NNNN}` (don't edit the old ADR file itself; the index expresses supersession). A clause-scoped supersession annotates the parent's row in the form this index already uses for one — read the rows first; an index can hold more than one form (the starter's is `Accepted · Dn superseded by ADR-${NNNN}` in the Status cell; a parent whose title already carries a relation parenthetical may take it inside that parenthetical), and the separator is the index's. A refine or extend leaves the parent's row as it was.
 
 4. **Update every other index the conventions name.** `.claude/rules/cbk-conventions.md` § ADR index sync is the one home for the target list — read it now and walk it; this skill states no count. The blueprint's § Stack decisions table is append-only and gets a one-line bullet **only when the ADR changes a stack decision**; a decision that is not about the stack does not touch it. Where a project keeps an open-questions list on an index surface, an ADR that resolves one removes it there.
 
@@ -66,31 +66,15 @@ When invoked, **propose** every input below from what the operator already said 
 - **Title in the file header must match the title in every index the conventions name** — drift here is the most common mistake; the README row is canonical when they disagree.
 - The skill produces files only; it does not commit, push, or open PRs.
 
-## Refines vs Supersedes vs Extends
+## Relation grains
 
-**See also** `docs/adr/corrections.md` — a wrong *claim* in an accepted ADR (a citation, a figure, an attribution, a formula) is none of these grains; it is an append-only register entry, and the ADR stays as written.
+The grains — whole and clause-scoped Supersede, Refine, Extend, Promote — their disambiguation test, the refines that scope a non-decision clause or disclose a falsified pre-commitment, and the rule that reviewers follow the `Refines:` and `Extends:` chains are stated once, in `.claude/rules/cbk-conventions-reference.md` § ADR relation grains; read it before filling a relation slot. **See also** `docs/adr/corrections.md` — a wrong *claim* in an accepted ADR (a citation, a figure, an attribution, a formula) is none of these grains; it is an append-only register entry, and the ADR stays as written.
 
-A new ADR connects to an existing one through one of the relationships below (`Supersedes:`, `Refines:`, `Extends:`, and the clause-scoped form of the first); a `Promotes:` slot connects to a frozen corpus, not to an ADR. All are header fields and all preserve the parent's immutability — none ever edits the parent file.
-
-- **`Supersedes: ADR-NNNN`** — the new ADR *replaces* the parent's decision. The parent's status becomes `Superseded by ADR-MMMM`; new code follows the new ADR. This is the relationship the interactive **Supersedes?** input captures, and the one Step 3's index-marking handles.
-- **`Refines: ADR-NNNN (Dn, …)`** — the new ADR *clause-level-clarifies or narrows* a specific decision `Dn` in the parent **without invalidating it**. The parent stays `Accepted`; both parent and child are consulted when evaluating conformance. Use this when implementation reveals that an accepted clause was written too generally and needs a scoped reading (e.g. "this rule applies only to <entity-type>"), not a reversal.
-- **`Promotes: <corpus path § heading>`** — the decision is lifted from a frozen pre-cascade corpus (consultation's frozen-corpus ingestion; `cbk-conventions.md` § Multi-surface facts names the corpus + errata pair). The corpus entry stays as written and the ADR becomes the decision's record home; the slot is the back-pointer. Not a relation to another ADR, so it carries no grain.
-
-**Clause-scoped supersession.** Supersession can also target a single clause rather than a whole ADR: `Supersedes: ADR-NNNN Dn` reverses only decision `Dn` of the parent while the parent's other clauses stand. The parent's status stays `Accepted` (it is not wholly superseded); the child's index row names the specific clause it replaces.
-
-**Header narrative.** A `Refines:` header carries more than the pointer: for each named parent clause, one or two sentences stating what is narrowed or additionally sanctioned and what stays binding, ending with an explicit "all parents stay Accepted and immutable" line. A bare `Refines: ADR-NNNN (D2)` forces every future reader to re-derive the delta; the clause-level narrative is what makes the chain readable at conformance-check speed.
-
-**`Extends: ADR-NNNN (Dn, …)`** — the new ADR *adds an obligation beside* a parent clause that stays satisfied as written; the parent is not narrowed and stays `Accepted`. **The disambiguation test:** a child that removes a permitted reading of the parent clause is a Refine; one that adds an obligation beside a clause that stays satisfied is an Extend. The header narrative is the same as a refine's — per clause, what is added and what stays binding — and the asymmetry is the same: no back-pointer on the parent.
-
-**Refines may target non-decision clauses.** The over-general text isn't always a `Dn` decision — a refine can scope a parent's `§ Consequences` (or another named section) when that's where the statement being narrowed lives: `Refines: ADR-NNNN (§ Consequences — <what>)`. The same rules apply: parent untouched, both consulted.
-
-**Honest-disclosure refines.** When execution falsifies a rule an earlier ADR pre-committed to (a threshold, a protocol, an expected outcome), the deviation lands as a refining ADR whose body discloses all three parts — what was pre-committed, what reality showed, and what changes — never as a silent re-interpretation. The disclosure is the point: a pre-commitment only disciplines future decisions if deviations from it are visibly recorded.
+**Header narrative.** A `Refines:` or `Extends:` header carries more than the pointer: for each named parent clause, one or two sentences stating what is narrowed, added or additionally sanctioned and what stays binding, ending with an explicit "all parents stay Accepted and immutable" line. A bare `Refines: ADR-NNNN (D2)` forces every future reader to re-derive the delta; the clause-level narrative is what makes the chain readable at conformance-check speed.
 
 **How the skill handles each:**
 
-- Add a **Refines?** input alongside the Supersedes? input (Inputs, above) — if yes, capture the parent number and the specific decision clauses in `ADR-NNNN (Dn, …)` form.
-- In Step 2, fill the `Refines:` field (or the clause-scoped `Supersedes:` field) in the new ADR's header.
-- In Step 3, add the child's index row naming its `Refines:`, `Extends:` (or clause-scoped supersession) target. **A refined parent gains no back-pointer and no status change** — it stays `Accepted`, and discoverability comes from the child's header field plus the child's index row. Only a *whole-ADR* supersession flips the parent's index status to `Superseded by ADR-NNNN`; a pure refine (or a clause-scoped supersede) leaves the parent `Accepted`.
-
-**Reviewers must follow the `Refines:` and `Extends:` chains.** When an ADR-conformance check finds an ADR that intersects a diff, it also loads any ADR that names that ADR in a `Refines:`, `Extends:` (or clause-scoped `Supersedes:`) field and applies the child's clauses — an extender can fail a diff the parent passes. A parent read in isolation — without its refiners — yields the pre-narrowing, too-general reading.
+- The Inputs above name the parent: for **Refines?** and **Extends?** with its clauses in `ADR-NNNN (Dn, …)` form, for **Supersedes?** the whole ADR or one clause (`ADR-NNNN Dn`), and for **Promotes?** the corpus path and heading.
+- Step 2 fills the matching header slot — `Supersedes:` (whole or clause-scoped), `Refines:`, `Extends:` or `Promotes:` — with the narrative above, and deletes the unused lines.
+- Step 3 adds the child's index row naming its target. **A refined or extended parent gains no back-pointer and no status change** — it stays `Accepted`, and discoverability comes from the child's header field plus the child's index row. Only a *whole-ADR* supersession flips the parent's index status to `Superseded by ADR-NNNN`; a clause-scoped supersession annotates the parent's row in the index's own form (Step 3).
 

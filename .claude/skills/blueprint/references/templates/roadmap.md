@@ -50,5 +50,5 @@ gh issue list --search 'Blueprint handoff in:title'            # step 0
 
 - **One row per step the sequence needs to show**, not per issue: a workstream's milestones are rows once framing cuts them; before that the workstream is one *planned* row pointing at its blueprint entry.
 - **`## Now` is a paragraph, not a table** — it carries the narrative a returning reader needs (what landed, what is next, what is blocked), with links; keep it current every time a row flips.
-- **On `in-repo-markdown`** the `## Seeing the same thing from the tracker` section is dropped and the `Where` column points at the markdown issue records.
+- **On `in-repo-markdown`** the `## Seeing the same thing from the tracker` section is dropped and the `Where` column points at the markdown issue records; step 0 points at `blueprint.md` § Manual setup, which holds the handoff content there, and this row is where its progress is recorded.
 - **Never let the roadmap become the audit trail**: a superseded row reads *retired — superseded by <row>*; the events index and git history hold what happened.

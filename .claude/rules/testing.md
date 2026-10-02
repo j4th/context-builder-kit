@@ -252,4 +252,4 @@ This rules file is load-bearing once any logic-regime, conformance-regime, or sh
 - A new boundary type is introduced — add it to the conformance-first examples list
 - A specific anti-pattern recurs in PRs — add it under § Anti-patterns with a one-line "what to do instead"
 
-The corresponding entry in `docs/STANDARDS.md` § Testing philosophy points here for the operational detail; that file states the principle, this file states the contract.
+The corresponding entry in `docs/STANDARDS.md` § Testing Requirements points here for the operational detail; that file states the principle, this file states the contract.

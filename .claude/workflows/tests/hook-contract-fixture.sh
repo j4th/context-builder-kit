@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 # Fixture for the kit's hooks: the two properties every hook must have regardless of what it
 # guards (cbk-conventions-reference.md § Hook authoring › The stdin / exit contract), asserted
-# structurally over every .claude/hooks/*.sh, plus behavioural probes: one over-buffer probe per
+# structurally over every .claude/hooks/*.sh — and the early-reader check over every sourced
+# .claude/hooks/lib/*.sh helper too (a helper never drains stdin, so check 1 skips it) — plus
+# behavioural probes: one over-buffer probe per
 # decision site the kit ships, the fork detector's prune rules and degrade path, and the lock-file
-# arms. Runs against throwaway `git init` trees under mktemp, never the real checkout, and never
+# arms; every branch a payload can reach is driven by the family fixtures beside it —
+# hook-guards-fixture.sh, hook-payloads-fixture.sh and protected-paths-hook-fixture.sh.
+# Runs against throwaway `git init` trees under mktemp, never the real checkout, and never
 # depends on the directory it is launched from. Run by the verification block; also:
 # bash .claude/workflows/tests/hook-contract-fixture.sh
 set -euo pipefail
@@ -48,7 +52,9 @@ join_pipelines='
   }
   END { if (buf != "") print NR ": " buf }
 '
-for h in "$hooks"/*.sh; do
+libs=("$hooks"/lib/*.sh)
+[ -e "${libs[0]}" ] || libs=()
+for h in "$hooks"/*.sh ${libs[@]+"${libs[@]}"}; do
   hit="$(awk "$join_pipelines" "$h" | grep -E "$early_readers" || true)"
   [ -z "$hit" ] || {
     echo "FAIL: $(basename "$h") decides on a pipeline whose reader can exit first"
@@ -66,7 +72,7 @@ cmdpay() { jq -Rs --arg cwd "${2:-}" '{tool_name:"Bash",tool_input:{command:.},c
 # protect-main-branch is a HARD-DENY: a long commit body must not buy a bypass.
 mainrepo="$d/mainrepo"; mkdir -p "$mainrepo"
 git -c init.defaultBranch=main init -q "$mainrepo"
-git -C "$mainrepo" -c user.email=f@x -c user.name=f commit -q --allow-empty -m init
+git -C "$mainrepo" -c user.email=f@x -c user.name=f -c commit.gpgsign=false commit -q --allow-empty -m init
 printf "git commit -F - <<XEOF\n%s\nXEOF" "$manybody" > "$d/cmd-commit"
 cmdpay "$d/cmd-commit" "$mainrepo" > "$d/pay-commit"
 RC=0; ERR="$("$MAINBRANCH" < "$d/pay-commit" 2>&1 >/dev/null)" || RC=$?

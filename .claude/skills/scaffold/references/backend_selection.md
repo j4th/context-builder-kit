@@ -87,7 +87,7 @@ If the user pushes back even on the light phrasing ("yes I read your skill, just
 
 `in-repo-markdown` is a one-way door at the cascade level — once scaffold commits it and blueprint and framing run against it, switching to a planning-backed configuration later means re-running scaffold and re-doing the planning half of every prior phase by hand. The choice deserves an explicit confirmation gate at the moment of selection, not a casual "sure, sounds good."
 
-The gate language and behavior are unchanged from prior versions of the skill (see SKILL.md § "Markdown-only confirmation gate" / "In-repo markdown confirmation gate"). This gate runs in **every rigor mode**; light mode collapses other gates but not this one.
+The gate language and behavior are unchanged from prior versions of the skill (see SKILL.md § The in-repo-markdown confirmation gate). This gate runs in **every rigor mode**; light mode collapses other gates but not this one.
 
 ### Stage 2 — Knowledge backend
 

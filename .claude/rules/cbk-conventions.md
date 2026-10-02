@@ -28,8 +28,8 @@ A single glanceable manifest of where every surface for this project actually li
 Every file under `.claude/rules/` **without** `paths:` frontmatter loads into context at launch, every session, at the same priority as `CLAUDE.md` — and every non-fork custom subagent loads the same set again (`https://code.claude.com/docs/en/memory`, `https://code.claude.com/docs/en/sub-agents` § What loads at startup). A rule whose trigger is genuinely file-based carries a `paths:` block and loads only when a matching file is read. The kit ships:
 
 - **Scoped by file type** — `logging.md`, `testing.md`. Their globs are bracketed placeholders the operator stamps at install; the verification block flags a placeholder left in.
-- **Split into an always-loaded contract and a path-scoped reference** — `cbk-conventions.md` / `cbk-conventions-reference.md`, `orchestration.md` / `orchestration-reference.md`, `pr-review.md` / `pr-review-reference.md`. Every moved section keeps its heading in the contract with a one-line pointer, so `file § section` citations resolve unchanged.
-- **Always loaded, on purpose** — `workflows.md` (a portable rule), `simplification.md`, `knowledge-backend.md` (deleted together with its hook and settings stanza when the knowledge axis is `none`), and the templates `tooling.md` and `orchestration.md` until the operator fills, path-scopes or deletes them — the bootstrap checklist's rule-file disposition pass decides each one.
+- **Split into an always-loaded contract and a path-scoped reference** — `cbk-conventions.md` / `cbk-conventions-reference.md`, `orchestration.md` / `orchestration-reference.md`, `pr-review.md` / `pr-review-reference.md`, `knowledge-backend.md` / `knowledge-backend-reference.md` (both halves deleted together with the hook and its settings stanza when the knowledge axis is `none`). Every moved section keeps its heading in the contract with a one-line pointer, so `file § section` citations resolve unchanged; the verification block checks every pointer against its reference half.
+- **Always loaded, on purpose** — `workflows.md` (a portable rule), `simplification.md`, and the templates `tooling.md` and `orchestration.md` until the operator fills, path-scopes or deletes them — the bootstrap checklist's rule-file disposition pass decides each one.
 
 Two rules keep scoping honest. **A section a task needs before it reads any trigger file is unreachable from a path-scoped rule** — restate the one line in the rule the task does load (the test-side trace-tag form lives in `testing.md` for this reason). **An `@path` line in `CLAUDE.md` is an import, not a mention** — it expands the target into every session at launch; write backticked paths. The verification block prints the always-loaded set with its byte count so the standing cost is a number, not a discovery; to measure a change rather than estimate it, the harness's `InstructionsLoaded` hook reports which instruction files loaded and why.
 
@@ -58,7 +58,7 @@ Two rules keep scoping honest. **A section a task needs before it reads any trig
 Pattern: `<type>/<TEAM>-<N>-<short-slug>`
 
 - `<type>` is one of the [Conventional Commits](https://www.conventionalcommits.org/) types: `feat`, `fix`, `chore`, `refactor`, `docs`, `test`, `perf`, `style`, `build`, `ci`
-- `<TEAM>-<N>` is the planning-backend issue ID in lowercase (e.g. `abc-27` if the team prefix is ABC). For markdown-only projects, this collapses to `<short-slug>` only.
+- `<TEAM>-<N>` is the planning-backend issue key in lowercase (e.g. `abc-27` if the team prefix is ABC; the bare issue number on github-issues). On in-repo-markdown planning, this collapses to `<short-slug>` only.
 - `<short-slug>` is a kebab-case description of the work, ~3-6 words
 
 Example shapes:
@@ -70,7 +70,7 @@ Example shapes:
 
 `/finish` already creates branches in this shape; this convention codifies what was already happening.
 
-**The issue-less branch.** Operator-directed maintenance that no cascade issue tracks — a dependency bump the bot did not open, a docs sweep, a hook fix — takes the form `<type>/<short-slug>` with no issue segment, and its PR body carries the statement **"operator-directed maintenance; no cascade issue"** as its first line. The scope fence is § Contribution intake: anything that adds behaviour, fixes a reported bug, or touches a workstream's code is a cascade issue (`/intake`, `/enrich`, or framing), never an issue-less branch. Such a PR still carries the `## Review gate` block; what stands in for the floor is written as *not run* with the reason ("not run — docs-only sweep, no code changed"), never left blank and never described as run.
+**The issue-less branch.** Operator-directed maintenance that no issue tracks — a dependency bump the bot did not open, a docs sweep, a hook fix — takes the form `<type>/<short-slug>` with no issue segment, and its PR body carries the statement **"operator-directed maintenance; no cascade issue"** as its first line. **Any issue a PR closes — cascade or not — puts its key in the branch**, so branch, close marker and issue agree; an issue-less branch carries no close marker. The scope fence is § Contribution intake: anything that adds behaviour, fixes a reported bug, or touches a workstream's code is a cascade issue (`/intake`, `/enrich`, or framing), never an issue-less branch. Such a PR still carries the `## Review gate` block; what stands in for the floor is written as *not run* with the reason ("not run — docs-only sweep, no code changed"), never left blank and never described as run.
 
 Create the branch and make the first commit in **separate tool calls**: the default-branch guard judges a compound command on the branch at entry, so `git switch -c … && git commit …` is blocked even though the commit would have been legal by the time it ran.
 
@@ -97,7 +97,7 @@ PR body close markers depend on which planning backend the project picked at sca
 - **Linear-tracked issues** (linear planning): `Closes <TEAM>-N` in the PR **body** (not just the title — body is the durable surface; titles can be edited at squash-merge time without affecting the close marker)
 - **GitHub-tracked issues** (github-issues planning, or any GitHub-tracked sub-issue): `Closes #N` in the PR body
 - **Both can coexist** in the same PR body if the PR closes one of each.
-- **Markdown-only projects**: there are no issue-tracker entities to close; the cascade-event log entries are updated by hand.
+- **In-repo-markdown planning**: there are no issue-tracker entities to close; the cascade-event log entries are updated by hand.
 
 Linear's recognized close-markers (case-insensitive): `close/closes/closed/closing`, `fix/fixes/fixed/fixing`, `resolve/resolves/resolved/resolving`, `complete/completes/completed/completing`, `implements`. See [Linear's GitHub integration docs](https://linear.app/docs/github-integration). Non-closing link-only markers: `ref`, `references`, `part of`, `related to`, `contributes to`, `towards`. GitHub recognizes a similar but smaller set.
 
@@ -123,7 +123,7 @@ Not permitted on:
 
 **Squash-merge interaction**: if the project squash-merges to main, the squashed commit message on `main` is what matters for `[skip ci]`; per-branch commits with `[skip ci]` skip the per-branch CI runs, but the squash commit's message determines whether `main`'s CI runs.
 
-**Auto-review trap — the CI-skip marker on the HEAD commit at flip-time blocks auto-review workflows.** GitHub's CI-skip matcher applies to the HEAD commit's message regardless of which event fires. If a docs commit that legitimately carries the marker happens to be HEAD when a `pull_request: ready_for_review` (or `synchronize`, `reopened`) event fires, any auto-review workflow (e.g., `.github/workflows/claude-review.yml`) is also skipped — not just the per-branch CI run you intended to skip. The symptom is a draft → ready flip with no auto-review comment.
+**Auto-review trap — the CI-skip marker on the HEAD commit at flip-time blocks auto-review workflows.** For workflows triggered `on: push` or `on: pull_request`, GitHub reads the skip marker from the pushed commits or the pull request's HEAD commit; `pull_request_target` is not skipped (`https://docs.github.com/en/actions/how-tos/manage-workflow-runs/skip-workflow-runs`, read 2026-09-30). If a docs commit that legitimately carries the marker happens to be HEAD when a `pull_request: ready_for_review` (or `synchronize`, `reopened`) event fires, any auto-review workflow (e.g., `.github/workflows/claude-review.yml`) is also skipped — not just the per-branch CI run you intended to skip. The symptom is a draft → ready flip with no auto-review comment.
 
 How to avoid:
 - When `/finish` (or any branch-prep flow) ends with marker-carrying docs commits, **end the branch on a non-marker commit** before flipping to ready. An empty commit (`git commit --allow-empty -m "ci: trigger auto-review workflow"`) is the cleanest fix when no other change is queued.
@@ -133,7 +133,7 @@ How to avoid:
 
 **Exclusion is not exemption — linter-excluded surfaces get their own CI gate.** When a surface is deliberately excluded from the generic linter (a dialect the linter can't parse, generated-but-checked files, a DSL), it still gets a dedicated CI check of its own; otherwise the exclusion quietly becomes a standing exemption from all verification.
 
-**Substring trap — quoting the literal marker token in a commit-message body re-triggers the matcher.** GitHub's match is a substring scan across the entire message, not anchored to the subject line or the end. A commit whose body explains *why* it's a fix for this trap, but quotes the literal token while explaining, is itself skipped. Use a paraphrase (e.g., "the CI-skip marker", "the conventional skip-tag") in prose; reserve the literal `[skip ci]` for the actual flag at the end of the subject line where you intend it to fire.
+**Substring trap — quoting a marker token in a commit-message body re-triggers the matcher.** GitHub skips on any of five strings in the message — `[skip ci]`, `[ci skip]`, `[no ci]`, `[skip actions]`, `[actions skip]` — and on a `skip-checks: true` (or `skip-checks:true`) trailer, which counts only as the message's last trailer after two empty lines (same page). The match is a substring scan across the entire message, not anchored to the subject line or the end: a commit whose body explains *why* it's a fix for this trap, but quotes a token while explaining, is itself skipped. Use a paraphrase (e.g., "the CI-skip marker", "the conventional skip-tag") in prose; reserve a literal token for the flag you intend to fire.
 
 **Required-checks-block-merge trap.** Under a ruleset or branch protection that requires status-check contexts, a PR parks on "Expected — Waiting for status to be reported" and stays unmergeable while an always-on workflow still runs green beside it. One symptom, three causes — the CI-skip marker on the HEAD commit, a `paths:`-filtered workflow backing a required check, a promoted check-run whose name changed — with their fixes and sources in `cbk-conventions-reference.md` § Required-checks trap. The rule in one line: a required-check workflow carries no trigger filter and an explicit, stable job `name:`, and a branch bound for the base ends on a non-marker commit.
 
@@ -201,7 +201,7 @@ Both belong in any project that takes ADRs seriously; the kit's `adr-new` skill 
 
 Cascade events being append-only is structurally important: the cascade IS the audit trail of decisions. **Two status surfaces are carved out of the executor's cascade-artifact ban** — the roadmap row and a frame's `## Rough-in events` table — because they record state, not decisions; the row above and `commands/finish.md` item 8 say who flips them and when. A new framing supersedes an old one with a new file; the old one stays in `docs/cbk/` for future readers to understand "we used to think X, now we think Y."
 
-**The table and the hook registry are two views of one list.** A row enforced by a hook names it: ADRs → `protect-immutable-adrs.sh` (plus the CI lint); lock files → `protect-lock-files.sh`. A hook that enforces a rule clause rather than a table row names the clause: `protect-main-branch.sh` → § Branch naming; `require-repo-root-for-agents.sh` and `detect-forked-agent-memory.sh` → `pr-review.md` § Reviewer precedent memory (one home for the memory tree); `guard-pr-state.sh` → the PR-state one-way door in `cbk-conventions-reference.md` § HITL gate load-bearing heuristics; `require-knowledge-backend-ok.sh` → `knowledge-backend.md` § HITL announcement discipline. Rows with no hook (the append-only cascade artifacts, the index's status column) are instruction-enforced and carry a deferred-hardening note per § HITL gate load-bearing heuristics. The registry in `.claude/settings.json` lists the same hooks under their tiers, and the verification block checks the registry against the files. The authoring shape lives in `cbk-conventions-reference.md` § Hook authoring.
+**The table and the hook registry are two views of one list.** A row enforced by a hook names it: ADRs → `protect-immutable-adrs.sh` (plus the CI lint, `.github/workflows/adr-immutability-check.yml`); lock files → `protect-lock-files.sh`. A hook that enforces a rule clause rather than a table row names the clause: `protect-main-branch.sh` → § Branch naming; `require-repo-root-for-agents.sh` and `detect-forked-agent-memory.sh` → `pr-review.md` § Reviewer precedent memory (one home for the memory tree); `guard-pr-state.sh` → the PR-state one-way door in `cbk-conventions-reference.md` § HITL gate load-bearing heuristics; `require-knowledge-backend-ok.sh` → `knowledge-backend.md` § HITL announcement discipline. Rows with no hook (the append-only cascade artifacts, the index's status column) are instruction-enforced and carry a deferred-hardening note per § HITL gate load-bearing heuristics. The registry in `.claude/settings.json` lists the same hooks under their tiers, and the verification block checks the registry against the files — and that every workflow or script a backstop names here, in the registry or in a hook header exists. The authoring shape lives in `cbk-conventions-reference.md` § Hook authoring.
 **ADR supersession has more than one grain** — Refine, clause-scoped supersede, Extend and Promote, with the claim register for what is not a decision at all. The definitions, the disambiguation test (a child that removes a permitted reading is a Refine; one that adds an obligation beside a clause that stays satisfied is an Extend) and the rule that reviewers follow the `Refines:` and `Extends:` chains and consult `docs/adr/corrections.md` before flagging a claim live in `cbk-conventions-reference.md` § ADR relation grains, which loads whenever a decision record is read.
 
 ## HITL gate load-bearing heuristics
@@ -228,7 +228,7 @@ Cascade events being append-only is structurally important: the cascade IS the a
 | Updating the cascade-events index | `docs/cbk/README.md` — see § Mutation discipline (its row names the creator and the appenders) |
 | Flipping the roadmap row | `docs/cbk/ROADMAP.md` — see § Mutation discipline (its row names who flips it and when) |
 | Naming a planning-backend issue | `[<workstream-slug>:F<#>:R<#>] <intent>` |
-| Naming a branch | `<type>/<TEAM>-<N>-<short-slug>` |
+| Naming a branch | `<type>/<TEAM>-<N>-<short-slug>` when the PR closes an issue; `<type>/<short-slug>` only for work no issue tracks |
 | Closing an issue from a PR | `Closes <TEAM>-N` (Linear) or `Closes #N` (GitHub) in PR body |
 | Adding an ADR | `adr-new` skill (auto-syncs indexes) |
 | Skipping CI on a docs-only commit | Append `[skip ci]` to commit message subject |
@@ -238,7 +238,7 @@ Cascade events being append-only is structurally important: the cascade IS the a
 
 ## Syncing the kit
 
-Three-way `git merge-file` against the recorded **Kit commit**; the file-by-file table first. → `cbk-conventions-reference.md` § Syncing the kit.
+Three-way `git merge-file` against the recorded **Kit commit**, `vX.Y.Z (sha)`; the kit `CHANGELOG.md`'s Sync notes, then the file-by-file table, first. → `cbk-conventions-reference.md` § Syncing the kit.
 
 ## Verification
 

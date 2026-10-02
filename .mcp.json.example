@@ -1,34 +1,25 @@
 {
-  "_comment": "Starter MCP server config for the cascade kit. Copy to .mcp.json (which is gitignored or repo-local) and fill in credentials/endpoints. Each server below is documented inline; remove any you don't use. The cascade skills fall back to manual / web-search paths when an expected MCP is absent, but install the github + context7 servers at minimum for github-issues planning to work cleanly. Wire linear when planning = linear, and notion when knowledge = notion (per docs/cbk/scaffold.md § Cascade metadata / .cascade/backends.toml).",
+  "_comment": "Starter MCP server config for the cascade kit. Copy it to .mcp.json and commit that file: it holds no secret. A server that needs a credential names it as a ${VAR} reference, which Claude Code expands from the environment it was launched in ('`${VAR}`: expands to the value of environment variable `VAR`' — https://code.claude.com/docs/en/mcp § Environment variable expansion in .mcp.json, read 2026-09-30), so export the variable in the shell (or a direnv / mise env) before starting claude, keep any .env file you source out of git, and name every variable in a committed .env.example (.claude/rules/tooling.md § MCP configuration). Every hosted server carries \"type\": \"http\" — an entry with a url and no type 'is a configuration error, because Claude Code reads an entry with no `type` as a stdio server' and is skipped (same page, read 2026-09-30). Every stdio server runs an exact version at least the settle window old, never @latest and never unpinned: it runs network-fetched code at every session start, outside every lockfile and every update bot, so it is bumped by hand with its settled age in the commit body (.claude/rules/cbk-conventions-reference.md § Dependency settle-window). A hosted server cannot be pinned; its vendor changes it. There is no github entry: the kit reaches GitHub through the gh CLI (.claude/rules/tooling.md § Planning backend), and scaffold falls back to manual steps where no GitHub MCP server is connected. Remove any server you don't use; the cascade skills fall back to manual / web-search paths when an expected MCP is absent. Wire linear when planning = linear, and notion when knowledge = notion (per docs/cbk/scaffold.md § Cascade metadata / .cascade/backends.toml).",
   "mcpServers": {
-    "github": {
-      "_comment": "Used by every cascade phase that writes to a GitHub repo (scaffold, blueprint, framing, rough-in, finish). Install via the official GitHub MCP server. Personal Access Token with repo + read:project scopes (classic PAT) or fine-grained PAT with Contents/Metadata write + Issues/Pull-requests write per repo.",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "<your-PAT-here>"
-      }
-    },
     "linear": {
-      "_comment": "Required when planning backend = linear. Install Linear's official MCP server and supply an API key from Linear settings. Cascade calls: get_issue, save_issue (with parentId for sub-issues; type label set at creation), list_issues, list_issue_labels, list_issue_statuses, create_issue_label, list_teams.",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-linear"],
-      "env": {
-        "LINEAR_API_KEY": "<your-Linear-API-key-here>"
-      }
+      "_comment": "Required when planning backend = linear. Linear's hosted MCP server: 'The Linear MCP server authenticates each session via OAuth' in the browser (https://linear.app/docs/mcp, read 2026-09-30), so no key lives in this file. Cascade calls: get_issue, save_issue (with parentId for sub-issues; type label set at creation), list_issues, list_issue_labels, list_issue_statuses, create_issue_label, list_teams.",
+      "type": "http",
+      "url": "https://mcp.linear.app/mcp"
     },
     "notion": {
       "_comment": "Required when knowledge backend = notion. Notion's official MCP via its hosted endpoint (in-browser OAuth on first use). The server key MUST be 'notion' — the require-knowledge-backend-ok.sh ask-gate's matcher in .claude/settings.json targets mcp__notion__* tool names; a different key silently loses the write-gate enforcement. Every read/write is HITL-announced per .claude/rules/knowledge-backend.md. Remove this entry when knowledge = none.",
+      "type": "http",
       "url": "https://mcp.notion.com/mcp"
     },
     "context7": {
-      "_comment": "Used by framing and rough-in research phases for library / framework / SDK documentation lookups. Reduces stale-knowledge errors when the cascade picks dependencies. The cascade falls back to web search if context7 is unavailable, but library-API misses are a recurring failure mode without it.",
-      "url": "<context7-mcp-endpoint>"
+      "_comment": "Used by framing and rough-in research phases for library / framework / SDK documentation lookups. Reduces stale-knowledge errors when the cascade picks dependencies. The cascade falls back to web search if context7 is unavailable, but library-API misses are a recurring failure mode without it. The hosted server answers without a key; for higher rate limits add \"headers\": { \"Authorization\": \"Bearer ${CONTEXT7_API_KEY}\" } (Context7's README: 'pass your API key via the `Authorization: Bearer YOUR_API_KEY` header', https://github.com/upstash/context7/blob/master/README.md, read 2026-09-30) — and add it only once the variable is exported: an empty bearer is refused as an invalid key (probed 2026-09-30).",
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp"
     },
     "time": {
-      "_comment": "Optional. Used by skills that need ISO-8601 conversions or timezone math (e.g. cbk-conventions ADR dates). The cascade can ask the user to confirm dates if absent.",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-time"]
+      "_comment": "Optional. Used by skills that need ISO-8601 conversions or timezone math (e.g. cbk-conventions ADR dates). The cascade can ask the user to confirm dates if absent. The reference time server is the Python package mcp-server-time, run through uv's uvx ('To run a tool at a specific version, use `command@<version>`' — https://github.com/astral-sh/uv/blob/main/docs/guides/tools.md, read 2026-09-30); 2026.8.18 was published to PyPI on 2026-08-18 (https://pypi.org/project/mcp-server-time/, read 2026-09-30).",
+      "command": "uvx",
+      "args": ["mcp-server-time@2026.8.18"]
     }
   }
 }

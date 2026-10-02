@@ -26,7 +26,7 @@ Full elaboration of the failure modes framing should actively defend against. Ea
 
 **What it looks like**: blueprint chose Shape Up with a 6-week appetite. Framing produces 8 milestones, each estimated at 1-2 weeks of work. The project now needs 8-16 weeks, busting the appetite by a factor of 2-3. The user notices late and has to re-frame or abandon the appetite constraint.
 
-**Defense**: read blueprint's Methodology section in the inheritance phase and treat it as a constraint on milestone shape. For Shape Up, respect the appetite ceiling. For Scrum, size milestones to sprints. For Kanban, size milestones as discrete pull-units. Cite `methodology_register.md` when deciding shape — the register's "fails when" conditions usually catch methodology mismatches.
+**Defense**: read blueprint's Methodology section in the inheritance phase and treat it as a constraint on milestone shape. For Shape Up, respect the appetite ceiling. For Scrum, size milestones to sprints. For Kanban, size milestones as discrete pull-units. Cite the methodology's primary source when deciding shape — its "fails when" conditions usually catch methodology mismatches.
 
 ## 4. Auto-updating foundation docs without HITL approval
 

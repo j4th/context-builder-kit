@@ -6,15 +6,15 @@
 >
 > The principle: **patterns are conditional, not universal.** TDD adds value when the spec is clear and the domain is deterministic; it adds friction when the work is exploratory or UI-visual. Subagents preserve context when the search would bloat the main session; they waste tokens when the search would fit in five messages. Match the pattern to the work, not the other way around.
 
-## The triad: plan-mode + task-tracking + subagent dispatch
+## The triad: plan mode + a tracked checklist + subagent dispatch
 
 The high-leverage workflow shape for work that spans more than one file or one session:
 
 1. **Plan mode** separates planning from execution. Read-only; the agent can read, search, dispatch research subagents, and ask questions — but cannot write, edit, or modify state. Forces alignment with the operator *before* code lands.
-2. **Task-tracking** (the harness's task list) decomposes the plan into discrete trackable units. Each task is a step toward done. You can't add unbounded work — the task list IS the work surface.
+2. **A tracked checklist** decomposes the plan into discrete trackable units: the harness's task tools where the model is offered them, otherwise the plan file or a checklist file the agent updates, as the Opus 5.5 guide suggests. Each item is a step toward done. You can't add unbounded work — the checklist IS the work surface. From Claude Code 2.1.233 the task tools are not offered on Opus 4.8, Sonnet 5, Fable 5, Mythos 5 or any newer model unless `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` is set (`orchestration-reference.md` § Generation notes — the sources).
 3. **Subagent dispatch** (a search agent for fast codebase scans, a planning agent for design alternatives, general-purpose for complex multi-step research) offloads work that would bloat the main session. Run synchronous for sequential dependencies, asynchronous for truly parallel work.
 
-The triad works because: plan mode prevents wrong directions; task-tracking enforces discipline (visible scope, completion gating); subagents preserve context (main session stays clean for synthesis + execution). For cascade work, the triad maps onto `/finish` directly — the issue body feeds executable research then a plan-mode gate; the task list is the in-session decomposition; subagents handle the deep research the rough-in spec implicitly assumes.
+The triad works because: plan mode prevents wrong directions; the checklist enforces discipline (visible scope, completion gating); subagents preserve context (main session stays clean for synthesis + execution). For cascade work, the triad maps onto `/finish` directly — the issue body feeds executable research then a plan-mode gate; the checklist is the in-session decomposition; subagents handle the deep research the rough-in spec implicitly assumes.
 
 ## When to enter plan mode
 
@@ -104,9 +104,11 @@ Subagents (search, planning, general-purpose, project-local reviewers) offload w
 
 **Never delegate the decision.** The subagent gathers — or, under a top-tier session, one fresh-context synthesis agent may assemble the product (the permitted slot, `orchestration.md` § The ceiling rule); you read the product rather than the raw inputs, verify the claims you carry forward, and own triage. Don't write "based on your findings, fix the bug" — write "Read `<file>:<line>`. The bug is that X happens when Y. Fix it by changing Z." If you can't write that specific instruction, the subagent hasn't given you enough — read the findings, then write the instruction.
 
-**Ground the fan-out.** Any existence/absence claim a dispatched researcher asserts is verified repo-wide, verifiers preferentially attack negative claims, and drafters cite the run's grounding corpus — the full three-rule statement lives in the rough-in skill's `references/research-phase.md` § Grounding existence claims.
+**Ground the fan-out.** Any existence/absence claim a dispatched researcher asserts is verified repo-wide, verifiers preferentially attack negative claims, and drafters cite the run's grounding corpus; a claim about a tool's behaviour is checked against the binary the code's own context resolves — the full statement of the rules lives in the rough-in skill's `references/research-phase.md` § Grounding existence claims.
 
-## Task-tracking vs in-head
+**Delegating implementation — `/finish` does not, and that is measured, not inherited.** `/finish` implements inline and reviews the whole branch once. Anthropic's cost guide measured the general case: when the work is one dependent chain or fits in one context, an orchestrator pays for a plan, a handoff and a merge that a single model gets for free, and the coordinator's model alone at lower effort came out ahead. A sister project's replay of one `/finish` issue found subagent-driven execution better on no measure, for 10% more cost and nearly twice the time (context-builder-kit#69; both are quoted in `orchestration-reference.md`). Delegation pays when a long plan outlives a compacted context, when each task needs its own review gate, or when the main loop runs the expensive tier. Whoever delegates implementation keeps six rules: (1) every implementer names its model and effort; (2) never two writers on one tree, and a subagent's worktree branches from the default branch unless `worktree.baseRef` is `"head"`, so set it or the implementer builds on the wrong base; (3) an implementer's text-only end of turn is a report, checked against the checklist; (4) a task reviewer gets the task's brief as well as its diff; (5) rulings and triage stay in the main loop (never delegate the decision, above); (6) with agent teams enabled, a plain subagent gets no `name`. Borrow an execution plugin's mechanics where its measurements justify them; do not wrap a user plugin whose loop can change under the project.
+
+## A tracked checklist vs in-head
 
 **Track tasks** when:
 
@@ -122,7 +124,7 @@ Subagents (search, planning, general-purpose, project-local reviewers) offload w
 - Tasks where the steps are sequential and obvious
 - Trivial work where tracking would be ceremony, not signal
 
-After completing a tracked task, **mark it completed immediately**. Don't batch updates. The task list is a live status surface for the operator; lag = confusion.
+After completing a tracked item, **mark it completed immediately**, in the task tools or in the file. Don't batch updates. The checklist is a live status surface for the operator; lag = confusion.
 
 ## Narrate-during-iteration
 
@@ -171,13 +173,13 @@ Workflow-level anti-patterns are inline here; domain-specific anti-patterns (tes
 |---|---|---|
 | [`testing.md`](testing.md) | Writing tests | Three regimes; test-name-quotable-from-acceptance-criterion; integration cadence |
 | [`pr-review.md`](pr-review.md) | Triaging review findings | The two-skill floor and its `## Review gate` record; the bounded sweep that supplements; four-class rubric; dispatch roster |
-| [`simplification.md`](simplification.md) | Running `/simplify` | Behavior-preserving auto-apply; same four-class triage; non-skippable |
+| [`simplification.md`](simplification.md) | Running `/simplify` | Half of the floor, non-skippable; its sourced dimensions; behaviour preserved |
 | [`cbk-conventions.md`](cbk-conventions.md) | Working with cascade artifacts | Layout, branch names, PR markers, [skip ci] discipline, mutation discipline |
 | [`knowledge-backend.md`](knowledge-backend.md) | Reading/writing the knowledge backend | HITL announcement discipline; write tiering |
 | [`logging.md`](logging.md) | Adding structured-log calls or telemetry | Structured-only; correlation-ID propagation; telemetry-vs-Logger boundary |
 | [`tooling.md`](tooling.md) | Picking a tool | Built-ins first-line; MCPs second-line for capability gaps; per-tool decision rules |
 | [`orchestration.md`](orchestration.md) | Dispatching any agent, subagent, or workflow stage | Model×effort tiering under the ceiling rule; dispatch-mechanism decision; fan-out discipline |
-| `*-reference.md` | Only when a matching file is read | The path-scoped halves of the conventions, orchestration and review rules; every section has a pointer heading in its contract |
+| `*-reference.md` | Only when a matching file is read | The path-scoped halves of the conventions, orchestration, review and knowledge-backend rules; every section moved at the split keeps a pointer heading in its contract |
 
 ## See also
 

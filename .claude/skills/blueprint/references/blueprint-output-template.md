@@ -64,7 +64,7 @@ for context, alternatives, and consequences.>
 ### Methodology
 
 **Top-level**: <Shape Up | Scrum | Kanban | other> — <one-sentence justification tied to inherited context>
-- Source: <citation from methodology register>
+- Source: <primary source — author, work, chapter>
 
 **Planning patterns**:
 - <vertical slicing | walking skeleton | tracer bullets | etc.> — <one-sentence why>
@@ -141,6 +141,18 @@ turn each of these into a proper project specification.>
 
 [Continue per layer.]
 
+## Workstreams
+
+<The locked list every later phase keys on: one row per core project above, the slug confirmed at the slug gate
+(SKILL.md § Workstream slug confirmation gate) and immutable for the workstream's lifetime
+(`cbk-conventions-reference.md` § Title-prefix scheme). Framing takes one row; rough-in, `/intake` and `/finish`
+validate a title's `<slug>` against this column; on `github-issues` and `linear` each row gets one parent issue,
+created after this file is committed, so the issue is not named here.>
+
+| Workstream | Slug | Layer |
+|---|---|---|
+| <Project Name> | `<slug>` | 1 |
+
 ## Horizon Projects (tracked for context, no timeline)
 
 <Real projects expected to build someday but no timeline pressure. Exist
@@ -165,6 +177,14 @@ ideally have a trip-wire for when it gets revisited.>
 - <Note 1>
 - <Note 2>
 
+## Manual setup *(`in-repo-markdown` axis only)*
+
+[On `in-repo-markdown` there is no tracker to hold the handoff issue, so its content lands here instead, in the same
+shape (`references/handoff-issue.md`). It is written once, with the rest of this file: the file is immutable after its
+commit (`cbk-conventions.md` § Mutation discipline), so progress is never recorded here. The roadmap's step-0 row
+(`docs/cbk/ROADMAP.md`, freely mutable) points at this section and flips as the steps are done. On the other two axes
+this section is absent; the handoff issue carries the content.]
+
 ## Credential model (evergreen)
 
 [**What goes here**: the evergreen background — what credentials exist, why
@@ -176,7 +196,7 @@ stays in this doc, one-time setup commands move to the issue tracker.]
 [For each credential type the project uses, document:
 - What it is (PAT, App, API key, etc.)
 - What it's used for (CI auth, local MCP, deployment, etc.)
-- Where it lives (env var, secret store, gitignored config file)
+- Where it lives (env var, secret store — never a committed file; a committed `.mcp.json` names a credential only as a `${VAR}` reference)
 - Rotation cadence and trigger
 - The minimum scopes required]
 
@@ -184,8 +204,8 @@ stays in this doc, one-time setup commands move to the issue tracker.]
 
 | | **GitHub App** | **Fine-grained PAT** |
 |---|---|---|
-| Used by | `claude-code-action` in CI | Local GitHub MCP |
-| Lives where | Repo secret + App install | `.mcp.json` (gitignored) |
+| Used by | `claude-code-action` in CI | The local `gh` CLI, and any MCP server that takes a token |
+| Lives where | Repo secret + App install | An environment variable exported in the shell; the committed `.mcp.json` references it as `${VAR}` |
 | Authenticates as | App identity (bot) | The user |
 | Rotation | App: re-install if compromised; secret: every 180d | Every 90d |
 ]
@@ -264,7 +284,7 @@ without the block is REQUEST CHANGES. The auto-review prompt reads this section.
 
 Earlier versions of this template had a "Manual setup runlist" section with the full first-build command sequence (run mise install, create the PAT with these scopes, run setup-claude.sh, install the GitHub App, etc). That content has moved to the handoff issue per the seventh-step pattern. Keeping it in blueprint.md was the failure mode of "doc section that goes stale the moment the user completes it" — the handoff issue closes naturally when the work is done, the doc would have to be edited.
 
-**Rule**: if you're drafting blueprint.md content that reads like "do these steps once," stop — that content goes in the handoff issue. blueprint.md is for evergreen reference only.
+**Rule**: if you're drafting blueprint.md content that reads like "do these steps once," stop — that content goes in the handoff issue. blueprint.md is for evergreen reference only. The one exception is the `in-repo-markdown` axis, which has no handoff issue: there the steps are § Manual setup, written once and never edited, with progress on the roadmap's step-0 row.
 
 ## Planning-axis-aware behavior
 
@@ -291,6 +311,8 @@ Across all three planning axes, the file structure above is the same. Axis diffe
 **Dependencies** — map them precisely. The most valuable output is knowing what can proceed in parallel vs. what's blocked.
 
 **Core Projects** — group by dependency layer, not by subsystem type. Each workstream gets: name, one sentence purpose, key constraint/dependency. Don't over-specify — framing will turn these into real project specs.
+
+**Workstreams** — one row per core project, no more: the slug column is what the slug gate confirms and what every downstream title carries. A project that is not a workstream (a horizon item) gets no row.
 
 **Horizon Projects** — these are the "we'll get to them" items. Existing in the doc helps designers make forward-compatible choices for the core projects.
 

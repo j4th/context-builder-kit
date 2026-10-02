@@ -17,7 +17,7 @@ Resources provisioned via MCP, with links and a one-line description each. Forma
 ```markdown
 ## ✅ Completed (via MCP)
 
-- **Repository**: <repo URL> — created with README, a `.gitignore` anchored per `cbk-conventions-reference.md` § .gitignore anchoring, and the licence the operator confirmed (`cbk-conventions.md` § Licensing; "none yet" is a valid answer)
+- **Repository**: <repo URL> — created with README, a `.gitignore` anchored per `cbk-conventions-reference.md` § .gitignore anchoring and ending with the harness block (`github-starter-templates.md` § `.gitignore` — the harness block), and the licence the operator confirmed (`cbk-conventions.md` § Licensing; "none yet" is a valid answer)
 - **Issue templates**: bug report and feature request templates added under `.github/ISSUE_TEMPLATE/`
 - **PR template**: added at `.github/pull_request_template.md`
 - **Scaffold output doc**: committed at `<repo>/docs/cbk/scaffold.md`
@@ -31,7 +31,7 @@ Resources provisioned via MCP, with links and a one-line description each. Forma
 - **Project board**: <project URL> — Board template, repo linked
 ```
 
-If a row is not applicable (e.g. no project board because state 2), omit it. Don't show empty rows.
+If a row is not applicable (e.g. no project board because the operator declined one), omit it. Don't show empty rows.
 
 ### 2. Manual instructions
 
@@ -66,15 +66,28 @@ Walk through each row. If anything fails, retry or fall back to manual instructi
 | Labels exist | Visit <repo URL>/labels | All cascade labels present, GitHub defaults cleaned up | ☐ |
 | Project board exists | Visit <project URL> | Board loads with Board template, repo is linked | ☐ |
 | Scaffold output readable | View <repo URL>/blob/main/docs/cbk/scaffold.md | File renders, Cascade metadata reads `Planning backend: github-issues` | ☐ |
+| Kit release recorded | Read the **Kit commit** row of docs/cbk/scaffold.md, then run `git ls-remote --tags <kit repository URL> 'vX.Y.Z^{}'` with its tag | The row reads `vX.Y.Z (sha)`, and the peeled tag the command prints begins with that sha | ☐ |
 | Problem brief committed | View <repo URL>/blob/main/docs/cbk/problem_brief.md | File renders, contains problem statement and appetite | ☐ |
 | Branch protection (if configured) | Try to push directly to main from a clone | Push is rejected | ☐ |
+| Verification block runs | With the kit's `.claude/` in the clone and the rule-file disposition below done, from the clone's root: `bash .claude/workflows/tests/run-verification-block.sh` | Exits 0; the last two lines are `verification: project sub-block complete` and `verification: done` (a filled target owes both — `cbk-conventions-reference.md` § Verification › Run it). Blueprint wires the same script into `check`. | ☐ |
 ```
 
-Only include rows that are actually applicable. State 2 (no projects toolset) omits the project board row. State 4 (no MCP) puts everything in section 2 (manual instructions) and the verification matrix becomes longer.
+Only include rows that are actually applicable. Without the GitHub MCP (SKILL.md's third detection state), everything goes in section 2 (manual instructions) and the verification matrix becomes longer.
+
+**When a frozen corpus is designated** (`problem_brief.md` § Pre-cascade sources names one — the consultation skill's `references/frozen_corpus_ingestion.md`), the matrix gains one row per item of its enforcement set, so no item is ticked off with the others. Omit these rows when no corpus is designated:
+
+```markdown
+| Corpus hook | Pipe an Edit payload naming a corpus file into the corpus guard | Exit 2; the message names the errata companion | ☐ |
+| Corpus CI job | Open a throwaway PR that edits one corpus file | The job fails, and its check is one of the ruleset's required contexts | ☐ |
+| Corpus CI job's closures | Read the job against the closure list in `frozen_corpus_ingestion.md` § The enforcement set scaffold registers | Every closure is implemented; the ones the job's own fixture drives are named | ☐ |
+| Corpus `.gitattributes` | `git check-attr linguist-documentation <corpus path>/<any file>` | The attribute reads `false` | ☐ |
+| Corpus editor settings | Open a corpus file in the editor and save it unchanged | `git status` shows no change (no whitespace trim, no final newline added) | ☐ |
+| Corpus formatter skip | Run the docs formatter's check over the corpus path | It rewrites nothing | ☐ |
+```
 
 ### 4. Rule-file disposition
 
-The kit's `.claude/rules/` ships three template rules that carry bracketed placeholders (`cbk-conventions.md`, `orchestration.md`, `tooling.md`) and two path-scoped rules whose `paths:` globs are placeholders (`logging.md`, `testing.md`). Nothing else in the cascade ever asks about them, so this section does: print the always-loaded set with its size first (the loop in `cbk-conventions-reference.md` § Verification), then require an explicit disposition per file. A row with no disposition is a defect, not a default — a real run reached dozens of merged PRs with `[Record the project's posture here]` still in an always-loaded rule.
+The kit's `.claude/rules/` ships three template rules that carry bracketed placeholders (`cbk-conventions.md`, `orchestration.md`, `tooling.md`) and three path-scoped rules whose `paths:` block carries a placeholder glob (`logging.md`, `testing.md`, and the manifest-and-lockfile entry in `cbk-conventions-reference.md`). Nothing else in the cascade ever asks about them, so this section does: print the always-loaded set with its size first (the loop in `cbk-conventions-reference.md` § Verification), then require an explicit disposition per file. A row with no disposition is a defect, not a default — a real run reached dozens of merged PRs with `[Record the project's posture here]` still in an always-loaded rule.
 
 ```markdown
 ## 📐 Rule-file disposition
@@ -89,12 +102,16 @@ Always-loaded rules as of this checklist:
 | `tooling.md` | filled / path-scoped / deleted | <e.g. "deleted — no MCPs wired yet; restore from the kit when the first lands"> |
 | `logging.md` | stamped | `paths:` set to the project's source globs (the callout stays; it describes the mechanism) |
 | `testing.md` | stamped | `paths:` set to the project's test globs and directories (inline-test stacks: directories alone) |
-| `knowledge-backend.md` | kept / deleted | <"deleted with its hook and settings stanza — knowledge axis is none"> |
+| `cbk-conventions-reference.md` | stamped | the bracketed `paths:` entry replaced with the project's manifest and lockfile globs (e.g. `**/pyproject.toml`, `**/uv.lock`); left bracketed, it fails the verification block's stamped-globs check |
+| `knowledge-backend.md` + `knowledge-backend-reference.md` | kept / deleted | <"both halves deleted with the hook and its settings stanza — knowledge axis is none"> |
 
 One-time choices settled here (each has a kit default; a choice with no forcing surface is a choice the kit made for you):
 - **Reviewer agent-memory**: `memory: project` (committed under `.claude/agent-memory/`, precedents survive clones and get PR-reviewed) or `memory: local` (`.claude/agent-memory-local/`, never committed; set the field in each reviewer's frontmatter). Decision: <project | local>. With `project`, delete the kit's `.claude/agent-memory/` line from `.gitignore` — it is a kit-repo-only exception and nothing flips it for you. Recorded in the "Reviewer agent-memory" row of `cbk-conventions.md` § Surface inventory.
 - **Orchestration posture** recorded in `.claude/rules/orchestration.md` § The ceiling rule — which row the main loop runs by default (the exercised default is the workhorse tier) and what a deliberate escalation to the top tier looks like, dated with the reason. Decision: <workhorse | top-tier escalation, dated>.
+- **Hook backstop slots**: two guards' fail-open warnings name a backstop only the project can supply — `protect-lock-files.sh`'s `[the project's CI lockfile check …]`, and `protect-main-branch.sh`'s `[the base branch's ruleset …]` (in both of its warnings). Replace each bracket with the real check or ruleset, or with `none` and the reason. Decision: <lockfile check | none — reason> · <ruleset | none — reason>. The project sub-block of the verification block refuses a slot left bracketed.
+- **Explore override**: the kit ships `.claude/agents/Explore.md`, which replaces the built-in Explore in every session of this project, pins searches to the smallest tier and loads no CLAUDE.md. Decision: <keep | delete — searches then run on the built-in, which inherits the session model>.
 - **Licence**: <SPDX id | none yet — all rights reserved>. Lives in the repo's `LICENSE` file and README § License (scaffold seeds both; the Repository line above names the choice) — it is not a row of `docs/cbk/scaffold.md`'s Cascade metadata table.
+- **Formatter and linter scope**: `.claude/workflows/**` is the kit's code, byte-identical to its source, so every repo-wide formatter and linter excludes it, and the exclusion is forced for a path handed over explicitly (ruff: `extend-exclude` plus `force-exclude = true`; the rule is `cbk-conventions-reference.md` § Syncing the kit, and `format-on-edit.sh`'s floor already skips the tree). The committed `.gitignore` ends with the harness block (`github-starter-templates.md` § `.gitignore` — the harness block). Decision: <the config files that exclude `.claude/workflows/**`>.
 ```
 
 The dispositions and what each means: **filled** — the bracketed sections carry this project's values, and the file opens with a one-line provenance note (the date, that it was filled from the kit's template, where it deviates); choices are appended under the template prose, not written over it. **path-scoped** — the file gains a `paths:` block so it loads only when a matching file is read. **deleted** — the file governs a surface this project does not have, and boilerplate would only tax every session; delete every index that lists it in the same change (`CLAUDE.md`, `README.md`, the reviewer that enumerates it) and note the restore condition. **kept** is valid only for a rule with no placeholders. **stamped** is the path-scoped rules' equivalent of filled.

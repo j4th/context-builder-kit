@@ -37,7 +37,7 @@ Framing constructs each sub-issue's body from one of two templates depending on 
 
 **Population pattern for capability sub-issues** (`cascade-framing.md`): five sections to populate from the milestone's row in `frame-NN.md` § Milestones — Capability statement, Rough issues, Acceptance signal, Dependencies, Interface commitments. Plus a Links section that cites the relevant frame-NN.md section verbatim.
 
-**Population pattern for meta-issues** (`cascade-meta.md`): five sections to populate from the row in `frame-NN.md` § Deferred meta-issues — Type (gate/decision/infrastructure), Subject, Depends on, Blocks, Resolution criteria. Plus a Links section that cites `frame-NN.md § Deferred meta-issues`. The Blocks section is load-bearing for rough-in's pre-flight check, so populate it precisely — rough-in pattern-matches against `M_n start` strings here.
+**Population pattern for meta-issues** (`cascade-meta.md`): five sections to populate from the row in `frame-NN.md` § Pre-flight checks — Type (gate/decision/infrastructure), Subject, Depends on, Blocks, Resolution criteria. Plus a Links section that cites `frame-NN.md § Pre-flight checks`. The Blocks section is load-bearing for rough-in's pre-flight check, so populate it precisely — rough-in pattern-matches against `M_n start` strings here.
 
 Section heading names from both templates are preserved verbatim — do not rename, reorder, or omit sections that the templates provide. Adding additional sections after the template-provided ones is permitted if the capability or meta-issue has content that doesn't fit the standard sections.
 
@@ -103,11 +103,11 @@ For re-framings, the gate also lists the prior sub-issues that will be supersede
 
 The cascade still uses the same naming conventions inside `frame-NN.md` § Milestones (capability headings prefixed `[<slug>:F<#>]`, depends-on lines, acceptance signals, etc.) so the hierarchy is grep-able even without an Issue tree to render it. Re-framing detection still uses the cascade-event model (frame-NN.md numbering, supersedes via the status field in the markdown) — the planning-backend supersede operations are no-ops because there's nothing to close not-planned.
 
-The HITL gate in markdown-only mode mentions only the markdown commit half:
+The HITL gate on in-repo-markdown planning mentions only the markdown commit half:
 
 > "About to commit framing for `<workstream-slug>`:
 > - Markdown: `docs/cbk/frame-NN.md` + append to `docs/cbk/README.md` index
-> - Planning backend: none (markdown-only profile)
+> - Planning backend: in-repo-markdown (no planning operations)
 >
 > No planning operations to run, no sub-issues to create, no atomic transition needed beyond the markdown commit itself.
 >
@@ -204,7 +204,7 @@ When the user picks option 1, the recovery runs **the exact same atomic transiti
 
 - **Does not update existing meta-issues from the old framing** (they may have stale labels or parent linkage from the pre-recovery state). Those are a separate recovery pass and should be handled as a `## Meta-issue cleanup` step after the framing capability sub-issues land. The HITL gate for the recovery should mention if meta-issues need follow-up cleanup so the user knows to look.
 - **Does not rewrite frame-NN.md's prose sections** beyond an optional recovery note at the top. Specifically, if frame-NN.md has a wrong handoff sentence or other content that would benefit from updating, the recovery does not fix it — that's a separate edit and should go through the normal "framing markdown edit" path, not the atomic transition.
-- **Does not retroactively set Projects v2 Status fields** on the new sub-issues (the MCP surface for Projects v2 field manipulation is limited). The user sets those manually after the recovery completes, same as with a fresh framing run.
+- **Does not retroactively set Projects v2 Status fields** on the new sub-issues (the GitHub MCP server's tool list carried no project-board tools when observed on 2026-09-06 — the board-automation gap in `references/backends.md`). The user sets those manually after the recovery completes, same as with a fresh framing run.
 
 ## What this step enables
 

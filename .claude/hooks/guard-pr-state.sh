@@ -11,35 +11,72 @@
 # the per-action OK. `git push` and `gh pr create` are deliberately unmatched
 # (/finish legitimately runs both).
 #
-# Fail-open on environment defects (missing jq), mirroring
-# protect-lock-files.sh.
+# Not seen: a PR-state change the command spells indirectly — `eval`, a
+#           variable holding `gh`, a `gh` alias, `gh api` against the pulls
+#           endpoint — and one made in the web UI. No mechanical backstop exists:
+#           the per-action OK is the operator's.
 # Tier:     ASK-GATE (see the registry comment in .claude/settings.json).
+# Depends:  jq (the payload) — absent, the guard fails open: exit 0 with a stderr
+#           warning that says no mechanical backstop exists. A payload jq cannot
+#           read is not an environment defect: it gets the prompt
+#           (cbk-conventions-reference.md § Hook authoring).
+# Fixture:  .claude/workflows/tests/hook-guards-fixture.sh.
 
 set -uo pipefail
 
 # Drain stdin before any early exit, or a piping caller's SIGPIPE masks this hook's own
 # exit code (cbk-conventions-reference.md § Hook authoring › The stdin / exit contract).
 input="$(cat)"
+# A fail-open warning goes to stderr, which on exit 0 reaches only the debug log, and to the user as the systemMessage
+# on stdout (https://code.claude.com/docs/en/hooks § Exit code 0 and § JSON output, read 2026-10-01). Pure bash, so it
+# works on the minimal PATH the fail-open cases run with.
+fail_open() {
+  printf '%s\n' "$@" >&2
+  local m="$*"; while [[ $m == *"  "* ]]; do m=${m//  / }; done
+  m=${m//\\/\\\\}; m=${m//\"/\\\"}
+  printf '{"systemMessage":"%s"}\n' "$m"
+  exit 0
+}
 
 if ! command -v jq &>/dev/null; then
-  echo "guard-pr-state: WARNING — jq not installed; PR-state guard DISABLED." >&2
-  echo "                Until fixed, the only backstop is the prose rule in /finish and" >&2
-  echo "                /pr-respond that PR-state changes are the operator's calls." >&2
+  fail_open "guard-pr-state: WARNING — jq not installed; PR-state guard DISABLED." \
+    "                Install jq to re-enable. Backstop until then: none mechanical — every" \
+    "                gh pr ready/merge/close/reopen needs the operator's explicit per-action OK."
+fi
+
+# A payload jq cannot read gets the prompt, never a pass: its command cannot be checked, so the
+# operator decides.
+if ! fields=$(jq -er 'def s: if . == null then "" elif type == "string" then . else error("a field is not a string") end; if type == "object" then @sh "tool_name=\(.tool_name | s) command=\(.tool_input.command | s)" else error("not an object") end' <<<"$input" 2>/dev/null); then
+  cat <<'EOF'
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "ask",
+    "permissionDecisionReason": "guard-pr-state could not read this tool payload (not parseable JSON, not an object, or a field that is not a string), so it cannot tell whether the command changes a PR's state. Approve only if the operator asked for exactly this command."
+  }
+}
+EOF
   exit 0
 fi
 
-tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"
-command="$(printf '%s' "$input" | jq -r '.tool_input.command // empty')"
+eval "$fields"
 
 [[ "$tool_name" != "Bash" ]] && exit 0
 [[ -z "$command" ]] && exit 0
+# A line continuation (backslash-newline) joins one command across lines, and grep matches one line at a time: fold
+# each into a space first, so `git \<newline> commit` is judged as the commit it runs as.
+command=${command//$'\\\n'/ }
 
 # Token-anchored + flag-tolerant: matches `gh pr merge`, `gh -R o/r pr ready`,
 # `gh pr -R o/r close 5`, etc. Over-matching (the phrase quoted inside another
-# command) costs one extra confirmation — acceptable for an ask-gate.
+# command) costs one extra confirmation — acceptable for an ask-gate. The
+# anchors are negated classes, as in protect-main-branch.sh: `gh` may follow
+# anything that cannot continue a word (`bash -c "gh pr merge 5"`,
+# `(gh pr merge 5)`, `$(gh pr merge 5)`, `/usr/bin/gh`), and the verb anything
+# but a word character, `.` or `-` (measured 2026-09-30; the fixture holds the cases).
 # A here-string, never `printf … | grep`: a reader that exits on its first match makes
 # pipefail read a real match as NO MATCH (cbk-conventions-reference.md § Hook authoring).
-if grep -Eq '(^|[;&|[:space:]])gh([[:space:]]+[^[:space:]]+)*[[:space:]]+pr([[:space:]]+[^[:space:]]+)*[[:space:]]+(ready|merge|close|reopen)([[:space:]]|$|[;&|])' <<<"$command"; then
+if grep -Eq '(^|[^[:alnum:]_.-])gh([[:space:]]+[^[:space:]]+)*[[:space:]]+pr([[:space:]]+[^[:space:]]+)*[[:space:]]+(ready|merge|close|reopen)([^[:alnum:]_.-]|$)' <<<"$command"; then
   cat <<'EOF'
 {
   "hookSpecificOutput": {

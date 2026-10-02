@@ -7,7 +7,8 @@
 #
 # Three invariants:
 # 1. `cooldown` gates VERSION updates only — never security updates (platform
-#    guarantee: docs.github.com … dependabot-options-reference, read 2026-09-06).
+#    guarantee: https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference
+#    § cooldown, read 2026-09-06).
 # 2. `groups` is the anti-spam lever; `schedule.interval` is the volume lever (sources: the
 #    scaffold starter's dependabot comment — the options reference, read 2026-09-06).
 # 3. Every ecosystem entry — including an inactive stub — carries the floor.
@@ -56,6 +57,19 @@ updates:
   #   schedule: { interval: "monthly" }
   #   cooldown: { default-days: 7 }
   # - package-ecosystem: "mix"
+  #   directory: "/"
+  #   schedule: { interval: "monthly" }
+  #   cooldown: { default-days: 7 }
+  # Images: `docker` reads a Dockerfile's FROM lines, `docker-compose` a compose file's
+  # image: keys. Neither reads COPY --from=<image> (route it through a named
+  # `FROM <image> AS <stage>`), `devcontainers` bumps Features and not the dev container's
+  # image, and the cooldown has a publication date only from Docker Hub
+  # (.claude/rules/cbk-conventions-reference.md § Dependency settle-window).
+  # - package-ecosystem: "docker"
+  #   directory: "/"
+  #   schedule: { interval: "monthly" }
+  #   cooldown: { default-days: 7 }
+  # - package-ecosystem: "docker-compose"
   #   directory: "/"
   #   schedule: { interval: "monthly" }
   #   cooldown: { default-days: 7 }

@@ -81,9 +81,9 @@ Do not run a codebase analysis in consultation — that belongs in blueprint. No
 
 ## Methodology register
 
-`references/methodology_register_excerpt.md` contains the consultation-relevant entries from the full methodology register: Shape Up (appetite, shaping, no-gos, pitch format), spike solutions, YAGNI, and pointers to the full register for later phases. Cite entries by name when recommending a pattern, surface the "fails when" conditions when they apply, and never enforce — the user always decides.
+`references/methodology_register_excerpt.md` contains the consultation-relevant entries from the full methodology register: Shape Up (appetite, shaping, no-gos, pitch format), spike solutions, YAGNI, and pointers to the primary sources later phases cite. Cite entries by name when recommending a pattern, surface the "fails when" conditions when they apply, and never enforce — the user always decides.
 
-The full register lives outside this skill and is shared across all six cascade phases. If the user asks about patterns not in the excerpt, say so and offer to search.
+The kit ships no full register file. If the user asks about a pattern not in the excerpt, say so and offer to search, citing the primary source you find.
 
 ## The problem brief — output contract
 
@@ -146,7 +146,7 @@ Once approved, state clearly:
 
 ## Failure modes to defend against
 
-From `sdd.md` and Shape Up chapters 2–5. Watch for these actively during the interview and name them out loud when they happen.
+From Shape Up chapters 2–5 and the spec-driven-development sources the conventions cite (`cbk-conventions.md` § References). Watch for these actively during the interview and name them out loud when they happen.
 
 - **Solutioning too early** — user jumps to "I want to build an app that does X". Redirect to problem space. Most common failure.
 - **Unbounded appetite** — "I want to build everything". Force a choice. Shape Up: *"If we don't make trade-offs up front, the universe will force us to make them later in a mad rush."*
@@ -172,7 +172,7 @@ The scaffold phase consumes the approved brief and extracts: project name (for n
 
 - `references/steps.md` — the four-step interview playbook with source prompts from Harper Reed, Claude Code, and Shape Up; rigor-dial phrasings
 - `references/problem_brief_template.md` — structured template with per-section prose guidance, including the optional `## Pre-cascade sources` section populated when Notion content was ingested
-- `references/methodology_register_excerpt.md` — Shape Up, spikes, YAGNI entries plus pointers to the full register
+- `references/methodology_register_excerpt.md` — Shape Up, spikes, YAGNI entries plus pointers for later phases
 - `references/brownfield_addendum.md` — current-state-assessment step and brownfield-specific brief additions
 - `references/notion_ingestion.md` — operational reference for the Notion-as-input flow at § Incoming context: four access modes, MCP fetch dialogue, per-search HITL announcements, what to record in `## Pre-cascade sources`
 - `references/frozen_corpus_ingestion.md` — the sibling flow for a directory of planning material on disk: the freeze discipline, the errata companion, `Promotes:`, the enforcement set scaffold registers, what to record in the brief

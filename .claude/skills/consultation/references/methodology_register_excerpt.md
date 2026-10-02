@@ -1,6 +1,6 @@
 # Methodology register — consultation excerpt
 
-Consultation-relevant entries from the full methodology register. Cite by name when recommending; surface "fails when" conditions when relevant; never enforce. The full register is shared across all six cascade phases and lives outside this skill — this excerpt is the subset most useful during problem-brief writing.
+Consultation-relevant entries from the full methodology register. Cite by name when recommending; surface "fails when" conditions when relevant; never enforce. The kit ships no full register file — later phases cite their patterns by primary source, and blueprint's `references/methodology-selection.md` carries the project-level methodologies — so this excerpt is the subset most useful during problem-brief writing.
 
 **Citation discipline**: when you reference a pattern in the interview or brief, name it and cite the source. "This fits the Shape Up appetite pattern — Singer, *Shape Up* ch. 3" not "you should timebox this".
 
@@ -46,7 +46,7 @@ Useful in consultation when the user keeps adding "and also we'll need X someday
 
 ---
 
-## Pointers to the full register
+## Pointers for later phases
 
 Patterns relevant to *later* cascade phases — mention these in consultation only when the user explicitly asks about methodology, and defer full discussion to blueprint or framing:
 
@@ -56,4 +56,4 @@ Patterns relevant to *later* cascade phases — mention these in consultation on
 - **Augmented coding, harness engineering, TDD with agents, context engineering** — belong in scaffold and rough-in
 - **ADRs, DORA metrics** — blueprint and measurement, not consultation
 
-If the user wants to read more than the excerpt above, point them at the full register. Do not paste patterns from later phases into a problem brief — they belong in the phases where they'll actually be acted on.
+If the user wants to read more than the excerpt above, point them at the primary sources the later phases cite. Do not paste patterns from later phases into a problem brief — they belong in the phases where they'll actually be acted on.
