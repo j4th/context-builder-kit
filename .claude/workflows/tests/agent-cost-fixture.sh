@@ -17,10 +17,12 @@
 # dict order, that CACHE_READ is defined once, the skipped-line count and the exit codes. A second directory holds
 # forks: a fork's transcript opens with its parent's history copied line for line, the parent's responses with their
 # message ids and usage, so billed per file a parent's spend counted once more per fork. It asserts each response is
-# billed once — to the parent, never to a fork, a fork of a fork, or a fork of the main loop (whose parent is the
-# session transcript beside the subagents directory) — that a fork whose parent is not at hand is cut at the boundary
-# line that hands it its task, that a fork with neither is unpriced and named, and that a row is labelled by its
-# meta.json description and timed from the fork's own start. Every python3 call runs
+# billed once — to the parent, never to a fork, a fork of a fork, a fork of the main loop (whose parent is the session
+# transcript beside the subagents directory) or a fork of any of those — and at its best copy, the stopped one, where
+# the parent kept only a snapshot; that a fork whose parent is not at hand is cut at the message that hands it its task,
+# never at an inherited line quoting the marker; that a fork with neither, and its own forks, are unpriced and named;
+# that two transcripts that are not forks share a response without losing their labels or timing; and that a row is
+# labelled by its meta.json description and timed from its own start. Every python3 call runs
 # with -B, so no bytecode lands in the tree. Needs bash and python3.
 # Run: bash .claude/workflows/tests/agent-cost-fixture.sh
 set -euo pipefail
@@ -113,53 +115,82 @@ grep -q 'output is a floor.*vvv (1 of 2)' <<<"$out" || { echo "FAIL: the snapsho
 grep -q 'unpriced.*bbb, ccc, hhh, iii, kkk, ppp, ttt' <<<"$out" || { echo "FAIL: the unpriced agents are not named"; echo "$out"; exit 1; }
 grep -q 'unparsable lines skipped.*ccc (1), iii (1)' <<<"$out" || { echo "FAIL: the truncated transcripts are not named with their skipped-line counts"; echo "$out"; exit 1; }
 # ── Forks. The layout is Claude Code's: <project>/<session>.jsonl beside <project>/<session>/subagents/agent-*.jsonl,
-# each with an agent-<id>.meta.json. Inherited lines are byte copies of the parent's; the fork's own work starts after
-# the tool result that opens with <fork-boilerplate> (Claude Code 2.1.287 transcripts, 2026-10-01).
+# each with an agent-<id>.meta.json. A fork's transcript opens with copies of its parent's lines — same uuids and
+# content, its own agentId, and the parent's final usage where the parent recorded only a snapshot — then the user
+# message that hands it its task: the tool result for the meta's toolUseId beside a text block that opens with
+# <fork-boilerplate> (Claude Code 2.1.280, 2.1.281 and 2.1.285 transcripts, read 2026-10-01).
 sd="$k/proj/sess1/subagents"; mkdir -p "$sd"
 meta() { printf '%s\n' "$2" > "$sd/agent-$1.meta.json"; }
 fk() { local a=$1; shift; printf '%s\n' "$@" > "$sd/agent-$a.jsonl"; }
 r() { printf '{"type":"assistant","sessionId":"sess1","timestamp":"2026-09-30T00:0%s:00Z","message":{"id":"%s","model":"claude-opus-5-5","usage":{"input_tokens":1000000,"output_tokens":0}}}' "$1" "$2"; }
-bp() { printf '{"type":"user","sessionId":"sess1","timestamp":"2026-09-30T00:0%s:00Z","message":{"role":"user","content":[{"type":"tool_result","content":"<fork-boilerplate> You are a worker fork. The transcript above is the parent history."}]}}' "$1"; }
+bp() { printf '{"type":"user","sessionId":"sess1","timestamp":"2026-09-30T00:0%s:00Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"%s","content":"Fork started — processing in background"},{"type":"text","text":"<fork-boilerplate>\\nYou are a worker fork. The transcript above is the parent history."}]}}' "$1" "$2"; }
+quote() { printf '{"type":"user","sessionId":"sess1","timestamp":"2026-09-30T00:0%s:00Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_grep","content":"agent-cost.py: FORK_BOUNDARY = <fork-boilerplate>"}]}}' "$1"; }
 P="$(u par)"
 fk par "$P" "$(r 1 msg_p1)" "$(r 2 msg_p2)"
 meta par '{"agentType":"pr-review-toolkit:comment-analyzer","description":"the parent reviewer","spawnDepth":1}'
-fk fk1 "$P" "$(r 1 msg_p1)" "$(r 2 msg_p2)" "$(bp 5)" "$(r 7 msg_f1)"
-meta fk1 '{"agentType":"fork","isFork":true,"parentAgentId":"par","description":"fork one","spawnDepth":2}'
-fk fk2 "$P" "$(r 1 msg_p1)" "$(r 2 msg_p2)" "$(bp 5)" "$(r 7 msg_f1)" "$(bp 8)" "$(r 9 msg_g1)"
-meta fk2 '{"agentType":"fork","isFork":true,"parentAgentId":"fk1","description":"a fork of fork one","spawnDepth":3}'
-fk orphan "$P" "$(r 1 msg_q1)" "$(bp 5)" "$(r 6 msg_o1)"
-meta orphan '{"agentType":"fork","isFork":true,"parentAgentId":"gone","description":"a fork whose parent is not here","spawnDepth":2}'
+fk fk1 "$P" "$(r 1 msg_p1)" "$(r 2 msg_p2)" "$(bp 5 toolu_fk1)" "$(r 7 msg_f1)"
+meta fk1 '{"agentType":"fork","isFork":true,"parentAgentId":"par","toolUseId":"toolu_fk1","description":"fork one","spawnDepth":2}'
+# A fork of fork one, named to sort before it: only the reader's depth order can read fork one first.
+fk fa2 "$P" "$(r 1 msg_p1)" "$(r 2 msg_p2)" "$(bp 5 toolu_fk1)" "$(r 7 msg_f1)" "$(bp 8 toolu_fa2)" "$(r 9 msg_g1)"
+meta fa2 '{"agentType":"fork","isFork":true,"parentAgentId":"fk1","toolUseId":"toolu_fa2","description":"a fork of fork one","spawnDepth":3}'
+# A fork whose parent is not here: cut at its boundary, not at an inherited line that quotes the marker.
+fk orphan "$P" "$(r 1 msg_q1)" "$(quote 2)" "$(r 3 msg_q2)" "$(bp 5 toolu_orphan)" "$(r 6 msg_o1)"
+meta orphan '{"agentType":"fork","isFork":true,"parentAgentId":"gone","toolUseId":"toolu_orphan","description":"a fork whose parent is not here","spawnDepth":2}'
+# The same with no toolUseId in its meta.json: the text block's opening alone marks the boundary.
+fk orphan2 "$P" "$(r 1 msg_q3)" "$(quote 2)" "$(r 3 msg_q4)" "$(bp 5 toolu_any)" "$(r 6 msg_o2)"
+meta orphan2 '{"agentType":"fork","isFork":true,"parentAgentId":"gone3","description":"an orphan with no toolUseId","spawnDepth":2}'
+fk ochild "$P" "$(r 1 msg_q1)" "$(quote 2)" "$(r 3 msg_q2)" "$(bp 5 toolu_orphan)" "$(r 6 msg_o1)" "$(bp 7 toolu_och)" "$(r 8 msg_oc1)"
+meta ochild '{"agentType":"fork","isFork":true,"parentAgentId":"orphan","toolUseId":"toolu_och","description":"a fork of the orphan","spawnDepth":3}'
 fk blind "$P" "$(r 1 msg_b0)" "$(r 2 msg_b1)"
 meta blind '{"agentType":"fork","isFork":true,"parentAgentId":"gone2","description":"a fork with no boundary","spawnDepth":2}'
+fk bchild "$P" "$(r 1 msg_b0)" "$(r 2 msg_b1)" "$(bp 4 toolu_bc)" "$(r 5 msg_bc1)"
+meta bchild '{"agentType":"fork","isFork":true,"parentAgentId":"blind","toolUseId":"toolu_bc","description":"a fork of the unseparable fork","spawnDepth":3}'
 printf '%s\n' "$(u main)" "$(r 1 msg_s1)" > "$k/proj/sess1.jsonl"
 fk mainfork "$(u main)" "$(r 1 msg_s1)" "$(r 4 msg_m1)"
 meta mainfork '{"agentType":"fork","isFork":true,"description":"a fork of the main loop","spawnDepth":1}'
+fk mchild "$(u main)" "$(r 1 msg_s1)" "$(r 4 msg_m1)" "$(bp 5 toolu_mc)" "$(r 6 msg_mc1)"
+meta mchild '{"agentType":"fork","isFork":true,"parentAgentId":"mainfork","toolUseId":"toolu_mc","description":"a fork of the main-loop fork","spawnDepth":2}'
+# The parent recorded its response only as a snapshot; the fork's copy carries the final usage, which bills it.
+fk pb "$(u pb)" '{"type":"assistant","timestamp":"2026-09-30T00:01:00Z","message":{"id":"msg_pb1","model":"claude-opus-5-5","stop_reason":null,"usage":{"input_tokens":1000000,"output_tokens":8}}}'
+meta pb '{"agentType":"general-purpose","description":"a parent with a snapshot","spawnDepth":1}'
+fk pbf "$(u pb)" '{"type":"assistant","timestamp":"2026-09-30T00:01:00Z","message":{"id":"msg_pb1","model":"claude-opus-5-5","stop_reason":"tool_use","usage":{"input_tokens":1000000,"output_tokens":100000}}}' "$(bp 2 toolu_pbf)" "$(r 3 msg_pbf1)"
+meta pbf '{"agentType":"fork","isFork":true,"parentAgentId":"pb","toolUseId":"toolu_pbf","description":"its fork","spawnDepth":2}'
+# Two transcripts that are not forks share a response: billed once, and the second keeps its own label and timing.
+fk dupa "$(u dupa)" "$(r 1 msg_da1)" "$(r 2 msg_shared)"
+fk dupb "$(u dupb)" "$(r 1 msg_db1)" "$(r 3 msg_shared)"
 kout=$(python3 -B "$script" "$sd" --json "$k/out.json") || { echo "FAIL: the fork directory did not read"; echo "$kout"; exit 1; }
 python3 -B - "$k/out.json" <<'EOF' || { echo "$kout"; exit 1; }
 import json, sys
 with open(sys.argv[1]) as f:
     rows = {r['agent']: r for r in json.load(f)}
 bad = []
-want = {'par': (8.0, 2, 'the parent reviewer'), 'fk1': (4.0, 1, 'fork one'), 'fk2': (4.0, 1, 'a fork of fork one'),
-        'orphan': (4.0, 1, 'a fork whose parent is not here'), 'mainfork': (4.0, 1, 'a fork of the main loop')}
+want = {'par': (8.0, 2, 'the parent reviewer'), 'fk1': (4.0, 1, 'fork one'), 'fa2': (4.0, 1, 'a fork of fork one'),
+        'orphan': (4.0, 1, 'a fork whose parent is not here'), 'ochild': (4.0, 1, 'a fork of the orphan'),
+        'orphan2': (4.0, 1, 'an orphan with no toolUseId'),
+        'mainfork': (4.0, 1, 'a fork of the main loop'), 'mchild': (4.0, 1, 'a fork of the main-loop fork'),
+        'pb': (6.0, 1, 'a parent with a snapshot'), 'pbf': (4.0, 1, 'its fork'),
+        'dupa': (8.0, 2, 'dupa prompt'), 'dupb': (4.0, 1, 'dupb prompt')}
 for a, (cost, turns, label) in want.items():
     got = rows[a]
     if got['cost_usd'] is None or abs(got['cost_usd'] - cost) > 1e-9 or got['turns'] != turns:
-        bad.append(f"{a}: billed {got['cost_usd']!r} over {got['turns']} turns, want {cost} over {turns} (each response billed once)")
+        bad.append(f"{a}: billed {got['cost_usd']!r} over {got['turns']} turns, want {cost} over {turns} (each response billed once, at its best copy)")
     if got['label'] != label:
-        bad.append(f"{a}: labelled {got['label']!r}, want the meta.json description {label!r}")
-if rows['blind']['cost_usd'] is not None:
-    bad.append(f"blind: a fork with neither its parent nor a boundary must be unpriced, got {rows['blind']['cost_usd']!r}")
-if rows['fk1']['minutes'] != 2.0:
-    bad.append(f"fk1: timed from its own start (00:05) to its last line (00:07) is 2.0 minutes, got {rows['fk1']['minutes']!r}")
-if (rows['fk1'].get('inherited'), rows['fk2'].get('inherited'), rows['par'].get('inherited')) != (2, 3, 0):
-    bad.append(f"inherited counts: want fk1 2, fk2 3, par 0; got {rows['fk1'].get('inherited')}, {rows['fk2'].get('inherited')}, {rows['par'].get('inherited')}")
+        bad.append(f"{a}: labelled {got['label']!r}, want {label!r}")
+for a in ('blind', 'bchild'):
+    if rows[a]['cost_usd'] is not None:
+        bad.append(f"{a}: a fork whose inherited history cannot be cut off, or whose parent's cannot, must be unpriced, got {rows[a]['cost_usd']!r}")
+if (rows['fk1']['minutes'], rows['orphan']['minutes'], rows['dupb']['minutes']) != (2.0, 1.0, 3.0):
+    bad.append(f"timing: fk1 from 00:05 to 00:07 is 2.0, orphan from its boundary at 00:05 to 00:06 is 1.0, dupb (no fork) from 00:00 to 00:03 is 3.0; got {rows['fk1']['minutes']!r}, {rows['orphan']['minutes']!r}, {rows['dupb']['minutes']!r}")
+if [rows[a].get('inherited') for a in ('par', 'fk1', 'fa2', 'ochild', 'mchild', 'dupb')] != [0, 2, 3, 3, 2, 1]:
+    bad.append(f"inherited counts: want par 0, fk1 2, fa2 3, ochild 3, mchild 2, dupb 1; got {[rows[a].get('inherited') for a in ('par', 'fk1', 'fa2', 'ochild', 'mchild', 'dupb')]}")
+if rows['pb'].get('snapshot') != 0:
+    bad.append(f"pb: its snapshot has a stopped copy in its fork, so it is no floor; got snapshot {rows['pb'].get('snapshot')!r}")
 if bad:
     print('FAIL: ' + '\n  '.join(bad))
     sys.exit(1)
 EOF
-grep -q 'total list-price cost: \$24.00 (5 of 6 agents priced)' <<<"$kout" || { echo "FAIL: the fork directory's total must bill each response once: \$24.00 over 5 of 6 agents"; echo "$kout"; exit 1; }
-grep -q 'unpriced.*blind' <<<"$kout" || { echo "FAIL: the unseparable fork is not named"; echo "$kout"; exit 1; }
+grep -q 'total list-price cost: \$58.00 (12 of 14 agents priced)' <<<"$kout" || { echo "FAIL: the fork directory's total must bill each response once: \$58.00 over 12 of 14 agents"; echo "$kout"; exit 1; }
+grep -q 'unpriced.*bchild, blind' <<<"$kout" || { echo "FAIL: the unseparable forks are not named"; echo "$kout"; exit 1; }
 grep -q 'inherited' <<<"$kout" || { echo "FAIL: the summary does not say what the forks inherited"; echo "$kout"; exit 1; }
 # tier() must match a PRICE key WHOLE whatever the dict order. With a family key listed first, a first-match (or
 # substring) rule prices Opus 5.5 as Opus 5 and Fable 5.1 as Fable 5 — the rows above cannot see that, because PRICE

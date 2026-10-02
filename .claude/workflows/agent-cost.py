@@ -10,22 +10,27 @@ attributed to the model that actually answered, not to the label the script aske
 mixes models is priced per model; one unpriced model leaves that agent's row unpriced, and the row is named
 and excluded from the total — never folded in as zero.
 
-Each response is billed once across the directory. A fork's transcript (an Agent-tool `fork`, marked `isFork` in the
-agent-<id>.meta.json Claude Code writes beside it) opens with its parent's history copied line for line, the parent's
-responses with their ids and usage, so a fork is read after its parent and keeps only what its parent did not record.
-Billed per file, as before v1.0.0, a parent's spend counted once more for every fork: up to a fifth of a directory's
-total in the three fork-bearing session directories on the measuring machine (Claude Code 2.1.280, 2.1.281 and 2.1.285
-transcripts, read 2026-10-01). A fork of
-the main loop inherited the session transcript beside the subagents directory, whose responses are excluded without
-a row; a fork whose parent is not at hand is cut at the tool result that hands it its task, which opens with
-<fork-boilerplate>; a fork with neither is unpriced and named. A row is labelled by its meta.json description where
-there is one — a workflow stage's label — and otherwise by its first prompt, and a fork is timed from its own start.
+Each response is billed once across the directory, at its best copy. A fork's transcript (an Agent-tool `fork`, marked
+`isFork` in the agent-<id>.meta.json Claude Code writes beside it) opens with copies of its parent's lines — the same
+uuids and content under the fork's own agentId, carrying the parent's final usage where the parent's own last line is
+a snapshot (below) — so a fork is read after its parent, keeps only what is not yet accounted for, and a response is
+billed with its stopped copy wherever one exists. Billed per file, as before v1.0.0, a parent's spend counted once more
+for every fork: up to a fifth of a directory's total in the three fork-bearing session directories on the measuring
+machine (Claude Code 2.1.280, 2.1.281 and 2.1.285 transcripts, read 2026-10-01). A fork of the main loop inherited the
+session transcript beside the subagents directory, whose responses are excluded without a row (no transcript on the
+measuring machine shows that shape yet; the fixture models it). A fork whose parent is not at hand is cut at the user
+message that hands it its task: the spawning call's tool result, beside a text block that opens with
+<fork-boilerplate>. A fork with neither, and every fork of it, is unpriced and named. A response with no message id is
+keyed by its transcript and line, the one exception to billing once per directory; Claude Code's responses carry ids. A
+row is labelled by its meta.json description where there is one — a workflow stage's label — and otherwise by its
+first prompt, and is timed from its own start: a fork's after the history it copied.
 
 A response's last line that says "stop_reason": null was written mid-stream: its input and cache counts are final, but
-its output, thinking included, is a snapshot. Through Claude Code 2.1.276 nearly every subagent response was written
-again once it stopped (89–99% by version on the measuring machine; 2.1.261, 40%); from 2.1.278 most are not (6–31%),
-and the transcript holds no other record of the final count. Such a response is billed as recorded and its row is named
-a floor; an absent key is no evidence either way.
+its output, thinking included, is a snapshot, usually under ten tokens. Through Claude Code 2.1.276 nearly every
+subagent response was written again once it stopped (89–99% by version on the measuring machine; 2.1.261, 40%); from
+2.1.278 most are not (6–31%), and the agent's own transcript holds no other record of the final count. A fork's copy,
+where there is one, does, and bills it. A response with no stopped copy anywhere is billed as recorded and its row is
+named a floor; an absent key is no evidence either way.
 
 PRICE below is list price per MTok as of 2026-09-30 (platform.claude.com/docs/en/about-claude/pricing, the model
 pricing table — quoted in .claude/rules/orchestration-reference.md § Generation notes — the sources, which the kit's
@@ -106,7 +111,7 @@ def parse_iso(s):
     return dt.datetime.fromisoformat(s.replace('Z', '+00:00'))
 
 
-FORK_BOUNDARY = '<fork-boilerplate>'  # opens the tool result that hands a fork its task (Claude Code 2.1.287, 2026-10-01)
+FORK_BOUNDARY = '<fork-boilerplate>'  # opens the text block beside the tool result that hands a fork its task
 
 
 def read_jsonl(path):
@@ -123,22 +128,38 @@ def read_jsonl(path):
 
 
 def responses_of(events, where):
-    """One entry per API response, as (model, usage, index of its last line). One response is written as several lines
-    (one per content block), each repeating its message id and usage, the output growing as it streams: keyed by id,
-    the last line stands for the response, so it is billed once. A line with no id is a response of its own, keyed by
-    its transcript (`where`) and line, so it never matches a line of another transcript."""
+    """One entry per API response, as (model, usage, index of its last line, state). One response is written as several
+    lines (one per content block), each repeating its message id and usage, the output growing as it streams: keyed by
+    id, the last line stands for the response, so it is billed once. A line with no id is a response of its own, keyed by
+    its transcript (`where`) and line, so it never matches a line of another transcript — the one exception to billing a
+    response once per directory, which no Claude Code response has needed (each carries an id). `state` is 'stopped'
+    when the last line names a stop_reason, 'snapshot' when it says "stop_reason": null (written mid-stream: the input
+    and cache counts are final, the output a snapshot), and 'unknown' when the key is absent."""
     out = {}
     for n, e in enumerate(events):
         m = e.get('message') or {}
         if m.get('usage'):
-            out[m.get('id') or ('line', where, n)] = (m.get('model', '?'), m['usage'], n)
+            state = 'unknown' if 'stop_reason' not in m else ('snapshot' if m['stop_reason'] is None else 'stopped')
+            out[m.get('id') or ('line', where, n)] = (m.get('model', '?'), m['usage'], n, state)
     return out
 
 
+def best_copies(transcripts):
+    """Every response's best copy across the directory: a stopped copy over any other, then the larger output. A fork's
+    copy of its parent's history carries the parent's final usage where the parent's own last line is a snapshot."""
+    best = {}
+    for responses in transcripts:
+        for k, (model, u, _, state) in responses.items():
+            rank = (state == 'stopped', u.get('output_tokens', 0))
+            if k not in best or rank > best[k][0]:
+                best[k] = (rank, model, u, state)
+    return {k: v[1:] for k, v in best.items()}
+
+
 def read_meta(path):
-    """agent-<id>.meta.json beside the transcript: the agent's description and type and, for a fork, `isFork` and the
-    `parentAgentId` it forked from. {} when absent or unreadable, as for a transcript written before Claude Code wrote
-    one."""
+    """agent-<id>.meta.json beside the transcript: the agent's description and type and, for a fork, `isFork`, the
+    `parentAgentId` it forked from and the `toolUseId` of the call that spawned it. {} when absent or unreadable, as for
+    a transcript written before Claude Code wrote one."""
     try:
         with open(path[:-len('.jsonl')] + '.meta.json') as f:
             meta = json.load(f)
@@ -161,39 +182,72 @@ def session_transcript(path):
     return s if os.path.basename(d) == 'subagents' and os.path.isfile(s) else None
 
 
-def summarise(path, meta, present, billed):
-    """One agent's row. `billed` maps every response already billed in this run to its agent, so a response recorded in
-    two transcripts is billed once. A fork's transcript opens with its parent's history copied line for line — the
-    parent's responses with their message ids and usage — so a fork is read after its parent and keeps only what its
-    parent did not record. A fork whose parent is not in `present` inherited either the main session (a fork of the
-    main loop, whose transcript is excluded without a row) or an agent that is not here, and then the line that hands
-    the fork its task marks where its own work starts; a fork with neither is unpriced and named, never billed for its
-    parent's history."""
-    events, skipped = read_jsonl(path)
+def fork_boundary(events, meta):
+    """The index of the user message that hands a fork its task: a text block opening with <fork-boilerplate> beside
+    the tool result for the call that spawned the fork (meta's `toolUseId`, where there is one). A line that merely
+    quotes the marker — a grep result in the inherited history — is not it. None when there is no such message."""
+    tid = meta.get('toolUseId')
+    for n, e in enumerate(events):
+        if e.get('type') != 'user':
+            continue
+        content = (e.get('message') or {}).get('content')
+        blocks = content if isinstance(content, list) else [{'type': 'text', 'text': content or ''}]
+        blocks = [b for b in blocks if isinstance(b, dict)]
+        opens = any(b.get('type') == 'text' and str(b.get('text', '')).lstrip().startswith(FORK_BOUNDARY) for b in blocks)
+        answers = tid is None or any(b.get('type') == 'tool_result' and b.get('tool_use_id') == tid for b in blocks)
+        if opens and answers:
+            return n
+    return None
+
+
+def summarise(path, meta, present, billed, unseparable_forks, transcript, best):
+    """One agent's row. `billed` holds every response already accounted for in this run — billed to an earlier row, or
+    excluded as history no row of this directory pays for — so each is billed once, at its best copy. A fork's
+    transcript opens with copies of its parent's lines, so a fork is read after its parent and keeps only what is not
+    yet accounted for. A fork whose parent is not in `present` inherited either the main session (a fork of the main
+    loop, whose transcript is excluded without a row; no transcript on the measuring machine shows this shape yet, so
+    only the fixture models it) or an agent that is not here, and then the message that hands the fork its task marks
+    where its own work starts. A fork with neither, and every fork of it, is unpriced and named, never billed for history
+    it cannot separate."""
+    events, skipped = transcript
     responses = responses_of(events, path)
-    inherited, unseparable = set(), False
-    if is_fork(meta) and meta.get('parentAgentId') not in present:
-        session = None if meta.get('parentAgentId') else session_transcript(path)
-        if session:
-            inherited = set(responses_of(read_jsonl(session)[0], session))
+    fork, inherited, unseparable, cut = is_fork(meta), set(), False, None
+    if fork:
+        parent = meta.get('parentAgentId')
+        if parent in present:
+            unseparable = present[parent] in unseparable_forks
         else:
-            cut = next((n for n, e in enumerate(events)
-                        if e.get('type') == 'user' and FORK_BOUNDARY in json.dumps(e.get('message'))), None)
-            if cut is None:
-                unseparable = True
+            session = None if parent else session_transcript(path)
+            if session:
+                inherited = set(responses_of(read_jsonl(session)[0], session))
             else:
-                inherited = {k for k, (_, _, n) in responses.items() if n < cut}
-    own = {k: v for k, v in responses.items() if k not in billed and k not in inherited}
-    elsewhere = [n for k, (_, _, n) in responses.items() if k not in own]
-    start = max(elsewhere) + 1 if elsewhere and not unseparable else 0  # where this agent's own work begins
-    if not unseparable:
+                cut = fork_boundary(events, meta)
+                if cut is None:
+                    unseparable = True
+                else:
+                    inherited = {k for k, v in responses.items() if v[2] < cut}
+    if unseparable:
+        unseparable_forks.add(path)
+        own = dict(responses)
+    else:
+        own = {k: v for k, v in responses.items() if k not in billed and k not in inherited}
+        billed.update({k: None for k in responses if k not in own and k not in billed})
         billed.update({k: os.path.basename(path)[6:-6] for k in own})
+    # Where this agent's own work begins: a fork's after the history it copied, any other transcript's at its top.
+    start = 0
+    if fork and not unseparable:
+        start = cut if cut is not None else max((v[2] + 1 for k, v in responses.items() if k not in own), default=0)
     per_model = {}  # model id -> token counts; priced per model, so a mixed transcript is never billed at one tier
-    for model, u, _ in own.values():
+    snapshot = 0
+    for k in own:
+        model, u, _, state = own[k]
+        if not unseparable:
+            model, u, state = best[k]  # the stopped copy, where a fork kept one
         if model == '<synthetic>' and not any(u.get(f) for f in ('input_tokens', 'output_tokens',
                                                                    'cache_creation_input_tokens', 'cache_read_input_tokens')):
             continue  # a harness-written message with zero usage: nothing to price. One that ever carried usage stays,
             # so its row is unpriced and named rather than silently undercounted
+        snapshot += state == 'snapshot'
         if u.get('speed') not in (None, 'standard'):
             model = f"{model} [speed={u['speed']}]"  # fast mode bills at another rate: named as unpriced, never guessed at
         t = per_model.setdefault(model, dict(turns=0, inp=0, out=0, cw=0, cw1h=0, cr=0))
@@ -215,10 +269,6 @@ def summarise(path, meta, present, billed):
         cw5m = max(t['cw'] - t['cw1h'], 0)
         cost += (t['inp'] * pi + cw5m * pi * CACHE_WRITE_5M + t['cw1h'] * pi * CACHE_WRITE_1H
                  + t['cr'] * pi * CACHE_READ.get(k, CACHE_READ_DEFAULT) + t['out'] * po) / 1e6
-    # A last line that says "stop_reason": null was written mid-stream: its input and cache counts are final, its
-    # output a snapshot. An absent key is no evidence either way.
-    snapshot = sum(1 for _, _, n in own.values()
-                   if 'stop_reason' in (events[n].get('message') or {}) and events[n]['message']['stop_reason'] is None)
     stamps = [e['timestamp'] for e in events[start:] if e.get('timestamp')]
     minutes = None
     if len(stamps) >= 2:
@@ -226,7 +276,7 @@ def summarise(path, meta, present, billed):
     label = meta.get('description') or first_prompt(events[start:])
     return dict(agent=os.path.basename(path)[6:-6], label=label, model=model, turns=turns, input=inp, cache_write=cw,
                 cache_read=cr, output=out, cost_usd=cost, minutes=minutes, skipped_lines=skipped,
-                inherited=0 if unseparable else len(responses) - len(own), fork=is_fork(meta), unseparable=unseparable,
+                inherited=0 if unseparable else len(responses) - len(own), fork=fork, unseparable=unseparable,
                 snapshot=snapshot, responses=len(own))
 
 
@@ -241,14 +291,17 @@ def main(argv):
         return 1
     metas = {p: read_meta(p) for p in paths}
     present = {os.path.basename(p)[6:-6]: p for p in paths}
+    transcripts = {p: read_jsonl(p) for p in paths}
+    best = best_copies(responses_of(transcripts[p][0], p) for p in paths)
 
     def depth(p, seen=()):  # a fork is read after the parent it copied, at every level
         parent = present.get(metas[p].get('parentAgentId'))
         if not is_fork(metas[p]) or parent is None or parent in seen:
             return 0 if not is_fork(metas[p]) else 1
         return 1 + depth(parent, seen + (p,))
-    billed = {}
-    by_path = {p: summarise(p, metas[p], present, billed) for p in sorted(paths, key=lambda p: (depth(p), p))}
+    billed, unseparable_forks = {}, set()
+    by_path = {p: summarise(p, metas[p], present, billed, unseparable_forks, transcripts[p], best)
+               for p in sorted(paths, key=lambda p: (depth(p), p))}
     rows = [by_path[p] for p in paths]
     cols = ['agent', 'label', 'model', 'turns', 'input', 'cache_write', 'cache_read', 'output', 'cost_usd', 'minutes']
     print('\t'.join(cols))
