@@ -487,4 +487,76 @@ for (const roster of [null, { crossCutting: "not-an-array" }]) {
   n++;
 }
 
+// 29 — the bounds' defaults are 3 per dimension and 8 verified, and a bound of 0 is a bound (verifies nothing), never a
+//      default: pinned by behaviour, not by the source text.
+{
+  const { out } = await scenario("default bounds", { args: { files: ["a"] }, roster: rosterOK, findings: {}, verdict: real });
+  assert.deepEqual(out.bounds, { MAX_PER_DIMENSION: 3, MAX_VERIFY: 8 }, "the default bounds are 3 and 8");
+  const { calls } = await scenario("zero verify", {
+    args: { files: ["a"], maxVerify: 0 }, roster: rosterOK, findings: { "code-review": { findings: [F("a", 1, "x", "high")] } }, verdict: real,
+  });
+  assert.equal(calls.filter((c) => c.label.startsWith("verify:")).length, 0, "maxVerify 0 verifies nothing");
+  n++;
+}
+
+// 30 — malformed arguments are refused before any agent runs: a bound that is not a whole number (−1 disabled the cost
+//      guard; "8" became the string "138" in the planned count), a list argument that is not a list, and a verify
+//      model above the workhorse tier.
+for (const [args, re] of [
+  [{ files: ["a"], maxVerify: -1 }, /maxVerify must be a whole number/],
+  [{ files: ["a"], maxPerDimension: "3" }, /maxPerDimension must be a whole number/],
+  [{ files: ["a"], finders: { key: "x" } }, /finders must be a list/],
+  [{ files: "a.ts" }, /files must be a list/],
+  [{ files: ["a"], verifyModel: "fable" }, /verifyModel must be/],
+]) {
+  let dispatched = 0;
+  await assert.rejects(run(args, async () => { dispatched += 1; return null; }, async (t) => Promise.all(t.map((f) => f())), () => {}, () => {}), re);
+  assert.equal(dispatched, 0, `${JSON.stringify(args)} is refused before any agent runs`);
+}
+n++;
+
+// 31 — a caller finder whose key is already a dimension or a reviewer would share its per-dimension bound and hide their
+//      convergence: it is dropped coverage with the reason, never dispatched; duplicate caller reviewers run once.
+{
+  const { out, calls } = await scenario("key collision", {
+    args: { files: ["a"], reviewers: ["r1", "r1"], finders: [{ key: "code-review", prompt: "ratios" }, { key: "r1", prompt: "x" }] },
+    roster: rosterOK, findings: {}, verdict: real,
+  });
+  assert.equal(calls.filter((c) => c.label === "find:r1").length, 1, "a duplicate caller reviewer runs once");
+  assert.equal(calls.filter((c) => c.label === "find:code-review").length, 1, "the colliding finder is not dispatched beside the toolkit's code-review");
+  assert.ok(out.droppedCoverage.some((d) => d.startsWith("code-review (caller finder whose key is already")) && out.droppedCoverage.some((d) => d.startsWith("r1 (caller finder whose key is already")), "each collision is dropped coverage, named");
+  n++;
+}
+
+// 32 — a finding's path is normalised before the dedup key: `./src/a.ts`, `src/a.ts` and the repository-absolute spelling of
+//      one changed file are one defect, one verify slot; and the schema asks for a line number from 1.
+{
+  const { calls } = await scenario("path spellings", {
+    args: { files: ["src/a.ts"] }, roster: rosterOK,
+    findings: { "code-review": { findings: [F("./src/a.ts", 3, "x", "high")] }, "comments": { findings: [F("src/a.ts", 3, "y", "high")] },
+                "silent-failures": { findings: [F("/home/u/repo/src/a.ts", 3, "z", "high")] } },
+    verdict: real,
+  });
+  assert.equal(calls.filter((c) => c.label.startsWith("verify:")).length, 1, "three spellings of one file:line take one verify slot");
+  const schema = calls.find((c) => c.label.startsWith("find:")).opts.schema;
+  assert.equal(schema.properties.findings.items.properties.line.type, "integer");
+  assert.equal(schema.properties.findings.items.properties.line.minimum, 1);
+  n++;
+}
+
+// 33 — a roster read that returns no reviewer at all (a renamed section, an empty reply) is dropped coverage, never a clean
+//      "dropped coverage: none" — pr-review.md's reviewers run on every sweep.
+{
+  const { out } = await scenario("empty roster", { args: { files: ["a"] }, roster: { crossCutting: [], domain: [], note: "section not found" }, findings: {}, verdict: real });
+  assert.ok(out.droppedCoverage.some((d) => d.startsWith("project-local reviewers (the roster read returned none")), `an empty roster is dropped coverage (got ${JSON.stringify(out.droppedCoverage)})`);
+  n++;
+}
+
+// 34 — a caller finder with a prompt but no key is dropped for having no key, not for "neither prompt nor agentType".
+{
+  const { out } = await scenario("keyless finder", { args: { files: ["a"], finders: [{ prompt: "ratios" }] }, roster: rosterOK, findings: {}, verdict: real });
+  assert.ok(out.droppedCoverage.some((d) => /^\(unnamed\) \(caller finder with no key\)$/.test(d)), `a keyless finder is dropped for its missing key (got ${JSON.stringify(out.droppedCoverage)})`);
+  n++;
+}
+
 console.log(`review-sweep accounting: meta + body parse, ${n} scenarios OK`);

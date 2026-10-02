@@ -19,7 +19,7 @@ const FINDINGS_SCHEMA = {
         type: "object",
         properties: {
           file: { type: "string" },
-          line: { type: "number" },
+          line: { type: "integer", minimum: 1 },
           title: { type: "string" },
           detail: { type: "string" },
           severity: { type: "string", enum: ["high", "medium", "low"] },
@@ -76,6 +76,12 @@ const TOOLKIT_DIMENSIONS = [
 // The runtime may deliver args as a JSON-encoded string; normalize before any
 // access (a stringified files array would silently degrade auto-selection).
 const params = typeof args === "string" ? JSON.parse(args) : (args ?? {});
+// Malformed arguments are refused before any agent runs: a bound of -1 disabled the cost guard, "8" turned the planned
+// count into a string, and a non-list `finders` threw only after the roster agent had run (context-builder-kit#69 review).
+for (const k of ["files", "finders", "reviewers"]) if (params[k] !== undefined && !Array.isArray(params[k])) throw new Error(`review-sweep: ${k} must be a list (got ${typeof params[k]})`);
+for (const k of ["maxPerDimension", "maxVerify"]) if (params[k] !== undefined && !(Number.isInteger(params[k]) && params[k] >= 0)) throw new Error(`review-sweep: ${k} must be a whole number, 0 or more (got ${JSON.stringify(params[k])})`);
+// The verify stage runs at the session model; an override names a tier at or below the workhorse, never one above it.
+if (params.verifyModel !== undefined && !["opus", "sonnet", "haiku"].includes(params.verifyModel)) throw new Error(`review-sweep: verifyModel must be opus, sonnet or haiku — the verify stage never runs above the workhorse tier (got ${JSON.stringify(params.verifyModel)})`);
 
 const files = params.files ?? [];
 const base = params.base ?? "main";
@@ -103,7 +109,7 @@ if (files.length === 0) {
 // source of truth it claims to be. A failed or malformed read DEGRADES — the
 // toolkit dimensions still run — and the dropped coverage is reported, never hidden.
 phase("Roster");
-let reviewers = params.reviewers;
+let reviewers = params.reviewers ? [...new Set(params.reviewers)] : undefined;
 const rosterAgents = reviewers ? 0 : 1;
 if (!reviewers) {
   const roster = await agent(
@@ -127,6 +133,9 @@ If the section is ambiguous, missing, or names a reviewer whose agent file does 
     reviewers = [];
   } else {
     if (roster.note) log(`review-sweep: roster note — ${roster.note}`);
+    // pr-review.md's reviewers run on every sweep, so a read that names none (a renamed section, an empty reply) lost
+    // them: dropped coverage, never a clean gate line.
+    if (roster.crossCutting.length === 0 && roster.domain.length === 0) droppedCoverage.push(`project-local reviewers (the roster read returned none${roster.note ? `: ${roster.note}` : ""})`);
     // The roster reader has returned `name (path)` for a name and backticked hints
     // (observed 2026-09-05); agentType and the substring match both need the bare
     // strings — the name is the token before whitespace or a parenthesis.
@@ -164,10 +173,15 @@ phase("Find");
 // the default workflow agent reviews against (a ratio bound, a timing invariant), or both. One with neither has
 // nothing to review with: dropped coverage, named on the gate line, never dispatched blind (context-builder-kit#72
 // item 1).
+// A key that is already a toolkit dimension, a reviewer or an earlier finder would share that dimension's bound and hide
+// convergence between the two, so it is dropped coverage too, with the reason.
 const finders = [];
+const taken = new Set([...TOOLKIT_DIMENSIONS.map((d) => d.key), ...reviewers]);
 for (const f of params.finders ?? []) {
-  if (f && f.key && (f.prompt || f.agentType)) finders.push({ key: f.key, agentType: f.agentType, focus: f.prompt });
-  else droppedCoverage.push(`${(f && f.key) || "(unnamed)"} (caller finder with neither prompt nor agentType)`);
+  if (!f || !f.key) droppedCoverage.push(`(unnamed) (caller finder with no key${f && (f.prompt || f.agentType) ? "" : ", and neither prompt nor agentType"})`);
+  else if (!(f.prompt || f.agentType)) droppedCoverage.push(`${f.key} (caller finder with neither prompt nor agentType)`);
+  else if (taken.has(f.key)) droppedCoverage.push(`${f.key} (caller finder whose key is already a dimension or a reviewer — give it a key of its own)`);
+  else { taken.add(f.key); finders.push({ key: f.key, agentType: f.agentType, focus: f.prompt }); }
 }
 const dimensions = [...TOOLKIT_DIMENSIONS, ...reviewers.map((name) => ({ key: name, agentType: name })), ...finders];
 const fileList = files.join("\n");
@@ -226,10 +240,17 @@ if (failedDimensions.length > 0) {
 
 // ---- Dedup + bound: a genuine barrier — dedup needs every finder's output at
 // once, and it must happen BEFORE the expensive verify stage. ----
+// A finding's path is normalised before it is keyed: `./x`, `x` and the repository-absolute spelling of a changed file
+// are one file, so they share one verify slot instead of paying for a paraphrase each.
+const normFile = (p) => {
+  const f = String(p ?? "").replace(/^(\.\/)+/, "");
+  if (!f.startsWith("/")) return f;
+  return files.find((x) => f.endsWith(`/${x}`)) ?? f;
+};
 const raw = [];
 results.forEach((r, i) => {
   if (!r) return;
-  for (const f of r.findings ?? []) raw.push({ ...f, dimension: dimensions[i].key });
+  for (const f of r.findings ?? []) raw.push({ ...f, file: normFile(f.file), dimension: dimensions[i].key });
 });
 
 // Findings on the same file:line are ONE finding that keeps the STRONGEST
