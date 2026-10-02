@@ -41,7 +41,7 @@ The cascade is **a funnel, not a waterfall**: framing and rough-in run **one wor
 | [`mise`](https://mise.jdx.dev/), optional | The task runner blueprint's tooling template defaults to | Nothing: any runner that defines a `check` task works |
 | A `CLAUDE_CODE_OAUTH_TOKEN` Actions secret | The review workflows blueprint emits when scaffold's PR question chose automated review | Those workflows fail at their action step |
 
-v1.0.0 was checked on Claude Code 2.1.286. To list what is missing on a machine: `for t in git jq gh node python3 uv; do command -v "$t" >/dev/null || echo "missing: $t"; done`.
+v1.0.0 was checked on Claude Code 2.1.286 and 2.1.287. To list what is missing on a machine: `for t in git jq gh node python3 uv; do command -v "$t" >/dev/null || echo "missing: $t"; done`.
 
 ### 1. Install the drop-in set from a tagged release
 
