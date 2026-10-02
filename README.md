@@ -45,21 +45,20 @@ v1.0.0 was checked on Claude Code 2.1.286. To list what is missing on a machine:
 
 ### 1. Install the drop-in set from a tagged release
 
-Run this at your repository's root. It copies only the drop-in set — `.claude/`, `.mcp.json.example`, `.github/dependabot.yml.example` and `.github/workflows/adr-immutability-check.yml` — and never touches your `README.md`, `LICENSE`, `CLAUDE.md`, `.gitignore` or `docs/`. It prints the release to record. To install from a fork, change the owner in the URL.
+Run this at your repository's root. It copies only the drop-in set — `.claude/`, `.mcp.json.example`, `.github/dependabot.yml.example` and `.github/workflows/adr-immutability-check.yml` — and never touches your `README.md`, `LICENSE`, `CLAUDE.md`, `.gitignore` or `docs/`. A `.claude/` you already have (settings Claude Code wrote, your own agents) is kept: no file is overwritten, and each file the kit also ships is listed for you to merge by hand. A repository that already carries the kit is refused and sent to Upgrading. It prints the release to record. To install from a fork, change the owner in the URL.
 
 ```bash
 KIT_VERSION=v1.0.0
 kit_tmp=$(mktemp -d)
 curl -fsSL -o "$kit_tmp/kit.tar.gz" "https://github.com/j4th/context-builder-kit/archive/refs/tags/$KIT_VERSION.tar.gz"
 tar -xzf "$kit_tmp/kit.tar.gz" -C "$kit_tmp" --strip-components=1
-if [ -e .claude ]; then
-  echo "A .claude/ already exists here, so nothing was copied: upgrade it instead (see Upgrading)."
+if [ -e .claude/rules/cbk-conventions.md ]; then
+  echo "The kit is already installed here, so nothing was copied: upgrade it instead (see Upgrading)."
 else
-  cp -R "$kit_tmp/.claude" .
-  cp "$kit_tmp/.mcp.json.example" .
-  mkdir -p .github/workflows
-  cp "$kit_tmp/.github/dependabot.yml.example" .github/
-  cp "$kit_tmp/.github/workflows/adr-immutability-check.yml" .github/workflows/
+  while IFS= read -r f; do
+    if [ -e "$f" ]; then echo "exists, not copied (merge by hand): $f"
+    else mkdir -p "$(dirname "$f")" && cp "$kit_tmp/$f" "$f"; fi
+  done < <(cd "$kit_tmp" && find .claude .mcp.json.example .github/dependabot.yml.example .github/workflows/adr-immutability-check.yml -type f)
   echo "Kit commit: $KIT_VERSION ($(gunzip -c "$kit_tmp/kit.tar.gz" | git get-tar-commit-id | cut -c1-7))"
 fi
 rm -rf "$kit_tmp"
@@ -110,7 +109,7 @@ That's it. The kit is in place; what you do next depends on where you are in the
 
 ## Upgrading
 
-A repository that carries the kit upgrades by release, never by re-extracting over its filled files. Read `CHANGELOG.md` from the release your **Kit commit** row names up to the one you are moving to: each release's **Sync notes** say what to do by hand. Then follow `.claude/rules/cbk-conventions-reference.md` § Syncing the kit — a file-by-file table first, then a three-way `git merge-file` per file, with the kit at your recorded release as the base. Record the new release when the sync merges.
+A repository that carries the kit upgrades by release, never by re-extracting over its filled files. Read the `CHANGELOG.md` entry of every release after the one your **Kit commit** row names, up to and including the one you are moving to: each release's **Sync notes** say what to do by hand. Then follow `.claude/rules/cbk-conventions-reference.md` § Syncing the kit — a file-by-file table first, then a three-way `git merge-file` per file, with the kit at your recorded release as the base. Record the new release when the sync merges.
 
 ## Pick your entry point
 
@@ -409,7 +408,7 @@ The cascade runs top-down; externally sourced work comes in from the side. `/int
 .mcp.json.example                      ← MCP server config template
 ```
 
-That is the drop-in set the Quick start installs; scaffold then writes `docs/adr/` from `references/adr-starters/`. The rest of this repository is the kit's own and is never installed: `README.md`, `CHANGELOG.md`, `CLAUDE.md` (instructions for working on the kit), `LICENSE`, `.gitignore`, `.github/workflows/verify.yml` (the kit's CI) and `docs/` (the kit's own decision records and harvest designs).
+That is the drop-in set the Quick start installs; scaffold then writes `docs/adr/` from `references/adr-starters/`. The rest of this repository is the kit's own and is never installed: `README.md`, `CHANGELOG.md`, `CLAUDE.md` (instructions for working on the kit), `LICENSE`, `.gitignore`, `.github/workflows/verify.yml` (the kit's CI) and `docs/` (`docs/adr/`, the ADR starters scaffold copies, byte-identical to its `references/adr-starters/`, and `docs/superpowers/`, each harvest's design, trace and plans).
 
 Each skill follows the same pattern: a `SKILL.md` entrypoint plus a `references/` directory with templates and operational reference docs (failure modes, question banks, axis-specific behavior, inheritance discipline). The three producing phases — framing, rough-in and `/finish` — are contract-first: `references/contract.md` (for the executor, `commands/finish.md` itself) is the drafting read, `references/procedure.md` (`commands/finish-procedure.md`) the step-by-step on demand, and `SKILL.md` routes. Skills load `references/*.md` lazily on demand.
 
@@ -451,7 +450,7 @@ If your project uses a different layout, record it in `cbk-conventions.md`: `/fi
 
 ## Customization
 
-Four files reliably need editing per project, and scaffold's bootstrap checklist walks the decisions:
+Four surfaces are settled per project — three edited, and `finish.md` understood and left as shipped — and scaffold's bootstrap checklist walks the decisions:
 
 1. **`.claude/rules/cbk-conventions.md`** — fill in `<TEAM>`, workstream slugs, branch-naming patterns, methodology choices. Delete the "this file is a template" callout at the top once you're done.
 
@@ -465,7 +464,7 @@ Optional further customization:
 - Add project-local reviewer agents under `.claude/agents/` (the kit ships `adr-conformance-reviewer`, `logging-discipline-reviewer` and `cascade-rule-reviewer`; add your own for project-specific concerns).
 - Keep or delete `.claude/agents/Explore.md`. It overrides Claude Code's built-in Explore agent — "A user or project subagent named `Explore` overrides the built-in and keeps its own `model` field" — with one pinned to `model: haiku` and set to `omitClaudeMd: true`, which launches it "without the user, project, and local CLAUDE.md files" (`https://code.claude.com/docs/en/sub-agents`, read 2026-09-30). Delete it to keep the built-in.
 - Tune `pr-review.md`'s Apply/Surface calibration as you learn what's noisy in your project's PRs.
-- If you don't use ADRs, delete `docs/adr/` and remove the hook registration from `settings.json`.
+- If you don't use ADRs, keep the ADR guard and its CI job: with no numbered ADR in `docs/adr/` neither ever fires, and the verification block checks both. Removing them means deleting `protect-immutable-adrs.sh` with its `settings.json` stanza and its name in `cbk-conventions.md` § Mutation discipline, `.github/workflows/adr-immutability-check.yml`, and the block lines that check them — a named exception (`.claude/rules/cbk-conventions-reference.md` § Syncing the kit).
 
 ## How phases inherit from each other
 
