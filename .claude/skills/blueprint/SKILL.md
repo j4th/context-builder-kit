@@ -88,7 +88,7 @@ Before any decisions, blueprint reads both prior-phase outputs and explicitly st
 - Tool landscape (informs CLAUDE.md's commands section and tooling configs)
 - Tool comfort (informs how much explanation CLAUDE.md needs)
 
-After reading both files, **state inheritance explicitly to the user**: *"Reading what I've inherited: from the problem brief, [one-sentence summary of problem + appetite + key constraint]. From the scaffold output, [one-sentence summary of profile + team shape + quality bar]. The stack decisions you flagged for blueprint are: [list]. Anything to correct before I proceed?"*
+After reading both files, **state inheritance explicitly to the user**: *"Reading what I've inherited: from the problem brief, [one-sentence summary of problem + appetite + key constraint]. From the scaffold output, [one-sentence summary of the two backend axes + team shape + quality bar]. The stack decisions you flagged for blueprint are: [list]. Anything to correct before I proceed?"*
 
 This is the first HITL gate. The user's correction here prevents downstream rework.
 
@@ -210,7 +210,7 @@ Each doc has its own template in `references/templates/`. Each template starts w
 
 ### Workstream slug confirmation gate (mandatory inside `blueprint.md` production)
 
-When producing `blueprint.md` (doc #6, the cascade artifact), the workstreams table contains both human-readable workstream names AND the slugs derived from them. **Slugs are the cascade's longest-lived identifier** — they appear in every parent Issue title (`[regex-pack] Regex pack`), every framing sub-issue title (`[regex-pack:F1] ...`), every rough-in sub-sub-issue title (`[regex-pack:F1:R1] ...`), every PR title that closes a downstream Issue, every `frame-NN.md` reference, every `README.md` index row, and every commit message that references work on the workstream. They're also visible in markdown-only mode (in `blueprint.md` headings and `frame-NN.md` references) so this gate runs in every profile.
+When producing `blueprint.md` (doc #6, the cascade artifact), the workstreams table contains both human-readable workstream names AND the slugs derived from them. **Slugs are the cascade's longest-lived identifier** — they appear in every parent Issue title (`[regex-pack] Regex pack`), every framing sub-issue title (`[regex-pack:F1] ...`), every rough-in sub-sub-issue title (`[regex-pack:F1:R1] ...`), every PR title that closes a downstream Issue, every `frame-NN.md` reference, every `README.md` index row, and every commit message that references work on the workstream. They're also visible on the `in-repo-markdown` axis (in `blueprint.md` § Workstreams and `frame-NN.md` references), so this gate runs on every axis.
 
 **Run an explicit slug-confirmation gate as a sub-step of step 4** (Present inline for HITL review). After drafting `blueprint.md`'s workstreams table, surface the slugs separately from the rest of the doc:
 

@@ -57,7 +57,7 @@ docs/cbk/
 
 ## Sub-issue hierarchy — three levels
 
-The default hierarchy is **three levels**, on whichever planning backend the project picked at scaffold (Linear, GitHub Issues with sub-issues, or markdown-only):
+The default hierarchy is **three levels**, on whichever planning backend the project picked at scaffold (Linear, GitHub Issues with sub-issues, or in-repo markdown):
 
 ```
 Initiative / project root             (one per cascade phase or per project)
@@ -102,7 +102,7 @@ Raw, externally-sourced reports land in a **holding surface** that is strictly *
 
 - **Linear** — the team's **Triage** inbox (GitHub issues arrive via the Linear GitHub integration; members file directly).
 - **GitHub Issues** — a `triage` label (or an unassigned / no-status column on the Projects v2 board) for issues not yet shaped.
-- **Markdown-only** — an `## Inbox` section at the top of the cascade-events index (or a dedicated `docs/cbk/inbox.md`).
+- **`in-repo-markdown`** — an `## Inbox` section at the top of the cascade-events index (or a dedicated `docs/cbk/inbox.md`).
 
 Once `/intake` shapes a report it **leaves the holding surface** carrying its cascade labels (`cascade-depth:*` and/or `enhancement`) and does **not** return. The complementary "shaped but not yet `/finish`-able" pool lives on a *label* axis (§ Awaiting cascade work), not on the holding surface — two non-overlapping surfaces: the holding state for raw arrivals, the `enhancement` label for post-`/intake` candidates awaiting `/enrich` or framing.
 
@@ -111,7 +111,7 @@ Once `/intake` shapes a report it **leaves the holding surface** carrying its ca
 Every externally-sourced issue carries a provenance label; cascade-native issues carry none. This is the queryable external-vs-native distinction:
 
 - **`source:<origin>`** — e.g. `source:github` (originated as a GitHub issue; also created in the repo so issue forms auto-apply it), `source:linear` (filed directly by a collaborator), or a generic `source:external`. "All external" is the union of the `source:*` labels.
-- **Markdown-only** — a `labels:` line inside the issue record (below) carrying the same tokens (`source:github`, `cascade-depth:roughed-in`, `enhancement`, the type), greppable exactly like the backend labels. Graduation = editing that line.
+- **`in-repo-markdown`** — a `labels:` line inside the issue record (below) carrying the same tokens (`source:github`, `cascade-depth:roughed-in`, `enhancement`, the type), greppable exactly like the backend labels. Graduation = editing that line.
 
 The reporter and the origin URL also go in the issue body.
 
@@ -175,7 +175,7 @@ If `/intake` classifies a report as a *large* net-new capability (multi-R, sub-d
 `/intake` files both non-bug routes — the enhancement-lane `[<slug>:enh]` candidate and the large-capability framing candidate — with the transient **`enhancement`** marker and **without** `cascade-depth:roughed-in`. That marker is the cascade's "shaped by `/intake`, not yet ready for `/finish`" signal, so an **open issue still carrying `enhancement`** is exactly a candidate awaiting a human-or-skill action — the queryable "holding" set. Surface it with your planning backend's **saved-view / filtered-query** mechanic, **not** a workflow-state change (candidates stay in the default backlog state `save_issue` assigns; the holding signal rides the *label* axis every skill already writes):
 
 - **A saved view / filter "Awaiting cascade work"** — filter on **`label = enhancement`** (optionally `AND state is not Done/Canceled`). Surfaces both non-bug routes in one place. Mid-cascade issues — framed `[<slug>:F<#>]` F-issues (`cascade-depth:framed`), meta-issues, roughed-in R-issues — correctly stay out; they don't carry `enhancement`.
-- For **markdown-only** projects, the equivalent is a section or query over the cascade-events index for entries tagged `enhancement`.
+- On the **`in-repo-markdown`** axis, the equivalent is a section or query over the cascade-events index for entries tagged `enhancement`.
 
 **Graduation (leaving the view).** Both routes **auto-clear** `enhancement`, so a candidate drops out the instant it graduates — no manual step, no orphans:
 
@@ -1134,6 +1134,9 @@ absent grep -n "six iterations through this gate, one per do[c]" .claude/skills/
 # delete a pair (the knowledge-backend pair with the axis at `none`, a template pair at its disposition pass), the kit
 # tree may not.
 for p in cbk-conventions pr-review orchestration knowledge-backend; do r=.claude/rules/$p-reference.md; [ -f "$r" ] || { [ -f docs/cbk/scaffold.md ] && continue; echo "$r is missing from the kit tree"; exit 1; }; pre=$(grep -m1 '^> \*\*Path-scoped' "$r"); while IFS= read -r h; do [ -n "$h" ] || continue; grep -qxF "## $h" .claude/rules/$p.md || grep -qF "§ $h" <<<"$pre" || { echo "$r § $h has no pointer heading in $p.md and is not named in its preamble"; exit 1; }; done <<<"$(awk '/^```/{f=!f; next} !f && /^## /{sub(/^## /, ""); print}' "$r")"; done
+# The planning axis is named `in-repo-markdown`, never "markdown-only": the old name for the axis (a backend, a mode,
+# a project) stays out of the skills, commands and rules. The adjective — a table that lives only in markdown — is fine.
+absent grep -rnE -i 'markdown-onl[y] (backend|mode|project|planning)|[*][*]markdown-onl[y][*][*]|[(]markdown-onl[y][)]' .claude/skills .claude/commands .claude/rules
 # Kit tree only: no foreign project's identifiers in the kit's examples (V9.20) — examples are invented, generic names.
 [ -f docs/cbk/scaffold.md ] || absent grep -rn -i 'tuito[r]\|anubi[s]\|per-Pilo[t]\|Servo\.set_angl[e]' .claude/
 # Kit tree only (V9.21, D53): shipped content names no sibling project, and cites the kit's own issues as

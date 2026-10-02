@@ -78,7 +78,7 @@ These tests are not exhaustive — they cover the canonical happy path and the i
 - **Step 1**: reads scaffold.md, detects `Planning backend: in-repo-markdown`, surfaces the in-repo-markdown acknowledgment in the inheritance gate (parallel to blueprint's in-repo-markdown acknowledgment): *"This is in-repo-markdown planning — I'll skip the planning-backend half of every commit. The rough-in specs will land as markdown content rather than as GitHub sub-sub-issues. Sound right?"*
 - **Step 2**: inherits the slug + F-number from the framing's milestone entry in `frame-01.md` directly (not from a parent issue title because there isn't one).
 - **Steps 3-5**: same as Test 1 — research, issue plan, spec drafting all profile-agnostic.
-- **Step 6**: presents the markdown-only commit gate with the file location choice (append to frame-01.md vs new per-milestone rough-in markdown file). User picks. Rough-in commits the markdown content and the README.md index entry. No planning-backend operations.
+- **Step 6**: presents the `in-repo-markdown` commit gate with the file location choice (append to frame-01.md vs new per-milestone rough-in markdown file). User picks. Rough-in commits the markdown content and the README.md index entry. No planning-backend operations.
 
 **Success criteria**:
 
@@ -89,7 +89,7 @@ These tests are not exhaustive — they cover the canonical happy path and the i
 - The README.md index has an entry recording the rough-in event
 - No planning-backend MCP operations were attempted
 - The pre-flight checks still ran (it's profile-agnostic)
-- No `/finish` references appear in the output without explicit caveats (markdown-only mode has no `/finish` slash command, the user executes manually)
+- No `/finish` references appear in the output without explicit caveats (the `in-repo-markdown` axis has no `/finish` executor; the user executes the specs manually)
 
 ## Test 4 — Deferred meta-issue blocker hit
 
@@ -238,7 +238,7 @@ These tests are not exhaustive — they cover the canonical happy path and the i
 
 A few things should be true across all tests:
 
-- **The pre-flight checks runs in every test**, even Test 3 (markdown-only) where the planning backend doesn't exist
+- **The pre-flight checks runs in every test**, even Test 3 (`in-repo-markdown`) where no external planning backend exists
 - **No HITL gate is skipped silently** — if a gate is collapsed (in light mode), the user explicitly chose light mode
 - **Token pressure honesty** — if any test hits token pressure during research or spec drafting, rough-in surfaces it explicitly and offers the three options (finish partial, skim, continue in follow-up)
 - **The cascade event log is append-only** — no test should result in an overwritten or deleted markdown file or planning-backend object

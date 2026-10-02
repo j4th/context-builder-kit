@@ -16,7 +16,7 @@ This `/intake` command is a living document — revised as real runs surface gap
 Parse `$ARGUMENTS`. Detect a trailing `--github` flag (output mode). Determine the source type and fetch it:
 
 - **GitHub issue** (`#?\d+`): `github:issue_read` with `method: get`, or `gh issue view <N> --json number,title,body,labels,state,author,url`.
-- **Planning-backend issue** (`<KEY>-N`): fetch it via your planning backend's MCP/CLI (a Linear MCP `get_issue`, the GitHub issue if GitHub Issues is your planning backend, or the in-repo markdown issue file for a markdown-only backend).
+- **Planning-backend issue** (`<KEY>-N`): fetch it via your planning backend's MCP/CLI (a Linear MCP `get_issue`, the GitHub issue if GitHub Issues is your planning backend, or the in-repo markdown issue file on the `in-repo-markdown` axis).
 - **Freeform text**: use the quoted argument as the report.
 
 Extract and note: the **reporter** (issue author / creator), a **one-line symptom**, **repro steps** (if given), **expected vs actual**, the **affected area** (from the report form's area field, if it has one), and **environment / commit SHA**.
@@ -78,7 +78,7 @@ Build the issue body using the **exact eight `##` headings `/finish` Step 2 requ
 
 Then, by output mode:
 
-- **Planning backend (default) — HITL-gated.** Draft the title + body + labels + parent and **show the full draft**: *"Here's the shaped issue I'll create: `<title>` under `<parent>`, labels `<…>`. Body below. Create it?"* On approval, write it to your planning backend — parent = the workstream issue (bug lane), labels per Step 5, the body. Apply the type label **at creation** (on Linear this is what caches the suggested branch-name; see your `cbk-conventions.md` for backend-specific write notes). For a markdown-only planning backend, write the shaped issue as the in-repo issue entry rather than an MCP write.
+- **Planning backend (default) — HITL-gated.** Draft the title + body + labels + parent and **show the full draft**: *"Here's the shaped issue I'll create: `<title>` under `<parent>`, labels `<…>`. Body below. Create it?"* On approval, write it to your planning backend — parent = the workstream issue (bug lane), labels per Step 5, the body. Apply the type label **at creation** (on Linear this is what caches the suggested branch-name; see your `cbk-conventions.md` for backend-specific write notes). On the `in-repo-markdown` planning axis, write the shaped issue as the in-repo issue entry rather than an MCP write.
   - **Cross-link provenance.** If the source was a **GitHub issue**: comment back on it (`gh issue comment <N> --body "Tracked as <KEY>-N — <issue-url>"`) and record the GitHub URL in the issue body. If the source was a **triage/inbox issue in the planning backend**: prefer updating it in place (set title/body/labels/parent and move it out of triage) rather than creating a duplicate.
 - **GitHub (`--github`)** — for a reporter who isn't a planning-backend user. Emit a clean GitHub issue body (same eight sections, or a lighter bug-report shape for an external contributor). HITL before any `gh issue create`; default to **printing the body** for the operator to place.
 
