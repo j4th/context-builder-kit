@@ -2,8 +2,8 @@
 """Which pull requests the auto-review workflow's path filter lets through, evaluated as GitHub does.
 
 A docs-only PR is skipped, but markdown that is a one-way door — a rule, a skill, a command or an agent under
-`.claude/`, an ADR under `docs/adr/` — is reviewed (pr-review.md § What NOT to flag: "Not automatically light
-where the docs are one-way doors"). A cascade artifact under `docs/cbk/`, the other one-way door, stays skipped, as
+`.claude/`, an ADR under `docs/adr/` — is reviewed (pr-review.md § What NOT to flag: "Not light where the docs
+are one-way doors"). A cascade artifact under `docs/cbk/`, the other one-way door, stays skipped, as
 the prompt's hard skip has it, and a human reviews it. `paths-ignore` cannot say that. GitHub's workflow syntax: "If
 you want to both include and exclude path patterns for a single event, use the `paths` filter prefixed with the `!`
 character to indicate which paths should be excluded", and "A matching positive pattern after a negative match will
@@ -18,7 +18,9 @@ character including `/` (and `**/` zero or more directories: `'**/README.md'` ma
 of the preceding character, and "Path patterns must match the whole path".
 
 The blueprint template must carry a filter. A filled workflow with none reviews every PR; that is the project's
-call, so it passes with a notice and its cases are skipped.
+call, so it passes with a notice and its cases are skipped. Every quotation of pr-review.md § What NOT to flag, in
+the template and in this docstring, must appear in pr-review.md word for word: the rule's wording moved once and
+both quotations kept the old text.
 Run: python3 -B .claude/workflows/tests/review-trigger-fixture.py [workflow.yml ...]
 """
 import re
@@ -95,6 +97,18 @@ CASES = [  # (a PR's changed paths, whether the review must run)
 ]
 
 
+RULE = ROOT / ".claude/rules/pr-review.md"
+QUOTE = re.compile(r'pr-review\.md § What NOT to flag: "([^"]+)"')
+
+
+def stale_quotes(text: str, rule: str) -> list:
+    """The quotations of pr-review.md § What NOT to flag in `text` that the rule no longer says, compared with comment
+    markers, bold markers and line breaks folded away so a wrapped quotation compares whole."""
+    words = " ".join(rule.replace("**", "").split())
+    found = QUOTE.findall(" ".join(" ".join(re.sub(r"^\s*#\s?", "", line).split()) for line in text.splitlines()))
+    return [q for q in found if " ".join(q.split()) not in words]
+
+
 def show(path: Path) -> str:
     """A workflow's path for a message: repository-relative where it can be, as given where it cannot."""
     try:
@@ -109,6 +123,13 @@ def main() -> int:
         print(f"review-trigger-fixture: no review workflow to check (looked for {', '.join(show(p) for p in DEFAULT)})")
         return 1
     n = 0
+    rule = RULE.read_text()
+    for src in (TEMPLATE, Path(__file__)):
+        quoted = stale_quotes(src.read_text(), rule)
+        if quoted:
+            print(f"FAIL: {show(src)} quotes pr-review.md § What NOT to flag as {quoted!r}, which the rule no longer says")
+            return 1
+        n += 1
     for wf in files:
         found = trigger(wf.read_text())
         if found is None:

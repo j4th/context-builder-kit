@@ -67,8 +67,8 @@ on:
   pull_request:
     types: [opened, ready_for_review, reopened, labeled]
     # Docs-only PRs are not reviewed by the bot, but one-way-door markdown is: rules, skills, commands and
-    # agents under `.claude/`, and ADRs under `docs/adr/` (pr-review.md § What NOT to flag: "Not
-    # automatically light where the docs are one-way doors"). A cascade artifact under `docs/cbk/`, the other
+    # agents under `.claude/`, and ADRs under `docs/adr/` (pr-review.md § What NOT to flag: "Not light
+    # where the docs are one-way doors"). A cascade artifact under `docs/cbk/`, the other
     # one-way door, stays skipped, as the prompt's hard skip has it, and a human reviews it. `paths-ignore`
     # cannot re-include a path. GitHub: "use the `paths` filter prefixed with the `!` character to indicate
     # which paths should be excluded", and "A matching positive pattern after a negative match will include
