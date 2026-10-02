@@ -612,8 +612,9 @@ diff <(awk '/^--- BEGIN TEMPLATE ---/{flag=1; next} flag' .claude/skills/rough-i
 # The sweep: bounded (3 per dimension, 8 verified), roster read at runtime (no mirror), the
 # planned count logged before the find stage, its finders' effort named, its own gate line returned — and it parses and its
 # accounting holds under the stub harness (one extraction: the harness evaluates the meta literal
-# and the body; no agent is dispatched). Node is required; do not soften this check.
-{ grep -q 'maxPerDimension ?? 3' .claude/workflows/review-sweep.js && grep -q 'maxVerify ?? 8' .claude/workflows/review-sweep.js && grep -q 'planned agents' .claude/workflows/review-sweep.js && grep -q 'gateLine' .claude/workflows/review-sweep.js && grep -q 'FIND_EFFORT' .claude/workflows/review-sweep.js && grep -q 'RETRY_EFFORT' .claude/workflows/review-sweep.js; } || { echo "review-sweep.js lost a bound, the planned-count log, its effort constants, or its gate line"; exit 1; }
+# and the body; no agent is dispatched). The bounds and the efforts are the harness's scenarios, run as behaviour,
+# never pinned by source text a refactor breaks. Node is required; do not soften this check.
+{ grep -q 'planned agents' .claude/workflows/review-sweep.js && grep -q 'gateLine' .claude/workflows/review-sweep.js; } || { echo "review-sweep.js lost the planned-count log or its gate line"; exit 1; }
 absent grep -n 'REVIEWER_TRIGGERS' .claude/workflows/review-sweep.js
 node .claude/workflows/tests/review-sweep-accounting.mjs || { echo "review-sweep.js does not parse or its accounting regressed"; exit 1; }
 # The harness exemplars: the A/B script parses and refuses an unbalanced panel; the cost reader prices per

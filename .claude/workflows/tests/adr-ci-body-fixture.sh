@@ -6,7 +6,8 @@
 #            given a mode change; a base SHA git cannot read; two commits with no merge base. A git error is
 #            never "no ADR changed".
 #   exit 0 — a new ADR; an edit to README.md or corrections.md; a nested docs/adr/sub/0005-x.md (not a numbered
-#            ADR); and a branch that touches no ADR while the base branch gained one after the branch point (the
+#            ADR); an edit to docs/adr/0009-notes/x.md, a file in a directory named like an ADR, which only the
+#            `:(glob)` pathspec leaves out (a plain pathspec's `*` matches across `/`); and a branch that touches no ADR while the base branch gained one after the branch point (the
 #            diff runs from the merge base, so the newer ADR is not read as deleted).
 # The awk body this replaced read a name git prints quoted (non-ASCII) and a name awk splits (spaced) as "no ADR
 # changed". Needs bash, git and awk; runs under mktemp, never in the checkout. Run by the verification block; also:
@@ -29,6 +30,7 @@ mkdir -p "$repo/docs/adr"
 for f in 0001-plain.md "0002-café.md" "0003-two words.md" 0004-delete.md 0005-rename.md 0006-mode.md README.md corrections.md; do
   printf '# %s\n' "$f" > "$repo/docs/adr/$f"
 done
+mkdir -p "$repo/docs/adr/0009-notes"; printf '# notes\n' > "$repo/docs/adr/0009-notes/x.md"
 g add -A; g commit -q -m base
 base=$(g rev-parse HEAD)
 
@@ -56,6 +58,7 @@ case_ 0 "add a new ADR"                "printf '# new\n' > docs/adr/0007-new.md"
 case_ 0 "edit the README index"        "printf 'x\n' >> docs/adr/README.md"
 case_ 0 "append to the corrections register" "printf 'x\n' >> docs/adr/corrections.md"
 case_ 0 "add a nested non-ADR file"    "mkdir -p docs/adr/sub && printf 'x\n' > docs/adr/sub/0005-x.md"
+case_ 0 "edit a file in a directory named like an ADR" "printf 'x\n' >> docs/adr/0009-notes/x.md"
 
 # The base branch moved on: an ADR merged there after this branch was cut is not this PR's deletion.
 g checkout -q --detach "$base"; printf '# later\n' > "$repo/docs/adr/0008-later.md"; g add -A; g commit -q -m later
