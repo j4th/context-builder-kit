@@ -9,11 +9,16 @@
 #     gh refuses --jq, which runs once per page);
 #   - a summary written before the job started and edited after it passes (updated_at); one never touched since
 #     then fails, and the failure names the start time;
-#   - a tracker comment with no verdict fails, and the notice says the session ran and how to re-trigger;
+#   - a tracker comment with no verdict fails, and the notice says the session ran and how to re-trigger; so does one
+#     that names a verdict word in passing, unbolded: the marker is the bold verdict, not the word;
+#   - every bold verdict the prompt prescribes, and its bold docs-only skip line, passes as a comment of its own; a
+#     verdict after a label on its line ("Verdict: **APPROVE**") passes too;
 #   - a verdict from another login does not count;
 #   - an unreadable comment list fails and says so, whether `gh api` fails or answers with something not JSON;
-#   - no session and this PR changing the workflow fails with the validation-skip notice, posted to the PR; no
-#     session with the workflow unchanged fails with the auth-or-setup notice instead;
+#   - no session and this PR changing the workflow fails with the validation-skip notice, posted to the PR, and so
+#     does a base that changed the workflow after the PR branched — the action compares contents, so the diff is
+#     tree against tree, never from the merge base; no session with the workflow unchanged fails with the
+#     auth-or-setup notice instead;
 #   - structure: the step's condition is `${{ !cancelled() }}`, the job's first step records the start time, the
 #     step reads it, and SESSION_RAN is keyed on the execution_file of the step with `id: review`;
 #   - "Pick model + effort from labels", run on each label set: the precedence (deep over fast over the default, the
@@ -66,6 +71,13 @@ repo() {  # repo <dir> <changed|same>
   git -C "$1" add -A; git -C "$1" -c user.email=f@x -c user.name=f -c commit.gpgsign=false commit -q -m head
 }
 repo "$t/changed" changed; repo "$t/same" same
+# The base moved: the base branch changed the workflow after the PR branched, and the PR leaves it alone.
+git init -q -b main "$t/moved"; mkdir -p "$t/moved/.github/workflows"
+printf 'name: x\n' > "$t/moved/.github/workflows/claude-review.yml"
+g() { git -C "$t/moved" -c user.email=f@x -c user.name=f -c commit.gpgsign=false "$@"; }
+g add -A; g commit -q -m base; g switch -q -c pr; printf 'x\n' > "$t/moved/other.txt"; g add -A; g commit -q -m head
+g switch -q main; printf 'name: y\n' > "$t/moved/.github/workflows/claude-review.yml"; g add -A; g commit -q -m moved
+g switch -q pr; moved_base=$(g rev-parse main)
 
 # Synthetic comment pages: c <login> <created_at> <updated_at> <body> is one comment; page joins comments into one page.
 c() { jq -cn --arg u "$1" --arg c "$2" --arg up "$3" --arg b "$4" '{user: {login: $u}, created_at: $c, updated_at: $up, body: $b}'; }
@@ -76,6 +88,8 @@ page "$(c octocat 2026-09-28T00:59:00Z 2026-09-28T00:59:00Z 'Looks fine to me.')
      "$(c "$BOT" 2026-09-28T01:05:00Z 2026-09-28T01:05:00Z '**REQUEST CHANGES** — 2 Apply, 1 Surface')" > "$t/summary.json"
 page "$(c "$BOT" 2026-09-28T01:01:00Z 2026-09-28T01:09:00Z $'**Claude finished the task in 3m 2s** — [View job](https://example/run)\n\n**APPROVE WITH NITS** — 3 Surface')" > "$t/tracker-verdict.json"
 page "$(c "$BOT" 2026-09-28T01:01:00Z 2026-09-28T01:04:00Z '**Claude finished the task in 3m 2s** — [View job](https://example/run)')" > "$t/tracker.json"
+page "$(c "$BOT" 2026-09-28T01:01:00Z 2026-09-28T01:06:00Z $'**Claude finished the task in 3m 2s** — [View job](https://example/run)\n\nThe diff reads like an APPROVE, but the turns ran out before the summary was posted.')" > "$t/tracker-mention.json"
+page "$(c "$BOT" 2026-09-28T01:05:00Z 2026-09-28T01:05:00Z 'Verdict: **APPROVE WITH NITS** — 2 Surface')" > "$t/verdict-prefixed.json"
 first=(); for i in $(seq 1 30); do first+=("$(c octocat "$S" "$S" "comment $i")"); done
 { page "${first[@]}"; page "$(c octocat "$S" "$S" 'comment 31')" "$(c "$BOT" 2026-09-28T01:05:00Z 2026-09-28T01:05:00Z '**NEEDS DISCUSSION**')"; } > "$t/paged.json"
 page "$(c "$BOT" 2026-09-27T12:00:00Z 2026-09-28T01:02:00Z '**APPROVE** — no findings')" > "$t/edited.json"
@@ -126,6 +140,19 @@ for wf in "${wfs[@]}"; do
   run "$A" 1 "$rel: a tracker comment with no verdict" "$t/tracker.json" true "$t/same"
   says "session ran but no summary" "$rel: the notice says the session ran"
   posted "claude-review-again" "$rel: the notice says how to re-trigger"
+  run "$A" 1 "$rel: a tracker comment that names a verdict word in passing" "$t/tracker-mention.json" true "$t/same"
+  says "session ran but no summary" "$rel: a verdict word in passing is not a verdict"
+  run "$A" 0 "$rel: a verdict after a label on its line" "$t/verdict-prefixed.json" true "$t/same"
+  # The prompt's vocabulary is the assertion's: each bold verdict on the prompt's verdict line, and the bold marker
+  # its docs-only skip line opens with, lands as a comment of its own.
+  marks=$(grep -m1 -F '**APPROVE** /' "$wf" | grep -oE '[*][*][A-Z][A-Z ]*[A-Z][*][*]') || true
+  skipmark=$(grep -A1 -F 'post the one-line summary' "$wf" | grep -oE '`[*][*][A-Z]+[*][*][^`]*`' | tr -d '`') || true
+  [ "$(wc -l <<<"$marks")" -ge 4 ] || { echo "FAIL: $rel: the prompt's verdict line names fewer than four bold verdicts (got: $marks)"; exit 1; }
+  [ -n "$skipmark" ] || { echo "FAIL: $rel: the prompt's docs-only skip line opens with no bold marker the assertion can find"; exit 1; }
+  while IFS= read -r mark; do
+    page "$(c "$BOT" 2026-09-28T01:05:00Z 2026-09-28T01:05:00Z "$mark")" > "$t/mark.json"
+    run "$A" 0 "$rel: the prompt's own line '$mark'" "$t/mark.json" true "$t/same"
+  done <<<"$marks"$'\n'"$skipmark"
   run "$A" 1 "$rel: a verdict from another login" "$t/otherapp.json" true "$t/same"
   run "$A" 1 "$rel: an unreadable comment list" "$t/summary.json" true "$t/same" FAKE_API_FAIL=1
   says "Could not list the PR's comments" "$rel: the failure says the list could not be read"
@@ -133,10 +160,13 @@ for wf in "${wfs[@]}"; do
   says "Could not read the PR's comments as JSON" "$rel: the failure says the list could not be parsed"
   run "$A" 1 "$rel: no session, and this PR changes the workflow (the validation skip)" "$t/empty.json" false "$t/changed"
   says "workflow validation" "$rel: the skip is named as a validation skip"
-  posted "changes .github/workflows/claude-review.yml" "$rel: the skip notice names the workflow change"
+  posted "differs from its base's" "$rel: the skip notice names the workflow difference"
+  run "$A" 1 "$rel: no session, and the base changed the workflow after the PR branched" "$t/empty.json" false "$t/moved" BASE_SHA="$moved_base"
+  says "workflow validation" "$rel: a base that moved is a validation skip too (the action compares contents)"
   run "$A" 1 "$rel: no session, and the workflow unchanged (an auth or setup failure)" "$t/empty.json" false "$t/same"
   says "auth or setup" "$rel: the no-session notice names auth or setup"
   if grep -qF "workflow validation" "$t/posted"; then echo "FAIL: $rel: an unchanged workflow was reported as a validation skip"; exit 1; fi
+
   # The label step: precedence, and a dispatch rule that agrees with the tool list on every path.
   lbody=$(extract_run_block "$wf" "Pick model + effort from labels")
   [ -n "$lbody" ] || { echo "FAIL: $rel has no 'Pick model + effort from labels' run: body"; exit 1; }

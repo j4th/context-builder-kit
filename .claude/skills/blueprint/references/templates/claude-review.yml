@@ -336,7 +336,7 @@ jobs:
 
             ## How to format the summary comment
 
-            One-line verdict: **APPROVE** / **APPROVE WITH NITS** / **REQUEST CHANGES** / **NEEDS DISCUSSION**.
+            One-line verdict, the verdict in bold: **APPROVE** / **APPROVE WITH NITS** / **REQUEST CHANGES** / **NEEDS DISCUSSION**.
             Then a counts table (Apply / Apply with care / Surface / Defer / Reject). Then three to
             seven lines on the most important findings and any cross-cutting concern. Read CI with
             `gh pr checks` (this job grants `checks: read`) and reference a failed check; if it fails
@@ -348,7 +348,7 @@ jobs:
             ## What to skip
 
             - Docs-only or cascade-artifact PRs (`docs/cbk/`, `*.md` only): post the one-line summary
-              `Docs-only PR — auto-review skipped per rule` and exit — unless the markdown is under
+              `**SKIPPED** — docs-only PR, auto-review skipped per rule` and exit — unless the markdown is under
               `.claude/` or `docs/adr/`: rules, skills, commands, agents and ADRs are one-way doors,
               and you review them like code.
             - Issues in unchanged code; speculative future-risk warnings with no concrete failing path;
@@ -421,16 +421,21 @@ jobs:
         #   - the summary is matched by its verdict marker, on `updated_at` since the job started: the
         #     action's tracker comment alone must not satisfy it, and an edit in place is a landing. A
         #     tracker that ends with the review's own text carries the verdict, and that is a landed
-        #     review (observed in a target, 2026-09-24). The marker is the prompt's verdict line: a
-        #     project that edits that vocabulary edits the `test(...)` pattern below with it;
+        #     review (observed in a target, 2026-09-24). The marker is a bold verdict from the prompt's
+        #     verdict line, or the bold `SKIPPED` its docs-only skip line opens with; a verdict word in
+        #     plain text, as a tracker's progress note can carry, is not one. A project that edits that
+        #     vocabulary edits the `test(...)` pattern below with it, and the fixture checks each bold
+        #     word the prompt prescribes against this step;
         #   - `!cancelled()`, never `always()`: a run superseded through `concurrency` is not a failure.
         # Why no session started is read from the checkout, not from the action. Its validation-skip flag
         # is not a declared output, and its `conclusion` output is declared only from v1.0.188, while
         # `execution_file` is declared at every tag from v1.0.0 on (action.yml at each tag, read 2026-09-30). An empty
         # `execution_file` means no model session; then a diff of this file against the PR's base tells a
-        # validation skip (the file changed) from an auth or setup failure (unchanged). The diff is against
-        # the PR's base SHA: on a PR into a branch other than the default, that may not be the copy the
-        # action validates against, and the notice can misname the cause. Every value arrives through env:,
+        # validation skip (the copies differ) from an auth or setup failure (they match). The diff is tree
+        # against tree, `$BASE_SHA HEAD`, never from the merge base: the action compares contents, so a
+        # base that changed this file after the PR branched skips the review as surely as the PR changing
+        # it does. The diff is against the PR's base SHA: on a PR into a branch other than the default,
+        # that may not be the copy the action validates against, and the notice can misname the cause. Every value arrives through env:,
         # never interpolated. `.claude/workflows/tests/review-assert-fixture.sh` runs this body.
         if: ${{ !cancelled() }}
         env:
@@ -448,7 +453,7 @@ jobs:
             echo "::error::Could not list the PR's comments, so whether the review posted is unknown — see the log above."
             exit 1
           fi
-          if ! n="$(jq -s --arg login "$REVIEW_LOGIN" --arg start "$STARTED_AT" '[.[][] | select(.user.login == $login and .updated_at >= $start and (.body | test("APPROVE|REQUEST CHANGES|NEEDS DISCUSSION")))] | length' <<<"$comments")"; then
+          if ! n="$(jq -s --arg login "$REVIEW_LOGIN" --arg start "$STARTED_AT" '[.[][] | select(.user.login == $login and .updated_at >= $start and (.body | test("\\*\\*(APPROVE( WITH NITS)?|REQUEST CHANGES|NEEDS DISCUSSION|SKIPPED)\\*\\*")))] | length' <<<"$comments")"; then
             echo "::error::Could not read the PR's comments as JSON, so whether the review posted is unknown."
             exit 1
           fi
@@ -461,9 +466,9 @@ jobs:
           else
             rc=0; git diff --quiet "$BASE_SHA" HEAD -- .github/workflows/claude-review.yml || rc=$?
             case "$rc" in
-              0) why="The review did not run: no model session started, and this PR leaves .github/workflows/claude-review.yml unchanged, so this is an auth or setup failure, not a validation skip — see $RUN_URL. Fix the cause, then re-trigger with the \`claude-review-again\` label." ;;
-              1) why="The review was skipped by claude-code-action's workflow validation: this PR changes .github/workflows/claude-review.yml, and the action skips a workflow that differs from the copy it validates against (its log says \"Exiting due to workflow validation skip\"). Re-triggering cannot fix that — review this PR another way; see $RUN_URL." ;;
-              *) why="The review did not run: no model session started, and whether this PR changes .github/workflows/claude-review.yml could not be read (git diff exited $rc) — see $RUN_URL." ;;
+              0) why="The review did not run: no model session started, and this PR's .github/workflows/claude-review.yml matches its base's, so this is an auth or setup failure, not a validation skip — see $RUN_URL. Fix the cause, then re-trigger with the \`claude-review-again\` label." ;;
+              1) why="The review was skipped by claude-code-action's workflow validation: this PR's .github/workflows/claude-review.yml differs from its base's (the PR changes it, or the base changed it after the PR branched), and the action skips a workflow that differs from the copy it validates against (its log says \"Exiting due to workflow validation skip\"). Re-triggering cannot fix that — review this PR another way; see $RUN_URL." ;;
+              *) why="The review did not run: no model session started, and whether this PR's .github/workflows/claude-review.yml differs from its base's could not be read (git diff exited $rc) — see $RUN_URL." ;;
             esac
           fi
           gh pr comment "$PR_NUMBER" --repo "$REPO" --body "Auto-review: no summary posted. $why" || echo "::warning::Could not post the notice to the PR either."
