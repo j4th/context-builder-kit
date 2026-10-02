@@ -239,8 +239,8 @@ Examples:
 **Commit format**: Conventional Commits. Scopes: engine, packs, cli.
 
 **Label taxonomy**:
-- Type: bug, feature, improvement, tech-debt, documentation
-- Area: area:engine, area:packs, area:cli
+- Type: bug, feature, improvement, chore, documentation, tech-debt
+- Workstream: workstream:engine, workstream:packs, workstream:cli
 ```
 
 The full template with worked examples for every section lives in `references/scaffold_output_template.md`. Load it when drafting; the example above just shows what one section feels like.

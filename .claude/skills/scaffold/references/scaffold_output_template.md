@@ -151,8 +151,8 @@ Examples:
 **Commit format**: Conventional Commits. Scopes: capture, search, storage.
 
 **Label taxonomy**:
-- Type: bug, feature, improvement, tech-debt, documentation
-- Area: area:capture, area:search, area:storage
+- Type: bug, feature, improvement, chore, documentation, tech-debt
+- Workstream: workstream:capture, workstream:search, workstream:storage
 
 ## Development preferences
 

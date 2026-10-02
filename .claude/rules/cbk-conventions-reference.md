@@ -1111,6 +1111,10 @@ absent grep -n 'up to 10 user[s]' .claude/skills/scaffold/references/manual_step
 # Every label a flow applies is in scaffold's taxonomy (V9.14): the intake holding label and the supersede and rollback
 # marks are created with the rest, never on a repo that lacks them.
 for l in triage superseded transition-rollback; do grep -q "\`$l\`" .claude/skills/scaffold/references/github_only_profile.md || { echo "github_only_profile.md's label taxonomy lacks \`$l\` (a flow applies it)"; exit 1; }; done
+# The Linear taxonomy creates what the Linear flows apply: the workstream label (never an area label), the intake
+# marker and provenance, the lifecycle marks, and the appetite labels framing sets on an F issue.
+for l in 'workstream:<slug>' enhancement 'source:<name>' triage superseded transition-rollback 'appetite:small'; do grep -qF "\`$l\`" .claude/skills/scaffold/references/linear_planning.md || { echo "linear_planning.md's label taxonomy lacks \`$l\` (a Linear flow applies it)"; exit 1; }; done
+absent grep -rn 'area:[<a-z]' .claude/skills/scaffold/ .claude/commands/
 # Scaffold's reference and checklist agree with its SKILL.md (V9.15): three detection states, one heading each, Stage
 # 2.5's templates kept in light mode, and the gate count its own summary lists (the literals split themselves).
 absent grep -rnE "four detection state[s]|State [4] \(no MCP\)|because state [2]\)|Full automation \(GitHub MCP|Skip the \`\.github/\` issue template[s]|with five HITL gate[s]" .claude/skills/scaffold/

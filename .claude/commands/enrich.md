@@ -21,7 +21,7 @@ Verify + note:
 
 - The issue is **open** (not closed / archived). If closed, ask whether to re-enrich (it may be getting re-scoped) before continuing.
 - It is genuinely **under-specified** — a thin title + body, no eight-section spec, not already `cascade-depth:roughed-in`. If it already has the eight sections + the roughed-in label, stop: *"$issue already looks `/finish`-ready. Did you mean a different issue, or do you want me to re-enrich it?"*
-- Extract: the **current title**, **body**, **labels** (esp. the framing-backlog marker + `source:*` + the work type), **parent** (a workstream `[<slug>]`?), **comments** (provenance from any upstream triage, prior context), and the **affected workstream slug** (from `area:<slug>` / the body / your read — it must be a locked blueprint slug, `docs/cbk/blueprint.md` § Workstreams).
+- Extract: the **current title**, **body**, **labels** (esp. the framing-backlog marker + `source:*` + the work type), **parent** (a workstream `[<slug>]`?), **comments** (provenance from any upstream triage, prior context), and the **affected workstream slug** (from `workstream:<slug>` / the body / your read — it must be a locked blueprint slug, `docs/cbk/blueprint.md` § Workstreams).
 
 **Pre-flight:** verify the working tree is clean (`git status --short`) and the project's `check` task is currently green — Step 3 runs a read-only investigation against a known-good baseline. If dirty / red, surface and ask (don't silently fix).
 
@@ -62,7 +62,7 @@ Build the issue body using the **exact eight `##` headings `/finish` requires**,
 The enhancement-lane contract (the enhancement-lane convention in `cbk-conventions.md`):
 
 - **Title** → `[<slug>:enh] <intent>` (the enhancement-lane title form; `<slug>` is the locked blueprint workstream slug).
-- **Labels** → add `cascade-depth:roughed-in`; **drop** the framing-backlog marker (the label that routes an issue to framing); keep `area:<slug>` + `source:*` (when externally-sourced); set the **work-matching type** where the backend has a type field (a net-new capability vs a small refactor/chore).
+- **Labels** → add `cascade-depth:roughed-in`; **drop** the framing-backlog marker (the label that routes an issue to framing); keep `workstream:<slug>` + `source:*` (when externally-sourced); set the **work-matching type** where the backend has a type field (a net-new capability vs a small refactor/chore).
 - **Parent** → the workstream `[<slug>]` issue (usually already correct).
 - **Provenance note** → post a note capturing the **framing + rough-in reasoning collapsed inline**: the resolved forks + rationale, any corrections to the thin body, and a one-line "enriched via the enhancement lane (no framing milestone)." On backends with comments this is an issue comment; on a markdown-only backend it's appended to the issue record. This is the durable audit trail + what `/finish` Step 1 reads alongside the body.
 
