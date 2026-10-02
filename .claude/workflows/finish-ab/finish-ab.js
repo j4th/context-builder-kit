@@ -31,7 +31,8 @@ export const meta = {
 //             panel is a multiple of the arm count (two arms: an even count, half per order)
 //   model   — optional, default "opus": the workhorse tier for executors and judges (never above the session's)
 //   effort  — optional, default "high": the executors' effort unless an arm names its own; each judge carries its own
-//   executed — optional: [{ anon, result }] for arms that already ran outside this workflow, then the Execute phase is
+//   executed — optional: [{ anon, cell?, result }] for arms that already ran outside this workflow (a runner's cell — what
+//             the arm ran with — must agree with args.arms, and a result's runner_check is { command, exit, log }); then the Execute phase is
 //             skipped and only the panel runs. A workflow agent has no Agent tool (.claude/rules/pr-review.md § The
 //             floor records the probe, its Claude Code version and its date), so an arm that must dispatch subagents —
 //             a subagent-driven arm, or a review floor with its fan-out — runs as a headless `claude -p` session
@@ -49,6 +50,24 @@ for (const k of ["scratch", "repo", "issue"]) if (args[k] === undefined || args[
 if (!Array.isArray(args.arms) || args.arms.length < 2 || args.arms.length > 4) throw new Error(`finish-ab: args.arms must name two to four arms (got ${Array.isArray(args.arms) ? args.arms.length : typeof args.arms})`)
 args.arms.forEach((c) => { for (const k of ["arm", "anon", "read"]) if (!c || !c[k]) throw new Error(`finish-ab: every arm needs arm, anon and read (got ${JSON.stringify(c)})`) })
 args.arms.forEach((c) => { if (c.also !== undefined && !(Array.isArray(c.also) && c.also.every((f) => typeof f === "string" && f))) throw new Error(`finish-ab: arm ${c.anon}'s also must be a list of file paths (got ${JSON.stringify(c.also)})`) })
+// Values and keys are checked too: an effort the dial does not have or an empty model would be dispatched as written,
+// and a misspelled key (`efort`, `Also`) would be ignored without a word — the panel paid for a different experiment
+// (context-builder-kit#69 review). Keys starting with `_` are comments.
+const EFFORTS = ["low", "medium", "high", "xhigh", "max"]
+const unknownKey = (o, keys) => Object.keys(o).find((k) => !keys.includes(k) && !k.startsWith("_"))
+const ARG_KEYS = ["scratch", "repo", "issue", "base", "arms", "judges", "model", "effort", "executed", "brief", "rubric"]
+const ARM_KEYS = ["arm", "anon", "read", "verb", "also", "model", "effort"]
+{ const k = unknownKey(args, ARG_KEYS); if (k) throw new Error(`finish-ab: unknown argument ${k} (expected ${ARG_KEYS.join(", ")})`) }
+const checkModel = (m, where) => { if (m !== undefined && !(typeof m === "string" && m)) throw new Error(`finish-ab: ${where} model must be a non-empty model name (got ${JSON.stringify(m)})`) }
+const checkEffort = (e, where) => { if (e !== undefined && !EFFORTS.includes(e)) throw new Error(`finish-ab: ${where} effort must be one of ${EFFORTS.join(", ")} (got ${JSON.stringify(e)})`) }
+checkModel(args.model, "the run's"); checkEffort(args.effort, "the run's")
+args.arms.forEach((c) => {
+  const k = unknownKey(c, ARM_KEYS); if (k) throw new Error(`finish-ab: arm ${c.anon} has an unknown key ${k} (expected ${ARM_KEYS.join(", ")})`)
+  checkModel(c.model, `arm ${c.anon}'s`); checkEffort(c.effort, `arm ${c.anon}'s`)
+  // anon names a worktree label and the runner's files, and it is the only id a judge sees: a plain name, never a label.
+  if (!/^[A-Za-z0-9_-]+$/.test(c.anon)) throw new Error(`finish-ab: arm ${c.arm}'s anon ${JSON.stringify(c.anon)} is not a plain name (letters, digits, - and _)`)
+  if (args.arms.some((o) => o.arm === c.anon)) throw new Error(`finish-ab: arm ${c.arm}'s anon ${c.anon} names an arm label — the judges would read a treatment's name`)
+})
 const ids = args.arms.map((c) => c.anon)
 if (new Set(ids).size !== ids.length) throw new Error(`finish-ab: anon ids must be distinct (got ${ids.join(", ")})`)
 const armLabels = args.arms.map((c) => c.arm)
@@ -59,6 +78,10 @@ if (judges.length === 0 || judges.length % N !== 0) throw new Error(N === 2
   ? `finish-ab: a two-arm panel needs an even number of judges, half per reading order (got ${judges.length})`
   : `finish-ab: a ${N}-arm panel needs a multiple of ${N} judges, so every arm can be read in every position equally often (got ${judges.length})`)
 judges.forEach((j, i) => { if (!j || !Array.isArray(j.order) || j.order.length !== N || new Set(j.order).size !== N || !ids.every((id) => j.order.includes(id))) throw new Error(`finish-ab: judge ${i + 1}'s order must be a permutation of the arm ids ${ids.join(", ")} (got ${JSON.stringify(j && j.order)})`) })
+judges.forEach((j, i) => {
+  const k = unknownKey(j, ["order", "effort"]); if (k) throw new Error(`finish-ab: judge ${i + 1} has an unknown key ${k} (expected order, effort)`)
+  checkEffort(j.effort, `judge ${i + 1}'s`)
+})
 const orderKey = (j) => j.order.join(">")
 // Position balance: how often each arm is read at each position. Every cell equal is the Latin-square condition;
 // for two arms it is the same thing as half the panel per order.
@@ -78,6 +101,17 @@ if (args.executed !== undefined && args.executed !== null && !Array.isArray(args
 const EXECUTED = Array.isArray(args.executed) ? args.executed : null
 if (EXECUTED) EXECUTED.forEach((e, i) => { if (!e || !ids.includes(e.anon)) throw new Error(`finish-ab: executed[${i}] must name one of the arm ids ${ids.join(", ")} (got ${JSON.stringify(e && e.anon)})`) })
 if (EXECUTED && new Set(EXECUTED.map((e) => e.anon)).size !== EXECUTED.length) throw new Error(`finish-ab: executed names an arm more than once (got ${EXECUTED.map((e) => e.anon).join(", ")})`)
+// The runner's check log reaches every judge, so it must be the shape the judges are told to read; and the runner's
+// record of what each arm ran with must agree with args.arms, or the verdict is credited to a treatment that did not run.
+if (EXECUTED) EXECUTED.forEach((e) => {
+  const rc = e.result && e.result.runner_check
+  if (rc !== undefined && !(rc && typeof rc.command === "string" && Number.isInteger(rc.exit) && typeof rc.log === "string")) throw new Error(`finish-ab: executed ${e.anon}'s runner_check must be { command, exit, log } (got ${JSON.stringify(rc)})`)
+  if (!e.cell) return
+  const cell = args.arms.find((c) => c.anon === e.anon)
+  const want = { read: cell.read, also: cell.also ?? [], verb: cell.verb ?? "satisfy it", model: cell.model ?? MODEL, effort: cell.effort ?? EFFORT }
+  const got = { read: e.cell.read, also: e.cell.also ?? [], verb: e.cell.verb ?? "satisfy it", model: e.cell.model, effort: e.cell.effort }
+  for (const k of Object.keys(want)) if (JSON.stringify(want[k]) !== JSON.stringify(got[k])) throw new Error(`finish-ab: executed arm ${e.anon} ran with ${k} ${JSON.stringify(got[k]).replace(/^"|"$/g, "")} but args.arms gives ${JSON.stringify(want[k]).replace(/^"|"$/g, "")} — the verdict would be credited to a treatment that did not run`)
+})
 const plannedAgents = (EXECUTED ? 0 : N) + judges.length * 2
 log(EXECUTED
   ? `finish-ab: planned agents: 0 executors (${EXECUTED.length} arms executed outside this workflow) + ${judges.length} judges + up to ${judges.length} judge retries = at most ${plannedAgents}`
@@ -152,6 +186,7 @@ if (droppedArms.length) {
 }
 log(`finish-ab: ${done.length}/${N} arms returned: ${done.map((d) => `${d.anon}=${d.result.commits.length} commits, check exit ${d.result.check_exit}, skills [${d.result.skills_invoked.join(" ")}]${Array.isArray(d.result.dispatched) && d.result.dispatched.length ? `, ${d.result.dispatched.length} dispatched` : ""}`).join(" | ")}`)
 
+const SCORE = { type: "number", minimum: 1, maximum: 5 } // the rubric's scale: "Score each dimension 1–5"
 const JUDGE_SCHEMA = {
   type: "object",
   required: ["scores", "ranking", "hallucinations", "graft", "word_counts", "notes"],
@@ -163,7 +198,7 @@ const JUDGE_SCHEMA = {
         type: "object",
         required: ["arm", "red_first", "commit_per_finding", "tags_resolve", "criteria_met", "contaminated_hunks"],
         properties: {
-          arm: { type: "string" },
+          arm: { type: "string", enum: ids },
           red_first: { type: "boolean" }, commit_per_finding: { type: "boolean" }, tags_resolve: { type: "boolean" },
           criteria_met: { type: "array", items: { type: "string" } },
           contaminated_hunks: { type: "array", items: { type: "string" } },
@@ -172,22 +207,24 @@ const JUDGE_SCHEMA = {
     },
     scores: {
       type: "array",
+      minItems: N,
+      maxItems: N,
       items: {
         type: "object",
         required: ["arm", "fidelity", "assumptions", "tests", "implementation", "gate_honesty", "reviewability", "prose", "overall", "check_exit_observed", "defects"],
         properties: {
-          arm: { type: "string" },
-          fidelity: { type: "number" }, assumptions: { type: "number" }, tests: { type: "number" }, implementation: { type: "number" },
-          gate_honesty: { type: "number" }, reviewability: { type: "number" }, prose: { type: "number" }, overall: { type: "number" },
+          arm: { type: "string", enum: ids },
+          fidelity: SCORE, assumptions: SCORE, tests: SCORE, implementation: SCORE,
+          gate_honesty: SCORE, reviewability: SCORE, prose: SCORE, overall: SCORE,
           check_exit_observed: { type: "integer", description: "exit status of the check task in that worktree: the runner's logged exit when your prompt names a log, else the exit when YOU ran it; -1 if neither" },
           defects: { type: "array", items: { type: "object", required: ["quote", "problem"], properties: { quote: { type: "string" }, problem: { type: "string" } } } },
         },
       },
     },
-    ranking: { type: "array", items: { type: "string" }, minItems: N, maxItems: N, description: "every arm id, best to worst" },
-    hallucinations: { type: "array", items: { type: "object", required: ["arm", "claim_verbatim", "contradicting_source"], properties: { arm: { type: "string" }, claim_verbatim: { type: "string" }, contradicting_source: { type: "string" } } } },
-    graft: { type: "array", items: { type: "object", required: ["arm", "idea"], properties: { arm: { type: "string" }, idea: { type: "string" } } } },
-    word_counts: { type: "array", items: { type: "object", required: ["arm", "pr_body", "plan", "added_lines"], properties: { arm: { type: "string" }, pr_body: { type: "integer" }, plan: { type: "integer" }, added_lines: { type: "integer" } } } },
+    ranking: { type: "array", items: { type: "string", enum: ids }, uniqueItems: true, minItems: N, maxItems: N, description: "every arm id, best to worst" },
+    hallucinations: { type: "array", items: { type: "object", required: ["arm", "claim_verbatim", "contradicting_source"], properties: { arm: { type: "string", enum: ids }, claim_verbatim: { type: "string" }, contradicting_source: { type: "string" } } } },
+    graft: { type: "array", items: { type: "object", required: ["arm", "idea"], properties: { arm: { type: "string", enum: ids }, idea: { type: "string" } } } },
+    word_counts: { type: "array", items: { type: "object", required: ["arm", "pr_body", "plan", "added_lines"], properties: { arm: { type: "string", enum: ids }, pr_body: { type: "integer" }, plan: { type: "integer" }, added_lines: { type: "integer" } } } },
     notes: { type: "string" },
   },
 }
@@ -221,8 +258,12 @@ if (failedJudges.length) {
 // A judge that returned nothing, or whose ranking is not exactly the arm ids, is dropped coverage:
 // named by index and reading order, never a silent shrink of the panel (orchestration.md § Fan-out
 // discipline — log what was dropped). The surviving panel is re-checked for position balance.
-const wellFormed = (j) => j && Array.isArray(j.ranking) && j.ranking.length === N && ids.every((id) => j.ranking.includes(id))
-const dropped = judges.map((j, i) => (wellFormed(judged[i]) ? null : `judge ${i + 1} (${j.order.join(">")}): ${judged[i] ? "malformed ranking " + JSON.stringify(judged[i].ranking) : "no result"}`)).filter(Boolean)
+// A ranking without its scores is the rank-alone verdict the panel exists to avoid, so a judge must score every arm once.
+const rankedOk = (j) => Array.isArray(j.ranking) && j.ranking.length === N && ids.every((id) => j.ranking.includes(id))
+const scoredOk = (j) => Array.isArray(j.scores) && j.scores.length === N && ids.every((id) => j.scores.filter((s) => s && s.arm === id).length === 1)
+const wellFormed = (j) => j && rankedOk(j) && scoredOk(j)
+const why = (j) => (!j ? "no result" : !rankedOk(j) ? "malformed ranking " + JSON.stringify(j.ranking) : "scores that do not cover every arm once " + JSON.stringify((Array.isArray(j.scores) ? j.scores : []).map((x) => x && x.arm)))
+const dropped = judges.map((j, i) => (wellFormed(judged[i]) ? null : `judge ${i + 1} (${j.order.join(">")}): ${why(judged[i])}`)).filter(Boolean)
 if (dropped.length) log(`finish-ab: dropped judges (no verdict counted): ${dropped.join("; ")}`)
 const jok = judged.filter(wellFormed)
 const survivors = judges.filter((_j, i) => wellFormed(judged[i]))

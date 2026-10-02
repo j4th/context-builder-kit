@@ -2,7 +2,8 @@
 // Stub harness for finish-ab.js. No agent is dispatched: the script is loaded through load-workflow.mjs and run
 // with stubbed agent()/parallel()/log()/phase(); the panel guard (two to four arms, a Latin square), the planned-count
 // log, the arm-isolation instruction, executed mode, the base/brief/rubric arguments, the runner's check log in the
-// judges' prompt, the judges' read-only clause, the rank arithmetic and the arm schema's agreement with
+// judges' prompt, the judges' read-only clause, the rank arithmetic, the value and key checks, the judges' schema and
+// a judge's score coverage, and the arm schema's agreement with
 // run-arms-headless.py are asserted — the scenarios that shipped before context-builder-kit#69 and that issue's,
 // unioned and renumbered so no two share a number. Run: node .claude/workflows/tests/finish-ab-shape.mjs
 import { execFileSync } from "node:child_process";
@@ -164,7 +165,8 @@ const three = [
   { arm: "C", anon: "R", read: ".claude/commands/finish.md", verb: "satisfy it", also: ["x/subagent-driven-arm.md"], model: "sonnet", effort: "high" },
 ];
 const latin = [{ order: ["P", "Q", "R"] }, { order: ["Q", "R", "P"] }, { order: ["R", "P", "Q"] }];
-const judgeFor = (panel) => (opts) => { const order = panel[Number(opts.label.match(/judge:(\d+)/)[1]) - 1].order; return { scores: [], measures: [], ranking: [...order], hallucinations: [], graft: [], word_counts: [], notes: "" }; };
+const scoreAll = (order) => order.map((arm) => ({ arm, fidelity: 4, assumptions: 4, tests: 4, implementation: 4, gate_honesty: 4, reviewability: 4, prose: 4, overall: 4, check_exit_observed: 0, defects: [] }));
+const judgeFor = (panel) => (opts) => { const order = panel[Number(opts.label.match(/judge:(\d+)/)[1]) - 1].order; return { scores: scoreAll(order), measures: [], ranking: [...order], hallucinations: [], graft: [], word_counts: [], notes: "" }; };
 {
   const { result, logs, calls } = await run({ ...base, arms: three, judges: latin }, { armResult: armOk, judgeResult: judgeFor(latin) });
   check(/planned agents: 3 executors \+ 3 judges \+ up to 3 judge retries = at most 9/.test(logs[0] ?? ""), `three-arm planned count (got: ${logs[0]})`);
@@ -294,6 +296,10 @@ const judgeFor = (panel) => (opts) => { const order = panel[Number(opts.label.ma
     const req = (o) => o.required.filter((k) => k !== "dispatched").sort().join(",");
     check(req(js) === req(py), `the two ARM_SCHEMA copies require the same fields apart from dispatched (js: ${req(js)} | py: ${req(py)})`);
     check(py.required.includes("dispatched") && !js.required.includes("dispatched"), "dispatched is required by the headless copy only, as both copies' comments say");
+    // Names alone miss a changed type, items shape or description: compare the whole schema, keys sorted.
+    const stable = (o) => (Array.isArray(o) ? `[${o.map(stable).join(",")}]` : o && typeof o === "object" ? `{${Object.keys(o).sort().map((k) => `${JSON.stringify(k)}:${stable(o[k])}`).join(",")}}` : JSON.stringify(o));
+    const whole = (o) => stable({ ...o, required: o.required.filter((k) => k !== "dispatched").sort() });
+    check(whole(js) === whole(py), "the two ARM_SCHEMA copies are the same schema in every property's type, items and description");
   }
 }
 
@@ -323,6 +329,50 @@ const judgeFor = (panel) => (opts) => { const order = panel[Number(opts.label.ma
   check(Boolean(js.properties.measures) && !js.required.includes("measures"), "measures is a JUDGE_SCHEMA property, and optional");
 }
 
+// 22. Values and keys are refused before any dispatch: an effort the dial does not have, an empty model, and an unknown
+//     key on the arguments, an arm or a judge (a misspelled `efort` or `Also` would otherwise be ignored without a word,
+//     and the panel paid for a different experiment) — context-builder-kit#69 review.
+{
+  const refused = async (args, re, what) => {
+    let err, n = 0;
+    try { await runWorkflow(args, async () => { n += 1; return null; }, async (t) => Promise.all(t.map((f) => f())), () => {}, () => {}); } catch (e) { err = e; }
+    check(err && re.test(err.message) && n === 0, `${what} is refused before any dispatch (got: ${err && err.message}; ${n} dispatched)`);
+  };
+  await refused({ ...base, arms: [{ ...arms[0], effort: "hgih" }, arms[1]] }, /effort/, "an arm effort the dial does not have");
+  await refused({ ...base, arms: [{ ...arms[0], model: "" }, arms[1]] }, /model/, "an empty arm model");
+  await refused({ ...base, effort: "maximum" }, /effort/, "a run effort the dial does not have");
+  await refused({ ...base, judges: balanced.map((j, i) => (i ? j : { ...j, effort: "hgih" })) }, /effort/, "a judge effort the dial does not have");
+  await refused({ ...base, Brief: "/x.md" }, /unknown argument Brief/, "an unknown argument");
+  await refused({ ...base, arms: [{ ...arms[0], efort: "medium" }, arms[1]] }, /unknown key efort/, "an unknown arm key");
+  await refused({ ...base, judges: balanced.map((j, i) => (i ? j : { ...j, efort: "max" })) }, /unknown key efort/, "an unknown judge key");
+// 23. An anon id is a plain name, and never an arm label: it names worktrees and files, and it is the only id a judge sees.
+  await refused({ ...base, arms: [{ ...arms[0], anon: "../x" }, arms[1]] }, /plain name/, "an anon that is not a plain name");
+  await refused({ ...base, arms: [{ ...arms[0], anon: "A" }, arms[1]] }, /names an arm/, "an anon equal to an arm label");
+// 25. Executed mode: a runner_check that is not { command, exit, log } is refused, and so is an executed arm whose
+//     recorded cell disagrees with args.arms — the verdict would be credited to a treatment that did not run.
+  const ex = arms.map((c) => ({ anon: c.anon, result: armOk({ label: c.anon }) }));
+  await refused({ ...base, executed: [{ ...ex[0], result: { ...ex[0].result, runner_check: {} } }, ex[1]] }, /runner_check/, "a malformed runner_check");
+  await refused({ ...base, executed: [{ ...ex[0], cell: { read: arms[0].read, verb: arms[0].verb, model: "sonnet", effort: "high" } }, ex[1]] }, /ran with model sonnet/, "an executed cell that disagrees with args.arms");
+}
+// 24. A judge whose scores do not cover every arm is dropped and named — a ranking without its scores is the rank-alone
+//     verdict the panel exists to avoid.
+{
+  const half = (opts) => { const r = judgeOk(opts); return opts.label.startsWith("judge:1@") ? { ...r, scores: r.scores.slice(0, 1) } : r; };
+  const { result, logs } = await run(base, { armResult: armOk, judgeResult: half });
+  check(result.judges.length === 3 && logs.some((l) => /dropped judges.*judge 1 .*scores/.test(l)), `a judge scoring one arm of two is dropped and named (got ${result.judges.length} judges; ${logs.join(" | ")})`);
+}
+// 26. The judges' schema knows the arm ids: every arm field and ranking item is one of them, the ranking repeats none,
+//     one score per arm, and each dimension on the rubric's 1-5 scale.
+{
+  const { calls } = await run(base, { armResult: armOk, judgeResult: judgeOk });
+  const js = calls.find((c) => c.opts.phase === "Judge").opts.schema;
+  const ids2 = (e) => Array.isArray(e) && e.slice().sort().join(",") === "P,Q";
+  check(ids2(js.properties.ranking.items.enum) && js.properties.ranking.uniqueItems === true, "ranking items are the arm ids, never repeated");
+  check(js.properties.scores.minItems === 2 && js.properties.scores.maxItems === 2 && ids2(js.properties.scores.items.properties.arm.enum), "one score per arm, named by its id");
+  check(js.properties.scores.items.properties.fidelity.minimum === 1 && js.properties.scores.items.properties.fidelity.maximum === 5, "each dimension is on the 1-5 scale");
+  check(["hallucinations", "graft", "word_counts", "measures"].every((k) => ids2(js.properties[k].items.properties.arm.enum)), "every other per-arm entry names an arm id");
+}
+
 check(meta.name === "finish-ab" && Array.isArray(meta.phases) && meta.phases.length === 2, "meta literal is well-formed");
 if (failures) { console.error(`finish-ab-shape: ${failures} failure(s)`); process.exit(1); }
-console.log("finish-ab-shape: 24 scenarios ok");
+console.log("finish-ab-shape: 29 scenarios ok");
