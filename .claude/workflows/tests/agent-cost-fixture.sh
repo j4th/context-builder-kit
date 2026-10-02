@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fixture for agent-cost.py: twenty synthetic transcripts, one case each — the set that shipped before
+# Fixture for agent-cost.py: twenty-one synthetic transcripts, one case each — the set that shipped before
 # context-builder-kit#69 and that issue's, unioned under distinct names. Priced: Opus 5 with cache tokens (aaa); a
 # transcript mixing two priced models (ddd); Fable 5.1 at its 0.025x cache-read rate (eee); Opus 5.5 with cache tokens
 # at its 0.05x rate (fff); Opus 5.5 beside a zero-usage <synthetic> message, which is skipped (ggg); a dated Haiku 4.5
@@ -7,7 +7,8 @@
 # family key would bill it at Fable 5.1's 0.025x (mmm); Mythos 5.1 at 0.025x (nnn); an Opus 5.5 id with a [1m] suffix
 # (ooo); an undated Haiku 4.5 id with no timestamps (qqq); one response written as two lines that share its
 # message id — streaming snapshots, priced once from the last (rrr); Opus 5.5 cache writes split by TTL, the 5-minute half
-# at 1.25x and the 1-hour half at 2x (sss). Unpriced and named: a model the table does not know (bbb);
+# at 1.25x and the 1-hour half at 2x (sss); a response whose last line is a streaming snapshot ("stop_reason": null)
+# beside one that stopped, so the row's output is named a floor (vvv). Unpriced and named: a model the table does not know (bbb);
 # no usage events and a truncated line (ccc); fast mode (hhh); a lone truncated line (iii); an unknown point release,
 # never priced as its predecessor (kkk); a <synthetic> message that carries usage (ppp); a bracketed variant other than
 # [1m], whose rate the table does not know (ttt). Asserts the cache
@@ -60,6 +61,9 @@ row rrr "$(u rrr)" "$(mi 1 msg_r1 claude-opus-5-5 '{"input_tokens":1000000,"outp
 # A 1-hour cache write bills at 2x input, a 5-minute one at 1.25x; Claude Code records the split in usage.cache_creation.
 row sss "$(u sss)" "$(m 1 claude-opus-5-5 '{"input_tokens":0,"output_tokens":0,"cache_creation_input_tokens":2000000,"cache_creation":{"ephemeral_5m_input_tokens":1000000,"ephemeral_1h_input_tokens":1000000}}')"
 row ttt "$(u ttt)" "$(m 1 'claude-opus-5-5[2m]' '{"input_tokens":1000000,"output_tokens":0}')"
+# Claude Code 2.1.278 and later write most of a subagent's responses before their final usage: the last line says
+# "stop_reason": null and its output is a snapshot. The usage is billed as recorded, and the row says it is a floor.
+row vvv "$(u vvv)" '{"type":"assistant","timestamp":"2026-09-30T00:01:00Z","message":{"id":"msg_v1","model":"claude-opus-5-5","stop_reason":null,"usage":{"input_tokens":1000000,"output_tokens":8}}}'   '{"type":"assistant","timestamp":"2026-09-30T00:02:00Z","message":{"id":"msg_v2","model":"claude-opus-5-5","stop_reason":"end_turn","usage":{"input_tokens":1000000,"output_tokens":0}}}'
 out=$(python3 -B "$script" "$d" --json "$d/out.json")
 # Per-row facts, read from the JSON by agent: two independent greps would pass on any row carrying the value.
 python3 -B - "$d/out.json" <<'EOF' || { echo "$out"; exit 1; }
@@ -80,6 +84,7 @@ want_cost = {
     'qqq': (0.001, 'an undated Haiku 4.5 id prices as Haiku 4.5'),
     'rrr': (10.00, 'two responses, one written as two lines sharing its message id: 2M in @ $4 + 100k out @ $20, the last snapshot once'),
     'sss': (13.00, 'Opus 5.5 cache writes: 1M at the 5-minute 1.25x ($5) + 1M at the 1-hour 2x ($8)'),
+    'vvv': (8.00016, 'two Opus 5.5 responses: 2M in @ $4 + the 8 snapshot output tokens @ $20, billed as recorded'),
 }
 bad = []
 for a, (cost, why) in want_cost.items():
@@ -94,14 +99,17 @@ for a in ('ccc', 'iii', 'jjj', 'qqq'):  # one timestamp, then none at all
         bad.append(f'{a}: fewer than two timestamps must report minutes null, not {rows[a]["minutes"]!r}')
 if (rows['rrr']['turns'], rows['rrr']['output']) != (2, 100000):
     bad.append(f"rrr: one response is one turn, its usage the last line's: want 2 turns and 100000 output, got {rows['rrr']['turns']} and {rows['rrr']['output']}")
+if (rows['vvv'].get('snapshot'), rows['aaa'].get('snapshot')) != (1, 0):
+    bad.append(f"snapshot counts: vvv has one response recorded only as a snapshot, aaa none (no stop_reason key is no evidence); got {rows['vvv'].get('snapshot')} and {rows['aaa'].get('snapshot')}")
 if rows['ooo']['model'] != 'claude-opus-5-5[1m]':
     bad.append(f"ooo: the model column must carry the id as recorded, got {rows['ooo']['model']!r}")
 if bad:
     print('FAIL: ' + '\n  '.join(bad))
     sys.exit(1)
 EOF
-grep -q 'total list-price cost: \$88.15' <<<"$out" || { echo "FAIL: expected a \$88.15 total (14.25 + 7.00 + 10.25 + 11.20 + 4.00 + 0.001 + 3.20 + 11.00 + 0.25 + 4.00 + 0.001 + 10.00 + 13.00); got:"; echo "$out"; exit 1; }
-grep -q '13 of 20 agents priced' <<<"$out" || { echo "FAIL: the priced/unpriced split is not printed"; echo "$out"; exit 1; }
+grep -q 'total list-price cost: \$96.15' <<<"$out" || { echo "FAIL: expected a \$96.15 total (14.25 + 7.00 + 10.25 + 11.20 + 4.00 + 0.001 + 3.20 + 11.00 + 0.25 + 4.00 + 0.001 + 10.00 + 13.00 + 8.00016); got:"; echo "$out"; exit 1; }
+grep -q '14 of 21 agents priced' <<<"$out" || { echo "FAIL: the priced/unpriced split is not printed"; echo "$out"; exit 1; }
+grep -q 'output is a floor.*vvv (1 of 2)' <<<"$out" || { echo "FAIL: the snapshot row is not named a floor"; echo "$out"; exit 1; }
 grep -q 'unpriced.*bbb, ccc, hhh, iii, kkk, ppp, ttt' <<<"$out" || { echo "FAIL: the unpriced agents are not named"; echo "$out"; exit 1; }
 grep -q 'unparsable lines skipped.*ccc (1), iii (1)' <<<"$out" || { echo "FAIL: the truncated transcripts are not named with their skipped-line counts"; echo "$out"; exit 1; }
 # ── Forks. The layout is Claude Code's: <project>/<session>.jsonl beside <project>/<session>/subagents/agent-*.jsonl,

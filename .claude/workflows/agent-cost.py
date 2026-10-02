@@ -21,6 +21,12 @@ a row; a fork whose parent is not at hand is cut at the tool result that hands i
 <fork-boilerplate>; a fork with neither is unpriced and named. A row is labelled by its meta.json description where
 there is one — a workflow stage's label — and otherwise by its first prompt, and a fork is timed from its own start.
 
+A response's last line that says "stop_reason": null was written mid-stream: its input and cache counts are final, but
+its output, thinking included, is a snapshot. Through Claude Code 2.1.276 nearly every subagent response was written
+again once it stopped (89–99% by version on the measuring machine; 2.1.261, 40%); from 2.1.278 most are not (6–31%),
+and the transcript holds no other record of the final count. Such a response is billed as recorded and its row is named
+a floor; an absent key is no evidence either way.
+
 PRICE below is list price per MTok as of 2026-09-30 (platform.claude.com/docs/en/about-claude/pricing, the model
 pricing table — quoted in .claude/rules/orchestration-reference.md § Generation notes — the sources, which the kit's
 verification block diffs against PRICE). It is keyed by model version, not family, because a version can reprice its
@@ -209,6 +215,10 @@ def summarise(path, meta, present, billed):
         cw5m = max(t['cw'] - t['cw1h'], 0)
         cost += (t['inp'] * pi + cw5m * pi * CACHE_WRITE_5M + t['cw1h'] * pi * CACHE_WRITE_1H
                  + t['cr'] * pi * CACHE_READ.get(k, CACHE_READ_DEFAULT) + t['out'] * po) / 1e6
+    # A last line that says "stop_reason": null was written mid-stream: its input and cache counts are final, its
+    # output a snapshot. An absent key is no evidence either way.
+    snapshot = sum(1 for _, _, n in own.values()
+                   if 'stop_reason' in (events[n].get('message') or {}) and events[n]['message']['stop_reason'] is None)
     stamps = [e['timestamp'] for e in events[start:] if e.get('timestamp')]
     minutes = None
     if len(stamps) >= 2:
@@ -216,7 +226,8 @@ def summarise(path, meta, present, billed):
     label = meta.get('description') or first_prompt(events[start:])
     return dict(agent=os.path.basename(path)[6:-6], label=label, model=model, turns=turns, input=inp, cache_write=cw,
                 cache_read=cr, output=out, cost_usd=cost, minutes=minutes, skipped_lines=skipped,
-                inherited=0 if unseparable else len(responses) - len(own), fork=is_fork(meta), unseparable=unseparable)
+                inherited=0 if unseparable else len(responses) - len(own), fork=is_fork(meta), unseparable=unseparable,
+                snapshot=snapshot, responses=len(own))
 
 
 def main(argv):
@@ -253,6 +264,9 @@ def main(argv):
     inherited = [f"{r['agent']} ({r['inherited']})" for r in rows if r['inherited']]
     if inherited:
         print(f'inherited responses, billed once to the transcript that recorded them first (a fork opens with its parent\'s history; a fork of the main loop, with the session\'s, which is not in this total): {", ".join(inherited)}')
+    floors = [f"{r['agent']} ({r['snapshot']} of {r['responses']})" for r in rows if r['snapshot']]
+    if floors:
+        print(f'output is a floor, and its cost with it, where a response\'s last line is a streaming snapshot ("stop_reason": null — from Claude Code 2.1.278 a subagent\'s responses are mostly written before their final usage): {", ".join(floors)}')
     truncated = [f"{r['agent']} ({r['skipped_lines']})" for r in rows if r['skipped_lines']]
     if truncated:
         print(f'unparsable lines skipped (a truncated transcript undercounts its agent): {", ".join(truncated)}')
