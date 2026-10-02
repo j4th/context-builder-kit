@@ -19,7 +19,9 @@
 #   - "Record the resolved model", in both review templates: the step runs on `always()` when its action step wrote an
 #     execution_file, with continue-on-error; on a synthetic execution file its job-summary line names the model the
 #     session started on, its Claude Code version, every model that answered, and the alias and effort requested;
-#     claude.yml's requested alias and effort equal the --model and --effort its claude_args pass.
+#     claude.yml's requested alias and effort equal the --model and --effort its claude_args pass;
+#   - claude.yml gates bots and the skip-claude label in its job `if:`, before the concurrency group, never in a step:
+#     a step runs after the job joined the group, so a bot comment with "@claude" in it cancelled the reply in flight.
 # Each body runs the way GitHub runs a `shell: bash` step: bash --noprofile --norc -eo pipefail.
 # Hermetic: mktemp trees only. Needs bash, git (2.28+, for `init -b`), jq.
 # Run: bash .claude/workflows/tests/review-assert-fixture.sh
@@ -160,6 +162,14 @@ for pair in claude-review.yml:review claude.yml:claude; do
     grep -qF -- "$want" "$t/summary" || { echo "FAIL: $rel: on $ex.json the job-summary line lacks '$want'"; sed 's/^/  | /' "$t/summary"; exit 1; }
   done
 done
+# claude.yml's bot and skip-claude gates sit in the job's `if:`: a step-level gate runs only after the job joined the
+# concurrency group, where a bot comment that mentions @claude cancels the reply in flight.
+jif=$(awk '/^  claude:$/{j=1} j && /^    if: [|]/{f=1; next} f && /^    [a-z-]+:/{exit} f' "$tdir/claude.yml")
+for want in "github.event.sender.type == 'User'" "!contains(github.event.issue.labels.*.name, 'skip-claude')" \
+            "!contains(github.event.pull_request.labels.*.name, 'skip-claude')"; do
+  grep -qF -- "$want" <<<"$jif" || { echo "FAIL: claude.yml's job if: lacks $want"; exit 1; }
+done
+if grep -n 'steps[.]gate' "$tdir/claude.yml"; then echo "FAIL: claude.yml still gates in a step (above), after the concurrency group"; exit 1; fi
 # claude.yml names its alias and effort twice, in claude_args and in the record step's env: the two must agree.
 cy="$tdir/claude.yml"
 args=$(awk '/claude_args: [|]/{f=1; next} f && /^ *(--|\$\{\{)/{print; next} {f=0}' "$cy")
@@ -169,4 +179,4 @@ rq=$(awk '$1 == "REQUESTED:" {print $2; exit}' <<<"$rec"); ef=$(awk '$1 == "EFFO
 if [ -z "$m" ] || [ "$m" != "$rq" ] || [ -z "$e" ] || [ "$e" != "$ef" ]; then
   echo "FAIL: claude.yml's record step names '$rq' at '$ef', but its claude_args run '$m' at '$e'"; exit 1
 fi
-echo "review-assert-fixture: $n cases ok (${#wfs[@]} workflow(s), 5 structural checks each; the record step in both templates)"
+echo "review-assert-fixture: $n cases ok (${#wfs[@]} workflow(s), 5 structural checks each; the record step in both templates; claude.yml's job gate)"
