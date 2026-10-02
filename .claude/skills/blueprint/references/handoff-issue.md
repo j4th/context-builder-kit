@@ -102,7 +102,7 @@ When generating section 2, blueprint walks every config file it just committed a
 
 Files to walk for the inventory:
 - The language-specific manifest (Cargo.toml workspace deps, package.json deps, pyproject.toml deps, etc.)
-- Toolchain pinning (mise.toml, .tool-versions, .nvmrc, rust-toolchain.toml, etc.) — settle-window-covered but bot-uncovered: no dependabot ecosystem maintains these, so the auto-update bot's presence does not imply they are handled
+- Toolchain pinning (mise.toml `[tools]`, .tool-versions, .nvmrc), an image referenced only by `COPY --from=<image>`, and a dev container's image — settle-window-covered but bot-uncovered: no dependabot ecosystem maintains these, so the auto-update bot's presence does not imply they are handled. `rust-toolchain.toml` is the exception the bot does cover (`cbk-conventions-reference.md` § Dependency settle-window)
 - CI workflow files for action refs (`.github/workflows/*.yml`, `.gitlab-ci.yml`, etc.)
 - Any other config file blueprint committed that contains version strings
 
